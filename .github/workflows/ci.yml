@@ -36,9 +36,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v7.0.0
         with:
-          # DIAGNOSTIC (round 2): explicit major instead of the version file, to test
-          # whether the runner can reach a Node distribution at all.
-          node-version: '24'
+          node-version-file: .nvmrc
           # No package-manager cache: a cold `npm ci` fits the timeout, and one less
           # service in the gate is one less way for a green tree to go red.
 
