@@ -13,8 +13,10 @@ claim the research record already checked and found false or unbacked, and the s
 keeps a pattern from quietly matching nothing — a check whose patterns are dead and a check that
 scans no file both report a clean page, which is the failure this file exists to catch.
 
-The scan normalises what it reads before it matches: HTML comments and tags are removed, entities
-are decoded, unicode dashes become hyphens, and runs of whitespace (including the line breaks the
+The scan normalises what it reads before it matches: inline markup (spans, links, comments)
+is removed without a trace, so a phrase split by a tag is still the same phrase; block markup
+leaves a single space, so a phrase ending one block and starting the next is two phrases, not
+one written across a boundary. Entities are decoded, unicode dashes become hyphens, and runs of whitespace (including the line breaks the
 page wraps at) collapse to a single space. A phrase that only looks absent because it happened to
 wrap, or because a hyphen was written as `&#45;`, would otherwise pass.
 
@@ -52,6 +54,9 @@ class Phrase:
     pattern: str
     sample: str
     reason: str
+    # Rendered spellings of the same wording with markup inside its tokens. Each one has to
+    # match the pattern too: markup that joins tokens in the browser must not split them here.
+    evasions: tuple[str, ...] = ()
 
 
 FORBIDDEN: list[Phrase] = [
@@ -60,12 +65,14 @@ FORBIDDEN: list[Phrase] = [
         "the server is open source",
         "the server binary `selvaged` is FSL-1.1-MIT: source-available, not OSI-approved. Name "
         "the licences instead; 'open source' is false of the server and of the project as a whole",
+        ("the server is o<!-- -->pen source", "the server is open <em>so</em>urce"),
     ),
     Phrase(
         r"\bSSP\b",
         "the SSP wire",
         "the abbreviation is taken, by stack-smashing protection and by supply-side platforms; "
         "the protocol is the Selvage Session Protocol, written out at least once per paragraph",
+        ("the S<!-- -->SP wire",),
     ),
     Phrase(
         r"salvage/1",
@@ -78,6 +85,7 @@ FORBIDDEN: list[Phrase] = [
         "end-to-end encrypted",
         "there is no encryption layer in version 1: frames travel through the server as "
         "unencrypted bytes, and this slice has no transport security either",
+        ("end<span></span>-to-end encrypted",),
     ),
     Phrase(
         r"\bbrowser\b",
@@ -216,8 +224,29 @@ def html_files(under: list[str]) -> list[str]:
     return sorted(set(found))
 
 
-def _blank_keep_newlines(match: re.Match[str]) -> str:
-    return "".join("\n" if char == "\n" else " " for char in match.group(0))
+# Tags whose rendering separates text: a phrase ending one block and starting the next is two
+# phrases, not one written across a boundary. Anything else inline — spans, links, comments —
+# renders nothing between its neighbours, so removing it must join them rather than split them.
+# Newlines inside the markup are always kept, wherever the replacement lands: reported hits name
+# source lines, and dropping a newline would move every line after it.
+BLOCK_TAGS = frozenset(
+    "address article aside blockquote br dd details div dl dt fieldset figcaption figure"
+    " footer form h1 h2 h3 h4 h5 h6 header hr li main nav ol p pre section table td th tr ul".split()
+)
+
+
+def _strip_markup(match: re.Match[str]) -> str:
+    text = match.group(0)
+    newlines = "\n" * text.count("\n")
+    if text.startswith("<!--"):
+        # A comment renders nothing at all.
+        return newlines
+    name = re.match(r"</?\s*([a-zA-Z][a-zA-Z0-9]*)", text)
+    if name is not None and name.group(1).lower() in BLOCK_TAGS:
+        # A block boundary is a text boundary; the space keeps the two sides apart the way a
+        # line break in the source does.
+        return " " + newlines
+    return newlines
 
 
 def normalise(text: str) -> tuple[str, list[int]]:
@@ -228,8 +257,8 @@ def normalise(text: str) -> tuple[str, list[int]]:
     a tag. Dashes are flattened and whitespace collapsed, because a phrase split across the
     page's ~90-column wrapping is not absent — it is the same phrase with a line break in it.
     """
-    text = re.sub(r"<!--.*?-->", _blank_keep_newlines, text, flags=re.DOTALL)
-    text = re.sub(r"<[^>]*>", _blank_keep_newlines, text)
+    text = re.sub(r"<!--.*?-->", _strip_markup, text, flags=re.DOTALL)
+    text = re.sub(r"<[^>]*>", _strip_markup, text)
     visible: list[str] = []
     line_of: list[int] = []
     for number, line in enumerate(text.splitlines(), 1):
@@ -257,6 +286,14 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 2
+        for evasion in phrase.evasions:
+            if not pattern.search(normalise(evasion)[0]):
+                print(
+                    f"check-claims: the pattern {phrase.pattern!r} does not match its evasion "
+                    f"sample {evasion!r}; markup inside its tokens defeats it",
+                    file=sys.stderr,
+                )
+                return 2
         compiled.append((phrase, pattern))
 
     root = root_of_this_checkout()
