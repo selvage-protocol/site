@@ -76,10 +76,10 @@ Rust in the comparison: <code>runner/run_vectors.py</code> reads the vectors, st
 its own on an ephemeral port, and compares what comes back byte for byte. It needs a built
 <code>selvaged</code>, named by <code>SELVAGE_SELVAGED</code>.</p>
 <pre><code>git clone https://github.com/selvage-protocol/reference_server
+git clone https://github.com/selvage-protocol/specification
 cd reference_server
 cargo build -p selvaged
 export SELVAGE_SELVAGED=$PWD/target/debug/selvaged
-
 cd ../specification
 pip install websockets jsonschema referencing
 python3 runner/run_vectors.py</code></pre>
@@ -122,20 +122,24 @@ lazy.nvim), then use <code>:SelvageHost ws://127.0.0.1:8080</code>,
 <ul>
 <li><strong>No hosted demo.</strong> There is no server of ours on the internet, so there is no
 demo link &mdash; the way in is a checkout and <code>cargo run</code>.</li>
-<li><strong>No released version.</strong> The wire version is <code>selvage/1</code> and the
-design is at 0.x. The compatibility rule is the same major, and while at 0.x the same minor, so
-nothing here promises a fixed shape yet.</li>
+<li><strong>No released version.</strong> The wire version is <code>selvage/1</code>, and the
+compatibility rule in force for it is the same major: every <code>selvage/1.x</code> is accepted.
+The specification is a draft and nothing has been released.</li>
 <li><strong>Two editors, one engine.</strong> The VS Code and Neovim clients drive the same CRDT
 engine, so nothing here yet shows that a client built from the prose alone would agree byte for
 byte with this one. That is what the vectors are for, and that test has not been run against a
 separate codebase.</li>
 <li><strong>No persistence.</strong> Rooms are held in memory and die with the host; nothing
 survives a restart of the server.</li>
-<li><strong>No encryption layer in version 1.</strong> Frames are routed as bytes and held in
-memory for the life of the room; they are not encrypted, so whoever runs the server holds the
-room's text.</li>
-<li><strong>No changes to the shape of the host's folder.</strong> Nobody can add, rename or
-remove a path, and nothing writes to the host's working copy.</li>
+<li><strong>No encryption layer in version 1.</strong> Frames travel through the server as
+unencrypted bytes, and this slice has no transport security either. The server keeps no document
+text &mdash; it knows only which peers are connected and which paths they have open &mdash; but it
+can read a frame as it routes it, so treat the server's operator and the network path as able to
+see the room's text.</li>
+<li><strong>No changes to the shape of the host's folder.</strong> The room carries no file
+mutations &mdash; nothing on the wire adds, renames or removes a path &mdash; and nothing writes
+to the host's working copy. The host's own editor still changes that folder, and a Neovim guest's
+mirror materialises the granted paths into a directory of its own.</li>
 <li><strong>Nothing runs in a web page.</strong> Both clients are editor plugins; there is no
 client to open in a tab and no link that starts an editor by itself.</li>
 <li><strong>The specification is a draft.</strong> <code>NOTES.md</code> lists the questions the
@@ -148,9 +152,9 @@ carry, not one the wire enforces. Reading <code>NOTES.md</code> is the point of 
 
 <section>
 <h2>A hosted tier, later</h2>
-<p>A hosted Selvage is planned and built last. Nothing is for sale and there is no price. If you
-leave an address it is kept for one message &mdash; when the hosted tier exists &mdash; and used
-for nothing else.</p>
+<p>A hosted Selvage is planned and built last. Nothing is for sale and there is no price. Leave an
+address if you want one message telling you when the hosted tier opens; it will be used for that
+and nothing else.</p>
 <!-- No honeypot: a hidden field is discarded by whichever service receives the submission, and
      naming one provider's convention here would bake that provider in before the owner has
      chosen. Spam filtering belongs to the service, and is set there. -->
@@ -159,8 +163,18 @@ for nothing else.</p>
 <input id="waitlist-email" name="email" type="email" required autocomplete="email" placeholder="you@example.org">
 <button type="submit">Tell me when it opens</button>
 </form>
-<p class="fine-print">One address, one message: it goes to the waitlist service the project
-uses and is used to tell you when the hosted tier opens, and for nothing else.</p>
+<h3>Privacy notice</h3>
+<p><strong>Who is responsible.</strong> <span class="owner-blank">[owner to complete: the name and
+contact of the controller &mdash; the person or organisation responsible for the address]</span>.
+<strong>Processor.</strong> <span class="owner-blank">[owner to complete: the mailing service that
+will send the message, once chosen]</span>. This notice is not complete until both are filled in,
+and the page must not be published before then.</p>
+<p><strong>What is collected and why.</strong> If you submit the form, the address you type is the
+only personal data collected. It is used to send you the one message above, and for nothing else.
+The lawful basis is your consent, given by submitting the form. It is passed only to the processor
+named above, and kept only until that message is sent. You can withdraw consent, ask for a copy, or
+ask for the address to be erased, using the controller's contact above; you can also complain to
+your data protection authority.</p>
 </section>
 
 </main>
@@ -173,10 +187,11 @@ are MIT OR Apache-2.0, with one exception that matters: the server binary
 <code>selvaged</code> is <strong>FSL-1.1-MIT</strong>. That is source-available, not
 OSI-approved: free for any non-competing purpose, converting to MIT two years after each
 release, with a non-compete clause that reserves exactly the thing a hosted Selvage would be.</p>
-<p>This page is static HTML and one stylesheet. It loads no JavaScript, sets no cookie and makes
-no third-party request; submitting the waitlist form is the only thing it sends anywhere. Its
-framing and the workflow sentence are adapted from the protocol repository's README, which is
-CC-BY-4.0.</p>
+<p>This page is static HTML, one stylesheet and a favicon. It loads no JavaScript, sets no cookie
+and makes no third-party request; submitting the waitlist form is the only thing it sends
+anywhere. The page is MIT OR Apache-2.0. Its framing follows the project's own design record,
+which is private and carries no licence; the workflow sentence is adapted from the Neovim client's
+README, which is MIT OR Apache-2.0.</p>
 <ul class="repos">
 <li><a href="https://github.com/selvage-protocol/specification">specification</a> &mdash; the protocol, in prose, schema and vectors</li>
 <li><a href="https://github.com/selvage-protocol/reference_server">reference_server</a> &mdash; the server, the client library, the harness</li>
