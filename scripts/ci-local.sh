@@ -54,11 +54,18 @@ run_actionlint() {
 # seconds, reporting the last state on failure), runs the given command, then stops the server.
 # Polling the predicate beats sleeping and hoping: a fixed sleep passes before the port is open.
 with_server() {
+  # A 200 from someone else's server is not readiness: refuse a port that already answers
+  # before starting anything, so the scan can never pass against unrelated content.
+  if curl -s -o /dev/null --max-time 2 "$BASE/" 2>/dev/null; then
+    echo "ci-local: $BASE/ already answers; refusing a port this script did not bind" >&2
+    return 1
+  fi
   ./node_modules/.bin/next start -p "$PORT" >"$TMPDIR/next.log" 2>&1 &
   local pid=$!
   local ready=0
   for _ in $(seq 1 60); do
-    if [ "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/" 2>/dev/null)" = "200" ]; then
+    if [ "$(curl -s -o /dev/null -w '%{http_code}' "$BASE/" 2>/dev/null)" = "200" ] \
+      && kill -0 "$pid" 2>/dev/null; then
       ready=1
       break
     fi
