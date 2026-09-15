@@ -33,12 +33,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Node
-        uses: actions/setup-node@v7.0.0
-        with:
-          # DIAGNOSTIC (round 2): explicit major instead of the version file, to test
-          # whether the runner can reach a Node distribution at all.
-          node-version: '24'
+      # DIAGNOSTIC (round 3): setup-node fails on this runner with any input, so test
+      # whether the runner can fetch a Node distribution at all.
+      - name: Probe Node download egress
+        run: |
+          curl -fsSL https://nodejs.org/dist/v24.21.0/node-v24.21.0-linux-x64.tar.xz \
+            -o "$RUNNER_TEMP/node.tar.xz"
+          tar -xf "$RUNNER_TEMP/node.tar.xz" -C "$RUNNER_TEMP"
+          "$RUNNER_TEMP/node-v24.21.0-linux-x64/bin/node" --version
           # No package-manager cache: a cold `npm ci` fits the timeout, and one less
           # service in the gate is one less way for a green tree to go red.
 
