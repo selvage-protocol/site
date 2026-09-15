@@ -2,7 +2,7 @@
 #
 # Runs the steps of .github/workflows/ci.yml on this machine.
 #
-#   scripts/ci-local.sh claims   # the `claims` step: the phrases the page must not carry
+#   scripts/ci-local.sh claims   # the `claims` step: known forbidden wordings (a filter, not a proof)
 #   scripts/ci-local.sh links    # the `links` step: lychee over the page and the README
 #   scripts/ci-local.sh lint     # actionlint over the workflow files
 #   scripts/ci-local.sh all      # lint + claims + links
@@ -35,7 +35,7 @@ run_lychee() {
 }
 
 job_claims() {
-  say "claims: the phrases the page must not carry"
+  say "claims: known forbidden wordings (a filter, not a proof)"
   ./scripts/check-claims.py
 }
 
