@@ -154,9 +154,10 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
-.fine-print {
-  color: var(--muted);
-  font-size: 0.9375rem;
+.owner-blank {
+  padding: 0 0.2em;
+  background: var(--rule);
+  font-style: italic;
 }
 
 footer {
