@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Selvage Session Protocol</title>
+<meta name="description" content="A written, versioned specification for the session layer of collaborative editing: rooms, participants, presence and open documents. With JSON Schema, wire vectors and a language-neutral conformance runner.">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body>
+
+<header class="page-header">
+<h1>Selvage Session Protocol</h1>
+<p class="lede">Selvage Session Protocol is a written, versioned specification for the session
+layer of collaborative editing &mdash; the layer language tooling has (LSP), debugging has
+(DAP), and collaborative editing has never had. Document sync is specified: <code>y-protocols</code>
+says how two replicas converge on the text of a document. Nothing specifies the session &mdash;
+who is in the room, which documents are open, where the other person's cursor is, what happens
+when they leave. That layer is what this project writes down.</p>
+</header>
+
+<main>
+
+<section>
+<h2>Your server, your code</h2>
+<p>Selvage is the project: the specification, a reference server you run yourself, and clients
+for VS Code and Neovim. The server is one Rust binary that holds rooms in memory &mdash; no
+account, no database, no cloud. The workflow it serves is one sentence: <strong>share a link,
+come edit my code with me.</strong> The host's working copy is the truth, the invite is the
+share, and the room ends when the host leaves.</p>
+</section>
+
+<section>
+<h2>How a session works</h2>
+<p>The host grants a folder. The client lists the paths inside it and puts the listing on the
+wire &mdash; paths, never content &mdash; and the guest mirrors that shape. A file's text arrives
+when someone opens it, and the host reads that one file from its own disk when a peer asks for
+it, inside the granted root.</p>
+<p>Everyone holding the invite edits the same document. The token is the permission: there is no
+account and no per-join approval, and anyone with the link is in the room, so treat an invite as
+you would a password. The host's filesystem is the scoped part &mdash; no guest writes to the
+host's working copy &mdash; while the room's text belongs to everyone in it: every participant's
+edits land in the one CRDT, which is what "come edit my code with me" means. Other people's
+carets and selections travel as anchors in that same CRDT, so they stay where they were as the
+text around them moves.</p>
+<p>The room ends when the host leaves. Rooms live in memory only, the server writes nothing to
+disk, and a room dies with its host after a short grace period, so a dropped connection does not
+end it.</p>
+</section>
+
+<section>
+<h2>What you can run today</h2>
+<p>There is no hosted demo, no release and no package to install from an extension store, so
+every route below starts with a clone. These are the real ones.</p>
+
+<h3>Read the specification</h3>
+<p><a href="https://github.com/selvage-protocol/specification">selvage-protocol/specification</a>
+holds the prose (<code>PROTOCOL.md</code>), the canonical byte form of a frame
+(<code>CANONICAL.md</code>), nine JSON Schema 2020-12 documents, 23 wire vectors, a
+language-neutral replay of those vectors in Python, and <code>NOTES.md</code>, which says what
+the prose deliberately leaves open. It is written to be implemented on its own: nothing in it
+requires reading the Rust.</p>
+<pre><code>git clone https://github.com/selvage-protocol/specification
+cd specification
+pip install jsonschema referencing
+python3 schema/validate.py</code></pre>
+<p>The validator checks every frame of every vector against the schemas and against the
+canonical form, and pins the size of the corpus: <strong>23 vectors, 806 frame checks and 192
+assertions</strong>. The numbers are constants in <code>schema/validate.py</code>, so deleting an
+assertion is a red run rather than a smaller number in a line of output.</p>
+
+<h3>Replay the vectors against a server</h3>
+<p>The same transcripts replayed against a real <code>selvaged</code> over a WebSocket, with no
+Rust in the comparison: <code>runner/run_vectors.py</code> reads the vectors, starts a server of
+its own on an ephemeral port, and compares what comes back byte for byte. It needs a built
+<code>selvaged</code>, named by <code>SELVAGE_SELVAGED</code>.</p>
+<pre><code>git clone https://github.com/selvage-protocol/reference_server
+cd reference_server
+cargo build -p selvaged
+export SELVAGE_SELVAGED=$PWD/target/debug/selvaged
+
+cd ../specification
+pip install websockets jsonschema referencing
+python3 runner/run_vectors.py</code></pre>
+<p><code>selvaged</code> serves <code>ws://&hellip;/session</code> and
+<code>http://&hellip;/meta</code>, and keeps nothing on disk. Running it is the documented way to
+stand up a server: there is no image to pull and no service unit to install in any repository
+yet.</p>
+
+<h3>Two editors in one room</h3>
+<p>Start a server to host on, then build the VS Code client from its checkout and install the
+packaged extension by hand:</p>
+<pre><code>git clone https://github.com/selvage-protocol/reference_server
+cd reference_server
+cargo run -p selvaged -- --listen 127.0.0.1:8080</code></pre>
+<pre><code>git clone https://github.com/selvage-protocol/vscode_client
+cd vscode_client
+npm ci --no-audit --no-fund
+npm run package
+code --install-extension selvage-client-&lt;version&gt;.vsix</code></pre>
+<p>Open a folder in one window, run <em>Selvage: Host a session</em> from the command palette,
+and give it the server address (<code>ws://127.0.0.1:8080</code>) plus a display name. Open a
+file inside that folder: it joins the room as soon as it is open. Run <em>Selvage: Copy the
+invite link</em>, and in a second window &mdash; of the same editor or a different machine
+&mdash; run <em>Selvage: Join a session from an invite link</em> and paste it. The host's file
+opens in the guest as <code>selvage:/&lt;path&gt;</code> and both windows type into the same
+text. Closing the host's window ends the room.</p>
+<p>The Neovim client is the same room, from the other editor. It keeps its engine and bridge in a
+companion Node process, and mirrors the granted folder into a real directory, so ripgrep, ctags
+and a language server see ordinary paths:</p>
+<pre><code>git clone https://github.com/selvage-protocol/nvim_client
+cd nvim_client
+npm ci --no-audit --no-fund</code></pre>
+<p>Point a plugin manager at the checkout (<code>{ dir = '/path/to/nvim_client' }</code> in
+lazy.nvim), then use <code>:SelvageHost ws://127.0.0.1:8080</code>,
+<code>:SelvageCopyInvite</code> and <code>:SelvageJoin</code>.</p>
+</section>
+
+<section>
+<h2>What this is not yet</h2>
+<ul>
+<li><strong>No hosted demo.</strong> There is no server of ours on the internet, so there is no
+demo link &mdash; the way in is a checkout and <code>cargo run</code>.</li>
+<li><strong>No released version.</strong> The wire version is <code>selvage/1</code> and the
+design is at 0.x. The compatibility rule is the same major, and while at 0.x the same minor, so
+nothing here promises a fixed shape yet.</li>
+<li><strong>Two editors, one engine.</strong> The VS Code and Neovim clients drive the same CRDT
+engine, so nothing here yet shows that a client built from the prose alone would agree byte for
+byte with this one. That is what the vectors are for, and that test has not been run against a
+separate codebase.</li>
+<li><strong>No persistence.</strong> Rooms are held in memory and die with the host; nothing
+survives a restart of the server.</li>
+<li><strong>No encryption layer in version 1.</strong> Frames are routed as bytes and held in
+memory for the life of the room; they are not encrypted, so whoever runs the server holds the
+room's text.</li>
+<li><strong>No changes to the shape of the host's folder.</strong> Nobody can add, rename or
+remove a path, and nothing writes to the host's working copy.</li>
+<li><strong>Nothing runs in a web page.</strong> Both clients are editor plugins; there is no
+client to open in a tab and no link that starts an editor by itself.</li>
+<li><strong>The specification is a draft.</strong> <code>NOTES.md</code> lists the questions the
+prose leaves open, and the caveats it records are real: the invite carries the token in its URL,
+the host role is claimed rather than proven, and a document path is an opaque string the protocol
+requires only to be non-blank. Holding a read inside the granted folder is a rule the clients
+carry, not one the wire enforces. Reading <code>NOTES.md</code> is the point of publishing it.</li>
+</ul>
+</section>
+
+<section>
+<h2>A hosted tier, later</h2>
+<p>A hosted Selvage is planned and built last. Nothing is for sale and there is no price. If you
+leave an address it is kept for one message &mdash; when the hosted tier exists &mdash; and used
+for nothing else.</p>
+<!-- No honeypot: a hidden field is discarded by whichever service receives the submission, and
+     naming one provider's convention here would bake that provider in before the owner has
+     chosen. Spam filtering belongs to the service, and is set there. -->
+<form class="waitlist" method="post" action="https://waitlist.example.invalid/subscribe">
+<label for="waitlist-email">Email address</label>
+<input id="waitlist-email" name="email" type="email" required autocomplete="email" placeholder="you@example.org">
+<button type="submit">Tell me when it opens</button>
+</form>
+<p class="fine-print">One address, one message: it goes to the waitlist service the project
+uses and is used to tell you when the hosted tier opens, and for nothing else.</p>
+</section>
+
+</main>
+
+<footer>
+<h2>Licences</h2>
+<p>The specification &mdash; prose, canonical form, JSON Schema and vectors &mdash; is
+CC-BY-4.0, and its tooling is MIT OR Apache-2.0. The reference server workspace and both clients
+are MIT OR Apache-2.0, with one exception that matters: the server binary
+<code>selvaged</code> is <strong>FSL-1.1-MIT</strong>. That is source-available, not
+OSI-approved: free for any non-competing purpose, converting to MIT two years after each
+release, with a non-compete clause that reserves exactly the thing a hosted Selvage would be.</p>
+<p>This page is static HTML and one stylesheet. It loads no JavaScript, sets no cookie and makes
+no third-party request; submitting the waitlist form is the only thing it sends anywhere. Its
+framing and the workflow sentence are adapted from the protocol repository's README, which is
+CC-BY-4.0.</p>
+<ul class="repos">
+<li><a href="https://github.com/selvage-protocol/specification">specification</a> &mdash; the protocol, in prose, schema and vectors</li>
+<li><a href="https://github.com/selvage-protocol/reference_server">reference_server</a> &mdash; the server, the client library, the harness</li>
+<li><a href="https://github.com/selvage-protocol/vscode_client">vscode_client</a> &mdash; the VS Code client</li>
+<li><a href="https://github.com/selvage-protocol/nvim_client">nvim_client</a> &mdash; the Neovim client</li>
+</ul>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,182 @@
+/* Selvage Session Protocol — landing page.
+   One stylesheet, no framework, no web font: the page fetches nothing from a third party. */
+
+:root {
+  --bg: #fdfcf9;
+  --fg: #1c1b18;
+  --muted: #57534b;
+  --rule: #ded8cc;
+  --code-bg: #f2efe7;
+  --link: #0b5f9e;
+  --link-visited: #6b4a8f;
+  --measure: 42rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14140f;
+    --fg: #e8e4da;
+    --muted: #a8a294;
+    --rule: #35322a;
+    --code-bg: #1e1d17;
+    --link: #86bdf0;
+    --link-visited: #c0a6e6;
+  }
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 4rem;
+  max-width: var(--measure);
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+}
+
+.page-header {
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+h1 {
+  margin: 0 0 0.75rem;
+  font-size: 1.9rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  margin: 2.75rem 0 0.75rem;
+  font-size: 1.25rem;
+  line-height: 1.3;
+}
+
+h3 {
+  margin: 2rem 0 0.5rem;
+  font-size: 1.0625rem;
+  line-height: 1.3;
+}
+
+p {
+  margin: 0 0 1rem;
+}
+
+.lede {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+ul {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
+}
+
+li {
+  margin-bottom: 0.6rem;
+}
+
+a {
+  color: var(--link);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+a:visited {
+  color: var(--link-visited);
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.9em;
+}
+
+pre {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  overflow-x: auto;
+  background: var(--code-bg);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+}
+
+pre code {
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+form.waitlist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  margin: 1.25rem 0 0.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
+}
+
+form.waitlist label {
+  flex: 0 0 100%;
+  font-weight: 600;
+}
+
+form.waitlist input[type="email"] {
+  flex: 1 1 16rem;
+  min-width: 0;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--bg);
+  color: inherit;
+  font: inherit;
+}
+
+form.waitlist button {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--link);
+  border-radius: 4px;
+  background: var(--link);
+  color: var(--bg);
+  font: inherit;
+  cursor: pointer;
+}
+
+a:focus-visible,
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+.fine-print {
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+footer {
+  margin-top: 3rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+footer h2 {
+  margin-top: 0;
+  color: var(--fg);
+}
+
+ul.repos {
+  padding-left: 0;
+  list-style: none;
+}
+
+ul.repos li {
+  margin-bottom: 0.35rem;
+}
