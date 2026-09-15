@@ -60,9 +60,11 @@ Two things about the host plan are the owner's call, not this page's:
 Cloudflare Pages is the $0 alternative with no commercial-use restriction, if either becomes
 binding. Nothing here depends on which one is chosen: the page is files.
 
-## The waitlist endpoint
+## The waitlist endpoint and the notice
 
-**One edit.** In `index.html`, the waitlist form carries the endpoint:
+Two things must be true before the page collects an address, and neither is optional.
+
+**The endpoint.** In `index.html`, the waitlist form carries it:
 
 ```html
 <form class="waitlist" method="post" action="https://waitlist.example.invalid/subscribe">
@@ -70,9 +72,17 @@ binding. Nothing here depends on which one is chosen: the page is files.
 
 `waitlist.example.invalid` is a [reserved name](https://www.rfc-editor.org/info/rfc2606/) that
 cannot resolve, so until it is replaced a submission fails loudly instead of quietly going
-nowhere. **Replace it with the URL the service gives you before the page is announced anywhere.**
+nowhere. Replace it with the URL the service gives you.
 
-Three things to check when you do:
+**The notice.** The page carries a privacy notice below the form, with two blanks marked in the
+page: the controller's name and contact, and the processor (the mailing service that sends the
+message). Only the owner can fill them in. **Do not point the form at a live endpoint, and do not
+publish the page, until both blanks are filled in:** a notice that names a controller nobody can
+contact is not a notice, and a form that posts while its notice is a draft collects personal data
+without the lawful basis the page states. The mailing service is a processor of the address, so
+its own terms, or a data-processing agreement, belong with this step too.
+
+Three things to check when you replace the endpoint:
 
 - **The field name.** The form posts one field, `name="email"`. Services that want a different
   name, or their own hidden field, tell you which in their own documentation; change the
@@ -83,10 +93,6 @@ Three things to check when you do:
 - **The copy.** The page says the address is used to tell you when the hosted tier opens "and for
   nothing else". Keep that true: no reselling, no unrelated list, and a deletion at the reader's
   request.
-
-The page also needs a privacy notice before it collects anything from a real visitor — what is
-collected, who processes it, for how long, and how to ask for deletion. That is a document, not a
-line of copy, and it is the owner's to write.
 
 Two decisions taken here, stated so that they are not re-litigated silently:
 
@@ -103,33 +109,44 @@ Two decisions taken here, stated so that they are not re-litigated silently:
 
 ## What the page must never say
 
-The page's job is to be checkable, so the rule is mechanical where it can be: `scripts/check-claims.py`
-fails the build on each of these phrases, and carries the reason beside it. The reasons are
-summarised here so that the constraint survives without the file that produced it.
+The page's job is to be checkable, so the rule is mechanical where it can be:
+`scripts/check-claims.py` fails the build on each of the known wordings below, carries the reason
+beside each, and normalises whitespace and HTML entities before matching, so a phrase cannot pass
+by wrapping across a line or by encoding a character. **It is a filter, not a proof.** It cannot
+see meaning: a false claim in different words, a synonym outside the list, a superlative, an
+unbacked sentence or a wrong number the list does not pin all pass it. A green gate means the
+known wordings are absent, nothing more. The reasons are summarised here so that the constraint
+survives without the file that produced it.
 
 | Must not appear | Why not |
 |---|---|
 | "open source" of the server or the project | The server binary is `FSL-1.1-MIT`: source-available, not OSI-approved, free for non-competing use and under MIT two years after each release. The specification and the clients are the open ones, and the page names their licences instead of reaching for the phrase |
 | "SSP" | The abbreviation is taken by stack-smashing protection and by supply-side platforms. The protocol is the Selvage Session Protocol, written out |
 | `salvage/1` | The wire version is `selvage/1`. "Selvage" is heard as "salvage", which is why the full protocol title appears at least once in the page's first paragraph |
-| end-to-end encryption | Version 1 has no encryption layer. The server routes document payloads as bytes and holds them in memory |
+| end-to-end encryption, E2EE | Version 1 has no encryption layer: frames travel through the server as unencrypted bytes, and the slice has no transport security either. The relay is payload-opaque but not confidential |
+| "the server cannot read it" / "the text never reaches the server" | The relay routes opaque bytes and keeps no document text, but it can read a frame as it passes and there is no transport security. It is not a confidential relay |
 | a browser client | There is no client that runs in a web page. Both clients are editor plugins |
-| file create, rename or delete | The room carries no file mutations, and nothing writes to the host's working folder |
+| file create, rename or delete | The room carries no file mutations and nothing writes to the host's working copy. The host's own editor still changes that folder, and a Neovim guest's mirror materialises the granted paths |
 | Docker, or a one-command self-host | No image, compose file or service unit exists in any repository. The documented path is `cargo run -p selvaged -- --listen …` |
-| a stable 1.0 | The wire version is `selvage/1` while the design is at 0.x: the same major, and at 0.x the same minor. Nothing has been released |
+| a stable 1.0 | The wire version is `selvage/1`; the compatibility rule in force is the same major. Nothing has been released and no shape is frozen. No corpus line puts the design at 0.x |
 | a second implementation, or interoperability | There is none. The Neovim client drives a byte-identical copy of the same engine, so nothing yet shows a client built from the prose alone agreeing byte for byte with the Rust one |
-| Marketplace availability | The extension is unpublished, and publishing it is a non-goal until it works with a friend |
-| "guests are read-only" | The design inverts it: read-only scopes the host's filesystem, never the shared buffer, and every holder of the invite edits the session CRDT. Saying otherwise would be a lie about the product's central idea |
+| marketplace or extension-gallery availability | The extension is unpublished, and publishing it is a non-goal until it works with a friend |
+| "guests are read-only" or "view-only" | The design inverts it: read-only scopes the host's filesystem, never the shared buffer, and every holder of the invite edits the session CRDT. Saying otherwise would be a lie about the product's central idea |
 | "your code never leaves your machine" | Document payloads travel through the server to the peers that ask for them, and there is no encryption layer. What is bounded is the grant: the paths the host enumerates, and the reads it serves from inside the granted root |
-| invented proof: logos, screenshots, testimonials, user counts, a demo link | None of them exist. There is no logo, no image, no recording and no user count in this project, and the only server that has ever run was a local debug build |
+| invented proof: logos, screenshots, testimonials, user counts, a production deployment, a demo link | None of them exist. There is no logo, no image, no recording, no user count and no production deployment in this project, and the only server that has ever run was a local debug build |
+| a claim of priority ("the first protocol to specify …") | The design record surveys prior art — Eclipse Open Collaboration Tools and others. The project's claim is that the session layer is unspecified, not that this is first |
+| a corpus number other than the pinned one | The counts (23 vectors, 806 frame checks, 192 assertions) are constants in `specification/schema/validate.py`; any other number is a claim the corpus disproves |
 
-Two rules the check cannot make mechanical, and which a reader of a change has to hold:
+Three things the check cannot make mechanical, and which a reader of a change has to hold:
 
 - **A number on the page has a home.** The corpus counts (23 vectors, 806 frame checks, 192
   assertions) are the constants `specification/schema/validate.py` pins; when the corpus moves,
   the page moves with it. The commands are the ones the repositories' own READMEs document.
 - **No adjective does the work of a fact.** If a sentence could be true of any project, it does
   not belong on this page.
+- **A false claim in other words.** The check matches a list of known wordings, so a synonym, a
+  paraphrase or an assertion the list does not know about passes it. Green means those wordings
+  are absent; it does not mean every sentence was checked against the corpus.
 
 ## The domain and canonical metadata
 
@@ -164,10 +181,12 @@ both places run the same checker. `lint` is local-only, as it is in the sibling 
 The claim check has two failure modes built in, because they are the same failure: a *pattern*
 that matches nothing passes everything, and a *scan* that reaches no file reports a clean page.
 Each entry carries a sample its own pattern must match, and reaching no `.html` file is an error
-rather than a pass.
+rather than a pass. Those are the guarantees; the check is a filter over known wordings, not a
+proof that every sentence on the page is true, and the section above says what it cannot reach.
 
 ## Licence
 
 `MIT OR Apache-2.0`, the pair the clients carry — see `LICENSE-MIT` and `LICENSE-APACHE`. The
-prose on the page adapts the framing and the workflow sentence from the specification
-repository's README, which is `CC-BY-4.0`, and says so in the page footer.
+page's framing follows the project's own design record, which is private and carries no licence;
+the workflow sentence is adapted from the Neovim client's README, which is `MIT OR Apache-2.0`.
+The page footer says the same thing.
