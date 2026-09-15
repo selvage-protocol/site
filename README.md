@@ -16,9 +16,31 @@ editor clients. This repository holds the page, the two checks that gate it, and
 |---|---|
 | `app/page.tsx` | the page: the prose, carried over verbatim |
 | `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, favicon, global stylesheet |
-| `style.css` | the one stylesheet: a system font stack, so no font is fetched from a third party |
-| `public/favicon.svg` | the favicon, and the whole of it: the letter `S` in a system monospace font. It is not a wordmark — this project has no logo, and the page does not pretend otherwise |
+| `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent (hardcoded hexes, named in a comment up top): a system font stack, so no font is fetched from a third party |
+| `app/icon.svg` | the site mark in the header and the favicon: the owner's `svp` monogram (see "The site mark" below). It replaces the earlier text-only favicon |
+| `app/icon.png` / `app/apple-icon.png` | raster fallbacks (32 and 180 px) resized from the owner's own PNG export, for contexts without the font (see "The site mark") |
 | `package.json` / `package-lock.json` | the only dependencies: `next`, `react`, `react-dom`, `typescript` and `@types/*`. Nothing else without a written reason |
+
+## The site mark
+
+The header carries the owner's `svp` monogram, and it doubles as the favicon
+(`app/icon.svg`, with 32 px and 180 px PNG fallbacks beside it). The source is the
+owner's Inkscape file `/home/user/pictures/profile_pictures/profile_picture_svp.svg`
+— a Comfortaa Bold monogram in Catppuccin mauve/teal/red on a Mocha base — and the
+vendored copy differs from it in three recorded ways:
+
+- the Inkscape/sodipodi editor metadata (named view, grid, unused filters) is stripped;
+- the Mocha base (`#1e1e2e`, transparent in the source) is baked in, matching the
+  owner's PNG export;
+- the live Comfortaa `<text>` is converted to paths, because no visitor has the font
+  installed and anything rendered without it (favicons, fallbacks) would show fallback
+  glyphs instead of the mark. The conversion replays the source's own numbers
+  (79.375 px Comfortaa Bold at the same origin, advances only — the font kerns none of
+  these pairs) with throwaway tooling (fontTools from its wheel, the system Comfortaa),
+  so the repository itself gains no dependency and no font file.
+
+The PNGs are not rendered from the SVG here: they are the owner's own 800×800 export
+resized down with ImageMagick, so the fallback pixels are the owner's pixels.
 | `.nvmrc` | the pinned Node version for local work and CI (`nvm use` reads it); `package.json` `engines` carries the major (`24.x`), because Vercel only deploys major versions |
 | `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason |
 | `scripts/ci-local.sh` | the gate, running the same commands as the workflow |
@@ -145,7 +167,7 @@ summarised here so that the constraint survives without the file that produced i
 | marketplace or extension-gallery availability | The extension is unpublished, and publishing it is a non-goal until it works with a friend |
 | "guests are read-only" or "view-only" | The design inverts it: read-only scopes the host's filesystem, never the shared buffer, and every holder of the invite edits the session CRDT. Saying otherwise would be a lie about the product's central idea |
 | "your code never leaves your machine" | Document payloads travel through the server to the peers that ask for them, and there is no encryption layer. What is bounded is the grant: the paths the host enumerates, and the reads it serves from inside the granted root |
-| invented proof: logos, screenshots, testimonials, user counts, a production deployment, a demo link | None of them exist. There is no logo, no image, no recording, no user count and no production deployment in this project, and the only server that has ever run was a local debug build |
+| invented proof: screenshots, testimonials, user counts, a production deployment, a demo link | None of them exist. There is no recording, no user count and no production deployment in this project, and the only server that has ever run was a local debug build. The one image the page carries is the project's own site mark (see above), not proof of anything |
 | a claim of priority ("the first protocol to specify …") | The design record surveys prior art — Eclipse Open Collaboration Tools and others. The project's claim is that the session layer is unspecified, not that this is first |
 | a corpus number other than the pinned one | The counts (23 vectors, 806 frame checks, 192 assertions) are constants in `specification/schema/validate.py`; any other number is a claim the corpus disproves |
 
