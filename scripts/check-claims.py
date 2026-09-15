@@ -65,7 +65,8 @@ FORBIDDEN: list[Phrase] = [
         "the server is open source",
         "the server binary `selvaged` is FSL-1.1-MIT: source-available, not OSI-approved. Name "
         "the licences instead; 'open source' is false of the server and of the project as a whole",
-        ("the server is o<!-- -->pen source", "the server is open <em>so</em>urce"),
+        ("the server is o<!-- -->pen source", "the server is open <em>so</em>urce",
+         "the server is o<span title=\">\">pen source", "the server is o<!--\n-->pen source"),
     ),
     Phrase(
         r"\bSSP\b",
@@ -227,51 +228,136 @@ def html_files(under: list[str]) -> list[str]:
 # Tags whose rendering separates text: a phrase ending one block and starting the next is two
 # phrases, not one written across a boundary. Anything else inline — spans, links, comments —
 # renders nothing between its neighbours, so removing it must join them rather than split them.
-# Newlines inside the markup are always kept, wherever the replacement lands: reported hits name
-# source lines, and dropping a newline would move every line after it.
+# That join holds even for the line breaks inside the markup: a comment holding a newline still
+# renders nothing, so the sides meet with no space. Reported hits still name source lines,
+# because every visible character keeps the number of the line it came from.
 BLOCK_TAGS = frozenset(
     "address article aside blockquote br dd details div dl dt fieldset figcaption figure"
     " footer form h1 h2 h3 h4 h5 h6 header hr li main nav ol p pre section table td th tr ul".split()
 )
 
 
-def _strip_markup(match: re.Match[str]) -> str:
-    text = match.group(0)
-    newlines = "\n" * text.count("\n")
-    if text.startswith("<!--"):
-        # A comment renders nothing at all.
-        return newlines
-    name = re.match(r"</?\s*([a-zA-Z][a-zA-Z0-9]*)", text)
-    if name is not None and name.group(1).lower() in BLOCK_TAGS:
-        # A block boundary is a text boundary; the space keeps the two sides apart the way a
-        # line break in the source does.
-        return " " + newlines
-    return newlines
+def _tag_end(text: str, start: int) -> int:
+    """Index of the `>` closing the tag at `start`, or -1.
+
+    Quote-aware: a `>` inside a single- or double-quoted attribute value does not end the tag,
+    so `<span title=">">` is one tag rather than two fragments with `"` left over as prose.
+    """
+    quote = ""
+    for i in range(start + 1, len(text)):
+        char = text[i]
+        if quote:
+            if char == quote:
+                quote = ""
+        elif char in ("'", '"'):
+            quote = char
+        elif char == ">":
+            return i
+    return -1
+
+
+def _visible(text: str) -> tuple[list[str], list[int], list[bool]]:
+    """The page's visible characters, each with its source line.
+
+    Tags and comments are skipped, so they contribute no text and no spacing — not even the
+    line breaks inside them, which only advance the line count. A `<` with no closing `>` is
+    prose rather than markup and is kept. The third list marks each character that starts a
+    fresh source line after a real line break, so joining can tell a wrap (a space, the way
+    the browser collapses it) from markup that rendered nothing (no space).
+    """
+    chars: list[str] = []
+    lines: list[int] = []
+    fresh: list[bool] = []
+    line = 1
+    at_break = True
+    i = 0
+    while i < len(text):
+        if text.startswith("<!--", i):
+            end = text.find("-->", i + 4)
+            skipped = text[i + 4 :] if end == -1 else text[i : end + 3]
+            line += skipped.count("\n")
+            i = len(text) if end == -1 else end + 3
+            continue
+        if text[i] == "<":
+            end = _tag_end(text, i)
+            if end == -1:
+                chars.append("<")
+                lines.append(line)
+                fresh.append(at_break)
+                at_break = False
+                i += 1
+                continue
+            tag = text[i : end + 1]
+            name = re.match(r"</?\s*([a-zA-Z][a-zA-Z0-9]*)", tag)
+            if name is not None and name.group(1).lower() in BLOCK_TAGS:
+                # A block boundary is a text boundary; the space keeps the two sides apart
+                # the way a line break in the source does.
+                chars.append(" ")
+                lines.append(line)
+                fresh.append(at_break)
+                at_break = False
+            line += tag.count("\n")
+            i = end + 1
+            continue
+        if text[i] in ("\r", "\n"):
+            if text[i] == "\r" and text.startswith("\r\n", i):
+                i += 1
+            line += 1
+            at_break = True
+            i += 1
+            continue
+        chars.append(text[i])
+        lines.append(line)
+        fresh.append(at_break)
+        at_break = False
+        i += 1
+    return chars, lines, fresh
 
 
 def normalise(text: str) -> tuple[str, list[int]]:
     """The page's visible text, with the source line of every character.
 
-    Comments and tags are not rendered, so they are not claims: both are blanked. Entities are
+    Comments and tags are not rendered, so they are not claims: both are removed. Entities are
     decoded after the tags are gone, so an escaped angle bracket in the prose is not mistaken for
     a tag. Dashes are flattened and whitespace collapsed, because a phrase split across the
     page's ~90-column wrapping is not absent — it is the same phrase with a line break in it.
+    A line break inside removed markup collapses differently: the markup rendered nothing, so
+    its sides join with no space.
     """
-    text = re.sub(r"<!--.*?-->", _strip_markup, text, flags=re.DOTALL)
-    text = re.sub(r"<[^>]*>", _strip_markup, text)
+    chars, lines, fresh = _visible(text)
     visible: list[str] = []
     line_of: list[int] = []
-    for number, line in enumerate(text.splitlines(), 1):
-        line = html.unescape(line)
-        line = DASHES.sub("-", line)
-        line = re.sub(r"\s+", " ", line).strip()
-        if not line:
+    word: list[str] = []
+    word_line: list[int] = []
+
+    def flush() -> None:
+        segment = html.unescape("".join(word))
+        segment = DASHES.sub("-", segment)
+        segment = re.sub(r"\s+", " ", segment).strip()
+        if segment:
+            if visible:
+                visible.append(" ")
+                line_of.append(word_line[0])
+            for char in segment:
+                visible.append(char)
+                line_of.append(word_line[0])
+        word.clear()
+        word_line.clear()
+
+    for char, number, starts in zip(chars, lines, fresh):
+        if char.isspace():
+            if word and not word[-1].isspace():
+                word.append(" ")
+                word_line.append(number)
             continue
-        for char in line:
-            visible.append(char)
-            line_of.append(number)
+        if starts and word:
+            flush()
+        word.append(char)
+        word_line.append(number)
+    flush()
+    if visible:
         visible.append(" ")
-        line_of.append(number)
+        line_of.append(line_of[-1])
     return "".join(visible), line_of
 
 
