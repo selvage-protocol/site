@@ -242,8 +242,9 @@ export default function Home() {
           be.
         </p>
         <p>
-          This page is static HTML, one stylesheet and a favicon. It loads no JavaScript, sets no
-          cookie and makes no third-party request; submitting the waitlist form is the only thing
+          This page prerenders to static HTML with one stylesheet and a favicon. The served
+          document includes the framework's runtime scripts; it sets no cookie and makes no
+          third-party request; submitting the waitlist form is the only thing
           it sends anywhere. The page is MIT OR Apache-2.0. Its framing follows the project's
           own design record, which is private and carries no licence; the workflow sentence is
           adapted from the Neovim client's README, which is MIT OR Apache-2.0.
