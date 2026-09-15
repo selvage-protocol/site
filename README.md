@@ -19,7 +19,7 @@ editor clients. This repository holds the page, the two checks that gate it, and
 | `style.css` | the one stylesheet: a system font stack, so no font is fetched from a third party |
 | `public/favicon.svg` | the favicon, and the whole of it: the letter `S` in a system monospace font. It is not a wordmark — this project has no logo, and the page does not pretend otherwise |
 | `package.json` / `package-lock.json` | the only dependencies: `next`, `react`, `react-dom`, `typescript` and `@types/*`. Nothing else without a written reason |
-| `.nvmrc` | the pinned Node version; `package.json` `engines` says the same |
+| `.nvmrc` | the pinned Node version for local work and CI (`nvm use` reads it); `package.json` `engines` carries the major (`24.x`), because Vercel only deploys major versions |
 | `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason |
 | `scripts/ci-local.sh` | the gate, running the same commands as the workflow |
 | `lychee.toml` | what the link check does not check, and why |
@@ -46,7 +46,9 @@ $ npm run build && npm start
 ```
 
 Node comes from `.nvmrc` (`nvm use`, or any manager that reads it); CI installs exactly that
-version. Telemetry is off in the gate (`NEXT_TELEMETRY_DISABLED=1`).
+version. `package.json` `engines` carries only the major (`24.x`): Vercel deploys major
+versions alone, and an exact pin fails the deployment before anything builds. Telemetry is off
+in the gate (`NEXT_TELEMETRY_DISABLED=1`).
 
 ## Deploying it
 
