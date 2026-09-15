@@ -120,10 +120,8 @@ all_served() {
 
 job_links() {
   say "links: lychee over the rendered page and the README"
-  # Serves the current build; run ./scripts/ci-local.sh build first after changing the page.
-  if [ ! -d "$repo_root/.next" ]; then
-    npm run build >/dev/null
-  fi
+  # Always rebuilt, so the check can never pass on a stale page.
+  npm run build >/dev/null
   with_server run_lychee --config lychee.toml --no-progress "$BASE/" README.md
 }
 
