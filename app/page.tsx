@@ -2,6 +2,7 @@ export default function Home() {
   return (
     <>
       <header className="page-header">
+        <img className="site-mark" src="/icon.svg" alt="" width={800} height={800} />
         <h1>Selvage Session Protocol</h1>
         <p className="lede">
           Selvage Session Protocol is a written, versioned specification for the session layer of
