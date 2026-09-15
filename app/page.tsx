@@ -15,7 +15,7 @@ export default function Home() {
         </p>
         <p>
           What that means in practice: the server is one you run, the invite is a link, and the
-          editor on the other end can be a different one. No account to make and no cloud to upload
+          editor on the other end can be a different window or machine. No account to make and no cloud to upload
           to &mdash; and joining takes the link, not an approval step.
         </p>
       </header>
@@ -26,8 +26,7 @@ export default function Home() {
           <p>
             Two developers pairing. One of you hosts a folder in VS Code; the other pastes an
             invite link and the folder&apos;s shape appears. Open the same file and both of you
-            type into the same text &mdash; across editors too, with VS Code on one end and Neovim
-            on the other.
+            type into the same text &mdash; built so either editor can join the same room.
           </p>
           <p>
             A team that wants its own server. Rooms live in one Rust binary you run yourself
