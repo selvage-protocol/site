@@ -20,6 +20,12 @@ editor clients. This repository holds the page, the two checks that gate it, and
 | `app/icon.svg` | the site mark in the header and the favicon: the owner's `svp` monogram (see "The site mark" below). It replaces the earlier text-only favicon |
 | `app/icon.png` / `app/apple-icon.png` | raster fallbacks (32 and 180 px) resized from the owner's own PNG export, for contexts without the font (see "The site mark") |
 | `package.json` / `package-lock.json` | the only dependencies: `next`, `react`, `react-dom`, `typescript` and `@types/*`. Nothing else without a written reason |
+| `.nvmrc` | the pinned Node version for local work and CI (`nvm use` reads it); `package.json` `engines` carries the major (`24.x`), because Vercel only deploys major versions |
+| `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason |
+| `scripts/ci-local.sh` | the gate, running the same commands as the workflow |
+| `lychee.toml` | what the link check does not check, and why |
+| `vercel.json` | platform configuration: the Next.js framework preset, and three response headers |
+| `.github/workflows/ci.yml` | the gate, on `push` to `main` and on `pull_request` |
 
 ## The site mark
 
@@ -41,16 +47,12 @@ vendored copy differs from it in three recorded ways:
 
 The PNGs are not rendered from the SVG here: they are the owner's own 800×800 export
 resized down with ImageMagick, so the fallback pixels are the owner's pixels.
-| `.nvmrc` | the pinned Node version for local work and CI (`nvm use` reads it); `package.json` `engines` carries the major (`24.x`), because Vercel only deploys major versions |
-| `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason |
-| `scripts/ci-local.sh` | the gate, running the same commands as the workflow |
-| `lychee.toml` | what the link check does not check, and why |
-| `vercel.json` | platform configuration: the Next.js framework preset, and three response headers |
-| `.github/workflows/ci.yml` | the gate, on `push` to `main` and on `pull_request` |
 
 This is a port, not a redesign: the prose in `app/page.tsx` is the static page's prose word for
 word — including the licence footer, the privacy notice with its two visible blanks, and the
-waitlist form. No new claims, no rewording, no new sections.
+waitlist form. One sentence differs on purpose: the static page's "loads no JavaScript" is
+false once Next.js serves the route, so the page says it prerenders to static HTML and names
+the framework runtime scripts instead. No other rewording, no new sections.
 
 ## Running it
 
