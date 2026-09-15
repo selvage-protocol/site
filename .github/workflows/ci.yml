@@ -33,6 +33,48 @@ jobs:
         with:
           persist-credentials: false
 
-      # DIAGNOSTIC (reverted before merge): checkout alone, to isolate the ~16 s failure.
-      - name: checkout probe
-        run: echo checkout-ok
+      - name: Set up Node
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .nvmrc
+          # No package-manager cache: a cold `npm ci` fits the timeout, and one less
+          # service in the gate is one less way for a green tree to go red.
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      # The runner has no nix, so the pinned releases are installed here and `scripts/ci-local.sh`
+      # takes lychee and actionlint from PATH. This is the runner's own temp directory, not this
+      # host's RAM-backed `/tmp`.
+      - name: Install lychee
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/lychee.tar.gz" \
+            "https://github.com/lycheeverse/lychee/releases/download/lychee-v${LYCHEE_VERSION}/lychee-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${LYCHEE_SHA256}  $RUNNER_TEMP/lychee.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/lychee.tar.gz" -C "$RUNNER_TEMP" lychee
+          sudo install -m 0755 "$RUNNER_TEMP/lychee" /usr/local/bin/lychee
+          lychee --version
+
+      - name: Install actionlint
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/actionlint.tar.gz" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  $RUNNER_TEMP/actionlint.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP" actionlint
+          sudo install -m 0755 "$RUNNER_TEMP/actionlint" /usr/local/bin/actionlint
+          actionlint --version
+
+      - name: typecheck (tsc --noEmit)
+        run: scripts/ci-local.sh typecheck
+
+      - name: build (next build)
+        run: scripts/ci-local.sh build
+
+      - name: claim filter over the rendered page (known wordings only, not a proof)
+        run: scripts/ci-local.sh claims
+
+      - name: links over the rendered page and the README
+        run: scripts/ci-local.sh links
+
+      - name: lint the workflow
+        run: scripts/ci-local.sh lint
