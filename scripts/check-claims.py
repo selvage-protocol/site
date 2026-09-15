@@ -14,7 +14,9 @@ keeps a pattern from quietly matching nothing — a check whose patterns are dea
 scans no file both report a clean page, which is the failure this file exists to catch.
 
 The scan normalises what it reads before it matches: inline markup (spans, links, comments)
-is removed without a trace, so a phrase split by a tag is still the same phrase; block markup
+is removed without a trace, so a phrase split by a tag is still the same phrase; `script` and
+`style` elements are skipped whole, so the rendered page's framework runtime never scans as
+prose; block markup
 leaves a single space, so a phrase ending one block and starting the next is two phrases, not
 one written across a boundary. Entities are decoded, unicode dashes become hyphens, and runs of whitespace (including the line breaks the
 page wraps at) collapse to a single space. A phrase that only looks absent because it happened to
@@ -256,11 +258,32 @@ def _tag_end(text: str, start: int) -> int:
     return -1
 
 
+def _element_end(text: str, tag_name: str, start: int) -> int:
+    """Index just past the closing tag of the element opened before `start`, or -1.
+
+    Only a real closer counts: the name must end at whitespace, `/` or `>`, so `</scripts>`
+    does not close a `script` element. A closer whose `>` is never found is skipped rather
+    than trusted.
+    """
+    pattern = re.compile(r"</\s*" + tag_name + r"(?=[\s>/])", re.IGNORECASE)
+    pos = start
+    while True:
+        found = pattern.search(text, pos)
+        if found is None:
+            return -1
+        end = _tag_end(text, found.start())
+        if end != -1:
+            return end + 1
+        pos = found.start() + 1
+
+
 def _visible(text: str) -> tuple[list[str], list[int], list[bool]]:
     """The page's visible characters, each with its source line.
 
     Tags and comments are skipped, so they contribute no text and no spacing — not even the
-    line breaks inside them, which only advance the line count. A `<` with no closing `>` is
+    line breaks inside them, which only advance the line count. A `script` or `style` element
+    is skipped whole, closer included: the rendered page carries its framework runtime in
+    `script` blocks, whose bytes would otherwise scan as prose. A `<` with no closing `>` is
     prose rather than markup and is kept. The third list marks each character that starts a
     fresh source line after a real line break, so joining can tell a wrap (a space, the way
     the browser collapses it) from markup that rendered nothing (no space).
@@ -289,7 +312,18 @@ def _visible(text: str) -> tuple[list[str], list[int], list[bool]]:
                 continue
             tag = text[i : end + 1]
             name = re.match(r"</?\s*([a-zA-Z][a-zA-Z0-9]*)", tag)
-            if name is not None and name.group(1).lower() in BLOCK_TAGS:
+            tag_name = name.group(1).lower() if name is not None else ""
+            if (
+                tag_name in ("script", "style")
+                and re.match(r"<\s*/", tag) is None
+                and re.search(r"/\s*>$", tag) is None
+            ):
+                close = _element_end(text, tag_name, end + 1)
+                if close != -1:
+                    line += text.count("\n", i, close)
+                    i = close
+                    continue
+            if tag_name in BLOCK_TAGS:
                 # A block boundary is a text boundary; the space keeps the two sides apart
                 # the way a line break in the source does.
                 chars.append(" ")
@@ -317,7 +351,10 @@ def _visible(text: str) -> tuple[list[str], list[int], list[bool]]:
 def normalise(text: str) -> tuple[str, list[int]]:
     """The page's visible text, with the source line of every character.
 
-    Comments and tags are not rendered, so they are not claims: both are removed. Entities are
+    Comments, tags, scripts and styles are not rendered, so they are not claims: tags and
+    comments are removed, and `script`/`style` elements are skipped whole — the rendered page
+    carries its framework runtime in `script` blocks, whose bytes would otherwise scan as
+    prose. Entities are
     decoded after the tags are gone, so an escaped angle bracket in the prose is not mistaken for
     a tag. Dashes are flattened and whitespace collapsed, because a phrase split across the
     page's ~90-column wrapping is not absent — it is the same phrase with a line break in it.
