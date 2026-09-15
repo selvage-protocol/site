@@ -1,0 +1,45 @@
+name: ci
+
+# The gate for a static page: the claim check and the link check. Nothing is built here, so the
+# runner needs nothing but bash, python3 (already on ubuntu-24.04) and lychee.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      # The release nixpkgs carries today, so a developer and the runner check with the same
+      # binary. The checksum is the one published beside the archive.
+      LYCHEE_VERSION: "0.24.2"
+      LYCHEE_SHA256: "1f4e0ef7f6554a6ed33dd7ac144fb2e1bbed98598e7af973042fc5cd43951c9a"
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      # The runner has no nix, so the pinned release is installed here and `scripts/ci-local.sh`
+      # takes lychee from PATH. This is the runner's own temp directory, not this host's
+      # RAM-backed `/tmp`.
+      - name: Install lychee
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/lychee.tar.gz" \
+            "https://github.com/lycheeverse/lychee/releases/download/lychee-v${LYCHEE_VERSION}/lychee-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${LYCHEE_SHA256}  $RUNNER_TEMP/lychee.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/lychee.tar.gz" -C "$RUNNER_TEMP" lychee
+          sudo install -m 0755 "$RUNNER_TEMP/lychee" /usr/local/bin/lychee
+          lychee --version
+
+      - run: scripts/ci-local.sh claims
+
+      - run: scripts/ci-local.sh links

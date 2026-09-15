@@ -1,0 +1,14 @@
+# What the link check does not check, and why.
+#
+# The waitlist form's endpoint is a reserved name (RFC 2606 `.invalid`) that cannot resolve by
+# construction: it is the one line the owner replaces with the service they sign up for, and
+# until then a submission has to fail loudly rather than quietly go somewhere. lychee skips
+# reserved example names on its own, so this entry changes nothing today — it is here so that
+# the one URL on the page which must not resolve carries its reason where the check reads it,
+# instead of depending on a default nobody wrote down.
+#
+# Nothing else is excluded. In particular `selvageprotocol.com` is not registered yet, so the
+# page carries no canonical link and no Open Graph URL pointing at it — there is nothing to
+# exclude because there is nothing there. When the domain exists, the metadata goes in and
+# nothing comes out of this file.
+exclude = ['https://waitlist\.example\.invalid/']
