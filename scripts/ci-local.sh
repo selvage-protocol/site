@@ -77,6 +77,13 @@ with_server() {
     tail -20 "$TMPDIR/next.log" >&2
     return 1
   fi
+  # A signal during the scan must not orphan the server either: without this trap a SIGTERM
+  # here leaves `next start` on PORT, and the next run fails at the occupied-port check above.
+  cleanup_server() {
+    kill "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+  }
+  trap cleanup_server EXIT
   # `"$@"` runs under `if`, so a red scan still reaches the cleanup below instead of
   # exiting the script with the server orphaned (`set -e` does not fire in a condition).
   local status=0
@@ -85,8 +92,8 @@ with_server() {
   else
     status=$?
   fi
-  kill "$pid" 2>/dev/null || true
-  wait "$pid" 2>/dev/null || true
+  cleanup_server
+  trap - EXIT
   return "$status"
 }
 
