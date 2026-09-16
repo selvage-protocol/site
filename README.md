@@ -57,7 +57,6 @@ minute-to-minute session section; every added sentence is traceable to the corpu
 claim table below (`specification`, the two client READMEs, the design record's goal, audience,
 visibility and business sections) or framed as direction (the hosted tier, planned and built
 last). The must-not-say table still binds every line.
->>>>>>> 11d8dfe (feat(site): rewrite landing copy around benefits without new claims)
 
 ## Running it
 
