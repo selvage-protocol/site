@@ -29,6 +29,7 @@ editor clients. This repository holds the page, the two checks that gate it, and
 | `package.json` / `package-lock.json` | the only dependencies: `next`, `react`, `react-dom`, `tailwindcss` (+ its PostCSS plugin), `clsx`, `tailwind-merge`, `class-variance-authority` and `lucide-react` for icons, `typescript` and `@types/*`. No Radix, no component library, nothing else without a written reason |
 | `.nvmrc` | the pinned Node version for local work and CI (`nvm use` reads it); `package.json` `engines` carries the major (`24.x`), because Vercel only deploys major versions |
 | `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason |
+| `scripts/check-button-props.tsx` | the button check: renders the button and anchor variants and asserts their props reach the DOM (run by `npm run check:button` inside the gate) |
 | `scripts/ci-local.sh` | the gate, running the same commands as the workflow |
 | `lychee.toml` | what the link check does not check, and why |
 | `vercel.json` | platform configuration: the Next.js framework preset, and three response headers |
@@ -229,9 +230,10 @@ Until then the page is reachable at its `*.vercel.app` URL, which is honest.
 ## The gate
 
 ```console
-$ scripts/ci-local.sh              # typecheck, build, claims, links, lint
+$ scripts/ci-local.sh              # typecheck, build, button, claims, links, lint
 $ scripts/ci-local.sh typecheck    # tsc --noEmit
 $ scripts/ci-local.sh build        # next build
+$ scripts/ci-local.sh button       # render the button/anchor variants and assert their props reach the DOM
 $ scripts/ci-local.sh claims       # rebuild, serve production, fetch / and scan the rendered HTML
 $ scripts/ci-local.sh links        # serve production, lychee over the rendered page and README.md
 $ scripts/ci-local.sh lint         # actionlint over the workflows (nix; the workflow pins a release)
@@ -243,8 +245,8 @@ than a pass, and every pattern must match its own sample before the scan, so a d
 the gate instead of passing everything.
 
 `.github/workflows/ci.yml` runs the same commands on `ubuntu-24.04` on every push to `main`
-and every pull request: Node from `.nvmrc`, `npm ci`, then `typecheck`, `build`, `claims`,
-`links` and `lint`. It installs lychee and actionlint from pinned releases — the runner has no
+and every pull request: Node from `.nvmrc`, `npm ci`, then `typecheck`, `build`, `button`,
+`claims`, `links` and `lint`. It installs lychee and actionlint from pinned releases — the runner has no
 nix, so `scripts/ci-local.sh` takes both from `PATH` when they are there and from nixpkgs
 otherwise, and all three places run the same checkers.
 
