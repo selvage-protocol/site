@@ -222,11 +222,13 @@ FORBIDDEN: list[Phrase] = [
          "no cloud &#105;n between"),
     ),
     Phrase(
-        r"proven in one room|across editors too|on one end and",
+        r"proven in one room|across editors too|(?:VS ?Code|Neovim|Vim|Emacs|editors?)\b[^.]{0,48}\bon one end and\b",
         "Proven in one room with VS Code on one end and Neovim on the other.",
         "the cross-editor pairing has never run: both existing proofs drive two instances of "
         "one editor. 'Built so either editor can join the same room' is the design goal, not "
         "a demonstrated pairing",
+        ("with VS Code on one end and Neovim on the other.",
+         "with VS Code on one\nend and Neovim on the other."),
     ),
     Phrase(
         r"\binstant\b|real[- ]time|lag[- ]free|lightning[- ]fast|snappy",
@@ -235,16 +237,20 @@ FORBIDDEN: list[Phrase] = [
         "adjective is backed",
     ),
     Phrase(
-        r"takes? seconds|in seconds|one[- ]click|just works",
+        r"takes? seconds|(?:up(?: and running)?|ready|deploys?|installs?|starts?|runs?|setup|self[- ]hosts?)\b[^.]{0,24}\bin seconds\b|one[- ]click|just works",
         "Self-hosting takes seconds on any machine you choose.",
         "no image, compose file or service unit exists in any repository; the documented path "
         "is `cargo run -p selvaged -- --listen ...`, and no ease claim is backed",
+        ("up and running in seconds.",
+         "up and running in\nseconds."),
     ),
     Phrase(
-        r"untouched by the network|only machine",
+        r"untouched by the network|\bonly machine\b[^.]{0,24}\b(?:your code|touches?)\b",
         "The machine you chose is the only machine your code touches.",
         "document payloads travel through the server to the peers that ask for them; the grant "
         "bounds which paths are listed and served, not which machines code touches",
+        ("the only machine your code touches.",
+         "the only machine your <em>code</em> touches."),
     ),
     Phrase(
         r"\bis live\b|\bnow live\b|\bnow available\b",

@@ -301,8 +301,9 @@ export default function Home() {
           <section id="privacy" className="scroll-mt-24">
             <h2>Privacy notice</h2>
             <p>
-              <strong>Who is responsible.</strong>{" "}
-              <a href="https://github.com/selvage-protocol">selvage-protocol</a>.
+              <strong>Controller.</strong> The{" "}
+              <a href="https://github.com/selvage-protocol">selvage-protocol</a> GitHub
+              organisation is the controller.
               This page collects no personal data: it sets no cookie, makes no
               third-party request, and sends nothing anywhere.
             </p>
