@@ -214,6 +214,10 @@ ul.repos li {
 /* The sticky bar slides away on scroll-down through a transform class; without
    motion it still hides and returns, just without the slide. */
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   .site-header {
     transition: none;
   }

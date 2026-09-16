@@ -65,6 +65,7 @@ function Button({
     <button
       className={classes}
       {...(rest as React.ButtonHTMLAttributes<HTMLButtonElement>)}
+      type={(rest as React.ButtonHTMLAttributes<HTMLButtonElement>).type ?? "button"}
     >
       {children}
     </button>

@@ -23,6 +23,18 @@ const buttonElement = (
 const buttonHtml = renderToStaticMarkup(buttonElement);
 check(buttonHtml.startsWith("<button"), "renders a button without href", buttonHtml);
 check(buttonHtml.includes('type="button"'), "type reaches the button", buttonHtml);
+const defaultTypeHtml = renderToStaticMarkup(<Button>Default type</Button>);
+check(
+  defaultTypeHtml.includes('type="button"'),
+  "button defaults to type button without a caller value",
+  defaultTypeHtml,
+);
+const submitHtml = renderToStaticMarkup(<Button type="submit">Submit</Button>);
+check(
+  submitHtml.includes('type="submit"'),
+  "an explicit button type is preserved",
+  submitHtml,
+);
 check(
   buttonHtml.includes("disabled"),
   "disabled reaches the button",
