@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
+  { href: "#who-its-for", label: "Who it's for" },
   { href: "#session", label: "Session" },
   { href: "#run-it", label: "Run it" },
-  { href: "#who-its-for", label: "Who it's for" },
   { href: "#not-yet", label: "Not yet" },
   { href: "#waitlist", label: "Waitlist" },
 ];
@@ -61,7 +61,7 @@ export function SiteHeader() {
             height={800}
           />
           <span className="text-[17px] font-semibold tracking-tight text-text">
-            svp
+            Selvage
           </span>
         </a>
         <div className="hidden items-center gap-6 md:flex">
