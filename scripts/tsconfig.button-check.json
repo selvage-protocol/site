@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "incremental": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "../.tmp/button-check",
+    "rootDir": ".."
+  },
+  "include": ["../components/ui/button.tsx", "../lib/utils.ts", "./check-button-props.tsx"]
+}

@@ -25,22 +25,50 @@ const buttonVariants = cva(
   },
 );
 
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
-  href?: string;
-}
+type ButtonStyleProps = VariantProps<typeof buttonVariants>;
 
-function Button({ className, variant, size, href, children }: ButtonProps) {
+export type ButtonAsButtonProps =
+  React.ButtonHTMLAttributes<HTMLButtonElement> &
+    ButtonStyleProps & {
+      href?: undefined;
+    };
+
+export type ButtonAsAnchorProps =
+  React.AnchorHTMLAttributes<HTMLAnchorElement> &
+    ButtonStyleProps & {
+      href: string;
+    };
+
+export type ButtonProps = ButtonAsButtonProps | ButtonAsAnchorProps;
+
+function Button({
+  className,
+  variant,
+  size,
+  href,
+  children,
+  ...rest
+}: ButtonProps) {
   const classes = cn(buttonVariants({ variant, size, className }));
   if (href !== undefined) {
     return (
-      <a href={href} className={classes}>
+      <a
+        href={href}
+        className={classes}
+        {...(rest as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
+      >
         {children}
       </a>
     );
   }
-  return <button className={classes}>{children}</button>;
+  return (
+    <button
+      className={classes}
+      {...(rest as React.ButtonHTMLAttributes<HTMLButtonElement>)}
+    >
+      {children}
+    </button>
+  );
 }
 
 export { Button, buttonVariants };

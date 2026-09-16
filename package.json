@@ -9,7 +9,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:button": "tsc -p scripts/tsconfig.button-check.json && mkdir -p .tmp/button-check/node_modules && ln -sfn .. .tmp/button-check/node_modules/@ && node .tmp/button-check/scripts/check-button-props.js"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.3",
