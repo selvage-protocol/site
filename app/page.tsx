@@ -35,9 +35,8 @@ export default function Home() {
               <p className="mt-6 max-w-xl text-lg leading-relaxed text-subtext">
                 Selvage Session Protocol is a written specification for the
                 session layer of collaborative editing &mdash; rooms,
-                participants, open documents and presence. You run the server,
-                you send the link, and there is no account and no cloud in
-                between.
+                participants, open documents, presence. You run the server,
+                you send the link &mdash; no account, no cloud in between.
               </p>
               <ul className="mt-8 space-y-3.5">
                 {checklist.map((item) => (
@@ -110,18 +109,18 @@ export default function Home() {
           <section id="who-its-for" className="scroll-mt-24">
             <h2>Who this is for</h2>
             <p>
-              Two developers pairing. One of you hosts a folder in VS Code; the other pastes an
+              <strong>Two developers pairing.</strong> One of you hosts a folder in VS Code; the other pastes an
               invite link and the folder&apos;s shape appears. Open the same file and both of you
               type into the same text &mdash; built so either editor can join the same room.
             </p>
             <p>
-              A team that wants its own server. Rooms live in one Rust binary you run yourself
+              <strong>A team that wants its own server.</strong> Rooms live in one Rust binary you run yourself
               &mdash; in memory only, nothing written to disk &mdash; so the machine the room passes
               through is one you chose. No account on either end, and no third party&apos;s cloud
               holding the room.
             </p>
             <p>
-              Tooling people who want the session layer written down. The specification is prose, a
+              <strong>Tooling people who want the session layer written down.</strong> The specification is prose, a
               canonical byte form, nine JSON Schema 2020-12 documents, 23 wire vectors, and a runner
               that replays them byte for byte against a real server &mdash; written to be implemented
               on its own, without reading the Rust.
@@ -141,32 +140,36 @@ export default function Home() {
 
           <section>
             <h2>How a session feels, minute to minute</h2>
-            <p>At the keyboard, a session goes like this:</p>
-            <p>
+            <ol>
+            <li>
               The host grants a folder. The client lists the paths inside it and puts the listing on
               the wire &mdash; paths, never content &mdash; and the guest mirrors that shape. A
               file&apos;s text arrives when someone opens it, and the host reads that one file from
               its own disk when a peer asks for it, inside the granted root.
-            </p>
-            <p>
+            </li>
+            <li>
               Everyone holding the invite edits the same document. The token is the permission: there
               is no account and no per-join approval, and anyone with the link is in the room, so
-              treat an invite as you would a password. The host&apos;s filesystem is the scoped part
+              treat an invite as you would a password.
+            </li>
+            <li>
+              The host&apos;s filesystem is the scoped part
               &mdash; no guest writes to the host&apos;s working copy &mdash; while the room&apos;s
               text belongs to everyone in it: every participant&apos;s edits land in the one CRDT,
               which is what &quot;come edit my code with me&quot; means. Other people&apos;s carets
               and selections travel as anchors in that same CRDT, so they stay where they were as the
               text around them moves.
-            </p>
-            <p>
+            </li>
+            <li>
               A file nobody has opened sends no text yet &mdash; only the listing did &mdash; so
               looking at one file never moves the whole project over the wire.
-            </p>
-            <p>
+            </li>
+            <li>
               The room ends when the host leaves. Rooms live in memory only, the server writes nothing
               to disk, and a room dies with its host after a short grace period, so a dropped
               connection does not end it.
-            </p>
+            </li>
+            </ol>
           </section>
 
           <section id="run-it" className="scroll-mt-24">
@@ -184,8 +187,8 @@ export default function Home() {
               holds the prose (<code>PROTOCOL.md</code>), the canonical byte form of a frame (
               <code>CANONICAL.md</code>), nine JSON Schema 2020-12 documents, 23 wire vectors, a
               language-neutral replay of those vectors in Python, and <code>NOTES.md</code>, which
-              says what the prose deliberately leaves open. It is written to be implemented on its
-              own: nothing in it requires reading the Rust.
+              says what the prose deliberately leaves open &mdash; written to be implemented on its
+              own, without reading the Rust.
             </p>
             <pre><code>{"git clone https://github.com/selvage-protocol/specification\ncd specification\npip install jsonschema referencing\npython3 schema/validate.py"}</code></pre>
             <p>
@@ -193,7 +196,7 @@ export default function Home() {
               canonical form, and pins the size of the corpus:{" "}
               <strong>23 vectors, 806 frame checks and 192 assertions</strong>. The numbers are
               constants in <code>schema/validate.py</code>, so deleting an assertion is a red run
-              rather than a smaller number in a line of output.
+              rather than smaller totals in a line of output.
             </p>
 
             <h3>Replay the vectors against a server</h3>
