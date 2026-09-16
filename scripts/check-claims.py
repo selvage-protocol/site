@@ -204,6 +204,50 @@ FORBIDDEN: list[Phrase] = [
         "the pinned number is 192 assertions (`specification/schema/validate.py`); a different "
         "number is a claim the corpus disproves",
     ),
+    Phrase(
+        r"third part[^.]{0,24}sees?\b|no third part[^.]{0,24}saw\b",
+        "No third party ever sees the room.",
+        "the relay is payload-opaque but plaintext with no transport security in this slice: "
+        "the server's operator and the network path can see the room's text. Only the page's "
+        "own weak reading ('no third party's cloud holding the room') is backed",
+    ),
+    Phrase(
+        r"proven in one room|across editors too|on one end and",
+        "Proven in one room with VS Code on one end and Neovim on the other.",
+        "the cross-editor pairing has never run: both existing proofs drive two instances of "
+        "one editor. 'Built so either editor can join the same room' is the design goal, not "
+        "a demonstrated pairing",
+    ),
+    Phrase(
+        r"\binstant\b|real[- ]time|lag[- ]free|lightning[- ]fast|snappy",
+        "Sessions feel instant, even on large projects.",
+        "no performance data exists anywhere in the corpus: no speed, latency or fluency "
+        "adjective is backed",
+    ),
+    Phrase(
+        r"takes? seconds|in seconds|one[- ]click|just works",
+        "Self-hosting takes seconds on any machine you choose.",
+        "no image, compose file or service unit exists in any repository; the documented path "
+        "is `cargo run -p selvaged -- --listen ...`, and no ease claim is backed",
+    ),
+    Phrase(
+        r"untouched by the network|only machine",
+        "The machine you chose is the only machine your code touches.",
+        "document payloads travel through the server to the peers that ask for them; the grant "
+        "bounds which paths are listed and served, not which machines code touches",
+    ),
+    Phrase(
+        r"\bis live\b|\bnow live\b|\bnow available\b",
+        "Selvage Session Protocol is now live.",
+        "nothing is released, hosted or published: no demo instance, no release, no package. "
+        "The honest status line is the wire version plus the specification draft",
+    ),
+    Phrase(
+        r"sign[ -]?in|sign[ -]?up|\bget started\b|\bdownload\b|\bpricing\b",
+        "Sign in to get started, then download the app.",
+        "no accounts exist, so nothing can be signed into; no package exists to download and "
+        "no price exists to show. The page offers the specification to read and a waitlist to join",
+    ),
 ]
 
 
