@@ -1,7 +1,23 @@
 /* Selvage Session Protocol — landing page.
    Dark-only Catppuccin Mocha, mauve accent; one stylesheet, no web font: the page
-   fetches nothing from a third party. The hexes are hardcoded from the palette —
-   a handful of codes needs no dependency. */
+   fetches nothing from a third party. The hexes live in the theme below and in
+   the variables beneath it — a handful of codes needs no dependency. */
+
+@import "tailwindcss";
+
+@theme {
+  --color-base: #1e1e2e;
+  --color-mantle: #181825;
+  --color-surface0: #313244;
+  --color-text: #cdd6f4;
+  --color-subtext: #a6adc8;
+  --color-mauve: #cba6f7;
+  --color-teal: #94e2d5;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+}
 
 :root {
   --bg: #1e1e2e;
@@ -12,88 +28,69 @@
   --link: #cba6f7;
   --link-visited: #6c7086;
   --measure: 42rem;
+  color-scheme: dark;
 }
 
 html {
   color-scheme: dark;
+  scroll-behavior: smooth;
 }
 
 body {
-  margin: 0 auto;
-  padding: 2.5rem 1.25rem 4rem;
-  max-width: var(--measure);
+  margin: 0;
   background: var(--bg);
   color: var(--fg);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
   font-size: 1.0625rem;
   line-height: 1.6;
   text-rendering: optimizeLegibility;
 }
 
-.page-header {
-  padding-bottom: 1.25rem;
-  border-bottom: 1px solid var(--rule);
-}
-
-.site-mark {
-  height: 3rem;
-  width: auto;
-  margin-bottom: 0.75rem;
-}
-
-h1 {
-  margin: 0 0 0.75rem;
-  font-size: 1.9rem;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-}
-
-h2 {
+.prose-body h2 {
   margin: 2.75rem 0 0.75rem;
   font-size: 1.25rem;
   line-height: 1.3;
+  letter-spacing: -0.01em;
 }
 
-h3 {
+.prose-body h3 {
   margin: 2rem 0 0.5rem;
   font-size: 1.0625rem;
   line-height: 1.3;
 }
 
-p {
+.prose-body p {
   margin: 0 0 1rem;
+  color: var(--fg);
 }
 
-.lede {
-  margin: 0;
-  font-size: 1.125rem;
-}
-
-ul {
+.prose-body ul {
   margin: 0 0 1rem;
   padding-left: 1.25rem;
 }
 
-li {
+.prose-body li {
   margin-bottom: 0.6rem;
 }
 
-a {
+.prose-body a {
   color: var(--link);
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
 }
 
-a:visited {
+.prose-body a:visited {
   color: var(--link-visited);
 }
 
-code {
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+.prose-body code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
   font-size: 0.9em;
 }
 
-pre {
+.prose-body pre {
   margin: 0 0 1rem;
   padding: 0.85rem 1rem;
   overflow-x: auto;
@@ -102,7 +99,7 @@ pre {
   border-radius: 4px;
 }
 
-pre code {
+.prose-body pre code {
   font-size: 0.85rem;
   line-height: 1.5;
 }
@@ -161,19 +158,6 @@ button:focus-visible {
   font-style: italic;
 }
 
-footer {
-  margin-top: 3rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--rule);
-  color: var(--muted);
-  font-size: 0.9375rem;
-}
-
-footer h2 {
-  margin-top: 0;
-  color: var(--fg);
-}
-
 ul.repos {
   padding-left: 0;
   list-style: none;
@@ -181,4 +165,35 @@ ul.repos {
 
 ul.repos li {
   margin-bottom: 0.35rem;
+}
+
+/* Hero visual: an abstract mauve glow field. Deliberately not a capture,
+   a console log, or a product mock — a gradient, the site mark, and one card
+   carrying the project's own sentences. */
+.hero-visual {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: 1rem;
+  background:
+    radial-gradient(120% 90% at 80% 10%, #cba6f7 0%, transparent 55%),
+    radial-gradient(100% 100% at 15% 90%, #585b70 0%, transparent 60%),
+    radial-gradient(80% 70% at 50% 50%, #45475a 0%, transparent 65%),
+    linear-gradient(160deg, #e6e2f5 0%, #c3b8ee 45%, #7b7396 100%);
+}
+
+.hero-visual-grain {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    60% 45% at 30% 70%,
+    rgba(30, 30, 46, 0.35) 0%,
+    transparent 70%
+  );
+}
+
+.hero-glass {
+  background: rgba(24, 24, 37, 0.82);
+  border: 1px solid rgba(203, 166, 247, 0.35);
+  backdrop-filter: blur(6px);
 }
