@@ -197,3 +197,11 @@ ul.repos li {
   border: 1px solid rgba(203, 166, 247, 0.35);
   backdrop-filter: blur(6px);
 }
+
+/* The sticky bar slides away on scroll-down through a transform class; without
+   motion it still hides and returns, just without the slide. */
+@media (prefers-reduced-motion: reduce) {
+  .site-header {
+    transition: none;
+  }
+}

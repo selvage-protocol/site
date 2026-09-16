@@ -2,14 +2,7 @@ import { ArrowUpRight, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-
-const navLinks = [
-  { href: "#session", label: "Session" },
-  { href: "#run-it", label: "Run it" },
-  { href: "#who-its-for", label: "Who it's for" },
-  { href: "#not-yet", label: "Not yet" },
-  { href: "#waitlist", label: "Waitlist" },
-];
+import { SiteHeader } from "@/components/site-header";
 
 const checklist = [
   "One Rust binary holds the room \u2014 in memory only, nothing on disk.",
@@ -20,48 +13,7 @@ const checklist = [
 export default function Home() {
   return (
     <div className="min-h-screen bg-base font-sans text-text antialiased">
-      <header className="sticky top-0 z-10 border-b border-surface0/70 bg-base/85 backdrop-blur">
-        <nav
-          aria-label="Page"
-          className="mx-auto flex h-16 w-full max-w-6xl items-center gap-6 px-5"
-        >
-          <a href="#top" className="flex items-center gap-2.5">
-            <img
-              className="h-8 w-auto"
-              src="/mark-transparent.png"
-              alt=""
-              width={800}
-              height={800}
-            />
-            <span className="text-[17px] font-semibold tracking-tight text-text">
-              svp
-            </span>
-          </a>
-          <div className="hidden items-center gap-6 md:flex">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="text-sm text-subtext transition-colors hover:text-text"
-              >
-                {link.label}
-              </a>
-            ))}
-          </div>
-          <div className="ml-auto flex items-center gap-2.5">
-            <a
-              href="https://github.com/selvage-protocol"
-              className="hidden items-center gap-1 text-sm text-subtext transition-colors hover:text-text sm:inline-flex"
-            >
-              GitHub
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </a>
-            <Button href="#waitlist" size="sm">
-              Join the waitlist
-            </Button>
-          </div>
-        </nav>
-      </header>
+      <SiteHeader />
 
       <main id="top">
         <section className="mx-auto w-full max-w-6xl px-5 pb-16 pt-14 md:pb-24 md:pt-20">
