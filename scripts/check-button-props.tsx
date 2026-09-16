@@ -17,7 +17,7 @@ function check(condition: boolean, label: string, detail?: string): void {
 const onClick = (): void => {};
 const buttonElement = (
   <Button type="button" disabled onClick={onClick} aria-label="Join" id="join">
-    Join the waitlist
+    Join the session
   </Button>
 );
 const buttonHtml = renderToStaticMarkup(buttonElement);
@@ -45,7 +45,7 @@ check(
   "aria-label reaches the button",
   buttonHtml,
 );
-check(buttonHtml.includes("Join the waitlist"), "children reach the button", buttonHtml);
+check(buttonHtml.includes("Join the session"), "children reach the button", buttonHtml);
 check(
   (Button({ type: "button", onClick, children: "x" } as ButtonProps) as React.JSX.Element)
     .props.onClick === onClick,

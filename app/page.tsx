@@ -61,8 +61,8 @@ export default function Home() {
                   Read the spec
                   <ArrowUpRight />
                 </Button>
-                <Button href="#waitlist" variant="secondary" size="lg">
-                  Join the waitlist
+                <Button href="#run-it" variant="secondary" size="lg">
+                  Run it today
                 </Button>
               </div>
             </div>
@@ -298,54 +298,13 @@ export default function Home() {
             </ul>
           </section>
 
-          <section id="waitlist" className="scroll-mt-24">
-            <h2>A hosted tier, later</h2>
-            <p>
-              A hosted Selvage is planned and built last. Nothing is for sale and there is no price.
-              Leave an address if you want one message telling you when the hosted tier opens; it will
-              be used for that and nothing else.
-            </p>
-            {/* No honeypot: a hidden field is discarded by whichever service receives the submission, and
-                naming one provider's convention here would bake that provider in before the owner has
-                chosen. Spam filtering belongs to the service, and is set there. */}
-            <form
-              className="waitlist"
-              method="post"
-              action="https://waitlist.example.invalid/subscribe"
-            >
-              <label htmlFor="waitlist-email">Email address</label>
-              <input
-                id="waitlist-email"
-                name="email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="you@example.org"
-              />
-              <button type="submit">Tell me when it opens</button>
-            </form>
-            <h3>Privacy notice</h3>
+          <section id="privacy" className="scroll-mt-24">
+            <h2>Privacy notice</h2>
             <p>
               <strong>Who is responsible.</strong>{" "}
-              <span className="owner-blank">
-                [owner to complete: the name and contact of the controller &mdash; the person or
-                organisation responsible for the address]
-              </span>
-              . <strong>Processor.</strong>{" "}
-              <span className="owner-blank">
-                [owner to complete: the mailing service that will send the message, once chosen]
-              </span>
-              . This notice is not complete until both are filled in, and the page must not be
-              published before then.
-            </p>
-            <p>
-              <strong>What is collected and why.</strong> If you submit the form, the address you type
-              is the only personal data collected. It is used to send you the one message above, and
-              for nothing else. The lawful basis is your consent, given by submitting the form. It is
-              passed only to the processor named above, and kept only until that message is sent. You
-              can withdraw consent, ask for a copy, or ask for the address to be erased, using the
-              controller&apos;s contact above; you can also complain to your data protection
-              authority.
+              <a href="https://github.com/selvage-protocol">selvage-protocol</a>.
+              This page collects no personal data: it sets no cookie, makes no
+              third-party request, and sends nothing anywhere.
             </p>
           </section>
         </div>
@@ -365,9 +324,8 @@ export default function Home() {
           </p>
           <p>
             This page prerenders to static HTML with one stylesheet and a favicon. The served
-            document includes the framework&apos;s runtime scripts; it sets no cookie and makes no
-            third-party request; submitting the waitlist form is the only thing
-            it sends anywhere. The page is MIT OR Apache-2.0. Its framing follows the project&apos;s
+            document includes the framework&apos;s runtime scripts; it sets no cookie, makes no
+            third-party request, and sends nothing anywhere. The page is MIT OR Apache-2.0. Its framing follows the project&apos;s
             own design record, which is private and carries no licence; the workflow sentence is
             adapted from the Neovim client&apos;s README, which is MIT OR Apache-2.0.
           </p>

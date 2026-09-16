@@ -10,7 +10,6 @@ const navLinks = [
   { href: "#session", label: "Session" },
   { href: "#run-it", label: "Run it" },
   { href: "#not-yet", label: "Not yet" },
-  { href: "#waitlist", label: "Waitlist" },
 ];
 
 export function SiteHeader() {
@@ -69,7 +68,7 @@ export function SiteHeader() {
             <a
               key={link.href}
               href={link.href}
-              className="text-sm text-subtext transition-colors hover:text-text"
+              className="text-sm text-subtext transition-colors hover:text-text py-1"
             >
               {link.label}
             </a>
@@ -78,13 +77,16 @@ export function SiteHeader() {
         <div className="ml-auto flex items-center gap-2.5">
           <a
             href="https://github.com/selvage-protocol"
-            className="hidden items-center gap-1 text-sm text-subtext transition-colors hover:text-text sm:inline-flex"
+            className="hidden items-center gap-1 text-sm text-subtext transition-colors hover:text-text sm:inline-flex py-1"
           >
             GitHub
             <ArrowUpRight className="h-3.5 w-3.5" />
           </a>
-          <Button href="#waitlist" size="sm">
-            Join the waitlist
+          <Button
+            href="https://github.com/selvage-protocol/specification"
+            size="sm"
+          >
+            Read the spec
           </Button>
         </div>
       </nav>

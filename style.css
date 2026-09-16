@@ -109,65 +109,11 @@ body {
   line-height: 1.5;
 }
 
-form.waitlist {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  align-items: center;
-  margin: 1.25rem 0 0.75rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--rule);
-}
-
-form.waitlist label {
-  flex: 0 0 100%;
-  font-weight: 600;
-}
-
-form.waitlist input[type="email"] {
-  flex: 1 1 16rem;
-  min-width: 0;
-  padding: 0.5rem 0.6rem;
-  border: 1px solid var(--rule);
-  border-radius: 4px;
-  background: var(--bg);
-  color: inherit;
-  font: inherit;
-}
-
-/* The placeholder is text on --bg, so it takes the muted tone at full
-   opacity rather than the browser's dimmed default. */
-form.waitlist input::placeholder {
-  color: var(--muted);
-  opacity: 1;
-}
-
-form.waitlist button {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--link);
-  border-radius: 4px;
-  background: var(--link);
-  color: var(--bg);
-  font: inherit;
-  cursor: pointer;
-}
-
-form.waitlist button:hover {
-  background: var(--rule);
-  color: var(--link);
-}
-
 a:focus-visible,
 input:focus-visible,
 button:focus-visible {
   outline: 2px solid var(--link);
   outline-offset: 2px;
-}
-
-.owner-blank {
-  padding: 0 0.2em;
-  background: var(--rule);
-  font-style: italic;
 }
 
 ul.repos {
