@@ -16,10 +16,15 @@ editor clients. This repository holds the page, the two checks that gate it, and
 |---|---|
 | `app/page.tsx` | the page: the prose |
 | `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, favicon, global stylesheet |
-| `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent (hardcoded hexes, named in a comment up top): a system font stack, so no font is fetched from a third party |
+| `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, and a system font stack, so no font is fetched from a third party |
 | `app/icon.svg` | the site mark in the header and the favicon: the owner's `svp` monogram (see "The site mark" below). It replaces the earlier text-only favicon |
 | `app/icon.png` / `app/apple-icon.png` | raster fallbacks (32 and 180 px) resized from the owner's own PNG export, for contexts without the font (see "The site mark") |
-| `package.json` / `package-lock.json` | the only dependencies: `next`, `react`, `react-dom`, `typescript` and `@types/*`. Nothing else without a written reason |
+| `postcss.config.mjs` | the one PostCSS plugin (`@tailwindcss/postcss`), so `style.css` compiles on build |
+| `components/ui/button.tsx` | the button primitive (shadcn-style `cva` variants: filled default, tinted secondary, ghost; renders an anchor when given `href`): the nav CTA and the two hero CTAs, nothing else |
+| `components/ui/badge.tsx` | the pill primitive: the hero status line |
+| `components/ui/card.tsx` | the card primitive: the abstract panel's glass card |
+| `lib/utils.ts` | the one shared helper (`cn`: `clsx` + `tailwind-merge`) |
+| `package.json` / `package-lock.json` | the only dependencies: `next`, `react`, `react-dom`, `tailwindcss` (+ its PostCSS plugin), `clsx`, `tailwind-merge`, `class-variance-authority` and `lucide-react` for icons, `typescript` and `@types/*`. No Radix, no component library, nothing else without a written reason |
 | `.nvmrc` | the pinned Node version for local work and CI (`nvm use` reads it); `package.json` `engines` carries the major (`24.x`), because Vercel only deploys major versions |
 | `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason |
 | `scripts/ci-local.sh` | the gate, running the same commands as the workflow |
@@ -52,11 +57,15 @@ The prose in `app/page.tsx` descends from the static page's prose: the commands,
 the licence footer, the privacy notice with its two visible blanks, and the waitlist form are
 unchanged. One sentence differs on purpose: the static page's "loads no JavaScript" is
 false once Next.js serves the route, so the page says it prerenders to static HTML and names
-the framework runtime scripts instead. The rewrite adds a benefit-first header, a who-it-is-for section and a
-minute-to-minute session section; every added sentence is traceable to the corpus named in the
-claim table below (`specification`, the two client READMEs, the design record's goal, audience,
-visibility and business sections) or framed as direction (the hosted tier, planned and built
-last). The must-not-say table still binds every line.
+the framework runtime scripts instead. Above the carried-over sections sits a benefit-first
+hero in a dark-SaaS layout (nav, pill badge, two-line headline, checkmark list, two CTAs,
+abstract mauve panel): every added sentence is a paraphrase of an already-audited true sentence
+— the hook and workflow sentence from the design record, the memory-only server, the invite
+as the whole permission, the spec corpus in its pinned numbers — or framed as direction (the
+hosted tier, planned and built last). The must-not-say table still binds every line, and the
+checker grew seven patterns for the traps the new vocabulary invites (a "live" status, a
+proven-pairing claim, a speed adjective, an ease claim, an only-machine claim, a
+third-party-sees claim, and SaaS-creep words like sign-in, download or pricing).
 
 ## Running it
 
@@ -176,6 +185,13 @@ summarised here so that the constraint survives without the file that produced i
 | invented proof: screenshots, testimonials, user counts, a production deployment, a demo link | None of them exist. There is no recording, no user count and no production deployment in this project, and the only server that has ever run was a local debug build. The one image the page carries is the project's own site mark (see above), not proof of anything |
 | a claim of priority ("the first protocol to specify …") | The design record surveys prior art — Eclipse Open Collaboration Tools and others. The project's claim is that the session layer is unspecified, not that this is first |
 | a corpus number other than the pinned one | The counts (23 vectors, 806 frame checks, 192 assertions) are constants in `specification/schema/validate.py`; any other number is a claim the corpus disproves |
+| a third party seeing the room | The relay is payload-opaque but plaintext with no transport security in this slice, so the operator and the network path can see the room's text. Only the page's own weak reading (no third party's cloud holding the room) is backed |
+| a proven cross-editor pairing | Both existing proofs drive two instances of one editor; the cross-editor session has never run. "Built so either editor can join the same room" states the design goal, not a demonstrated pairing |
+| a speed adjective (instant, real-time, lag-free) | No performance data exists anywhere in the corpus |
+| an ease claim (takes seconds, one-click, just works) | No image, compose file or service unit exists; the documented path is `cargo run`, and no ease claim is backed |
+| an only-machine claim (untouched by the network) | Document payloads travel through the server to the peers that ask for them; the grant bounds which paths are served, not which machines code touches |
+| a "live" / "now available" status | Nothing is released, hosted or published. The honest status line is the wire version plus the specification draft |
+| SaaS-creep words (sign in/up, get started, download, pricing) | No accounts exist, so nothing can be signed into; no package exists to download and no price exists to show. The page offers the specification to read and a waitlist to join |
 
 Three things the check cannot make mechanical, and which a reader of a change has to hold:
 
