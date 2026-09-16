@@ -251,6 +251,7 @@ regression fails the build instead of waiting for a look. Measured today:
 | button label on its mauve fill | 8.07:1 | 4.5:1 |
 | code text on code background | 12.14:1 | 4.5:1 |
 | badge and secondary-button text on their fills | 6.63:1 / 5.98:1 | 4.5:1 |
+| secondary button boundary (`border-mauve/60`, parsed from the component) | 3.82:1 | 3.0:1 |
 | focus outline against the page | 8.07:1 | 3.0:1 |
 | glass-card text, worst gradient stop | 7.47:1 (muted 4.85:1) | 4.5:1 |
 

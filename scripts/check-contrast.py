@@ -6,8 +6,10 @@ actually renders: body and muted prose, links (visited included), the button
 label on its mauve fill, code blocks, the tinted badge and secondary button
 (computed as alpha composites over the page background, the way the browser
 composes them), and the worst case of the translucent glass card over every
-stop of the hero gradient. Thresholds are WCAG 2.2 AA: 4.5:1 for normal text,
-3.0:1 for the focus outline (non-text UI).
+stop of the hero gradient. The secondary button's boundary is parsed out of
+`components/ui/button.tsx` (`border-mauve/*`) and asserted at the non-text
+3.0:1 floor too, so weakening the class fails the build. Thresholds are WCAG
+2.2 AA: 4.5:1 for normal text, 3.0:1 for non-text UI.
 
 This is a floor, not an audit. It cannot see layout: touch-target sizes,
 keyboard reachability, focus visibility and reduced-motion handling are read
@@ -18,9 +20,9 @@ Exit 0 lists every asserted pair with its measured ratio. Exit 1 names the
 pairs below threshold. Exit 2 means the check itself cannot run (a token it
 needs is missing or unparsable): that is a failure, not a pass.
 
-`STYLE_CSS` overrides the stylesheet under test, so a probe can run the check
-against a deliberately broken copy: a gate that only ever sees passing tokens
-proves nothing.
+`STYLE_CSS` overrides the stylesheet under test, and `BUTTON_TSX` overrides the
+button component under test, so a probe can run the check against deliberately
+broken copies: a gate that only ever sees passing tokens proves nothing.
 """
 
 from __future__ import annotations
@@ -71,6 +73,16 @@ def hero_stops(css: str) -> list[str]:
     if block is None:
         return []
     return [h.lower() for h in re.findall(r"#[0-9a-fA-F]{6}", block.group(1))]
+
+
+def boundary_alphas(tsx: str) -> list[int]:
+    """Every `border-mauve/*` alpha in the button component, as percentages.
+
+    The weakest boundary is the one that has to clear the non-text floor, so
+    the check asserts the minimum: any weakened `border-mauve` class anywhere
+    in the component fails the build.
+    """
+    return [int(a) for a in re.findall(r"border-mauve/(\d+)", tsx)]
 
 
 def main() -> int:
@@ -133,6 +145,31 @@ def main() -> int:
         ),
         ("focus outline against the page", link, bg, NON_TEXT_MIN),
     ]
+    tsx_path = os.environ.get(
+        "BUTTON_TSX", os.path.join(here, "..", "components", "ui", "button.tsx")
+    )
+    try:
+        with open(tsx_path, encoding="utf-8") as handle:
+            alphas = boundary_alphas(handle.read())
+    except OSError as exc:
+        print(f"check-contrast: cannot read {tsx_path}: {exc}", file=sys.stderr)
+        return 2
+    if not alphas:
+        print(
+            f"check-contrast: no border-mauve/* class in {tsx_path}; "
+            "a boundary check that cannot find its boundary passes everything",
+            file=sys.stderr,
+        )
+        return 2
+    weakest = min(alphas)
+    checks.append(
+        (
+            f"secondary button boundary (border-mauve/{weakest})",
+            composite(link, bg, weakest / 100),
+            bg,
+            NON_TEXT_MIN,
+        )
+    )
     stops = hero_stops(css)
     if not stops:
         print(
