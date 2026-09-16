@@ -253,7 +253,7 @@ FORBIDDEN: list[Phrase] = [
         "The honest status line is the wire version plus the specification draft",
     ),
     Phrase(
-        r"sign[ -]?in|sign[ -]?up|\bget started\b|\bdownload\b|\bpricing\b",
+        r"\bsign[ -]?in\b|\bsign[ -]?up\b|\bget started\b|\bdownload\b|\bpricing\b",
         "Sign in to get started, then download the app.",
         "no accounts exist, so nothing can be signed into; no package exists to download and "
         "no price exists to show. The page offers the specification to read and a server to run",
