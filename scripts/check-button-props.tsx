@@ -36,8 +36,8 @@ check(
   submitHtml,
 );
 check(
-  buttonHtml.includes("disabled"),
-  "disabled reaches the button",
+  buttonHtml.includes('disabled=""'),
+  "disabled reaches the button as an attribute, not a class substring",
   buttonHtml,
 );
 check(
