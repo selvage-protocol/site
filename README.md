@@ -67,9 +67,9 @@ abstract mauve panel): every added sentence is a paraphrase of an already-audite
 — the hook and workflow sentence from the design record, the memory-only server, the invite
 as the whole permission, the spec corpus in its pinned numbers — or framed as direction (the
 hosted tier, planned and built last). The must-not-say table still binds every line, and the
-checker grew seven patterns for the traps the new vocabulary invites (a "live" status, a
+checker grew eight patterns for the traps the new vocabulary invites (a "live" status, a
 proven-pairing claim, a speed adjective, an ease claim, an only-machine claim, a
-third-party-sees claim, and SaaS-creep words like sign-in, download or pricing).
+third-party-sees claim, a no-cloud-between absolute, and SaaS-creep words like sign-in, download or pricing).
 
 ## Running it
 
@@ -190,6 +190,7 @@ summarised here so that the constraint survives without the file that produced i
 | a claim of priority ("the first protocol to specify …") | The design record surveys prior art — Eclipse Open Collaboration Tools and others. The project's claim is that the session layer is unspecified, not that this is first |
 | a corpus number other than the pinned one | The counts (23 vectors, 806 frame checks, 192 assertions) are constants in `specification/schema/validate.py`; any other number is a claim the corpus disproves |
 | a third party seeing the room | The relay is payload-opaque but plaintext with no transport security in this slice, so the operator and the network path can see the room's text. Only the page's own weak reading (no third party's cloud holding the room) is backed |
+| "no cloud in between" without qualification | The same plaintext relay: the room passes through a server and a network path that can see its text. Only the weak reading is backed — no third party's cloud holding the room, never an absence of anything in between |
 | a proven cross-editor pairing | Both existing proofs drive two instances of one editor; the cross-editor session has never run. "Built so either editor can join the same room" states the design goal, not a demonstrated pairing |
 | a speed adjective (instant, real-time, lag-free) | No performance data exists anywhere in the corpus |
 | an ease claim (takes seconds, one-click, just works) | No image, compose file or service unit exists; the documented path is `cargo run`, and no ease claim is backed |

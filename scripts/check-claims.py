@@ -212,6 +212,15 @@ FORBIDDEN: list[Phrase] = [
         "own weak reading ('no third party's cloud holding the room') is backed",
     ),
     Phrase(
+        r"no cloud[^.]{0,24}between",
+        "no cloud in between",
+        "the relay is payload-opaque but plaintext with no transport security in this slice: "
+        "the server's operator and the network path can see the room's text. Only the page's "
+        "own weak reading ('no third party's cloud holding the room') is backed",
+        ("no clo<!-- -->ud in between", "no cloud <em>in</em> between",
+         "no cloud &#105;n between"),
+    ),
+    Phrase(
         r"proven in one room|across editors too|on one end and",
         "Proven in one room with VS Code on one end and Neovim on the other.",
         "the cross-editor pairing has never run: both existing proofs drive two instances of "
