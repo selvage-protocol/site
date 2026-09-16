@@ -1,31 +1,21 @@
 /* Selvage Session Protocol — landing page.
-   One stylesheet, no framework, no web font: the page fetches nothing from a third party. */
+   Dark-only Catppuccin Mocha, mauve accent; one stylesheet, no web font: the page
+   fetches nothing from a third party. The hexes are hardcoded from the palette —
+   a handful of codes needs no dependency. */
 
 :root {
-  --bg: #fdfcf9;
-  --fg: #1c1b18;
-  --muted: #57534b;
-  --rule: #ded8cc;
-  --code-bg: #f2efe7;
-  --link: #0b5f9e;
-  --link-visited: #6b4a8f;
+  --bg: #1e1e2e;
+  --fg: #cdd6f4;
+  --muted: #a6adc8;
+  --rule: #313244;
+  --code-bg: #181825;
+  --link: #cba6f7;
+  --link-visited: #6c7086;
   --measure: 42rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #14140f;
-    --fg: #e8e4da;
-    --muted: #a8a294;
-    --rule: #35322a;
-    --code-bg: #1e1d17;
-    --link: #86bdf0;
-    --link-visited: #c0a6e6;
-  }
-}
-
 html {
-  color-scheme: light dark;
+  color-scheme: dark;
 }
 
 body {
@@ -43,6 +33,12 @@ body {
 .page-header {
   padding-bottom: 1.25rem;
   border-bottom: 1px solid var(--rule);
+}
+
+.site-mark {
+  height: 3rem;
+  width: auto;
+  margin-bottom: 0.75rem;
 }
 
 h1 {
@@ -145,6 +141,11 @@ form.waitlist button {
   color: var(--bg);
   font: inherit;
   cursor: pointer;
+}
+
+form.waitlist button:hover {
+  background: var(--rule);
+  color: var(--link);
 }
 
 a:focus-visible,

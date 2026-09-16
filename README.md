@@ -1,8 +1,9 @@
 # selvageprotocol.com — the public landing page
 
 The landing page for **Selvage** (the project) and the **Selvage Session Protocol** (the protocol
-it publishes). Static HTML and one stylesheet, served as they are: no build step, no Node, no
-framework, no lockfile, no generator.
+it publishes). A Next.js App Router project with one route (`/`): the page component carries the
+prose, the global stylesheet carries the styling, and nothing else ships to the browser beyond
+the framework's own runtime.
 
 The canonical material lives in the other repositories —
 [`selvage-protocol/specification`](https://github.com/selvage-protocol/specification) for the
@@ -13,35 +14,71 @@ editor clients. This repository holds the page, the two checks that gate it, and
 
 | Path | What it is |
 |---|---|
-| `index.html` | the page |
-| `style.css` | the one stylesheet: a system font stack, so no font is fetched from a third party |
-| `favicon.svg` | the favicon, and the whole of it: the letter `S` in a system monospace font. It is not a wordmark — this project has no logo, and the page does not pretend otherwise |
+| `app/page.tsx` | the page: the prose, carried over verbatim |
+| `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, favicon, global stylesheet |
+| `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent (hardcoded hexes, named in a comment up top): a system font stack, so no font is fetched from a third party |
+| `app/icon.svg` | the site mark in the header and the favicon: the owner's `svp` monogram (see "The site mark" below). It replaces the earlier text-only favicon |
+| `app/icon.png` / `app/apple-icon.png` | raster fallbacks (32 and 180 px) resized from the owner's own PNG export, for contexts without the font (see "The site mark") |
+| `package.json` / `package-lock.json` | the only dependencies: `next`, `react`, `react-dom`, `typescript` and `@types/*`. Nothing else without a written reason |
+| `.nvmrc` | the pinned Node version for local work and CI (`nvm use` reads it); `package.json` `engines` carries the major (`24.x`), because Vercel only deploys major versions |
 | `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason |
 | `scripts/ci-local.sh` | the gate, running the same commands as the workflow |
 | `lychee.toml` | what the link check does not check, and why |
-| `vercel.json` | platform configuration only: the build step skipped, and three response headers |
+| `vercel.json` | platform configuration: the Next.js framework preset, and three response headers |
 | `.github/workflows/ci.yml` | the gate, on `push` to `main` and on `pull_request` |
 
-## Previewing it
+## The site mark
 
-Any static file server will do; there is nothing to build first.
+The header carries the owner's `svp` monogram, and it doubles as the favicon
+(`app/icon.svg`, with 32 px and 180 px PNG fallbacks beside it). The source is the
+owner's Inkscape file `/home/user/pictures/profile_pictures/profile_picture_svp.svg`
+— a Comfortaa Bold monogram in Catppuccin mauve/teal/red on a Mocha base — and the
+vendored copy differs from it in three recorded ways:
+
+- the Inkscape/sodipodi editor metadata (named view, grid, unused filters) is stripped;
+- the Mocha base (`#1e1e2e`, transparent in the source) is baked in, matching the
+  owner's PNG export;
+- the live Comfortaa `<text>` is converted to paths, because no visitor has the font
+  installed and anything rendered without it (favicons, fallbacks) would show fallback
+  glyphs instead of the mark. The conversion replays the source's own numbers
+  (79.375 px Comfortaa Bold at the same origin, advances only — the font kerns none of
+  these pairs) with throwaway tooling (fontTools from its wheel, the system Comfortaa),
+  so the repository itself gains no dependency and no font file.
+
+The PNGs are not rendered from the SVG here: they are the owner's own 800×800 export
+resized down with ImageMagick, so the fallback pixels are the owner's pixels.
+
+This is a port, not a redesign: the prose in `app/page.tsx` is the static page's prose word for
+word — including the licence footer, the privacy notice with its two visible blanks, and the
+waitlist form. One sentence differs on purpose: the static page's "loads no JavaScript" is
+false once Next.js serves the route, so the page says it prerenders to static HTML and names
+the framework runtime scripts instead. No other rewording, no new sections.
+
+## Running it
 
 ```console
-$ python3 -m http.server 8000
-# then open http://localhost:8000/
+$ npm ci --no-audit --no-fund
+$ npm run dev
+# then open http://localhost:3000/
 ```
 
-Opening `index.html` from the filesystem works too, except that the stylesheet resolves
-differently under `file://` in some browsers; the server is the honest preview.
+Production, the way the gate checks it:
+
+```console
+$ npm run build && npm start
+# then open http://localhost:3000/
+```
+
+Node comes from `.nvmrc` (`nvm use`, or any manager that reads it); CI installs exactly that
+version. `package.json` `engines` carries only the major (`24.x`): Vercel deploys major
+versions alone, and an exact pin fails the deployment before anything builds. Telemetry is off
+in the gate (`NEXT_TELEMETRY_DISABLED=1`).
 
 ## Deploying it
 
-Vercel, connected to this repository over the GitHub integration, with **no build step**. A
-project created from the dashboard needs three settings, and `vercel.json` carries all three so
-that the dashboard does not have to: `"framework": null` selects the "Other" preset,
-`"buildCommand": ""` and `"installCommand": ""` leave the install and build steps empty. There is
-nothing to install and nothing to compile, so the deployment is the checkout itself; the output
-directory is the repository root.
+Vercel, connected to this repository over the GitHub integration, building the Next.js project:
+`vercel.json` carries `"framework": "nextjs"` so the dashboard does not have to, plus the three
+response headers. There is nothing to configure beyond connecting the repository.
 
 Production deploys on `main` and every branch and pull request gets a preview URL. That is all
 Vercel is used for. It does not run the checks — the workflow does, and those are the ones worth
@@ -57,17 +94,14 @@ Two things about the host plan are the owner's call, not this page's:
 - The Hobby terms also allow Hobby content to be used for model training. A paid plan turns that
   off by default.
 
-Cloudflare Pages is the $0 alternative with no commercial-use restriction, if either becomes
-binding. Nothing here depends on which one is chosen: the page is files.
-
 ## The waitlist endpoint and the notice
 
 Two things must be true before the page collects an address, and neither is optional.
 
-**The endpoint.** In `index.html`, the waitlist form carries it:
+**The endpoint.** In `app/page.tsx`, the waitlist form carries it:
 
-```html
-<form class="waitlist" method="post" action="https://waitlist.example.invalid/subscribe">
+```tsx
+<form className="waitlist" method="post" action="https://waitlist.example.invalid/subscribe">
 ```
 
 `waitlist.example.invalid` is a [reserved name](https://www.rfc-editor.org/info/rfc2606/) that
@@ -103,20 +137,22 @@ Two decisions taken here, stated so that they are not re-litigated silently:
   it belongs. The reasoning is in a comment above the form, where the field would have gone.
 - **No `form-action` in the Content-Security-Policy.** The CSP in `vercel.json` would have to
   name the endpoint to keep the form working, which is a second place to edit and a way to ship
-  a form the policy blocks. The page is static HTML with no script and no user input rendered
-  into it, so the directive would defend against an injection that has no path in. Add it at the
-  same time as the endpoint if you want the belt and braces.
+  a form the policy blocks. The page renders no user input into itself, so the directive would
+  defend against an injection that has no path in. Add it at the same time as the endpoint if
+  you want the belt and braces.
 
 ## What the page must never say
 
 The page's job is to be checkable, so the rule is mechanical where it can be:
 `scripts/check-claims.py` fails the build on each of the known wordings below, carries the reason
-beside each, and normalises whitespace and HTML entities before matching, so a phrase cannot pass
-by wrapping across a line or by encoding a character. **It is a filter, not a proof.** It cannot
-see meaning: a false claim in different words, a synonym outside the list, a superlative, an
-unbacked sentence or a wrong number the list does not pin all pass it. A green gate means the
-known wordings are absent, nothing more. The reasons are summarised here so that the constraint
-survives without the file that produced it.
+beside each, and normalises the served HTML before matching — comments, tags, scripts and styles
+removed, entities decoded, whitespace collapsed — so a phrase cannot pass by wrapping across a
+line or by encoding a character. The scan runs against what the server renders, not the source:
+the gate builds, starts the production server, fetches `/` over HTTP and checks that HTML.
+**It is a filter, not a proof.** It cannot see meaning: a false claim in different words, a
+synonym outside the list, a superlative, an unbacked sentence or a wrong number the list does not
+pin all pass it. A green gate means the known wordings are absent, nothing more. The reasons are
+summarised here so that the constraint survives without the file that produced it.
 
 | Must not appear | Why not |
 |---|---|
@@ -133,7 +169,7 @@ survives without the file that produced it.
 | marketplace or extension-gallery availability | The extension is unpublished, and publishing it is a non-goal until it works with a friend |
 | "guests are read-only" or "view-only" | The design inverts it: read-only scopes the host's filesystem, never the shared buffer, and every holder of the invite edits the session CRDT. Saying otherwise would be a lie about the product's central idea |
 | "your code never leaves your machine" | Document payloads travel through the server to the peers that ask for them, and there is no encryption layer. What is bounded is the grant: the paths the host enumerates, and the reads it serves from inside the granted root |
-| invented proof: logos, screenshots, testimonials, user counts, a production deployment, a demo link | None of them exist. There is no logo, no image, no recording, no user count and no production deployment in this project, and the only server that has ever run was a local debug build |
+| invented proof: screenshots, testimonials, user counts, a production deployment, a demo link | None of them exist. There is no recording, no user count and no production deployment in this project, and the only server that has ever run was a local debug build. The one image the page carries is the project's own site mark (see above), not proof of anything |
 | a claim of priority ("the first protocol to specify …") | The design record surveys prior art — Eclipse Open Collaboration Tools and others. The project's claim is that the session layer is unspecified, not that this is first |
 | a corpus number other than the pinned one | The counts (23 vectors, 806 frame checks, 192 assertions) are constants in `specification/schema/validate.py`; any other number is a claim the corpus disproves |
 
@@ -151,13 +187,14 @@ Three things the check cannot make mechanical, and which a reader of a change ha
 ## The domain and canonical metadata
 
 `selvageprotocol.com` is the project's intended domain and it is **not registered**. The page
-therefore carries **no** `<link rel="canonical">` and no Open Graph URL, and the link check has
-nothing to exclude for it: a canonical URL pointing at a host that does not exist tells a search
-engine that the real page is a duplicate of nothing, and an `og:url` on a dead host breaks the
-preview card it exists for. Both go in when the domain does:
+therefore carries **no** `<link rel="canonical">` and no Open Graph URL: a canonical URL pointing
+at a host that does not exist tells a search engine that the real page is a duplicate of nothing,
+and an `og:url` on a dead host breaks the preview card it exists for. The title, description and
+`og:title`/`og:description` mirror the page's own heading and lede; both URL-bearing tags go in
+when the domain does:
 
 1. register the domain;
-2. add `rel="canonical"`, plus `og:url`, `og:title` and `og:description`, pointing at it;
+2. add `rel="canonical"` plus `og:url`, pointing at it;
 3. attach the domain to the Vercel project, apex and `www`;
 4. remove nothing from `lychee.toml` — a URL that resolves needs no exclusion. If some URL ever
    does need one, it goes there with its reason beside it, as the placeholder endpoint's does.
@@ -167,22 +204,24 @@ Until then the page is reachable at its `*.vercel.app` URL, which is honest.
 ## The gate
 
 ```console
-$ scripts/ci-local.sh            # lint, claims and links
-$ scripts/ci-local.sh claims     # the phrase check over every *.html in the checkout
-$ scripts/ci-local.sh links      # lychee over index.html and README.md
-$ scripts/ci-local.sh lint       # actionlint over the workflows (local only; needs nix)
+$ scripts/ci-local.sh              # typecheck, build, claims, links, lint
+$ scripts/ci-local.sh typecheck    # tsc --noEmit
+$ scripts/ci-local.sh build        # next build
+$ scripts/ci-local.sh claims       # rebuild, serve production, fetch / and scan the rendered HTML
+$ scripts/ci-local.sh links        # serve production, lychee over the rendered page and README.md
+$ scripts/ci-local.sh lint         # actionlint over the workflows (nix; the workflow pins a release)
 ```
 
-`.github/workflows/ci.yml` runs `claims` and `links` on `ubuntu-24.04` on every push to `main`
-and every pull request. It installs lychee from a pinned release — the runner has no nix, so
-`scripts/ci-local.sh` takes lychee from `PATH` when it is there and from nixpkgs otherwise, and
-both places run the same checker. `lint` is local-only, as it is in the sibling repositories.
+The claims step fetches `/` from the production server into `.tmp/rendered.html` (`PORT`
+overrides the default `3100`) and scans that file by name — reaching no file is an error rather
+than a pass, and every pattern must match its own sample before the scan, so a dead pattern fails
+the gate instead of passing everything.
 
-The claim check has two failure modes built in, because they are the same failure: a *pattern*
-that matches nothing passes everything, and a *scan* that reaches no file reports a clean page.
-Each entry carries a sample its own pattern must match, and reaching no `.html` file is an error
-rather than a pass. Those are the guarantees; the check is a filter over known wordings, not a
-proof that every sentence on the page is true, and the section above says what it cannot reach.
+`.github/workflows/ci.yml` runs the same commands on `ubuntu-24.04` on every push to `main`
+and every pull request: Node from `.nvmrc`, `npm ci`, then `typecheck`, `build`, `claims`,
+`links` and `lint`. It installs lychee and actionlint from pinned releases — the runner has no
+nix, so `scripts/ci-local.sh` takes both from `PATH` when they are there and from nixpkgs
+otherwise, and all three places run the same checkers.
 
 ## Licence
 

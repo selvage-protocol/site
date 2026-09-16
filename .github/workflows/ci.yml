@@ -1,9 +1,9 @@
 name: ci
 
-# The gate for a static page: the claim filter and the link check. The claim step matches known
-# wordings only — a green run is not a proof that every sentence is true, so the page's claims are
-# still read against the corpus by a person. Nothing is built here, so the runner needs nothing
-# but bash, python3 (already on ubuntu-24.04) and lychee.
+# The gate for the Next.js page: typecheck, build, the claim filter over the rendered page,
+# the link check over the rendered page and the README, and the workflow lint. The claim step
+# matches known wordings only — a green run is not a proof that every sentence is true, so the
+# page's claims are still read against the corpus by a person.
 on:
   push:
     branches: [main]
@@ -18,21 +18,37 @@ permissions:
 
 jobs:
   checks:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    # GitHub-hosted, not Blacksmith: Blacksmith runners demonstrably cannot reach nodejs.org
+    # (verified 2026-09-15), so setup-node cannot bootstrap there; ubuntu-24.04 has full egress
+    # and a preinstalled Node.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       # The release nixpkgs carries today, so a developer and the runner check with the same
       # binary. The checksum is the one published beside the archive.
       LYCHEE_VERSION: "0.24.2"
       LYCHEE_SHA256: "1f4e0ef7f6554a6ed33dd7ac144fb2e1bbed98598e7af973042fc5cd43951c9a"
+      ACTIONLINT_VERSION: "1.7.7"
+      ACTIONLINT_SHA256: "023070a287cd8cccd71515fedc843f1985bf96c436b7effaecce67290e7e0757"
+      NEXT_TELEMETRY_DISABLED: "1"
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      # The runner has no nix, so the pinned release is installed here and `scripts/ci-local.sh`
-      # takes lychee from PATH. This is the runner's own temp directory, not this host's
-      # RAM-backed `/tmp`.
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          # No package-manager cache: a cold `npm ci` fits the timeout, and one less
+          # service in the gate is one less way for a green tree to go red.
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      # The runner has no nix, so the pinned releases are installed here and `scripts/ci-local.sh`
+      # takes lychee and actionlint from PATH. This is the runner's own temp directory, not this
+      # host's RAM-backed `/tmp`.
       - name: Install lychee
         run: |
           curl -fsSL -o "$RUNNER_TEMP/lychee.tar.gz" \
@@ -42,7 +58,26 @@ jobs:
           sudo install -m 0755 "$RUNNER_TEMP/lychee" /usr/local/bin/lychee
           lychee --version
 
-      - name: claim filter (known wordings only, not a proof)
+      - name: Install actionlint
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/actionlint.tar.gz" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  $RUNNER_TEMP/actionlint.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP" actionlint
+          sudo install -m 0755 "$RUNNER_TEMP/actionlint" /usr/local/bin/actionlint
+          actionlint --version
+
+      - name: typecheck (tsc --noEmit)
+        run: scripts/ci-local.sh typecheck
+
+      - name: build (next build)
+        run: scripts/ci-local.sh build
+
+      - name: claim filter over the rendered page (known wordings only, not a proof)
         run: scripts/ci-local.sh claims
 
-      - run: scripts/ci-local.sh links
+      - name: links over the rendered page and the README
+        run: scripts/ci-local.sh links
+
+      - name: lint the workflow
+        run: scripts/ci-local.sh lint
