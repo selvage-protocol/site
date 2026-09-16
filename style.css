@@ -26,7 +26,8 @@
   --rule: #313244;
   --code-bg: #181825;
   --link: #cba6f7;
-  --link-visited: #6c7086;
+  /* Overlay, not dimmer: visited prose links still need 4.5:1 on --bg. */
+  --link-visited: #9399b2;
   --measure: 42rem;
   color-scheme: dark;
 }
@@ -128,6 +129,13 @@ form.waitlist input[type="email"] {
   background: var(--bg);
   color: inherit;
   font: inherit;
+}
+
+/* The placeholder is text on --bg, so it takes the muted tone at full
+   opacity rather than the browser's dimmed default. */
+form.waitlist input::placeholder {
+  color: var(--muted);
+  opacity: 1;
 }
 
 form.waitlist button {
