@@ -10,7 +10,7 @@ The canonical material lives in the other repositories —
 protocol, prose and vectors, [`selvage-protocol/reference_server`](https://github.com/selvage-protocol/reference_server)
 for the server and client library, and [`selvage-protocol/vscode_client`](https://github.com/selvage-protocol/vscode_client)
 and [`selvage-protocol/nvim_client`](https://github.com/selvage-protocol/nvim_client) for the two
-editor clients. This repository holds the page, the two checks that gate it, and nothing else.
+editor clients. This repository holds the page, the three checks that gate it, and nothing else.
 
 | Path | What it is |
 |---|---|
@@ -30,6 +30,7 @@ editor clients. This repository holds the page, the two checks that gate it, and
 | `.nvmrc` | the pinned Node version for local work and CI (`nvm use` reads it); `package.json` `engines` carries the major (`24.x`), because Vercel only deploys major versions |
 | `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason |
 | `scripts/check-button-props.tsx` | the button check: renders the button and anchor variants and asserts their props reach the DOM (run by `npm run check:button` inside the gate) |
+| `scripts/check-contrast.py` | the contrast check: parses the theme tokens out of `style.css` and asserts the rendered pairs sit at or above WCAG AA, with measured ratios (run by `scripts/ci-local.sh contrast` inside the gate) |
 | `scripts/ci-local.sh` | the gate, running the same commands as the workflow |
 | `lychee.toml` | what the link check does not check, and why |
 | `vercel.json` | platform configuration: the Next.js framework preset, and three response headers |
@@ -58,16 +59,15 @@ The favicon fallbacks are the owner's own pixels, not a render of the SVG: each 
 the opaque 800×800 export resized down with ImageMagick, verified pixel-identical
 to a fresh resize (RMSE 0 at both 32 and 180 px).
 
-The prose in `app/page.tsx` descends from the static page's prose: the commands, the numbers,
-the licence footer, the privacy notice with its two visible blanks, and the waitlist form are
-unchanged. One sentence differs on purpose: the static page's "loads no JavaScript" is
+The prose in `app/page.tsx` descends from the static page's prose: the commands, the numbers
+and the licence footer are unchanged. Two sentences differ on purpose: the static page's "loads no JavaScript" is
 false once Next.js serves the route, so the page says it prerenders to static HTML and names
-the framework runtime scripts instead. Above the carried-over sections sits a benefit-first
+the framework runtime scripts instead; and the waitlist form is gone, so the privacy notice
+names its controller and collects nothing instead of carrying blanks for a mailing service. Above the carried-over sections sits a benefit-first
 hero in a dark-SaaS layout (nav, pill badge, two-line headline, checkmark list, two CTAs,
 abstract mauve panel): every added sentence is a paraphrase of an already-audited true sentence
 — the hook and workflow sentence from the design record, the memory-only server, the invite
-as the whole permission, the spec corpus in its pinned numbers — or framed as direction (the
-hosted tier, planned and built last). The must-not-say table still binds every line, and the
+as the whole permission, the spec corpus in its pinned numbers — or framed as direction. The must-not-say table still binds every line, and the
 checker grew eight patterns for the traps the new vocabulary invites (a "live" status, a
 proven-pairing claim, a speed adjective, an ease claim, an only-machine claim, a
 third-party-sees claim, a no-cloud-between absolute, and SaaS-creep words like sign-in, download or pricing).
@@ -102,62 +102,47 @@ Production deploys on `main` and every branch and pull request gets a preview UR
 Vercel is used for. It does not run the checks — the workflow does, and those are the ones worth
 making required status checks under branch protection.
 
-Two things about the host plan are the owner's call, not this page's:
+Two things about the host plan are the owner's call, not this page's. The page no longer
+advertises anything, but should that change the plan question returns with it:
 
 - Vercel's terms restrict the **Hobby** plan to personal, non-commercial use, and their Fair Use
   Guidelines count "advertising the sale of a product or service" as commercial. A page that
-  advertises a future paid tier is on the commercial side of that line by their own definition,
-  so Hobby may not be the right plan even before anything is sold. [Fair Use
+  advertised a future paid tier would sit on the commercial side of that line by their own definition,
+  so Hobby may not be the right plan if that returns, even before anything is sold. [Fair Use
   Guidelines](https://vercel.com/docs/limits/fair-use-guidelines), [Terms](https://vercel.com/legal/terms).
 - The Hobby terms also allow Hobby content to be used for model training. A paid plan turns that
   off by default.
 
-## The waitlist endpoint and the notice
+## Privacy: controller and no collection
 
-Two things must be true before the page collects an address, and neither is optional.
+One thing is fixed, and one thing is gone.
 
-**The endpoint.** In `app/page.tsx`, the waitlist form carries it:
+**The controller.** The privacy notice names
+[`selvage-protocol`](https://github.com/selvage-protocol) — the GitHub
+organisation — as the controller, with a link and no other contact. Only the
+owner could fill that blank, and now it is filled.
 
-```tsx
-<form className="waitlist" method="post" action="https://waitlist.example.invalid/subscribe">
-```
-
-`waitlist.example.invalid` is a [reserved name](https://www.rfc-editor.org/info/rfc2606/) that
-cannot resolve, so until it is replaced a submission fails loudly instead of quietly going
-nowhere. Replace it with the URL the service gives you.
-
-**The notice.** The page carries a privacy notice below the form, with two blanks marked in the
-page: the controller's name and contact, and the processor (the mailing service that sends the
-message). Only the owner can fill them in. **Do not point the form at a live endpoint, and do not
-publish the page, until both blanks are filled in:** a notice that names a controller nobody can
-contact is not a notice, and a form that posts while its notice is a draft collects personal data
-without the lawful basis the page states. The mailing service is a processor of the address, so
-its own terms, or a data-processing agreement, belong with this step too.
-
-Three things to check when you replace the endpoint:
-
-- **The field name.** The form posts one field, `name="email"`. Services that want a different
-  name, or their own hidden field, tell you which in their own documentation; change the
-  `name` attribute to match, and add no provider-specific markup for one that is not chosen yet.
-- **Confirmation mail.** If the service offers double opt-in, turn it on. It is the reader's
-  proof that they asked for the message, and it keeps an address out of the list until they
-  answer.
-- **The copy.** The page says the address is used to tell you when the hosted tier opens "and for
-  nothing else". Keep that true: no reselling, no unrelated list, and a deletion at the reader's
-  request.
+**The collection.** There is none. The waitlist form is removed — no form, no
+endpoint, no mailing service, no processor — so the notice's collection,
+basis, retention and erasure paragraphs went with it. What remains is the
+page-level statement the footer already carried: the page sets no cookie,
+makes no third-party request, and sends nothing anywhere. If collection ever
+returns, the notice grows back with it: controller, processor, purpose, basis
+and erasure path, before the form, not after.
 
 Two decisions taken here, stated so that they are not re-litigated silently:
 
-- **No honeypot field.** A hidden field only works because whatever receives the submission
-  discards the ones that fill it, and each service spells that field its own way. Naming one
-  service's convention before the service is chosen would bake the provider in — exactly what
-  the one-endpoint rule exists to avoid — so spam filtering is configured at the service, where
-  it belongs. The reasoning is in a comment above the form, where the field would have gone.
-- **No `form-action` in the Content-Security-Policy.** The CSP in `vercel.json` would have to
-  name the endpoint to keep the form working, which is a second place to edit and a way to ship
-  a form the policy blocks. The page renders no user input into itself, so the directive would
-  defend against an injection that has no path in. Add it at the same time as the endpoint if
-  you want the belt and braces.
+- **No honeypot field.** Had a form stayed, a hidden field would only have worked because
+  whatever received the submission discarded the ones that filled it, and each service
+  spells that field its own way. Naming one service's convention before the service was
+  chosen would have baked the provider in — exactly what the one-endpoint rule existed to
+  avoid — so spam filtering would have been configured at the service, where it belongs.
+  With no form there is no field to debate; the reasoning stays so a reintroduced form
+  does not re-litigate it.
+- **No `form-action` in the Content-Security-Policy.** The CSP in `vercel.json` would have had to
+  name the endpoint to keep a form working, which would have been a second place to edit
+  and a way to ship a form the policy blocks. The page renders no user input into itself,
+  so the directive would defend against an injection that has no path in.
 
 ## What the page must never say
 
@@ -197,7 +182,7 @@ summarised here so that the constraint survives without the file that produced i
 | an ease claim (takes seconds, one-click, just works) | No image, compose file or service unit exists; the documented path is `cargo run`, and no ease claim is backed |
 | an only-machine claim (untouched by the network) | Document payloads travel through the server to the peers that ask for them; the grant bounds which paths are served, not which machines code touches |
 | a "live" / "now available" status | Nothing is released, hosted or published. The honest status line is the wire version plus the specification draft |
-| SaaS-creep words (sign in/up, get started, download, pricing) | No accounts exist, so nothing can be signed into; no package exists to download and no price exists to show. The page offers the specification to read and a waitlist to join |
+| SaaS-creep words (sign in/up, get started, download, pricing) | No accounts exist, so nothing can be signed into; no package exists to download and no price exists to show. The page offers the specification to read and a server to run |
 
 Three things the check cannot make mechanical, and which a reader of a change has to hold:
 
@@ -230,10 +215,11 @@ Until then the page is reachable at its `*.vercel.app` URL, which is honest.
 ## The gate
 
 ```console
-$ scripts/ci-local.sh              # typecheck, build, button, claims, links, lint
+$ scripts/ci-local.sh              # typecheck, build, button, contrast, claims, links, lint
 $ scripts/ci-local.sh typecheck    # tsc --noEmit
 $ scripts/ci-local.sh build        # next build
 $ scripts/ci-local.sh button       # render the button/anchor variants and assert their props reach the DOM
+$ scripts/ci-local.sh contrast     # theme token pairs at or above WCAG AA, with measured ratios
 $ scripts/ci-local.sh claims       # rebuild, serve production, fetch / and scan the rendered HTML
 $ scripts/ci-local.sh links        # serve production, lychee over the rendered page and README.md
 $ scripts/ci-local.sh lint         # actionlint over the workflows (nix; the workflow pins a release)
@@ -246,9 +232,44 @@ the gate instead of passing everything.
 
 `.github/workflows/ci.yml` runs the same commands on `ubuntu-24.04` on every push to `main`
 and every pull request: Node from `.nvmrc`, `npm ci`, then `typecheck`, `build`, `button`,
-`claims`, `links` and `lint`. It installs lychee and actionlint from pinned releases — the runner has no
+`contrast`, `claims`, `links` and `lint`. It installs lychee and actionlint from pinned releases — the runner has no
 nix, so `scripts/ci-local.sh` takes both from `PATH` when they are there and from nixpkgs
 otherwise, and all three places run the same checkers.
+
+## Accessibility: the WCAG AA floor
+
+The page holds itself to WCAG 2.2 AA. Ratios are computed from the theme tokens in
+`style.css`, never eyeballed; `scripts/check-contrast.py` asserts them in the gate, so a
+regression fails the build instead of waiting for a look. Measured today:
+
+| Pair | Ratio | Needs |
+|---|---|---|
+| body text on page | 11.34:1 | 4.5:1 |
+| muted prose on page | 7.37:1 | 4.5:1 |
+| link on page | 8.07:1 | 4.5:1 |
+| visited link on page | 5.81:1 | 4.5:1 |
+| button label on its mauve fill | 8.07:1 | 4.5:1 |
+| code text on code background | 12.14:1 | 4.5:1 |
+| badge and secondary-button text on their fills | 6.63:1 / 5.98:1 | 4.5:1 |
+| focus outline against the page | 8.07:1 | 3.0:1 |
+| glass-card text, worst gradient stop | 7.47:1 (muted 4.85:1) | 4.5:1 |
+
+What no ratio proves is read against the code by a person on every change:
+
+- **Visible focus.** Every link and button carries a 2 px mauve `:focus-visible` outline
+  at a 2 px offset; the `Button` primitive repeats it as a utility, so both spellings agree.
+- **Keyboard.** Every control is a native anchor or button. The sticky header slides away
+  on scroll-down but carries `focus-within:translate-y-0`, so a tabbed-to link is never
+  focused off-screen. No skip link: the page is one route, so there is no repeated block
+  to bypass.
+- **Reduced motion.** `scroll-behavior: smooth` stands down to `auto` and the header slide
+  to `transition: none` inside `prefers-reduced-motion`; nothing else on the page moves.
+- **Touch targets.** Nav links are `text-sm` (20 px line box) with `py-1`, for 28 px of
+  target height against the 24 px minimum; buttons are 32–44 px tall. In-prose links are
+  inline and exempt.
+- **Decorative only.** The hero panel is `aria-hidden`: a gradient, the site mark and one
+  card of the project's own sentences. Its worst-case ratios still clear AA (above), but
+  nothing in it is load-bearing for any user.
 
 ## Licence
 
