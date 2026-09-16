@@ -27,8 +27,8 @@ export default function Home() {
         >
           <a href="#top" className="flex items-center gap-2.5">
             <img
-              className="h-8 w-auto rounded"
-              src="/icon.svg"
+              className="h-8 w-auto"
+              src="/mark-transparent.png"
               alt=""
               width={800}
               height={800}
@@ -123,7 +123,7 @@ export default function Home() {
               <div className="relative flex h-full min-h-[372px] flex-col md:min-h-[416px]">
                 <img
                   className="h-14 w-auto self-start rounded-lg"
-                  src="/icon.svg"
+                  src="/mark-opaque.png"
                   alt=""
                   width={800}
                   height={800}

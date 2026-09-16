@@ -17,8 +17,10 @@ editor clients. This repository holds the page, the two checks that gate it, and
 | `app/page.tsx` | the page: the prose |
 | `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, favicon, global stylesheet |
 | `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, and a system font stack, so no font is fetched from a third party |
-| `app/icon.svg` | the site mark in the header and the favicon: the owner's `svp` monogram (see "The site mark" below). It replaces the earlier text-only favicon |
-| `app/icon.png` / `app/apple-icon.png` | raster fallbacks (32 and 180 px) resized from the owner's own PNG export, for contexts without the font (see "The site mark") |
+| `app/icon.svg` | the vector favicon: the owner's `svp` monogram redrawn as paths (see "The site mark"). Stays because it is resolution-independent at 3 KB; nothing in the page body uses it |
+| `app/icon.png` / `app/apple-icon.png` | raster favicon fallbacks (32 and 180 px) resized from the owner's opaque export, for contexts without the font (see "The site mark") |
+| `app/opengraph-image.png` | the social card image (Next file convention, served as `/opengraph-image.png`): the owner's opaque export at full size, so cards crop owner's pixels |
+| `public/mark-opaque.png` / `public/mark-transparent.png` | the mark as served in the page body: the owner's opaque and transparent 800×800 exports, vendored byte-identical (see "The site mark") |
 | `postcss.config.mjs` | the one PostCSS plugin (`@tailwindcss/postcss`), so `style.css` compiles on build |
 | `components/ui/button.tsx` | the button primitive (shadcn-style `cva` variants: filled default, tinted secondary, ghost; renders an anchor when given `href`): the nav CTA and the two hero CTAs, nothing else |
 | `components/ui/badge.tsx` | the pill primitive: the hero status line |
@@ -34,24 +36,26 @@ editor clients. This repository holds the page, the two checks that gate it, and
 
 ## The site mark
 
-The header carries the owner's `svp` monogram, and it doubles as the favicon
-(`app/icon.svg`, with 32 px and 180 px PNG fallbacks beside it). The source is the
-owner's Inkscape file `/home/user/pictures/profile_pictures/profile_picture_svp.svg`
-— a Comfortaa Bold monogram in Catppuccin mauve/teal/red on a Mocha base — and the
-vendored copy differs from it in three recorded ways:
+The page body serves the owner's raster mark, not the redrawn SVG: two 800×800
+PNG exports vendored byte-identical under `public/` (checksums match the owner's
+files) and never hotlinked. Which export goes where is a contrast call:
 
-- the Inkscape/sodipodi editor metadata (named view, grid, unused filters) is stripped;
-- the Mocha base (`#1e1e2e`, transparent in the source) is baked in, matching the
-  owner's PNG export;
-- the live Comfortaa `<text>` is converted to paths, because no visitor has the font
-  installed and anything rendered without it (favicons, fallbacks) would show fallback
-  glyphs instead of the mark. The conversion replays the source's own numbers
-  (79.375 px Comfortaa Bold at the same origin, advances only — the font kerns none of
-  these pairs) with throwaway tooling (fontTools from its wheel, the system Comfortaa),
-  so the repository itself gains no dependency and no font file.
+| Surface | File | Why |
+|---|---|---|
+| Nav header on dark Mocha | `public/mark-transparent.png` | the bar is translucent Mocha over the page; the opaque export's baked `#1e1e2e` base would draw a visible box against it, while the transparent glyphs sit straight on the bar |
+| Hero panel on the light mauve gradient | `public/mark-opaque.png` | the panel field runs near-white at its lightest stop; the transparent mauve glyphs would wash out on it, while the opaque export's dark Mocha chip keeps its contrast |
+| Favicon and social card | `app/icon.png` / `app/apple-icon.png` / `app/opengraph-image.png` | tab bars and link unfurls crop unpredictably, so these stay opaque: the two favicon fallbacks resized from the opaque export, the social card the full-size opaque export |
 
-The PNGs are not rendered from the SVG here: they are the owner's own 800×800 export
-resized down with ImageMagick, so the fallback pixels are the owner's pixels.
+`app/icon.svg` stays as the vector favicon: the owner's `svp` monogram (a Comfortaa
+Bold monogram in Catppuccin mauve/teal/red on a Mocha base) with the Inkscape editor
+metadata stripped, the Mocha base (`#1e1e2e`) baked in to match the opaque export,
+and the live Comfortaa `<text>` converted to paths, because no visitor has the font
+installed. At 3 KB it is the resolution-independent favicon; the page body does
+not use it.
+
+The favicon fallbacks are the owner's own pixels, not a render of the SVG: each is
+the opaque 800×800 export resized down with ImageMagick, verified pixel-identical
+to a fresh resize (RMSE 0 at both 32 and 180 px).
 
 The prose in `app/page.tsx` descends from the static page's prose: the commands, the numbers,
 the licence footer, the privacy notice with its two visible blanks, and the waitlist form are
