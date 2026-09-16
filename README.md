@@ -14,7 +14,7 @@ editor clients. This repository holds the page, the two checks that gate it, and
 
 | Path | What it is |
 |---|---|
-| `app/page.tsx` | the page: the prose, carried over verbatim |
+| `app/page.tsx` | the page: the prose |
 | `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, favicon, global stylesheet |
 | `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent (hardcoded hexes, named in a comment up top): a system font stack, so no font is fetched from a third party |
 | `app/icon.svg` | the site mark in the header and the favicon: the owner's `svp` monogram (see "The site mark" below). It replaces the earlier text-only favicon |
@@ -48,11 +48,15 @@ vendored copy differs from it in three recorded ways:
 The PNGs are not rendered from the SVG here: they are the owner's own 800×800 export
 resized down with ImageMagick, so the fallback pixels are the owner's pixels.
 
-This is a port, not a redesign: the prose in `app/page.tsx` is the static page's prose word for
-word — including the licence footer, the privacy notice with its two visible blanks, and the
-waitlist form. One sentence differs on purpose: the static page's "loads no JavaScript" is
+The prose in `app/page.tsx` descends from the static page's prose: the commands, the numbers,
+the licence footer, the privacy notice with its two visible blanks, and the waitlist form are
+unchanged. One sentence differs on purpose: the static page's "loads no JavaScript" is
 false once Next.js serves the route, so the page says it prerenders to static HTML and names
-the framework runtime scripts instead. No other rewording, no new sections.
+the framework runtime scripts instead. The rewrite adds a benefit-first header, a who-it-is-for section and a
+minute-to-minute session section; every added sentence is traceable to the corpus named in the
+claim table below (`specification`, the two client READMEs, the design record's goal, audience,
+visibility and business sections) or framed as direction (the hosted tier, planned and built
+last). The must-not-say table still binds every line.
 
 ## Running it
 

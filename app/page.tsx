@@ -10,40 +10,71 @@ export default function Home() {
           and collaborative editing has never had. Document sync is specified:{" "}
           <code>y-protocols</code> says how two replicas converge on the text of a document. Nothing
           specifies the session &mdash; who is in the room, which documents are open, where the
-          other person's cursor is, what happens when they leave. That layer is what this
+          other person&apos;s cursor is, what happens when they leave. That layer is what this
           project writes down.
+        </p>
+        <p>
+          What that means in practice: the server is one you run, the invite is a link, and the
+          editor on the other end can be a different window or machine. No account to make and no cloud to upload
+          to &mdash; and joining takes the link, not an approval step.
         </p>
       </header>
 
       <main>
+        <section>
+          <h2>Who this is for</h2>
+          <p>
+            Two developers pairing. One of you hosts a folder in VS Code; the other pastes an
+            invite link and the folder&apos;s shape appears. Open the same file and both of you
+            type into the same text &mdash; built so either editor can join the same room.
+          </p>
+          <p>
+            A team that wants its own server. Rooms live in one Rust binary you run yourself
+            &mdash; in memory only, nothing written to disk &mdash; so the machine the room passes
+            through is one you chose. No account on either end, and no third party&apos;s cloud
+            holding the room.
+          </p>
+          <p>
+            Tooling people who want the session layer written down. The specification is prose, a
+            canonical byte form, nine JSON Schema 2020-12 documents, 23 wire vectors, and a runner
+            that replays them byte for byte against a real server &mdash; written to be implemented
+            on its own, without reading the Rust.
+          </p>
+        </section>
+
         <section>
           <h2>Your server, your code</h2>
           <p>
             Selvage is the project: the specification, a reference server you run yourself, and
             clients for VS Code and Neovim. The server is one Rust binary that holds rooms in memory
             &mdash; no account, no database, no cloud. The workflow it serves is one sentence:{" "}
-            <strong>share a link, come edit my code with me.</strong> The host's working copy
+            <strong>share a link, come edit my code with me.</strong> The host&apos;s working copy
             is the truth, the invite is the share, and the room ends when the host leaves.
           </p>
         </section>
 
         <section>
-          <h2>How a session works</h2>
+          <h2>How a session feels, minute to minute</h2>
+          <p>At the keyboard, a session goes like this:</p>
           <p>
             The host grants a folder. The client lists the paths inside it and puts the listing on
             the wire &mdash; paths, never content &mdash; and the guest mirrors that shape. A
-            file's text arrives when someone opens it, and the host reads that one file from
+            file&apos;s text arrives when someone opens it, and the host reads that one file from
             its own disk when a peer asks for it, inside the granted root.
           </p>
           <p>
             Everyone holding the invite edits the same document. The token is the permission: there
             is no account and no per-join approval, and anyone with the link is in the room, so
-            treat an invite as you would a password. The host's filesystem is the scoped part
-            &mdash; no guest writes to the host's working copy &mdash; while the room's
-            text belongs to everyone in it: every participant's edits land in the one CRDT,
-            which is what "come edit my code with me" means. Other people's carets
+            treat an invite as you would a password. The host&apos;s filesystem is the scoped part
+            &mdash; no guest writes to the host&apos;s working copy &mdash; while the room&apos;s
+            text belongs to everyone in it: every participant&apos;s edits land in the one CRDT,
+            which is what &quot;come edit my code with me&quot; means. Other people&apos;s carets
             and selections travel as anchors in that same CRDT, so they stay where they were as the
             text around them moves.
+          </p>
+          <p>
+            A file nobody has opened sends no text yet &mdash; only the listing did &mdash; so
+            looking at one file never moves the whole project over the wire.
           </p>
           <p>
             The room ends when the host leaves. Rooms live in memory only, the server writes nothing
@@ -53,10 +84,10 @@ export default function Home() {
         </section>
 
         <section>
-          <h2>What you can run today</h2>
+          <h2>Run it today</h2>
           <p>
             There is no hosted demo, no release and no package to install from an extension store,
-            so every route below starts with a clone. These are the real ones.
+            so every route below starts with a clone.
           </p>
 
           <h3>Read the specification</h3>
@@ -108,9 +139,9 @@ export default function Home() {
             display name. Open a file inside that folder: it joins the room as soon as it is open.
             Run <em>Selvage: Copy the invite link</em>, and in a second window &mdash; of the same
             editor or a different machine &mdash; run{" "}
-            <em>Selvage: Join a session from an invite link</em> and paste it. The host's file
+            <em>Selvage: Join a session from an invite link</em> and paste it. The host&apos;s file
             opens in the guest as <code>selvage:/&lt;path&gt;</code> and both windows type into the
-            same text. Closing the host's window ends the room.
+            same text. Closing the host&apos;s window ends the room.
           </p>
           <p>
             The Neovim client is the same room, from the other editor. It keeps its engine and
@@ -154,13 +185,13 @@ export default function Home() {
               unencrypted bytes, and this slice has no transport security either. The server keeps
               no document text &mdash; it knows only which peers are connected and which paths they
               have open &mdash; but it can read a frame as it routes it, so treat the
-              server's operator and the network path as able to see the room's text.
+              server&apos;s operator and the network path as able to see the room&apos;s text.
             </li>
             <li>
-              <strong>No changes to the shape of the host's folder.</strong> The room carries
+              <strong>No changes to the shape of the host&apos;s folder.</strong> The room carries
               no file mutations &mdash; nothing on the wire adds, renames or removes a path &mdash;
-              and nothing writes to the host's working copy. The host's own editor still
-              changes that folder, and a Neovim guest's mirror materialises the granted paths
+              and nothing writes to the host&apos;s working copy. The host&apos;s own editor still
+              changes that folder, and a Neovim guest&apos;s mirror materialises the granted paths
               into a directory of its own.
             </li>
             <li>
@@ -224,7 +255,7 @@ export default function Home() {
             for nothing else. The lawful basis is your consent, given by submitting the form. It is
             passed only to the processor named above, and kept only until that message is sent. You
             can withdraw consent, ask for a copy, or ask for the address to be erased, using the
-            controller's contact above; you can also complain to your data protection
+            controller&apos;s contact above; you can also complain to your data protection
             authority.
           </p>
         </section>
@@ -247,7 +278,7 @@ export default function Home() {
           third-party request; submitting the waitlist form is the only thing
           it sends anywhere. The page is MIT OR Apache-2.0. Its framing follows the project's
           own design record, which is private and carries no licence; the workflow sentence is
-          adapted from the Neovim client's README, which is MIT OR Apache-2.0.
+          adapted from the Neovim client&apos;s README, which is MIT OR Apache-2.0.
         </p>
         <ul className="repos">
           <li>
