@@ -63,7 +63,6 @@ body {
 
 .prose-body p {
   margin: 0 0 1rem;
-  color: var(--fg);
 }
 
 .prose-body ul {
