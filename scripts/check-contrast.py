@@ -33,8 +33,6 @@ import sys
 
 TEXT_MIN = 4.5
 NON_TEXT_MIN = 3.0
-# The glass card's fill over the hero gradient (see style.css `.hero-glass`).
-GLASS_ALPHA = 0.82
 
 
 def lum(hexcode: str) -> float:
@@ -66,6 +64,36 @@ def tokens(css: str) -> dict[str, str]:
         # prefix so both spellings resolve to the same token.
         out.setdefault(key.removeprefix("color-"), value.lower())
     return out
+
+
+def glass_fill(css: str) -> tuple[str, float] | None:
+    """The `.hero-glass` fill as (hex, alpha), or None when unusable.
+
+    The card's surface is the value the browser composites, so the check reads
+    it instead of trusting a constant: a restyle that changes the alpha
+    without touching the code would otherwise measure a surface nobody renders.
+    Only an `rgba()` background counts — anything else (a hex, a gradient, a
+    missing rule) is exit 2, not a pass.
+    """
+    block = re.search(r"\.hero-glass\s*\{(.*?)\}", css, re.DOTALL)
+    if block is None:
+        return None
+    fill = re.search(
+        r"background\s*:\s*rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([0-9.]+)\s*\)",
+        block.group(1),
+    )
+    if fill is None:
+        return None
+    red, green, blue = (int(fill.group(i)) for i in (1, 2, 3))
+    try:
+        alpha = float(fill.group(4))
+    except ValueError:
+        return None
+    if not all(0 <= c <= 255 for c in (red, green, blue)):
+        return None
+    if not 0 < alpha <= 1:
+        return None
+    return "#%02x%02x%02x" % (red, green, blue), alpha
 
 
 def hero_stops(css: str) -> list[str]:
@@ -178,8 +206,17 @@ def main() -> int:
             file=sys.stderr,
         )
         return 2
+    fill = glass_fill(css)
+    if fill is None:
+        print(
+            "check-contrast: no usable rgba() background on .hero-glass; "
+            "the glass-card worst case cannot be computed",
+            file=sys.stderr,
+        )
+        return 2
+    glass_rgb, glass_alpha = fill
     for stop in stops:
-        surface = composite(mantle, stop, GLASS_ALPHA)
+        surface = composite(glass_rgb, stop, glass_alpha)
         checks.append((f"glass card text over {stop}", fg, surface, TEXT_MIN))
         checks.append((f"glass card muted text over {stop}", muted, surface, TEXT_MIN))
 
@@ -193,7 +230,8 @@ def main() -> int:
     if failures:
         print(f"check-contrast: {failures} pair(s) below WCAG AA")
         return 1
-    print(f"check-contrast: {len(checks)} pairs at or above WCAG AA")
+    print(f"check-contrast: {len(checks)} pairs at or above WCAG AA "
+          f"(glass {glass_rgb} at alpha {glass_alpha} parsed from .hero-glass)")
     return 0
 
 

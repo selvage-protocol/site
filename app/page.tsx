@@ -132,7 +132,7 @@ export default function Home() {
             <p>
               Selvage is the project: the specification, a reference server you run yourself, and
               clients for VS Code and Neovim. The server is one Rust binary that holds rooms in memory
-              &mdash; no account, no database, no cloud. The workflow it serves is one sentence:{" "}
+              &mdash; no account, no database, and nothing written to disk. The workflow it serves is one sentence:{" "}
               <strong>share a link, come edit my code with me.</strong> The host&apos;s working copy
               is the truth, the invite is the share, and the room ends when the host leaves.
             </p>

@@ -222,6 +222,14 @@ FORBIDDEN: list[Phrase] = [
          "no cloud &#105;n between"),
     ),
     Phrase(
+        r"\bno clouds?\b",
+        "no account, no database, no cloud",
+        "only the weak reading is backed (no third party's cloud holding the room): "
+        "a self-hosted server can itself run on a cloud VM, so a bare 'no cloud' "
+        "overclaims. The backed storage sentence is 'nothing written to disk'",
+        ("no clo<!-- -->ud",),
+    ),
+    Phrase(
         r"proven in one room|across editors too|(?:VS ?Code|Neovim|Vim|Emacs|editors?)\b[^.]{0,48}\bon one end and\b",
         "Proven in one room with VS Code on one end and Neovim on the other.",
         "the cross-editor pairing has never run: both existing proofs drive two instances of "
