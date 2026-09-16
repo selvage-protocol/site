@@ -44,7 +44,7 @@ export function SiteHeader() {
   return (
     <header
       className={cn(
-        "site-header sticky top-0 z-10 border-b border-surface0/70 bg-base/85 backdrop-blur transition-transform duration-300",
+        "site-header sticky top-0 z-10 border-b border-surface0/70 bg-base/85 backdrop-blur transition-transform duration-300 focus-within:translate-y-0",
         concealed && "-translate-y-full",
       )}
     >

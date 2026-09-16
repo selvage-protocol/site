@@ -36,7 +36,7 @@ export default function Home() {
                 Selvage Session Protocol is a written specification for the
                 session layer of collaborative editing &mdash; rooms,
                 participants, open documents, presence. You run the server,
-                you send the link &mdash; no account, no third party&apos;s cloud in between.
+                you send the link &mdash; no account, no third party&apos;s cloud holding the room.
               </p>
               <ul className="mt-8 space-y-3.5">
                 {checklist.map((item) => (
