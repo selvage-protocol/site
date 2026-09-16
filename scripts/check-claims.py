@@ -205,11 +205,12 @@ FORBIDDEN: list[Phrase] = [
         "number is a claim the corpus disproves",
     ),
     Phrase(
-        r"third part[^.]{0,24}sees?\b|no third part[^.]{0,24}saw\b",
+        r"third[- ]part[^.]{0,24}sees?\b|no third[- ]part[^.]{0,24}saw\b",
         "No third party ever sees the room.",
         "the relay is payload-opaque but plaintext with no transport security in this slice: "
         "the server's operator and the network path can see the room's text. Only the page's "
         "own weak reading ('no third party's cloud holding the room') is backed",
+        ("No third-party ever sees the room.",),
     ),
     Phrase(
         r"no cloud[^.]{0,24}between",
