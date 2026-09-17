@@ -245,7 +245,7 @@ FORBIDDEN: list[Phrase] = [
         "adjective is backed",
     ),
     Phrase(
-        r"takes? seconds|(?:up(?: and running)?|ready|deploys?|installs?|starts?|runs?|setup|self[- ]hosts?)\b[^.]{0,24}\bin seconds\b|one[- ]click|just works",
+        r"\b(?:self[- ]host(?:ing)?|setup|install(?:ation)?|deploy(?:ment)?)\b[^.]{0,24}\btakes? seconds\b|(?:up(?: and running)?|ready|deploys?|installs?|starts?|runs?|setup|self[- ]hosts?)\b[^.]{0,24}\bin seconds\b|one[- ]click|just works",
         "Self-hosting takes seconds on any machine you choose.",
         "no image, compose file or service unit exists in any repository; the documented path "
         "is `cargo run -p selvaged -- --listen ...`, and no ease claim is backed",

@@ -3,8 +3,9 @@
 The landing page for **Selvage** (the project) and the **Selvage Session Protocol** (the protocol
 it publishes). A Next.js App Router project with one route (`/`): the page component carries the
 prose, the global stylesheet carries the styling, and the browser downloads nothing beyond
-the prerendered page, the stylesheet, the images, and the framework runtime with the page's
-compiled client components (header, badge, buttons, cards, icons) — no web font, no
+the prerendered page, the stylesheet, the images, and the framework runtime with the
+`SiteHeader` client boundary and its dependencies (header, buttons, and the arrow
+icon) — no web font, no
 analytics, no third-party request.
 
 The canonical material lives in the other repositories —

@@ -103,14 +103,37 @@ def hero_stops(css: str) -> list[str]:
     return [h.lower() for h in re.findall(r"#[0-9a-fA-F]{6}", block.group(1))]
 
 
+class FillError(ValueError):
+    """A `bg-mauve` fill the check cannot measure."""
+
+
+def variant_classes(tsx: str, name: str) -> str:
+    """The class string of one cva variant, or raise `FillError`."""
+    match = re.search(rf"{name}:\s*\"([^\"]*)\"", tsx)
+    if match is None:
+        raise FillError(f"no {name} variant")
+    return match.group(1)
+
+
 def fill_alphas(tsx: str) -> list[int]:
-    """Every `bg-mauve/*` fill alpha in the button component, as percentages.
+    """Every `bg-mauve` fill alpha in the button component, as percentages.
 
     On this dark-only page a stronger fill sits closer to the mauve label, so
     the worst state is the maximum: any darkened or lightened fill that drops
-    the pair fails the build.
+    the pair fails the build. A bare `bg-mauve` is opaque (100). Anything the
+    check cannot measure raises `FillError` — an omitted state must fail the
+    build rather than pass it quietly.
     """
-    return [int(a) for a in re.findall(r"bg-mauve/(\d+)", tsx)]
+    alphas: list[int] = []
+    for match in re.finditer(r"bg-mauve(?:/([^\s\"']*))?(?![\w-])", tsx):
+        modifier = match.group(1)
+        if modifier is None:
+            alphas.append(100)
+        elif re.fullmatch(r"\d{1,3}", modifier) and 0 <= int(modifier) <= 100:
+            alphas.append(int(modifier))
+        else:
+            raise FillError(f"unsupported bg-mauve modifier {modifier!r}")
+    return alphas
 
 
 def boundary_alphas(tsx: str) -> list[int]:
@@ -203,7 +226,16 @@ def main() -> int:
             NON_TEXT_MIN,
         )
     )
-    fills = fill_alphas(tsx)
+    fills: list[int] = []
+    try:
+        # Only the secondary variant pairs a mauve label with a mauve fill;
+        # the default variant's bare `bg-mauve` carries a dark label and is
+        # covered by the token pair, so including it here would fail a
+        # passing page.
+        fills = fill_alphas(variant_classes(tsx, "secondary"))
+    except FillError as exc:
+        print(f"check-contrast: {exc}; a fill the check cannot measure is a failure, not a pass", file=sys.stderr)
+        return 2
     if not fills:
         print(
             f"check-contrast: no bg-mauve/* class in {tsx_path}; "
