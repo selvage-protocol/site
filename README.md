@@ -210,8 +210,8 @@ when the domain does:
 1. register the domain;
 2. add `rel="canonical"` plus `og:url`, pointing at it;
 3. attach the domain to the Vercel project, apex and `www`;
-4. remove nothing from `lychee.toml` — a URL that resolves needs no exclusion. If some URL ever
-   does need one, it goes there with its reason beside it, as the placeholder endpoint's does.
+4. remove nothing from `lychee.toml` — a URL that resolves needs no exclusion. If a URL ever
+   needs an exclusion, add it there with its reason beside it.
 
 Until then the page is reachable at its `*.vercel.app` URL, which is honest.
 
