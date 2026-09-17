@@ -245,12 +245,16 @@ FORBIDDEN: list[Phrase] = [
         "adjective is backed",
     ),
     Phrase(
-        r"\b(?:self[- ]host(?:ing)?|setup|install(?:ation)?|deploy(?:ment)?)\b[^.]{0,24}\btakes? seconds\b|(?:up(?: and running)?|ready|deploys?|installs?|starts?|runs?|setup|self[- ]hosts?)\b[^.]{0,24}\bin seconds\b|one[- ]click|just works",
+        r"\b(?:self[- ]host(?:ing)?|setup|install(?:ation)?|deploy(?:ment)?)\b[^.]{0,24}\btakes? seconds\b"
+        r"|(?:up(?: and running)?|ready|deploys?|installs?|setup|self[- ]hosts?)\b[^.]{0,24}\bin seconds\b(?!-)"
+        r"|(?:server|selvaged|setup|install\w*|deploy\w*|build|app|site|page|service)\b[^.]{0,32}\b(?:starts?|runs?|boots?)\b[^.]{0,24}\bin seconds\b(?!-)"
+        r"|one[- ]click|just works",
         "Self-hosting takes seconds on any machine you choose.",
         "no image, compose file or service unit exists in any repository; the documented path "
         "is `cargo run -p selvaged -- --listen ...`, and no ease claim is backed",
         ("up and running in seconds.",
-         "up and running in\nseconds."),
+         "up and running in\nseconds.",
+         "the server starts in seconds."),
     ),
     Phrase(
         r"untouched by the network|\bonly machine\b[^.]{0,24}\b(?:your code|touches?)\b",
