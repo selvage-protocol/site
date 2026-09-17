@@ -103,6 +103,16 @@ def hero_stops(css: str) -> list[str]:
     return [h.lower() for h in re.findall(r"#[0-9a-fA-F]{6}", block.group(1))]
 
 
+def fill_alphas(tsx: str) -> list[int]:
+    """Every `bg-mauve/*` fill alpha in the button component, as percentages.
+
+    On this dark-only page a stronger fill sits closer to the mauve label, so
+    the worst state is the maximum: any darkened or lightened fill that drops
+    the pair fails the build.
+    """
+    return [int(a) for a in re.findall(r"bg-mauve/(\d+)", tsx)]
+
+
 def boundary_alphas(tsx: str) -> list[int]:
     """Every `border-mauve/*` alpha in the button component, as percentages.
 
@@ -165,12 +175,6 @@ def main() -> int:
         ("code text", fg, code_bg, TEXT_MIN),
         ("muted text on code background", muted, code_bg, TEXT_MIN),
         ("badge text on badge fill", link, composite(link, bg, 0.10), TEXT_MIN),
-        (
-            "secondary button text on its fill",
-            link,
-            composite(link, bg, 0.15),
-            TEXT_MIN,
-        ),
         ("focus outline against the page", link, bg, NON_TEXT_MIN),
     ]
     tsx_path = os.environ.get(
@@ -178,10 +182,11 @@ def main() -> int:
     )
     try:
         with open(tsx_path, encoding="utf-8") as handle:
-            alphas = boundary_alphas(handle.read())
+            tsx = handle.read()
     except OSError as exc:
         print(f"check-contrast: cannot read {tsx_path}: {exc}", file=sys.stderr)
         return 2
+    alphas = boundary_alphas(tsx)
     if not alphas:
         print(
             f"check-contrast: no border-mauve/* class in {tsx_path}; "
@@ -196,6 +201,23 @@ def main() -> int:
             composite(link, bg, weakest / 100),
             bg,
             NON_TEXT_MIN,
+        )
+    )
+    fills = fill_alphas(tsx)
+    if not fills:
+        print(
+            f"check-contrast: no bg-mauve/* class in {tsx_path}; "
+            "a fill check that cannot find its fill passes everything",
+            file=sys.stderr,
+        )
+        return 2
+    strongest = max(fills)
+    checks.append(
+        (
+            f"secondary button text on its fill (bg-mauve/{strongest})",
+            link,
+            composite(link, bg, strongest / 100),
+            TEXT_MIN,
         )
     )
     stops = hero_stops(css)
