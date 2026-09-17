@@ -17,20 +17,22 @@ export function SiteHeader() {
 
   useEffect(() => {
     let lastY = window.scrollY;
+    let pending = false;
     let frame = 0;
     const onScroll = () => {
+      // Decide synchronously: the frame callback only applies the latest
+      // verdict, so a coalesced frame can never compare a stale position, and
+      // no updater closure reads a variable this handler keeps mutating.
+      // Past the bar's own height and moving down: slide it away. Anywhere
+      // near the top, or moving up, it stays. The bar is sticky, so hiding
+      // is a visual slide only — nothing below it moves.
+      const y = window.scrollY;
+      pending = y > 64 && y > lastY;
+      lastY = y;
       if (frame) return;
       frame = window.requestAnimationFrame(() => {
         frame = 0;
-        const y = window.scrollY;
-        // Past the bar's own height and moving down: slide it away. Anywhere
-        // near the top, or moving up, it stays. The bar is sticky, so hiding
-        // is a visual slide only — nothing below it moves.
-        setConcealed((prev) => {
-          const next = y > 64 && y > lastY;
-          return next === prev ? prev : next;
-        });
-        lastY = y;
+        setConcealed(pending);
       });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
