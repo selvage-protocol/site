@@ -4,10 +4,12 @@
 #
 #   scripts/ci-local.sh typecheck  # tsc --noEmit
 #   scripts/ci-local.sh build      # next build
+#   scripts/ci-local.sh button     # render the button/anchor variants, assert props reach the DOM
+#   scripts/ci-local.sh contrast   # theme token pairs at or above WCAG AA
 #   scripts/ci-local.sh claims     # build, serve production, fetch / and scan the rendered HTML
 #   scripts/ci-local.sh links      # serve production, lychee over the rendered page and the README
 #   scripts/ci-local.sh lint       # actionlint over the workflow files
-#   scripts/ci-local.sh all        # typecheck + build + claims + links + lint
+#   scripts/ci-local.sh all        # typecheck + build + button + contrast + claims + links + lint
 #
 # Keep this in step with the workflow — it runs the same commands, so that a red job is found
 # here rather than on a runner.
@@ -107,6 +109,16 @@ job_build() {
   npm run build
 }
 
+job_button() {
+  say "button: props reach the DOM in both variants"
+  npm run check:button
+}
+
+job_contrast() {
+  say "contrast: theme pairs at or above WCAG AA"
+  ./scripts/check-contrast.py
+}
+
 job_claims() {
   say "claims: known forbidden wordings over the rendered page (a filter, not a proof)"
   # Always rebuilt, so the scan can never pass on a stale page.
@@ -142,12 +154,14 @@ job_lint() {
 case "${1:-all}" in
   typecheck) job_typecheck ;;
   build) job_build ;;
+  button) job_button ;;
+  contrast) job_contrast ;;
   claims) job_claims ;;
   links) job_links ;;
   lint) job_lint ;;
-  all) job_typecheck && job_build && with_server all_served && job_lint ;;
+  all) job_typecheck && job_build && job_button && job_contrast && with_server all_served && job_lint ;;
   *)
-    printf 'usage: %s [typecheck|build|claims|links|lint|all]\n' "$0" >&2
+    printf 'usage: %s [typecheck|build|button|contrast|claims|links|lint|all]\n' "$0" >&2
     exit 2
     ;;
 esac

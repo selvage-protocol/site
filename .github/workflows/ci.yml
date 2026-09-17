@@ -1,7 +1,8 @@
 name: ci
 
-# The gate for the Next.js page: typecheck, build, the claim filter over the rendered page,
-# the link check over the rendered page and the README, and the workflow lint. The claim step
+# The gate for the Next.js page: typecheck, build, the button prop check, the contrast
+# floor over the theme tokens, the claim filter over the rendered page, the link check over
+# the rendered page and the README, and the workflow lint. The claim step
 # matches known wordings only — a green run is not a proof that every sentence is true, so the
 # page's claims are still read against the corpus by a person.
 on:
@@ -72,6 +73,12 @@ jobs:
 
       - name: build (next build)
         run: scripts/ci-local.sh build
+
+      - name: button props reach the DOM (both variants)
+        run: scripts/ci-local.sh button
+
+      - name: contrast floor over the theme tokens (WCAG AA)
+        run: scripts/ci-local.sh contrast
 
       - name: claim filter over the rendered page (known wordings only, not a proof)
         run: scripts/ci-local.sh claims

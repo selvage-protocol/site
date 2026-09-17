@@ -59,6 +59,9 @@ class Phrase:
     # Rendered spellings of the same wording with markup inside its tokens. Each one has to
     # match the pattern too: markup that joins tokens in the browser must not split them here.
     evasions: tuple[str, ...] = ()
+    # Honest wordings the pattern must not match. Each one has to stay clean: a broadening
+    # that reintroduces a false positive fails the gate instead of passing everything.
+    clean: tuple[str, ...] = ()
 
 
 FORBIDDEN: list[Phrase] = [
@@ -203,6 +206,83 @@ FORBIDDEN: list[Phrase] = [
         "190 assertions",
         "the pinned number is 192 assertions (`specification/schema/validate.py`); a different "
         "number is a claim the corpus disproves",
+    ),
+    Phrase(
+        r"third[- ]part[^.]{0,24}sees?\b|no third[- ]part[^.]{0,24}saw\b",
+        "No third party ever sees the room.",
+        "the relay is payload-opaque but plaintext with no transport security in this slice: "
+        "the server's operator and the network path can see the room's text. Only the page's "
+        "own weak reading ('no third party's cloud holding the room') is backed",
+        ("No third-party ever sees the room.",),
+    ),
+    Phrase(
+        r"no cloud[^.]{0,24}between",
+        "no cloud in between",
+        "the relay is payload-opaque but plaintext with no transport security in this slice: "
+        "the server's operator and the network path can see the room's text. Only the page's "
+        "own weak reading ('no third party's cloud holding the room') is backed",
+        ("no clo<!-- -->ud in between", "no cloud <em>in</em> between",
+         "no cloud &#105;n between"),
+    ),
+    Phrase(
+        r"\bno[ -]clouds?\b",
+        "no account, no database, no cloud",
+        "only the weak reading is backed (no third party's cloud holding the room): "
+        "a self-hosted server can itself run on a cloud VM, so a bare 'no cloud' "
+        "overclaims. The backed storage sentence is 'nothing written to disk'",
+        ("no clo<!-- -->ud", "no-cloud"),
+    ),
+    Phrase(
+        r"proven in one room|across editors too|(?:VS ?Code|Neovim|Vim|Emacs|editors?)\b[^.]{0,48}\bon one end and\b",
+        "Proven in one room with VS Code on one end and Neovim on the other.",
+        "the cross-editor pairing has never run: both existing proofs drive two instances of "
+        "one editor. 'Built so either editor can join the same room' is the design goal, not "
+        "a demonstrated pairing",
+        ("with VS Code on one end and Neovim on the other.",
+         "with VS Code on one\nend and Neovim on the other."),
+    ),
+    Phrase(
+        r"\binstant\b|\breal[- ]time\b|\blag[- ]free\b|\blightning[- ]fast\b|snappy",
+        "Sessions feel instant, even on large projects.",
+        "no performance data exists anywhere in the corpus: no speed, latency or fluency "
+        "adjective is backed",
+    ),
+    Phrase(
+        r"\b(?:self[- ]host(?:ing)?|setup|install(?:ation)?|deploy(?:ment)?)\b[^.]{0,24}\btakes? seconds\b"
+        r"|(?:up(?: and running)?|ready|deploys?|installs?|setup|self[- ]hosts?)\b[^.]{0,24}\bin seconds\b(?!-)"
+        r"|(?:server|selvaged|setup|install\w*|deploy\w*|build|app|site|page|service)\b[^.]{0,32}\b(?:starts?|runs?|boots?)\b[^.]{0,24}\bin seconds\b(?!-)"
+        r"|one[- ]click|just works",
+        "Self-hosting takes seconds on any machine you choose.",
+        "no image, compose file or service unit exists in any repository; the documented path "
+        "is `cargo run -p selvaged -- --listen ...`, and no ease claim is backed",
+        ("up and running in seconds.",
+         "up and running in\nseconds.",
+         "the server starts in seconds."),
+        ("The countdown starts in seconds, then changes to minutes.",
+         "The server starts in seconds-hand mode.",
+         "The timeout runs in seconds.",
+         "The render runs in seconds on this GPU.",
+         "The editor starts a search in seconds."),
+    ),
+    Phrase(
+        r"untouched by the network|\bonly machine\b[^.]{0,24}\b(?:your code|touches?)\b",
+        "The machine you chose is the only machine your code touches.",
+        "document payloads travel through the server to the peers that ask for them; the grant "
+        "bounds which paths are listed and served, not which machines code touches",
+        ("the only machine your code touches.",
+         "the only machine your <em>code</em> touches."),
+    ),
+    Phrase(
+        r"\bis live\b|\bnow live\b|\bnow available\b",
+        "Selvage Session Protocol is now live.",
+        "nothing is released, hosted or published: no demo instance, no release, no package. "
+        "The honest status line is the wire version plus the specification draft",
+    ),
+    Phrase(
+        r"\bsign[ -]?in\b|\bsign[ -]?up\b|\bget started\b|\bdownload\b|\bpricing\b",
+        "Sign in to get started, then download the app.",
+        "no accounts exist, so nothing can be signed into; no package exists to download and "
+        "no price exists to show. The page offers the specification to read and a server to run",
     ),
 ]
 
@@ -414,6 +494,14 @@ def main() -> int:
                 print(
                     f"check-claims: the pattern {phrase.pattern!r} does not match its evasion "
                     f"sample {evasion!r}; markup inside its tokens defeats it",
+                    file=sys.stderr,
+                )
+                return 2
+        for wording in phrase.clean:
+            if pattern.search(normalise(wording)[0]):
+                print(
+                    f"check-claims: the pattern {phrase.pattern!r} matches its clean fixture "
+                    f"{wording!r}; honest wording is a false positive",
                     file=sys.stderr,
                 )
                 return 2
