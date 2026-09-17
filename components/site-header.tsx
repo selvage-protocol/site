@@ -90,6 +90,20 @@ export function SiteHeader() {
           </Button>
         </div>
       </nav>
+      <nav
+        aria-label="Sections"
+        className="flex gap-4 overflow-x-auto whitespace-nowrap border-t border-surface0/70 px-5 py-2 text-[13px] md:hidden"
+      >
+        {navLinks.map((link) => (
+          <a
+            key={link.href}
+            href={link.href}
+            className="py-1 text-subtext transition-colors hover:text-text"
+          >
+            {link.label}
+          </a>
+        ))}
+      </nav>
     </header>
   );
 }
