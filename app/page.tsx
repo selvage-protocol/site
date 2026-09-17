@@ -105,7 +105,7 @@ export default function Home() {
         </section>
 
         <div className="prose-body mx-auto w-full max-w-3xl px-5 pb-4">
-          <section id="who-its-for" className="scroll-mt-24">
+          <section id="who-its-for" className="scroll-mt-28 md:scroll-mt-24">
             <h2>Who this is for</h2>
             <p>
               <strong>Two developers pairing.</strong> One of you hosts a folder in VS Code; the other pastes an
@@ -126,7 +126,7 @@ export default function Home() {
             </p>
           </section>
 
-          <section id="session" className="scroll-mt-24">
+          <section id="session" className="scroll-mt-28 md:scroll-mt-24">
             <h2>Your server, your code</h2>
             <p>
               Selvage is the project: the specification, a reference server you run yourself, and
@@ -171,7 +171,7 @@ export default function Home() {
             </ol>
           </section>
 
-          <section id="run-it" className="scroll-mt-24">
+          <section id="run-it" className="scroll-mt-28 md:scroll-mt-24">
             <h2>Run it today</h2>
             <p>
               There is no hosted demo, no release and no package to install from an extension store,
@@ -245,7 +245,7 @@ export default function Home() {
             </p>
           </section>
 
-          <section id="not-yet" className="scroll-mt-24">
+          <section id="not-yet" className="scroll-mt-28 md:scroll-mt-24">
             <h2>What this is not yet</h2>
             <ul>
               <li>
@@ -297,7 +297,7 @@ export default function Home() {
             </ul>
           </section>
 
-          <section id="privacy" className="scroll-mt-24">
+          <section id="privacy" className="scroll-mt-28 md:scroll-mt-24">
             <h2>Privacy notice</h2>
             <p>
               <strong>Controller.</strong> The{" "}
