@@ -46,6 +46,23 @@ check(
   buttonHtml,
 );
 check(buttonHtml.includes("Join the session"), "children reach the button", buttonHtml);
+// `text-base` is a font-size utility, not `--color-base`: tailwind-merge drops it
+// next to a size's `text-[15px]`, leaving the label to inherit body text. The
+// default variant must carry an explicit color utility that survives merging.
+const defaultButtonHtml = renderToStaticMarkup(<Button>Primary</Button>);
+check(
+  defaultButtonHtml.includes("text-[color:var(--color-base)]"),
+  "default variant keeps an explicit text color",
+  defaultButtonHtml,
+);
+const lgButtonHtml = renderToStaticMarkup(
+  <Button size="lg">Primary lg</Button>,
+);
+check(
+  lgButtonHtml.includes("text-[color:var(--color-base)]"),
+  "lg size keeps the default text color after twMerge",
+  lgButtonHtml,
+);
 check(
   (Button({ type: "button", onClick, children: "x" } as ButtonProps) as React.JSX.Element)
     .props.onClick === onClick,
