@@ -17,20 +17,22 @@ export function SiteHeader() {
 
   useEffect(() => {
     let lastY = window.scrollY;
+    let pending = false;
     let frame = 0;
     const onScroll = () => {
+      // Decide synchronously: the frame callback only applies the latest
+      // verdict, so a coalesced frame can never compare a stale position, and
+      // no updater closure reads a variable this handler keeps mutating.
+      // Past the bar's own height and moving down: slide it away. Anywhere
+      // near the top, or moving up, it stays. The bar is sticky, so hiding
+      // is a visual slide only — nothing below it moves.
+      const y = window.scrollY;
+      pending = y > 64 && y > lastY;
+      lastY = y;
       if (frame) return;
       frame = window.requestAnimationFrame(() => {
         frame = 0;
-        const y = window.scrollY;
-        // Past the bar's own height and moving down: slide it away. Anywhere
-        // near the top, or moving up, it stays. The bar is sticky, so hiding
-        // is a visual slide only — nothing below it moves.
-        setConcealed((prev) => {
-          const next = y > 64 && y > lastY;
-          return next === prev ? prev : next;
-        });
-        lastY = y;
+        setConcealed(pending);
       });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -89,6 +91,20 @@ export function SiteHeader() {
             Read the spec
           </Button>
         </div>
+      </nav>
+      <nav
+        aria-label="Sections"
+        className="flex gap-4 overflow-x-auto whitespace-nowrap border-t border-surface0/70 px-5 py-2 text-[13px] md:hidden"
+      >
+        {navLinks.map((link) => (
+          <a
+            key={link.href}
+            href={link.href}
+            className="py-1 text-subtext transition-colors hover:text-text"
+          >
+            {link.label}
+          </a>
+        ))}
       </nav>
     </header>
   );

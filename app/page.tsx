@@ -16,7 +16,7 @@ export default function Home() {
       <SiteHeader />
 
       <main id="top">
-        <section className="mx-auto w-full max-w-6xl px-5 pb-16 pt-14 md:pb-24 md:pt-20">
+        <section className="mx-auto w-full max-w-6xl px-5 pb-12 pt-10 md:pb-16 md:pt-14">
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-10">
             <div>
               <Badge>
@@ -24,10 +24,9 @@ export default function Home() {
                   aria-hidden="true"
                   className="inline-block h-1.5 w-1.5 rounded-full bg-mauve"
                 />
-                Selvage Session Protocol &middot; wire selvage/1 &middot;
-                specification draft
+                Selvage Session Protocol &middot; wire selvage/1
               </Badge>
-              <h1 className="mt-6 text-4xl font-bold leading-[1.08] tracking-tight text-text md:text-[3.4rem]">
+              <h1 className="mt-6 text-4xl font-bold leading-[1.08] tracking-tight text-text md:text-[3rem]">
                 Your server, your code.
                 <br />
                 Share a link, come edit with me.
@@ -38,7 +37,7 @@ export default function Home() {
                 participants, open documents, presence. You run the server,
                 you send the link &mdash; no account, no third party&apos;s cloud holding the room.
               </p>
-              <ul className="mt-8 space-y-3.5">
+              <ul className="mt-6 space-y-3">
                 {checklist.map((item) => (
                   <li key={item} className="flex items-start gap-3">
                     <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-mauve/15">
@@ -53,7 +52,7 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-9 flex flex-wrap items-center gap-3">
+              <div className="mt-7 flex flex-wrap items-center gap-3">
                 <Button
                   href="https://github.com/selvage-protocol/specification"
                   size="lg"
@@ -106,7 +105,7 @@ export default function Home() {
         </section>
 
         <div className="prose-body mx-auto w-full max-w-3xl px-5 pb-4">
-          <section id="who-its-for" className="scroll-mt-24">
+          <section id="who-its-for" className="scroll-mt-28 md:scroll-mt-24">
             <h2>Who this is for</h2>
             <p>
               <strong>Two developers pairing.</strong> One of you hosts a folder in VS Code; the other pastes an
@@ -127,7 +126,7 @@ export default function Home() {
             </p>
           </section>
 
-          <section id="session" className="scroll-mt-24">
+          <section id="session" className="scroll-mt-28 md:scroll-mt-24">
             <h2>Your server, your code</h2>
             <p>
               Selvage is the project: the specification, a reference server you run yourself, and
@@ -172,7 +171,7 @@ export default function Home() {
             </ol>
           </section>
 
-          <section id="run-it" className="scroll-mt-24">
+          <section id="run-it" className="scroll-mt-28 md:scroll-mt-24">
             <h2>Run it today</h2>
             <p>
               There is no hosted demo, no release and no package to install from an extension store,
@@ -246,7 +245,7 @@ export default function Home() {
             </p>
           </section>
 
-          <section id="not-yet" className="scroll-mt-24">
+          <section id="not-yet" className="scroll-mt-28 md:scroll-mt-24">
             <h2>What this is not yet</h2>
             <ul>
               <li>
@@ -298,7 +297,7 @@ export default function Home() {
             </ul>
           </section>
 
-          <section id="privacy" className="scroll-mt-24">
+          <section id="privacy" className="scroll-mt-28 md:scroll-mt-24">
             <h2>Privacy notice</h2>
             <p>
               <strong>Controller.</strong> The{" "}
