@@ -239,7 +239,7 @@ FORBIDDEN: list[Phrase] = [
          "with VS Code on one\nend and Neovim on the other."),
     ),
     Phrase(
-        r"\binstant\b|real[- ]time|lag[- ]free|lightning[- ]fast|snappy",
+        r"\binstant\b|\breal[- ]time\b|\blag[- ]free\b|\blightning[- ]fast\b|snappy",
         "Sessions feel instant, even on large projects.",
         "no performance data exists anywhere in the corpus: no speed, latency or fluency "
         "adjective is backed",
