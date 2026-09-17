@@ -16,7 +16,7 @@ export default function Home() {
       <SiteHeader />
 
       <main id="top">
-        <section className="mx-auto w-full max-w-6xl px-5 pb-16 pt-14 md:pb-24 md:pt-20">
+        <section className="mx-auto w-full max-w-6xl px-5 pb-12 pt-10 md:pb-16 md:pt-14">
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-10">
             <div>
               <Badge>
@@ -27,7 +27,7 @@ export default function Home() {
                 Selvage Session Protocol &middot; wire selvage/1 &middot;
                 specification draft
               </Badge>
-              <h1 className="mt-6 text-4xl font-bold leading-[1.08] tracking-tight text-text md:text-[3.4rem]">
+              <h1 className="mt-6 text-4xl font-bold leading-[1.08] tracking-tight text-text md:text-[3rem]">
                 Your server, your code.
                 <br />
                 Share a link, come edit with me.
@@ -38,7 +38,7 @@ export default function Home() {
                 participants, open documents, presence. You run the server,
                 you send the link &mdash; no account, no third party&apos;s cloud holding the room.
               </p>
-              <ul className="mt-8 space-y-3.5">
+              <ul className="mt-6 space-y-3">
                 {checklist.map((item) => (
                   <li key={item} className="flex items-start gap-3">
                     <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-mauve/15">
@@ -53,7 +53,7 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-9 flex flex-wrap items-center gap-3">
+              <div className="mt-7 flex flex-wrap items-center gap-3">
                 <Button
                   href="https://github.com/selvage-protocol/specification"
                   size="lg"
