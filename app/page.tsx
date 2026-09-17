@@ -24,8 +24,7 @@ export default function Home() {
                   aria-hidden="true"
                   className="inline-block h-1.5 w-1.5 rounded-full bg-mauve"
                 />
-                Selvage Session Protocol &middot; wire selvage/1 &middot;
-                specification draft
+                Selvage Session Protocol &middot; wire selvage/1
               </Badge>
               <h1 className="mt-6 text-4xl font-bold leading-[1.08] tracking-tight text-text md:text-[3rem]">
                 Your server, your code.
