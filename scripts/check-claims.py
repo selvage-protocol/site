@@ -59,6 +59,9 @@ class Phrase:
     # Rendered spellings of the same wording with markup inside its tokens. Each one has to
     # match the pattern too: markup that joins tokens in the browser must not split them here.
     evasions: tuple[str, ...] = ()
+    # Honest wordings the pattern must not match. Each one has to stay clean: a broadening
+    # that reintroduces a false positive fails the gate instead of passing everything.
+    clean: tuple[str, ...] = ()
 
 
 FORBIDDEN: list[Phrase] = [
@@ -255,6 +258,11 @@ FORBIDDEN: list[Phrase] = [
         ("up and running in seconds.",
          "up and running in\nseconds.",
          "the server starts in seconds."),
+        ("The countdown reaches zero in seconds.",
+         "The stopwatch stops each lap in seconds.",
+         "The session timeout fires in seconds.",
+         "The render runs in seconds on this GPU.",
+         "The editor starts a search in seconds."),
     ),
     Phrase(
         r"untouched by the network|\bonly machine\b[^.]{0,24}\b(?:your code|touches?)\b",
@@ -486,6 +494,14 @@ def main() -> int:
                 print(
                     f"check-claims: the pattern {phrase.pattern!r} does not match its evasion "
                     f"sample {evasion!r}; markup inside its tokens defeats it",
+                    file=sys.stderr,
+                )
+                return 2
+        for wording in phrase.clean:
+            if pattern.search(normalise(wording)[0]):
+                print(
+                    f"check-claims: the pattern {phrase.pattern!r} matches its clean fixture "
+                    f"{wording!r}; honest wording is a false positive",
                     file=sys.stderr,
                 )
                 return 2

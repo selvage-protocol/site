@@ -231,7 +231,8 @@ $ scripts/ci-local.sh lint         # actionlint over the workflows (nix; the wor
 The claims step fetches `/` from the production server into `.tmp/rendered.html` (`PORT`
 overrides the default `3100`) and scans that file by name — reaching no file is an error rather
 than a pass, and every pattern must match its own sample before the scan, so a dead pattern fails
-the gate instead of passing everything.
+the gate instead of passing everything; named honest wordings must stay unmatched, so a broadening
+that reintroduces a false positive fails it too.
 
 `.github/workflows/ci.yml` runs the same commands on `ubuntu-24.04` on every push to `main`
 and every pull request: Node from `.nvmrc`, `npm ci`, then `typecheck`, `build`, `button`,
