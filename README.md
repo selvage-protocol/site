@@ -18,10 +18,9 @@ editor clients. This repository holds the page, the three checks that gate it, a
 | Path | What it is |
 |---|---|
 | `app/page.tsx` | the page: the prose |
-| `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, favicon, global stylesheet |
+| `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, and the global stylesheet. The favicons are deliberately absent: they are Next file conventions, so the framework writes their tags and `sizes` from the files themselves |
 | `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, and a system font stack, so no font is fetched from a third party. Two widths are named there and the page keeps to them: `--measure` for running prose and `--column` for everything that is not prose — section rules, code blocks, the repo grid — so a wide figure is deliberate inside a narrow measure |
-| `app/icon.svg` | the vector favicon: the owner's `svp` monogram redrawn as paths (see "The site mark"). Stays because it is resolution-independent at 3 KB; nothing in the page body uses it |
-| `app/icon.png` / `app/apple-icon.png` | raster favicon fallbacks (32 and 180 px) resized from the owner's opaque export, for contexts without the font (see "The site mark") |
+| `app/icon.png` / `app/icon1.png` / `app/icon2.png` / `app/apple-icon.png` | the favicon set: the owner's opaque export resized to the four sizes a browser asks for — 32, 16 and 48 px, and the 180 px home-screen icon — named for Next's file convention so the framework writes their `<link>` tags and `sizes`. Nothing here is redrawn; there is no vector favicon (see "The site mark") |
 | `app/opengraph-image.png` | the social card image (Next file convention, served as `/opengraph-image.png`): the owner's opaque export at full size, so cards crop owner's pixels |
 | `public/mark-transparent.png` | the mark as served in the page body: the owner's transparent 800×800 export, vendored byte-identical (see "The site mark"). The opaque export was vendored beside it while the hero panel was light; it is no longer served — `app/opengraph-image.png` is the same file |
 | `postcss.config.mjs` | the one PostCSS plugin (`@tailwindcss/postcss`), so `style.css` compiles on build |
@@ -41,9 +40,10 @@ editor clients. This repository holds the page, the three checks that gate it, a
 
 ## The site mark
 
-The page body serves the owner's raster mark, not the redrawn SVG: the owner's transparent
-800×800 PNG export vendored byte-identical under `public/` (its checksum matches the owner's
-file) and never hotlinked. Both surfaces that carry it are dark, and the opaque export's
+The page serves the owner's raster mark at every size: the body from the owner's transparent
+800×800 PNG export, vendored byte-identical under `public/` (its checksum matches the owner's
+file) and never hotlinked; the icons and the social card from the same export's opaque twin.
+Both surfaces that carry the page-body mark are dark, and the opaque export's
 baked `#1e1e2e` base would draw a visible chip inside either of them, so the transparent
 glyphs are the ones that sit on the surface:
 
@@ -51,18 +51,35 @@ glyphs are the ones that sit on the surface:
 |---|---|---|
 | Nav header on dark Mocha | `public/mark-transparent.png` | the bar is translucent Mocha over the page; the opaque export's baked `#1e1e2e` base would draw a visible box against it, while the transparent glyphs sit straight on the bar |
 | Hero panel on its own dark field | `public/mark-transparent.png` | the panel is a matte surface the colour of the page, so the transparent glyphs sit on it exactly as they do in the nav; the opaque export's baked `#1e1e2e` base would read as a chip pasted onto the panel's own field |
-| Favicon and social card | `app/icon.png` / `app/apple-icon.png` / `app/opengraph-image.png` | tab bars and link unfurls crop unpredictably, so these stay opaque: the two favicon fallbacks resized from the opaque export, the social card the full-size opaque export |
+| Favicon and social card | `app/icon1.png` / `app/icon.png` / `app/icon2.png` / `app/apple-icon.png` / `app/opengraph-image.png` | tab bars and link unfurls crop unpredictably, so these stay opaque: the four favicon sizes are the opaque export resized, the social card the full-size opaque export |
 
-`app/icon.svg` stays as the vector favicon: the owner's `svp` monogram (a Comfortaa
-Bold monogram in Catppuccin mauve/teal/red on a Mocha base) with the Inkscape editor
-metadata stripped, the Mocha base (`#1e1e2e`) baked in to match the opaque export,
-and the live Comfortaa `<text>` converted to paths, because no visitor has the font
-installed. At 3 KB it is the resolution-independent favicon; the page body does
-not use it.
+There is no vector favicon. `app/icon.svg` was one — the owner's Comfortaa Bold `svp`
+monogram (Catppuccin mauve/teal/red on a Mocha base) with the live `<text>` converted to
+paths and Inkscape's filter and clip markup kept — and it was the first icon the page
+declared. Its `<clipPath>` contains a `<use>` that points at a `<g>`, which contributes no
+shape to the clip, so both Chromium and librsvg clip the glyph group away and the only thing
+an SVG-aware browser can draw from the file is the baked `#1e1e2e` rect: a blank dark square
+at 16, 32 and 48 px, verified by rasterising the file in both. (Which candidate a browser
+really paints in a tab is its own scoring of an SVG that declares no `sizes`; the point is
+that one of the two icons was undrawable rather than merely small.) The paths themselves
+were faithful to the owner's framing — at 2% fuzz their glyph box is the owner's opaque
+export's own rectangle, 516×229+137+280 of 800 — but the file still fell short of the
+artwork: rasterised with Inkscape's shadow filter left in, the letters come out glowing
+(RMSE 8% from the export at 800 px), and with the filter dropped they come out flat (11%),
+because the export's dark stroke and soft shadow are baked into its pixels and not into the
+paths. A redraw is a second copy of the artwork that nothing keeps in step with the first,
+and the owner's pixels are the source of truth: it was removed rather than repaired.
 
-The favicon fallbacks are the owner's own pixels, not a render of the SVG: each is
-the opaque 800×800 export resized down with ImageMagick, verified pixel-identical
-to a fresh resize (RMSE 0 at both 32 and 180 px).
+The favicon set is the owner's own pixels at each size a browser asks for: `app/icon1.png`
+(16), `app/icon.png` (32), `app/icon2.png` (48) and `app/apple-icon.png` (180) are the opaque
+800×800 export resized with ImageMagick (`magick app/opengraph-image.png -resize <N>x<N>`),
+each verified pixel-identical to a fresh resize (RMSE 0 at all four sizes) and rendered 1:1
+by the browser, so no surface is an upscale of another. The mark sits where the owner put
+it: its box is centred to within 1.5 px at every size, spanning 62–67% of the width and
+25–29% of the height, because the export is a wide wordmark on a square field. At 16 px that
+leaves the monogram 10×4 px — the smallest this artwork gets, and the reason the 180 px and
+the social card carry it best. Giving the tab more of the mark would mean cropping the
+export's field, a re-framing of the owner's composition, so it is not done here.
 
 The prose in `app/page.tsx` descends from the static page's prose: the commands, the numbers
 and the licence footer are unchanged. Two sentences differ on purpose: the static page's "loads no JavaScript" is
