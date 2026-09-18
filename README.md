@@ -69,7 +69,8 @@ and the licence footer are unchanged. Two sentences differ on purpose: the stati
 false once Next.js serves the route, so the page says it prerenders to static HTML and names
 the framework runtime scripts instead; and the waitlist form is gone, so the privacy notice
 names its controller and collects nothing instead of carrying blanks for a mailing service. Above the carried-over sections sits a benefit-first
-hero (nav, mono status chip, a two-line headline broken at its own sentence boundary, the
+hero (nav, mono status chip, a headline broken at its own sentence boundary — two lines from `sm`
+up, and below it a mid-clause fallback at the second sentence's comma — the
 checkmark list, two CTAs, and a quiet dark abstract panel): every added sentence is a paraphrase of an already-audited true sentence
 — the hook and workflow sentence from the design record, the memory-only server, the invite
 as the whole permission, the spec corpus in its pinned numbers — or framed as direction. The must-not-say table still binds every line, and the
@@ -262,7 +263,7 @@ regression fails the build instead of waiting for a look. Measured today:
 | focus outline against the page | 8.07:1 | 3.0:1 |
 | glass-card text, worst panel stop | 11.71:1 (muted 7.61:1) | 4.5:1 |
 
-Three pairs the check does not parse are computed the same way, from the colours the browser
+Three groups the check does not parse — five ratios in all — are computed the same way, from the colours the browser
 composites, and are re-measured whenever the fills around them move: inline code text on its
 chip fill (`rgba(205, 214, 244, 0.07)` over `--bg`) 9.62:1, the panel's `specification draft`
 label on the panel's lightest stop 5.90:1, and the repo cards' muted text and links on their
@@ -287,6 +288,12 @@ What no ratio proves is read against the code by a person on every change:
 - **Decorative only.** The hero panel is `aria-hidden`: a matte field of fine rules, the site
   mark and one card of the project's own sentences. Its worst-case ratios still clear AA
   (above), but nothing in it is load-bearing for any user.
+- **Section numbers.** The `01`…`07` opening each section is generated content from a CSS
+  counter, so it is structure rather than decoration: it counts the sections in order, it is
+  exposed to assistive technology, and its colour is the recorded link pair (8.07:1).
+- **Repo links.** The repository cards drop the default underline, so a link is told apart
+  from the muted text beside it by its monospace face and size rather than by colour alone
+  (mauve against that text is 1.10:1); the focus outline is unchanged.
 
 ## Licence
 
