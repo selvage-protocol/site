@@ -1,8 +1,12 @@
 # selvageprotocol.com — the public landing page
 
+The page is live at **https://selvage-protocol.vercel.app**; `selvageprotocol.com` is the intended
+domain and is not registered (see "The live origin").
+
 The landing page for **Selvage** (the project) and the **Selvage Session Protocol** (the protocol
 it publishes). A Next.js App Router project with one route (`/`): the page component carries the
-prose, the global stylesheet carries the styling, and the browser downloads nothing beyond
+prose, the product figures live in one component of their own, the global stylesheet carries the
+styling, and the browser downloads nothing beyond
 the prerendered page, the stylesheet, the images, and the framework runtime with the
 `SiteHeader` client boundary and its dependencies (header, buttons, and the arrow
 icon) — no web font, no
@@ -18,8 +22,8 @@ browser proof the runner cannot run, and nothing else.
 
 | Path | What it is |
 |---|---|
-| `app/page.tsx` | the page: the prose |
-| `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, `metadataBase` (the origin the file conventions resolve against — see "The domain and canonical metadata"), and the global stylesheet. The favicons are deliberately absent: they are Next file conventions, so the framework writes their tags and `sizes` from the files themselves |
+| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (promise, three landed facts, two CTAs, the room figure), *See it working* (four cards), *How it works* (four steps), *Collaboration never had its LSP* (why the specification is the artifact), *Run it* (two commands in the open, the three long routes folded into one `details`), *What is built, and what is not* (the honest ledger), then the footer |
+| `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, `metadataBase` (the origin the file conventions resolve against — see "The live origin"), and the global stylesheet. The favicons are deliberately absent: they are Next file conventions, so the framework writes their tags and `sizes` from the files themselves |
 | `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, and a system font stack, so no font is fetched from a third party. Two widths are named there and the page keeps to them: `--measure` for running prose and `--column` for everything that is not prose — section rules, code blocks, the repo grid — so a wide figure is deliberate inside a narrow measure |
 | `app/icon.png` / `app/icon1.png` / `app/icon2.png` / `app/apple-icon.png` | the favicon set: the owner's opaque export resized to the four sizes a browser asks for — 32, 16 and 48 px, and the 180 px home-screen icon — named for Next's file convention so the framework writes their `<link>` tags and `sizes`. Nothing here is redrawn; there is no vector favicon (see "The site mark") |
 | `app/opengraph-image.png` | the social card image (Next file convention, served as `/opengraph-image.png`): the owner's opaque export at full size, so cards crop owner's pixels |
@@ -28,7 +32,8 @@ browser proof the runner cannot run, and nothing else.
 | `next.config.ts` | the one build setting that is not a default: `poweredByHeader: false`, so the framework's `X-Powered-By: Next.js` banner is not on the page's HTML response |
 | `components/ui/button.tsx` | the button primitive (shadcn-style `cva` variants: filled default, tinted secondary, ghost; renders an anchor when given `href`): the nav CTA and the two hero CTAs, nothing else |
 | `components/ui/badge.tsx` | the pill primitive: the hero status line, a mono caps chip |
-| `components/ui/card.tsx` | the card primitive: the abstract panel's glass card |
+| `components/room-visuals.tsx` | the product figures: the hero's room window (the guest's mirrored tree, one open file, two peer carets, the invite chip) and the three smaller drawings the cards carry. Inline markup and the page's own CSS — no image, no dependency, nothing fetched (see "The product figures") |
+| `components/ui/card.tsx` | the card primitive: the hero panel's glass card |
 | `lib/utils.ts` | the one shared helper (`cn`: `clsx` + `tailwind-merge`) |
 | `package.json` / `package-lock.json` | the only dependencies: `next`, `react`, `react-dom`, `tailwindcss` (+ its PostCSS plugin), `clsx`, `tailwind-merge`, `class-variance-authority` and `lucide-react` for icons, `typescript` and `@types/*`. No Radix, no component library, nothing else without a written reason |
 | `.nvmrc` | the pinned Node version for local work and CI (`nvm use` reads it); `package.json` `engines` carries the major (`24.x`), because Vercel only deploys major versions |
@@ -47,15 +52,18 @@ browser proof the runner cannot run, and nothing else.
 The page serves the owner's raster mark at every size: the body from the owner's transparent
 800×800 PNG export, vendored byte-identical under `public/` (its checksum matches the owner's
 file) and never hotlinked; the icons and the social card from the same export's opaque twin.
-Both surfaces that carry the page-body mark are dark, and the opaque export's
-baked `#1e1e2e` base would draw a visible chip inside either of them, so the transparent
+The one surface that carries the page-body mark is dark, and the opaque export's
+baked `#1e1e2e` base would draw a visible chip inside it, so the transparent
 glyphs are the ones that sit on the surface:
 
 | Surface | File | Why |
 |---|---|---|
 | Nav header on dark Mocha | `public/mark-transparent.png` | the bar is translucent Mocha over the page; the opaque export's baked `#1e1e2e` base would draw a visible box against it, while the transparent glyphs sit straight on the bar |
-| Hero panel on its own dark field | `public/mark-transparent.png` | the panel is a matte surface the colour of the page, so the transparent glyphs sit on it exactly as they do in the nav; the opaque export's baked `#1e1e2e` base would read as a chip pasted onto the panel's own field |
 | Favicon and social card | `app/icon1.png` / `app/icon.png` / `app/icon2.png` / `app/apple-icon.png` / `app/opengraph-image.png` | tab bars and link unfurls crop unpredictably, so these stay opaque: the four favicon sizes are the opaque export resized, the social card the full-size opaque export |
+
+The hero panel used to be the second surface. It is now a figure of the product itself (see
+"The product figures") and carries no mark: a watermark on a drawing of an editor window is one
+more thing between the reader and the thing the drawing shows.
 
 There is no vector favicon. `app/icon.svg` was one — the owner's Comfortaa Bold `svp`
 monogram (Catppuccin mauve/teal/red on a Mocha base) with the live `<text>` converted to
@@ -85,19 +93,67 @@ leaves the monogram 10×4 px — the smallest this artwork gets, and the reason 
 the social card carry it best. Giving the tab more of the mark would mean cropping the
 export's field, a re-framing of the owner's composition, so it is not done here.
 
-The prose in `app/page.tsx` descends from the static page's prose: the commands, the numbers
-and the licence footer are unchanged. Two sentences differ on purpose: the static page's "loads no JavaScript" is
-false once Next.js serves the route, so the page says it prerenders to static HTML and names
-the framework runtime scripts instead; and the waitlist form is gone, so the privacy notice
-names its controller and collects nothing instead of carrying blanks for a mailing service. Above the carried-over sections sits a benefit-first
-hero (nav, mono status chip, a headline broken at its own sentence boundary — two lines from `sm`
-up, and below it a mid-clause fallback at the second sentence's comma — the
-checkmark list, two CTAs, and a quiet dark abstract panel): every added sentence is a paraphrase of an already-audited true sentence
-— the hook and workflow sentence from the design record, the memory-only server, the invite
-as the whole permission, the spec corpus in its pinned numbers — or framed as direction. The must-not-say table still binds every line, and the
-checker grew nine patterns for the traps the new vocabulary invites (a "live" status, a
-proven-pairing claim, a speed adjective, an ease claim, an only-machine claim, a
-third-party-sees claim, a no-cloud-between absolute, a bare no-cloud absolute, and SaaS-creep words like sign-in, download or pricing).
+## The page, and its copy
+
+The page is a product page, not a numbered document: seven parts in order, each one doing a job
+the reader can name.
+
+| Part | Its job |
+|---|---|
+| Hero | the promise, three landed facts, two CTAs, and the room figure. The `h1` is *Edit the same file together, on a server you run.* — what the product does, and the self-hosted wedge the design record's hook carries |
+| See it working | four cards, each with a drawing of the thing it claims: the invite is the permission, two carets in one text, the guest's mirrored tree, three clients on one engine |
+| How it works | the four moves in order — host a folder, send the invite, type in the same file, close the window — under the design record's one-sentence workflow |
+| Collaboration never had its LSP | the wedge: language tooling has the Language Server Protocol and debugging the Debug Adapter Protocol, document sync has `y-protocols`, and the session layer has never been written down. The specification is the flagship artifact, and the corpus counts appear here once, as the evidence they are |
+| Run it | two commands in the open (`git clone`, `cargo run`), the client routes named in a sentence, and the three long routes folded into one `details` |
+| What is built, and what is not | the honest ledger, two columns: four things that exist, six that do not |
+| Footer | the licences, the four repository cards, and the page's own privacy line |
+
+No section carries a number: the `01`…`07` counters in front of every section — the privacy notice
+and the licences included — were the clearest signal that the page was a document rather than a
+product. The headings step up to a display size instead (the `h1` 32/38/40 px, the `h2` 24/30 px),
+the standing lede-and-checklist hero is gone, and the install guide that was a third of the page is
+one foldable block.
+
+The prose still descends from the static page's, and every sentence is a paraphrase of an
+already-audited true sentence or framed as direction. Two sentences differ on purpose: the static
+page's "loads no JavaScript" is false once Next.js serves the route, so the page says it prerenders
+to static HTML and names the framework runtime scripts instead; and the waitlist form is gone, so
+the privacy notice names its controller and collects nothing instead of carrying blanks for a
+mailing service.
+
+The must-not-say table below still binds every line. Two rows moved with what is now true:
+
+- **The browser client.** `web_client` — the third client, Monaco in a page, guests only — is
+  built and served over the project's own private network, so "nothing runs in a web page" is no
+  longer true and the filter no longer forbids the bare word. What the filter forbids instead is
+  both of the lies that replaced it: that a reader can open a page (there is no public URL on that
+  network), and the stale denial itself. The page says the browser client is the third client,
+  guests only, served over a private network — and that there is no public demo to open. The two
+  `clean` fixtures on that pattern are the honest sentences, so a broadening that reintroduces the
+  overclaim fails the gate.
+- **The corpus counts.** Still exactly the numbers `specification/schema/validate.py` pins — 28
+  vectors, 34766 frame checks, 8617 assertions — and they now appear in one place, as the evidence
+  for the specification, instead of three.
+
+## The product figures
+
+The page shows the product rather than describing it, without an image, a font, a dependency or a
+third-party request: `components/room-visuals.tsx` draws the room window from inline markup styled
+by `style.css`. The hero figure is the whole surface at once — the guest's mirrored tree, one open
+file with two peer carets in it (a bar in the peer's colour with their name in a chip beside it),
+and the invite chip that put them there — and each card in *See it working* carries one smaller
+drawing of the thing it claims.
+
+Three rules hold it together:
+
+- **It is an illustration, and it says so.** The caption under the hero figure names it; the code
+  sample is four lines of invented Rust, not a recording of a session.
+- **The drawings are `aria-hidden`; the captions are not.** A screen reader hears the sentence that
+  describes the room, not four lines of code it cannot act on.
+- **No inline `style`, no `<style>`, no webfont, no external image** — the policy in `vercel.json`
+  refuses all four (see "The Content-Security-Policy"). Every colour in a figure is a class in
+  `style.css` or a theme token, which is also what lets `scripts/check-contrast.py` measure the
+  panel and the glass card it draws on.
 
 ## Running it
 
@@ -128,7 +184,7 @@ nosniff` and `Referrer-Policy: strict-origin-when-cross-origin`. `next.config.ts
 framework's own `X-Powered-By: Next.js` banner off, so the HTML response does not name the stack
 it was rendered by. There is nothing to configure beyond connecting the repository.
 
-Production deploys on `main` and every branch and pull request gets a preview URL. That is all
+Production deploys on `main`, at **https://selvage-protocol.vercel.app**, and every branch and pull request gets a preview URL. That is all
 Vercel is used for. It does not run the checks — the workflow does, and those are the ones worth
 making required status checks under branch protection.
 
@@ -244,7 +300,7 @@ summarised here so that the constraint survives without the file that produced i
 | `salvage/1` | The wire version is `selvage/1`. "Selvage" is heard as "salvage", which is why the full protocol title appears at least once in the page's first paragraph |
 | end-to-end encryption, E2EE | Version 1 has no encryption layer: frames travel through the server as unencrypted bytes, and the slice has no transport security either. The relay is payload-opaque but not confidential |
 | "the server cannot read it" / "the text never reaches the server" | The relay routes opaque bytes and keeps no document text, but it can read a frame as it passes and there is no transport security. It is not a confidential relay |
-| a browser client | There is no client that runs in a web page. Both clients are editor plugins |
+| a browser route a reader can open | The browser client exists — `web_client`, Monaco in a page, guests only — but it is served over the project's own private network, so there is no public URL to open one at, and no install-free route to a page. The page says what the browser client is and where it is served, and that the two desktop clients are the published ones. It may not say "nothing runs in a web page" either: that sentence was true when the filter forbade the bare word and it is false now |
 | file create, rename or delete | The room carries no file mutations and nothing writes to the host's working copy. The host's own editor still changes that folder, and a Neovim guest's mirror materialises the granted paths |
 | Docker, or a one-command self-host | No image, compose file or service unit exists in any repository. The documented path is `cargo run -p selvaged -- --listen …` |
 | a stable 1.0 | The wire version is `selvage/1`; the compatibility rule in force is the same major. Nothing has been released and no shape is frozen. No corpus line puts the design at 0.x |
@@ -275,31 +331,33 @@ Three things the check cannot make mechanical, and which a reader of a change ha
   paraphrase or an assertion the list does not know about passes it. Green means those wordings
   are absent; it does not mean every sentence was checked against the corpus.
 
-## The domain and canonical metadata
+## The live origin, and the domain
 
-`selvageprotocol.com` is the project's intended domain and it is **not registered**. The page
-therefore carries **no** `<link rel="canonical">` and no Open Graph URL: a canonical URL pointing
-at a host that does not exist tells a search engine that the real page is a duplicate of nothing,
-and an `og:url` on a dead host breaks the preview card it exists for. The title, description and
-`og:title`/`og:description` mirror the page's own heading and lede; both URL-bearing tags go in
-when the domain does:
+The page is live and public at **https://selvage-protocol.vercel.app**, served by Vercel with the
+two headers above. `selvageprotocol.com` is the project's intended domain and it is **not
+registered**.
 
-One origin the page does carry is `metadataBase` in `app/layout.tsx`, and it is worth being
-precise about why it is not a canonical URL: it names the origin Next resolves its file
-conventions against, so `og:image` and `twitter:image` read
-`https://selvageprotocol.com/opengraph-image.png` instead of the `http://localhost:3000/…` a
-local or preview build published while the layout had no `metadataBase` at all. It writes no tag
-of its own — no `rel="canonical"`, no `og:url` — so both absences above stand. A card fetched
-from that host will not resolve until the domain does, which is no worse than the localhost URL
-it replaces, and it names the origin the page intends rather than the machine that built it.
+What that decides:
+
+- **`metadataBase` is the live origin.** `app/layout.tsx` names it so `og:image` and
+  `twitter:image` read `https://selvage-protocol.vercel.app/opengraph-image.png` — a URL that
+  resolves — instead of the `http://localhost:3000/…` a local or preview build published while the
+  layout had no `metadataBase` at all. `metadataBase` writes no tag of its own.
+- **No `rel="canonical"`, no `og:url`.** Both name the page's one home, and the home the project
+  intends is `selvageprotocol.com`. A canonical pointing at the platform URL would be one more
+  thing to change the day the domain lands, and it is not this repository's call to make the
+  platform URL permanent. A card unfurled from the platform host resolves; a card unfurled from a
+  branch preview names the same image URL as production, because `metadataBase` is a constant.
+- **The title, description and `og:title`/`og:description` mirror the page's own heading and lede.**
+
+When the domain exists:
 
 1. register the domain;
-2. add `rel="canonical"` plus `og:url`, pointing at it;
+2. add `rel="canonical"` plus `og:url`, pointing at it, and move `metadataBase` there;
 3. attach the domain to the Vercel project, apex and `www`;
 4. remove nothing from `lychee.toml` — a URL that resolves needs no exclusion. If a URL ever
    needs an exclusion, add it there with its reason beside it.
 
-Until then the page is reachable at its `*.vercel.app` URL, which is honest.
 
 ## The gate
 
@@ -345,44 +403,57 @@ regression fails the build instead of waiting for a look. Measured today:
 | link on page | 8.07:1 | 4.5:1 |
 | visited link on page | 5.81:1 | 4.5:1 |
 | button label on its mauve fill | 8.07:1 | 4.5:1 |
+| peer chip label on its teal fill (the second caret in the hero figure) | 11.01:1 | 4.5:1 |
 | code text on code background | 12.14:1 | 4.5:1 |
+| muted text on code background | 7.89:1 | 4.5:1 |
 | badge text on its fill | 6.63:1 | 4.5:1 |
-| secondary-button text on its fill (hover state, the worst of rest `15` at 5.98:1) | 4.73:1 | 4.5:1 |
+| secondary-button text on its fill (hover state, the worst of rest `15` at 5.98:1) | 5.32:1 | 4.5:1 |
 | secondary button boundary (`border-mauve/60`, parsed from the component) | 3.82:1 | 3.0:1 |
 | focus outline against the page | 8.07:1 | 3.0:1 |
-| glass-card text, worst panel stop | 11.71:1 (muted 7.61:1) | 4.5:1 |
+| glass-card text, worst of the five panel stops | 11.71:1 (muted 7.61:1) | 4.5:1 |
+| panel text, worst stop (the tree, the file bar and the figure's caption sit on the panel, not on the card) | 9.08:1 (muted 5.90:1) | 4.5:1 |
 
-Three groups the check does not parse — five ratios in all — are computed the same way, from the colours the browser
+Four groups the check does not parse are computed the same way, from the colours the browser
 composites, and are re-measured whenever the fills around them move: inline code text on its
-chip fill (`rgba(205, 214, 244, 0.07)` over `--bg`) 9.62:1, the panel's `specification draft`
-label on the panel's lightest stop 5.90:1, and the repo cards' muted text and links on their
-fill (`rgba(24, 24, 37, 0.5)` over `--bg`) 7.63:1 and 8.36:1, the visited link on the same
-fill 6.02:1. The section hairlines and the card borders sit at 1.30:1 against the page on
+chip fill (`rgba(205, 214, 244, 0.07)` over `--bg`) 9.62:1; the invite chip's label and its URL
+on the chip's own tint (`rgba(203, 166, 247, 0.08)` over the figure's fill over the card's) 6.77:1
+and 10.41:1; the card body text on the card fill (`rgba(24, 24, 37, 0.5)` over `--bg`) 7.63:1;
+the client chips and the rail label under them 10.56:1 and 8.55:1. The repo cards' muted text and
+links on their fill are 7.63:1 and 8.36:1, the visited link on the same fill 6.02:1. The section
+hairlines, the card borders and the status dots sit at 1.30:1 against the page on
 purpose: they are decorative separators, they carry no state, and nothing is identified by
 them.
 
 What no ratio proves is read against the code by a person on every change:
 
-- **Visible focus.** Every link and button carries a 2 px mauve `:focus-visible` outline
-  at a 2 px offset; the `Button` primitive repeats it as a utility, so both spellings agree.
-- **Keyboard.** Every control is a native anchor or button. The sticky header slides away
+- **Visible focus.** Every link, button and `summary` carries a 2 px mauve `:focus-visible`
+  outline at a 2 px offset; the `Button` primitive repeats it as a utility, so both spellings
+  agree. Verified in the browser: the first three tabs land on the nav's own anchors with that
+  ring.
+- **Keyboard.** Every control is a native anchor, button or `details`/`summary`. The sticky header
+  slides away
   on scroll-down but carries `focus-within:translate-y-0`, so a tabbed-to link is never
   focused off-screen. That slide is the `SiteHeader` client boundary running, so it is only as
   true as the page's scripts being permitted — "The Content-Security-Policy" records the
   interval in which they were not, and the gate step that now fails if it happens again.
   No skip link: the page is one route, so there is no repeated block
-  to bypass.
-- **Reduced motion.** `scroll-behavior: smooth` stands down to `auto` and the header slide
-  to `transition: none` inside `prefers-reduced-motion`; nothing else on the page moves.
+  to bypass. The run-it fold is a native `details`, so it opens without a script.
+- **Reduced motion.** Two things move, and both stand down under `prefers-reduced-motion`: the
+  hero figure's 520 ms entrance (an `opacity`/`translateY` animation) and the 2 px hover lift on
+  the figure cards and the repository cards, each inside a `prefers-reduced-motion:
+  no-preference` query, with `scroll-behavior: smooth` and the header slide switched off in a
+  `reduce` block. The buttons' lift is a `motion-safe:` utility for the same reason. Verified in
+  the browser: under emulated `reduce` the hero's `animation-name` is `none` and `scroll-behavior`
+  is `auto`.
 - **Touch targets.** Nav links are `text-sm` (20 px line box) with `py-1`, for 28 px of
-  target height against the 24 px minimum; buttons are 32–44 px tall. In-prose links are
-  inline and exempt.
-- **Decorative only.** The hero panel is `aria-hidden`: a matte field of fine rules, the site
-  mark and one card of the project's own sentences. Its worst-case ratios still clear AA
-  (above), but nothing in it is load-bearing for any user.
-- **Section numbers.** The `01`…`07` opening each section is generated content from a CSS
-  counter, so it is structure rather than decoration: it counts the sections in order, it is
-  exposed to assistive technology, and its colour is the recorded link pair (8.07:1).
+  target height against the 24 px minimum; buttons are 32–44 px tall, and the `summary` is a
+  full-width 45 px row. In-prose links are inline and exempt.
+- **Decorative only.** The hero figure and the cards' drawings are `aria-hidden` — a matte field
+  of fine rules, the mirrored tree, one open file, the carets and the invite chip. Their
+  worst-case ratios still clear AA (above), and the figure carries a visible caption, so a screen
+  reader hears the sentence describing the room rather than four lines of code.
+- **The figure grid is a list.** Each card's drawing is followed by a bold lead and a sentence, so
+  the four claims are readable as a list before they are readable as a picture.
 - **Repo links.** The repository cards drop the default underline, so a link is told apart
   from the muted text beside it by its monospace face and size rather than by colour alone
   (mauve against that text is 1.10:1); the focus outline is unchanged.

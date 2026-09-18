@@ -94,10 +94,32 @@ FORBIDDEN: list[Phrase] = [
         ("end<span></span>-to-end encrypted",),
     ),
     Phrase(
-        r"\bbrowser\b",
-        "it runs in the browser",
-        "there is no client that runs in a web page. Both clients are editor plugins, and the "
-        "one in-page route ever tried needed the arm64 `vsda` module moved aside by hand",
+        # The page may say the browser client exists — `web_client` is the project's third
+        # client, built and served over its own private network — and it may not claim a route
+        # a reader can follow, nor deny the client that now exists. Both lies stay caught: the
+        # stale denial ("nothing runs in a web page", which the page carried until this filter
+        # was corrected) in the first two alternatives, and the old overclaim of an
+        # install-free page a reader can open in the rest.
+        r"\bnothing runs? in a (?:web page|tab|browser)\b"
+        r"|no clients? (?:to|that|which)? ?(?:runs?|open)\w* in a (?:web page|tab|browser)"
+        r"|\b(?:open|visit|try|browse|use|join)\w*\b[^.]{0,24}\bin (?:a|the|your) browser\b"
+        r"|\bruns? in (?:a|the|your) browser\b"
+        r"|\bbrowser\b[^.]{0,16}\b(?:no install\w*|nothing to install)\b",
+        "open the page in your browser and start typing",
+        "the browser client exists — it is the project's third client — but it is guests-only "
+        "and served over the project's own private network: there is no public page a reader "
+        "can open, and no install-free route to one, while the two desktop clients are the "
+        "published ones. Say what the browser client is and where it is served",
+        (
+            "it runs in your browser",
+            "nothing runs in a web page",
+            "there is no client to open in a tab",
+            "try it in the browser with no install",
+        ),
+        (
+            "A browser client is the third client: guests only, served over a private network.",
+            "The browser page joins the same room from a tab.",
+        ),
     ),
     Phrase(
         r"\b(?:create|rename|delete)\w*\s+(?:files?|folders?|directories|paths)",
