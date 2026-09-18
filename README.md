@@ -19,14 +19,14 @@ editor clients. This repository holds the page, the three checks that gate it, a
 |---|---|
 | `app/page.tsx` | the page: the prose |
 | `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, favicon, global stylesheet |
-| `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, and a system font stack, so no font is fetched from a third party |
+| `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, and a system font stack, so no font is fetched from a third party. Two widths are named there and the page keeps to them: `--measure` for running prose and `--column` for everything that is not prose — section rules, code blocks, the repo grid — so a wide figure is deliberate inside a narrow measure |
 | `app/icon.svg` | the vector favicon: the owner's `svp` monogram redrawn as paths (see "The site mark"). Stays because it is resolution-independent at 3 KB; nothing in the page body uses it |
 | `app/icon.png` / `app/apple-icon.png` | raster favicon fallbacks (32 and 180 px) resized from the owner's opaque export, for contexts without the font (see "The site mark") |
 | `app/opengraph-image.png` | the social card image (Next file convention, served as `/opengraph-image.png`): the owner's opaque export at full size, so cards crop owner's pixels |
-| `public/mark-opaque.png` / `public/mark-transparent.png` | the mark as served in the page body: the owner's opaque and transparent 800×800 exports, vendored byte-identical (see "The site mark") |
+| `public/mark-transparent.png` | the mark as served in the page body: the owner's transparent 800×800 export, vendored byte-identical (see "The site mark"). The opaque export was vendored beside it while the hero panel was light; it is no longer served — `app/opengraph-image.png` is the same file |
 | `postcss.config.mjs` | the one PostCSS plugin (`@tailwindcss/postcss`), so `style.css` compiles on build |
 | `components/ui/button.tsx` | the button primitive (shadcn-style `cva` variants: filled default, tinted secondary, ghost; renders an anchor when given `href`): the nav CTA and the two hero CTAs, nothing else |
-| `components/ui/badge.tsx` | the pill primitive: the hero status line |
+| `components/ui/badge.tsx` | the pill primitive: the hero status line, a mono caps chip |
 | `components/ui/card.tsx` | the card primitive: the abstract panel's glass card |
 | `lib/utils.ts` | the one shared helper (`cn`: `clsx` + `tailwind-merge`) |
 | `package.json` / `package-lock.json` | the only dependencies: `next`, `react`, `react-dom`, `tailwindcss` (+ its PostCSS plugin), `clsx`, `tailwind-merge`, `class-variance-authority` and `lucide-react` for icons, `typescript` and `@types/*`. No Radix, no component library, nothing else without a written reason |
@@ -41,14 +41,16 @@ editor clients. This repository holds the page, the three checks that gate it, a
 
 ## The site mark
 
-The page body serves the owner's raster mark, not the redrawn SVG: two 800×800
-PNG exports vendored byte-identical under `public/` (checksums match the owner's
-files) and never hotlinked. Which export goes where is a contrast call:
+The page body serves the owner's raster mark, not the redrawn SVG: the owner's transparent
+800×800 PNG export vendored byte-identical under `public/` (its checksum matches the owner's
+file) and never hotlinked. Both surfaces that carry it are dark, and the opaque export's
+baked `#1e1e2e` base would draw a visible chip inside either of them, so the transparent
+glyphs are the ones that sit on the surface:
 
 | Surface | File | Why |
 |---|---|---|
 | Nav header on dark Mocha | `public/mark-transparent.png` | the bar is translucent Mocha over the page; the opaque export's baked `#1e1e2e` base would draw a visible box against it, while the transparent glyphs sit straight on the bar |
-| Hero panel on the light mauve gradient | `public/mark-opaque.png` | the panel field runs near-white at its lightest stop; the transparent mauve glyphs would wash out on it, while the opaque export's dark Mocha chip keeps its contrast |
+| Hero panel on its own dark field | `public/mark-transparent.png` | the panel is a matte surface the colour of the page, so the transparent glyphs sit on it exactly as they do in the nav; the opaque export's baked `#1e1e2e` base would read as a chip pasted onto the panel's own field |
 | Favicon and social card | `app/icon.png` / `app/apple-icon.png` / `app/opengraph-image.png` | tab bars and link unfurls crop unpredictably, so these stay opaque: the two favicon fallbacks resized from the opaque export, the social card the full-size opaque export |
 
 `app/icon.svg` stays as the vector favicon: the owner's `svp` monogram (a Comfortaa
@@ -67,8 +69,8 @@ and the licence footer are unchanged. Two sentences differ on purpose: the stati
 false once Next.js serves the route, so the page says it prerenders to static HTML and names
 the framework runtime scripts instead; and the waitlist form is gone, so the privacy notice
 names its controller and collects nothing instead of carrying blanks for a mailing service. Above the carried-over sections sits a benefit-first
-hero in a dark-SaaS layout (nav, pill badge, two-line headline, checkmark list, two CTAs,
-abstract mauve panel): every added sentence is a paraphrase of an already-audited true sentence
+hero (nav, mono status chip, a two-line headline broken at its own sentence boundary, the
+checkmark list, two CTAs, and a quiet dark abstract panel): every added sentence is a paraphrase of an already-audited true sentence
 — the hook and workflow sentence from the design record, the memory-only server, the invite
 as the whole permission, the spec corpus in its pinned numbers — or framed as direction. The must-not-say table still binds every line, and the
 checker grew nine patterns for the traps the new vocabulary invites (a "live" status, a
@@ -258,7 +260,16 @@ regression fails the build instead of waiting for a look. Measured today:
 | secondary-button text on its fill (hover state, the worst of rest `15` at 5.98:1) | 4.73:1 | 4.5:1 |
 | secondary button boundary (`border-mauve/60`, parsed from the component) | 3.82:1 | 3.0:1 |
 | focus outline against the page | 8.07:1 | 3.0:1 |
-| glass-card text, worst gradient stop | 7.47:1 (muted 4.85:1) | 4.5:1 |
+| glass-card text, worst panel stop | 11.71:1 (muted 7.61:1) | 4.5:1 |
+
+Three pairs the check does not parse are computed the same way, from the colours the browser
+composites, and are re-measured whenever the fills around them move: inline code text on its
+chip fill (`rgba(205, 214, 244, 0.07)` over `--bg`) 9.62:1, the panel's `specification draft`
+label on the panel's lightest stop 5.90:1, and the repo cards' muted text and links on their
+fill (`rgba(24, 24, 37, 0.5)` over `--bg`) 7.63:1 and 8.36:1, the visited link on the same
+fill 6.02:1. The section hairlines and the card borders sit at 1.30:1 against the page on
+purpose: they are decorative separators, they carry no state, and nothing is identified by
+them.
 
 What no ratio proves is read against the code by a person on every change:
 
@@ -273,9 +284,9 @@ What no ratio proves is read against the code by a person on every change:
 - **Touch targets.** Nav links are `text-sm` (20 px line box) with `py-1`, for 28 px of
   target height against the 24 px minimum; buttons are 32–44 px tall. In-prose links are
   inline and exempt.
-- **Decorative only.** The hero panel is `aria-hidden`: a gradient, the site mark and one
-  card of the project's own sentences. Its worst-case ratios still clear AA (above), but
-  nothing in it is load-bearing for any user.
+- **Decorative only.** The hero panel is `aria-hidden`: a matte field of fine rules, the site
+  mark and one card of the project's own sentences. Its worst-case ratios still clear AA
+  (above), but nothing in it is load-bearing for any user.
 
 ## Licence
 
