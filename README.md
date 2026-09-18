@@ -128,12 +128,16 @@ The must-not-say table below still binds every line. Two rows moved with what is
   longer true and the filter no longer forbids the bare word. What the filter forbids instead is
   both of the lies that replaced it: that a reader can open a page (there is no public URL on that
   network), and the stale denial itself. The page says the browser client is the third client,
-  guests only, served over a private network — and that there is no public demo to open. The two
-  `clean` fixtures on that pattern are the honest sentences, so a broadening that reintroduces the
-  overclaim fails the gate.
-- **The corpus counts.** Still exactly the numbers `specification/schema/validate.py` pins — 28
-  vectors, 34766 frame checks, 8617 assertions — and they now appear in one place, as the evidence
-  for the specification, instead of three.
+  guests only, served over a private network — and that there is no public demo to open. The
+  pattern also holds the route shape neither a verb nor a denial covers — a browser mention sharing
+  a sentence with a URL or a host name, in either order — because that is what "a page a reader can
+  open" looks like in prose. The `clean` fixtures on that pattern are the honest sentences, and the
+  last of them puts the browser mention and the server's own loopback address in different
+  sentences, so a widening past the sentence bound fails the gate.
+- **The corpus counts.** Still exactly the numbers `specification/schema/validate.py` pins — 31
+  vectors, 34858 frame checks, 8642 assertions — and they now appear in one place, as the evidence
+  for the specification, instead of three. The vector count is pinned with up to two words between
+  the number and the word, so the page's "conformance vectors" and "wire vectors" are both gated.
 
 ## The product figures
 
@@ -310,10 +314,10 @@ summarised here so that the constraint survives without the file that produced i
 | "your code never leaves your machine" | Document payloads travel through the server to the peers that ask for them, and there is no encryption layer. What is bounded is the grant: the paths the host enumerates, and the reads it serves from inside the granted root |
 | invented proof: screenshots, testimonials, user counts, a production deployment, a demo link | None of them exist. There is no recording, no user count and no production deployment in this project, and the only server that has ever run was a local debug build. The one image the page carries is the project's own site mark (see above), not proof of anything |
 | a claim of priority ("the first protocol to specify …") | The design record surveys prior art — Eclipse Open Collaboration Tools and others. The project's claim is that the session layer is unspecified, not that this is first |
-| a corpus number other than the pinned one | The counts (28 vectors, 34766 frame checks, 8617 assertions) are constants in `specification/schema/validate.py`; any other number is a claim the corpus disproves |
+| a corpus number other than the pinned one | The counts (31 vectors, 34858 frame checks, 8642 assertions) are constants in `specification/schema/validate.py`; any other number is a claim the corpus disproves |
 | a third party seeing the room | The relay is payload-opaque but plaintext with no transport security in this slice, so the operator and the network path can see the room's text. Only the page's own weak reading (no third party's cloud holding the room) is backed |
 | a bare "no cloud", qualified or not ("no cloud in between" included) | A self-hosted server can itself run on a cloud VM, so only the weak reading is backed — no third party's cloud holding the room. The backed storage sentence is "nothing written to disk" |
-| a proven cross-editor pairing | Both existing proofs drive two instances of one editor; the cross-editor session has never run. "Built so either editor can join the same room" states the design goal, not a demonstrated pairing |
+| a proven cross-editor pairing | The first cross-editor session has run — the design notes' hand-run proof (2026-09-17) passes grant, cursors and follow in both directions — but its concurrent-edit step falls short by one trailing-newline byte, so byte-identical replicas across the two editors are not demonstrated. State what the clients are built to do rather than that it is proven |
 | a speed adjective (instant, real-time, lag-free) | No performance data exists anywhere in the corpus |
 | an ease claim (takes seconds, one-click, just works) | No image, compose file or service unit exists; the documented path is `cargo run`, and no ease claim is backed |
 | an only-machine claim (untouched by the network) | Document payloads travel through the server to the peers that ask for them; the grant bounds which paths are served, not which machines code touches |
@@ -322,7 +326,7 @@ summarised here so that the constraint survives without the file that produced i
 
 Three things the check cannot make mechanical, and which a reader of a change has to hold:
 
-- **A number on the page has a home.** The corpus counts (28 vectors, 34766 frame checks, 8617
+- **A number on the page has a home.** The corpus counts (31 vectors, 34858 frame checks, 8642
   assertions) are the constants `specification/schema/validate.py` pins; when the corpus moves,
   the page moves with it. The commands are the ones the repositories' own READMEs document.
 - **No adjective does the work of a fact.** If a sentence could be true of any project, it does
