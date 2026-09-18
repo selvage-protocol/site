@@ -1,7 +1,6 @@
 import { ArrowUpRight, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { SiteHeader } from "@/components/site-header";
 import {
   CaretLines,
@@ -182,6 +181,8 @@ const notYet = [
   </>,
 ];
 
+// The invite, at card weight: the same chip the hero figure carries, with the copy glyph's
+// job done by the label alone.
 function InviteCard() {
   return (
     <div className="fig fig-invite">

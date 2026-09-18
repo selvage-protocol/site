@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Copy } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 /* Renderings of the product surface: the guest's window, the invite chip, the mirrored
    tree, the three clients. They are drawn in markup and the page's own stylesheet — no
@@ -87,7 +88,7 @@ export function RoomWindow() {
       <div className="hero-visual-rules" aria-hidden="true" />
       <div className="room" aria-hidden="true">
         <TreeFigure />
-        <div className="hero-glass">
+        <Card className="hero-glass">
           <div className="room-bar">
             <span className="room-dot" />
             <span className="room-file">room.rs</span>
@@ -113,7 +114,7 @@ export function RoomWindow() {
           <div className="room-invite">
             <InviteChip />
           </div>
-        </div>
+        </Card>
       </div>
       <figcaption>
         An illustration of a guest&apos;s window: the paths the host granted, one file open,
