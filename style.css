@@ -1,7 +1,13 @@
 /* Selvage Session Protocol — landing page.
    Dark-only Catppuccin Mocha, mauve accent; one stylesheet, no web font: the page
    fetches nothing from a third party. The hexes live in the theme below and in
-   the variables beneath it — a handful of codes needs no dependency. */
+   the variables beneath it — a handful of codes needs no dependency.
+
+   Two widths, one column. --measure is the reading measure: a line of prose stops
+   at about 65 characters. --column is the document column, and everything that is
+   not running text — section rules, code blocks, the repo grid — lines up on it,
+   so a wide figure reads as deliberate inside a narrow measure rather than as an
+   overflow. Both are left-aligned inside the page shell, under the hero. */
 
 @import "tailwindcss";
 
@@ -28,7 +34,10 @@
   --link: #cba6f7;
   /* Overlay, not dimmer: visited prose links still need 4.5:1 on --bg. */
   --link-visited: #9399b2;
-  --measure: 42rem;
+  --measure: 40rem;
+  --column: 44rem;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
   color-scheme: dark;
 }
 
@@ -44,41 +53,87 @@ body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
     Arial, sans-serif;
   font-size: 1.0625rem;
-  line-height: 1.6;
+  line-height: 1.65;
   text-rendering: optimizeLegibility;
+  /* One counter across the whole document, so the licence section at the end of
+     the page continues the numbering the body sections started. */
+  counter-reset: section;
+}
+
+/* The document column. The shell spans the page — the hero and the header line up
+   on its edges — and its single grid track is the column, so the hairline, the code
+   block and the prose share a left edge and the space to the right of them is
+   margin rather than overflow. The gap is the rhythm between sections, so no
+   section carries its own margins. */
+.prose-body {
+  display: grid;
+  grid-template-columns: minmax(0, var(--column));
+  gap: 3.5rem;
+}
+
+/* A section opens with a hairline and its number: the page is a document, and
+   the number is the marker a reader navigates by. Digits only, in the accent,
+   small enough to mark the structure without competing with the heading. */
+.prose-body section {
+  counter-increment: section;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+}
+
+.prose-body section::before {
+  display: block;
+  margin-bottom: 0.55rem;
+  content: counter(section, decimal-leading-zero);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  color: var(--link);
 }
 
 .prose-body h2 {
-  margin: 2.75rem 0 0.75rem;
-  font-size: 1.25rem;
-  line-height: 1.3;
-  letter-spacing: -0.01em;
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  text-wrap: pretty;
 }
 
 .prose-body h3 {
-  margin: 2.25rem 0 0.6rem;
-  font-size: 1.125rem;
+  margin: 2.5rem 0 0.8rem;
+  font-size: 1.0625rem;
   font-weight: 650;
-  line-height: 1.3;
-  letter-spacing: -0.01em;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+  text-wrap: pretty;
+}
+
+/* A short accent rule in front of a sub-route, so a step inside a section reads
+   as nested rather than as another section. */
+.prose-body h3::before {
+  display: inline-block;
+  width: 0.75rem;
+  height: 2px;
+  margin-right: 0.6rem;
+  vertical-align: 0.28em;
+  border-radius: 1px;
+  background: var(--link);
+  content: "";
 }
 
 .prose-body p {
-  margin: 0 0 1rem;
+  margin: 0 0 1.15rem;
 }
 
-.prose-body ul {
-  margin: 0 0 1rem;
-  padding-left: 1.25rem;
+/* Prose stops at the measure; lists, code and rules run to the column. */
+.prose-body :is(p, li) {
+  max-width: var(--measure);
 }
 
-.prose-body ol {
-  margin: 0 0 1rem;
-  padding-left: 1.25rem;
-}
-
-.prose-body li {
-  margin-bottom: 0.6rem;
+.prose-body :is(a, code, strong, em) {
+  overflow-wrap: break-word;
 }
 
 .prose-body a {
@@ -92,29 +147,127 @@ body {
 }
 
 .prose-body code {
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-    "Liberation Mono", monospace;
-  font-size: 0.9em;
+  font-family: var(--mono);
+  font-size: 0.89em;
+}
+
+/* Inline code is a chip: the page is dense with paths and flags, and a chip
+   keeps them from reading as prose. */
+.prose-body :not(pre) > code {
+  padding: 0.1em 0.36em;
+  border-radius: 0.3rem;
+  background: rgba(205, 214, 244, 0.07);
 }
 
 .prose-body pre {
-  margin: 0 0 1rem;
-  padding: 0.85rem 1rem;
+  max-width: var(--column);
+  margin: 0 0 1.4rem;
+  padding: 1rem 1.15rem;
   overflow-x: auto;
   background: var(--code-bg);
   border: 1px solid var(--rule);
-  border-radius: 4px;
+  border-radius: 0.625rem;
+  box-shadow: inset 0 1px 0 rgba(205, 214, 244, 0.05);
+  tab-size: 4;
 }
 
 .prose-body pre code {
-  font-size: 0.85rem;
-  line-height: 1.5;
+  font-size: 0.8375rem;
+  line-height: 1.65;
 }
 
-@media (max-width: 480px) {
+/* Tailwind's preflight removes list markers, so the two lists that carry
+   structure put markers back in the page's own vocabulary: a numbered
+   procedure, and a ruled list whose bold lead is its own line. */
+
+.prose-body ol {
+  margin: 0 0 1.4rem;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.prose-body ol > li {
+  position: relative;
+  margin-bottom: 1.1rem;
+  padding-left: 2.6rem;
+  counter-increment: step;
+}
+
+.prose-body ol > li::before {
+  position: absolute;
+  top: 0.16em;
+  left: 0;
+  content: counter(step, decimal-leading-zero);
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--link);
+}
+
+.prose-body ul:not(.repos) {
+  margin: 0 0 1.4rem;
+  padding: 0;
+  list-style: none;
+}
+
+.prose-body ul:not(.repos) > li {
+  margin: 0;
+  padding: 0.95rem 0;
+  border-top: 1px solid var(--rule);
+}
+
+.prose-body ul:not(.repos) > li:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+
+.prose-body ul:not(.repos) > li > strong:first-child {
+  display: block;
+  margin-bottom: 0.1rem;
+  font-weight: 650;
+  color: var(--fg);
+}
+
+/* The repository list: one card per repository, name in mono over its line. */
+.prose-body ul.repos {
+  display: grid;
+  gap: 0.7rem;
+  max-width: var(--column);
+  margin: 1.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 40rem) {
+  .prose-body ul.repos {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.prose-body ul.repos li {
+  max-width: none;
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--rule);
+  border-radius: 0.5rem;
+  background: rgba(24, 24, 37, 0.5);
+}
+
+.prose-body ul.repos a {
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.prose-body ul.repos a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 30rem) {
   .prose-body pre code {
     font-size: 0.78rem;
-    line-height: 1.55;
+    line-height: 1.6;
   }
 }
 
@@ -125,43 +278,48 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
-ul.repos {
-  padding-left: 0;
-  list-style: none;
-}
-
-ul.repos li {
-  margin-bottom: 0.35rem;
-}
-
-/* Hero visual: an abstract mauve glow field. Deliberately not a capture,
-   a console log, or a product mock — a gradient, the site mark, and one card
-   carrying the project's own sentences. */
+/* Hero visual: a quiet matte panel, not a capture and not a product mock — a
+   dark field the colour of the page, a fine rule texture that fades out from
+   the top-right, one soft mauve glow, the site mark, and one glass card
+   carrying the project's own sentences. Deliberately dark and low-key: the
+   panel is a surface beside the headline, not a light wash competing with it.
+   The literal stops below are what scripts/check-contrast.py measures the card
+   against, so a new colour here has to clear 4.5:1 for the card's text. */
 .hero-visual {
   position: relative;
   overflow: hidden;
   border: 1px solid var(--rule);
-  border-radius: 1rem;
+  border-radius: 0.875rem;
   background:
-    radial-gradient(120% 90% at 80% 10%, #cba6f7 0%, transparent 55%),
-    radial-gradient(100% 100% at 15% 90%, #585b70 0%, transparent 60%),
-    radial-gradient(80% 70% at 50% 50%, #45475a 0%, transparent 65%),
-    linear-gradient(160deg, #e6e2f5 0%, #c3b8ee 45%, #7b7396 100%);
+    radial-gradient(130% 105% at 84% -12%, #332c4a 0%, transparent 58%),
+    radial-gradient(85% 75% at 6% 108%, #232a3d 0%, transparent 62%),
+    linear-gradient(168deg, #232134 0%, #1b1a28 58%, #16161f 100%);
+  box-shadow: inset 0 1px 0 rgba(205, 214, 244, 0.07);
 }
 
-.hero-visual-grain {
+.hero-visual-rules {
   position: absolute;
   inset: 0;
-  background: radial-gradient(
-    60% 45% at 30% 70%,
-    rgba(30, 30, 46, 0.35) 0%,
-    transparent 70%
+  background-image:
+    linear-gradient(to right, rgba(205, 214, 244, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(205, 214, 244, 0.07) 1px, transparent 1px);
+  background-size: 34px 34px;
+  -webkit-mask-image: radial-gradient(
+    120% 95% at 74% -4%,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 0) 74%
+  );
+  mask-image: radial-gradient(
+    120% 95% at 74% -4%,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 0) 74%
   );
 }
 
 .hero-glass {
-  background: rgba(24, 24, 37, 0.82);
-  border: 1px solid rgba(203, 166, 247, 0.35);
+  background: rgba(24, 24, 37, 0.86);
+  border: 1px solid rgba(203, 166, 247, 0.28);
+  box-shadow: 0 20px 45px -32px rgba(0, 0, 0, 0.95);
   backdrop-filter: blur(6px);
 }
 

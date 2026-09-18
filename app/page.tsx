@@ -16,8 +16,8 @@ export default function Home() {
       <SiteHeader />
 
       <main id="top">
-        <section className="mx-auto w-full max-w-6xl px-5 pb-12 pt-10 md:pb-16 md:pt-14">
-          <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-10">
+        <section className="mx-auto w-full max-w-6xl px-5 pb-14 pt-10 md:pb-20 md:pt-14">
+          <div className="grid items-center gap-10 xl:grid-cols-[minmax(0,1fr)_24rem] xl:gap-12">
             <div>
               <Badge>
                 <span
@@ -26,24 +26,30 @@ export default function Home() {
                 />
                 Selvage Session Protocol &middot; wire selvage/1
               </Badge>
-              <h1 className="mt-6 text-4xl font-bold leading-[1.08] tracking-tight text-text md:text-[3rem]">
-                Your server, your code.
-                <br />
-                Share a link, come edit with me.
+              {/* Two sentences, one per line: the headline breaks where the
+                  argument does. The size steps down until the longest line fits
+                  the column, so the second sentence never wraps mid-clause
+                  above 30rem wide. */}
+              <h1 className="mt-7 text-[1.5rem] font-semibold leading-[1.22] tracking-[-0.02em] text-text sm:text-[1.875rem] xl:text-[2.125rem]">
+                <span className="block">Your server, your code.</span>
+                <span className="block">
+                  Share a link,<br className="sm:hidden" />{" "}come edit with me.
+                </span>
               </h1>
-              <p className="mt-6 max-w-xl text-lg leading-relaxed text-subtext">
+              <p className="mt-6 max-w-[33rem] text-[1.0625rem] leading-[1.7] text-subtext md:text-[1.125rem]">
                 Selvage Session Protocol is a written specification for the
                 session layer of collaborative editing &mdash; rooms,
                 participants, open documents, presence. You run the server,
                 you send the link &mdash; no account, no third party&apos;s cloud holding the room.
               </p>
-              <ul className="mt-6 space-y-3">
+              <ul className="mt-8 max-w-[33rem] space-y-3">
                 {checklist.map((item) => (
                   <li key={item} className="flex items-start gap-3">
                     <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-mauve/15">
                       <Check
                         className="h-3.5 w-3.5 text-mauve"
                         strokeWidth={3}
+                        aria-hidden="true"
                       />
                     </span>
                     <span className="text-[15px] leading-relaxed text-text">
@@ -52,7 +58,7 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-7 flex flex-wrap items-center gap-3">
+              <div className="mt-9 flex flex-wrap items-center gap-3">
                 <Button
                   href="https://github.com/selvage-protocol/specification"
                   size="lg"
@@ -66,35 +72,43 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Abstract panel, not a product capture: a mauve glow field with the
-                site mark and one card carrying the project's own sentences. */}
-            <div aria-hidden="true" className="hero-visual min-h-[420px] p-6 md:min-h-[480px] md:p-8">
-              <div className="hero-visual-grain" />
-              <div className="relative flex h-full min-h-[372px] flex-col md:min-h-[416px]">
-                <img
-                  className="h-14 w-auto self-start rounded-lg"
-                  src="/mark-opaque.png"
-                  alt=""
-                  width={800}
-                  height={800}
-                />
-                <Card className="hero-glass mt-auto w-full max-w-md self-end border-mauve/30 bg-mantle/80">
-                  <div className="flex items-center gap-1.5 border-b border-surface0/70 px-5 pb-3 pt-4">
-                    <span className="h-2.5 w-2.5 rounded-full bg-surface0" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-surface0" />
-                    <span className="h-2.5 w-2.5 rounded-full bg-surface0" />
-                    <span className="ml-2 font-mono text-xs text-subtext">
+            {/* Abstract panel, not a product capture: a quiet dark field of fine
+                rules, one soft mauve glow, the site mark, and one card carrying
+                the project's own sentences. aria-hidden and decorative, so
+                nothing in it is load-bearing for any reader. */}
+            <div
+              aria-hidden="true"
+              className="hero-visual min-h-[18rem] p-6 md:p-7 xl:min-h-[23.5rem]"
+            >
+              <div className="hero-visual-rules" />
+              <div className="relative flex h-full min-h-[15rem] flex-col xl:min-h-[20.5rem]">
+                <div className="flex items-start justify-between gap-4">
+                  <img
+                    className="h-12 w-auto"
+                    src="/mark-transparent.png"
+                    alt=""
+                    width={800}
+                    height={800}
+                  />
+                  <span className="mt-1 font-mono text-[11px] uppercase tracking-[0.16em] text-subtext">
+                    specification draft
+                  </span>
+                </div>
+                <Card className="hero-glass mt-auto w-full max-w-[24rem] self-end">
+                  <div className="flex items-center gap-2 border-b border-surface0/60 px-5 pb-3 pt-3.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-mauve" />
+                    <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-subtext">
                       selvage:/&lt;path&gt;
                     </span>
                   </div>
                   <div className="space-y-2.5 px-5 py-4">
-                    <p className="font-mono text-[13px] leading-relaxed text-text">
+                    <p className="text-pretty font-mono text-[13px] leading-relaxed text-text">
                       share a link, come edit my code with me.
                     </p>
-                    <p className="font-mono text-[13px] leading-relaxed text-subtext">
+                    <p className="text-pretty font-mono text-[13px] leading-relaxed text-subtext">
                       paths, never content.
                     </p>
-                    <p className="font-mono text-[13px] leading-relaxed text-subtext">
+                    <p className="text-pretty font-mono text-[13px] leading-relaxed text-subtext">
                       the room ends when the host leaves.
                     </p>
                   </div>
@@ -104,7 +118,7 @@ export default function Home() {
           </div>
         </section>
 
-        <div className="prose-body mx-auto w-full max-w-3xl px-5 pb-4">
+        <div className="prose-body mx-auto w-full max-w-6xl px-5 pb-14">
           <section id="who-its-for" className="scroll-mt-28 md:scroll-mt-24">
             <h2>Who this is for</h2>
             <p>
@@ -310,8 +324,8 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="prose-body mx-auto w-full max-w-3xl px-5 pb-16 text-[0.9375rem] text-subtext">
-        <div className="mt-12 border-t border-surface0 pt-5">
+      <footer className="prose-body mx-auto w-full max-w-6xl px-5 pb-20 text-[0.9375rem] text-subtext">
+        <section>
           <h2>Licences</h2>
           <p>
             The specification &mdash; prose, canonical form, JSON Schema and vectors &mdash; is
@@ -347,7 +361,7 @@ export default function Home() {
               Neovim client
             </li>
           </ul>
-        </div>
+        </section>
       </footer>
     </div>
   );
