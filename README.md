@@ -18,12 +18,13 @@ editor clients. This repository holds the page, the three checks that gate it, a
 | Path | What it is |
 |---|---|
 | `app/page.tsx` | the page: the prose |
-| `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, and the global stylesheet. The favicons are deliberately absent: they are Next file conventions, so the framework writes their tags and `sizes` from the files themselves |
+| `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, `metadataBase` (the origin the file conventions resolve against — see "The domain and canonical metadata"), and the global stylesheet. The favicons are deliberately absent: they are Next file conventions, so the framework writes their tags and `sizes` from the files themselves |
 | `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, and a system font stack, so no font is fetched from a third party. Two widths are named there and the page keeps to them: `--measure` for running prose and `--column` for everything that is not prose — section rules, code blocks, the repo grid — so a wide figure is deliberate inside a narrow measure |
 | `app/icon.png` / `app/icon1.png` / `app/icon2.png` / `app/apple-icon.png` | the favicon set: the owner's opaque export resized to the four sizes a browser asks for — 32, 16 and 48 px, and the 180 px home-screen icon — named for Next's file convention so the framework writes their `<link>` tags and `sizes`. Nothing here is redrawn; there is no vector favicon (see "The site mark") |
 | `app/opengraph-image.png` | the social card image (Next file convention, served as `/opengraph-image.png`): the owner's opaque export at full size, so cards crop owner's pixels |
 | `public/mark-transparent.png` | the mark as served in the page body: the owner's transparent 800×800 export, vendored byte-identical (see "The site mark"). The opaque export was vendored beside it while the hero panel was light; it is no longer served — `app/opengraph-image.png` is the same file |
 | `postcss.config.mjs` | the one PostCSS plugin (`@tailwindcss/postcss`), so `style.css` compiles on build |
+| `next.config.ts` | the one build setting that is not a default: `poweredByHeader: false`, so the framework's `X-Powered-By: Next.js` banner is not on the page's HTML response |
 | `components/ui/button.tsx` | the button primitive (shadcn-style `cva` variants: filled default, tinted secondary, ghost; renders an anchor when given `href`): the nav CTA and the two hero CTAs, nothing else |
 | `components/ui/badge.tsx` | the pill primitive: the hero status line, a mono caps chip |
 | `components/ui/card.tsx` | the card primitive: the abstract panel's glass card |
@@ -226,6 +227,15 @@ at a host that does not exist tells a search engine that the real page is a dupl
 and an `og:url` on a dead host breaks the preview card it exists for. The title, description and
 `og:title`/`og:description` mirror the page's own heading and lede; both URL-bearing tags go in
 when the domain does:
+
+One origin the page does carry is `metadataBase` in `app/layout.tsx`, and it is worth being
+precise about why it is not a canonical URL: it names the origin Next resolves its file
+conventions against, so `og:image` and `twitter:image` read
+`https://selvageprotocol.com/opengraph-image.png` instead of the `http://localhost:3000/…` a
+local or preview build published while the layout had no `metadataBase` at all. It writes no tag
+of its own — no `rel="canonical"`, no `og:url` — so both absences above stand. A card fetched
+from that host will not resolve until the domain does, which is no worse than the localhost URL
+it replaces, and it names the origin the page intends rather than the machine that built it.
 
 1. register the domain;
 2. add `rel="canonical"` plus `og:url`, pointing at it;
