@@ -1,13 +1,19 @@
-/* Selvage Session Protocol — landing page.
-   Dark-only Catppuccin Mocha, mauve accent; one stylesheet, no web font: the page
-   fetches nothing from a third party. The hexes live in the theme below and in
-   the variables beneath it — a handful of codes needs no dependency.
+/* Selvage — landing page.
+   Dark-only Catppuccin Mocha, mauve accent, teal for the second peer, one
+   stylesheet, no web font: the page fetches nothing from a third party. The
+   hexes live in the theme below and in the variables beneath it — a handful of
+   codes needs no dependency.
 
-   Two widths, one column. --measure is the reading measure: a line of prose stops
-   at about 65 characters. --column is the document column, and everything that is
-   not running text — section rules, code blocks, the repo grid — lines up on it,
-   so a wide figure reads as deliberate inside a narrow measure rather than as an
-   overflow. Both are left-aligned inside the page shell, under the hero. */
+   Two widths, one column. --measure is the reading measure: a line of prose
+   stops at about 65 characters. --column is the document column, and everything
+   that is not running text — code blocks, the figure grid, the repo cards —
+   lines up on it, so a wide figure reads as deliberate inside a narrow measure
+   rather than as an overflow.
+
+   The page reads as a product page rather than a numbered document: a section
+   opens on space and one hairline and carries no number, headings step up to a
+   display size, and the only counters left are the ones in a procedure a reader
+   follows in order (`.steps`). */
 
 @import "tailwindcss";
 
@@ -54,10 +60,12 @@ body {
     Arial, sans-serif;
   font-size: 1.0625rem;
   line-height: 1.65;
-  text-rendering: optimizeLegibility;
-  /* One counter across the whole document, so the licence section at the end of
-     the page continues the numbering the body sections started. */
-  counter-reset: section;
+}
+
+/* A reader's own selection is the page's accent, so the room's colour is the one
+   they are already dragging. */
+::selection {
+  background: rgba(203, 166, 247, 0.3);
 }
 
 /* The document column. The shell spans the page — the hero and the header line up
@@ -68,41 +76,33 @@ body {
 .prose-body {
   display: grid;
   grid-template-columns: minmax(0, var(--column));
-  gap: 3.5rem;
+  gap: 4.5rem;
 }
 
-/* A section opens with a hairline and its number: the page is a document, and
-   the number is the marker a reader navigates by. Digits only, in the accent,
-   small enough to mark the structure without competing with the heading. */
+/* One hairline per section and nothing in front of it: a product page separates
+   its parts, it does not number them. */
 .prose-body section {
-  counter-increment: section;
-  padding-top: 1.5rem;
+  padding-top: 2.25rem;
   border-top: 1px solid var(--rule);
 }
 
-.prose-body section::before {
-  display: block;
-  margin-bottom: 0.55rem;
-  content: counter(section, decimal-leading-zero);
-  font-family: var(--mono);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  line-height: 1;
-  color: var(--link);
-}
-
 .prose-body h2 {
-  margin: 0 0 1rem;
+  margin: 0 0 1.1rem;
   font-size: 1.5rem;
   font-weight: 650;
-  line-height: 1.25;
-  letter-spacing: -0.015em;
-  text-wrap: pretty;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+@media (min-width: 48rem) {
+  .prose-body h2 {
+    font-size: 1.875rem;
+  }
 }
 
 .prose-body h3 {
-  margin: 2.5rem 0 0.8rem;
+  margin: 2.25rem 0 0.75rem;
   font-size: 1.0625rem;
   font-weight: 650;
   line-height: 1.4;
@@ -125,6 +125,7 @@ body {
 
 .prose-body p {
   margin: 0 0 1.15rem;
+  text-wrap: pretty;
 }
 
 /* Prose stops at the measure; lists, code and rules run to the column. */
@@ -176,57 +177,396 @@ body {
   line-height: 1.65;
 }
 
-/* Tailwind's preflight removes list markers, so the two lists that carry
-   structure put markers back in the page's own vocabulary: a numbered
-   procedure, and a ruled list whose bold lead is its own line. */
+/* Tailwind's preflight removes list markers, so every list on the page puts its
+   own back: a numbered procedure, the figure grid, the status ledger, and the
+   repository cards. */
 
-.prose-body ol {
-  margin: 0 0 1.4rem;
+.prose-body ol.steps {
+  margin: 0.4rem 0 0;
   padding: 0;
   list-style: none;
   counter-reset: step;
 }
 
-.prose-body ol > li {
+.prose-body ol.steps > li {
   position: relative;
-  margin-bottom: 1.1rem;
+  margin-bottom: 1.15rem;
   padding-left: 2.6rem;
   counter-increment: step;
 }
 
-.prose-body ol > li::before {
+.prose-body ol.steps > li::before {
   position: absolute;
-  top: 0.16em;
+  top: 0.06em;
   left: 0;
-  content: counter(step, decimal-leading-zero);
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1px solid rgba(203, 166, 247, 0.45);
+  border-radius: 0.5rem;
+  background: rgba(203, 166, 247, 0.1);
+  content: counter(step);
   font-family: var(--mono);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
   color: var(--link);
 }
 
-.prose-body ul:not(.repos) {
-  margin: 0 0 1.4rem;
+.prose-body ol.steps > li > strong {
+  color: var(--fg);
+  font-weight: 650;
+}
+
+/* The figure grid: one card per thing a room gives you, each carrying a drawing
+   of the thing and a sentence about it. Two columns from `md`, so a card keeps a
+   comfortable measure rather than a column of stubs. */
+.prose-body ul.cards {
+  display: grid;
+  gap: 0.9rem;
+  max-width: 52rem;
+  margin: 1.75rem 0 0;
   padding: 0;
   list-style: none;
 }
 
-.prose-body ul:not(.repos) > li {
+@media (min-width: 44rem) {
+  .prose-body ul.cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.prose-body ul.cards > li {
+  display: flex;
+  flex-direction: column;
+  max-width: none;
   margin: 0;
-  padding: 0.95rem 0;
+  padding: 1.1rem 1.15rem 1.25rem;
+  border: 1px solid var(--rule);
+  border-radius: 0.75rem;
+  background: rgba(24, 24, 37, 0.5);
+}
+
+.prose-body .card-lead {
+  margin: 1rem 0 0.4rem;
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.35;
+  color: var(--fg);
+}
+
+.prose-body .card-body {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* A figure is one framed drawing. The code figure is the same frame on a `pre`,
+   so the four cards agree. */
+.fig,
+.prose-body pre.fig-code {
+  min-height: 6.25rem;
+  border: 1px solid var(--rule);
+  border-radius: 0.625rem;
+  background: rgba(24, 24, 37, 0.75);
+}
+
+.fig {
+  display: flex;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  overflow: hidden;
+}
+
+.fig-invite {
+  justify-content: center;
+}
+
+.prose-body pre.fig-code {
+  display: flex;
+  align-items: center;
+  max-width: none;
+  margin: 0;
+  padding: 0.85rem 0.95rem;
+  box-shadow: none;
+}
+
+.prose-body pre.fig-code code {
+  font-size: 0.8125rem;
+}
+
+/* The invite: the one control whose whole job is to look shareable. */
+.invite {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid rgba(203, 166, 247, 0.35);
+  border-radius: 0.5rem;
+  background: rgba(203, 166, 247, 0.08);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+}
+
+.invite-glyph {
+  flex: none;
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--link);
+}
+
+.invite-label {
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.invite-url {
+  color: var(--fg);
+  white-space: nowrap;
+}
+
+/* The guest's tree. A column beside the editor from `sm`, a wrapped row of paths
+   below it under that, so the drawing survives a 390 px screen. */
+.room-tree > .room-tree-label {
+  margin: 0 0 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.room-tree ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.1rem 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+
+.room-tree .room-tree-dir,
+.room-tree .room-tree-here {
+  color: var(--fg);
+}
+
+.peer-dot {
+  display: inline-block;
+  width: 0.375rem;
+  height: 0.375rem;
+  margin-left: 0.35rem;
+  border-radius: 9999px;
+  background: var(--color-teal);
+  vertical-align: 0.08em;
+}
+
+/* The three clients and the one wire version they speak. */
+.clients > .client-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.clients .client {
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--rule);
+  border-radius: 9999px;
+  background: rgba(205, 214, 244, 0.06);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  color: var(--fg);
+}
+
+.clients > .client-rail {
+  margin: 0.7rem 0 0;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--rule);
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  color: var(--link);
+}
+
+/* One code sample per figure: block-per-line spans, so no line break is a text
+   node and the sample never reflows its indent. */
+.code {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  line-height: 1.7;
+  color: var(--fg);
+}
+
+.code-line {
+  display: block;
+  white-space: pre;
+}
+
+.code-num {
+  display: inline-block;
+  width: 1.1rem;
+  margin-right: 0.6rem;
+  color: var(--muted);
+}
+
+.code-style {
+  color: var(--color-teal);
+}
+
+/* A peer's caret: a bar in the peer's colour with their name in a chip beside it.
+   The chip is the default button's pair (dark label on mauve or teal), so both
+   tones are measured rather than chosen by eye. */
+.peer {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0.15rem;
+  padding: 0.05em 0.35em;
+  border-radius: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 650;
+  color: var(--bg);
+  vertical-align: 0.1em;
+}
+
+.peer::before {
+  width: 2px;
+  height: 1.15em;
+  margin-right: 2px;
+  border-radius: 1px;
+  background: inherit;
+  content: "";
+}
+
+.peer-mauve {
+  background: var(--link);
+}
+
+.peer-teal {
+  background: var(--color-teal);
+}
+
+/* The run-it fold: the three commands a reader needs stay in the open, the long
+   version of each route is one click away rather than a third of the page. */
+.prose-body details.quickstart {
+  max-width: var(--column);
+  margin: 1.25rem 0 0;
+  border: 1px solid var(--rule);
+  border-radius: 0.625rem;
+  background: rgba(24, 24, 37, 0.5);
+}
+
+.prose-body details.quickstart > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  font-size: 0.9375rem;
+  font-weight: 650;
+  line-height: 1.45;
+  list-style: none;
+}
+
+.prose-body details.quickstart > summary::-webkit-details-marker {
+  display: none;
+}
+
+.prose-body details.quickstart > summary::before {
+  flex: none;
+  width: 1rem;
+  font-family: var(--mono);
+  color: var(--link);
+  content: "+";
+}
+
+.prose-body details.quickstart[open] > summary::before {
+  content: "\2212";
+}
+
+.prose-body details.quickstart > summary:hover {
+  color: var(--link);
+}
+
+.prose-body .quickstart-body {
+  padding: 0 1rem 0.25rem;
   border-top: 1px solid var(--rule);
 }
 
-.prose-body ul:not(.repos) > li:last-child {
-  border-bottom: 1px solid var(--rule);
+.prose-body .quickstart-body > p:first-child,
+.prose-body .quickstart-body > h3:first-child {
+  margin-top: 1.15rem;
 }
 
-.prose-body ul:not(.repos) > li > strong:first-child {
-  display: block;
-  margin-bottom: 0.1rem;
-  font-weight: 650;
+/* The status ledger: what exists and what does not, side by side, so neither half
+   reads as an afterthought. */
+.ledger {
+  display: grid;
+  gap: 2rem;
+  max-width: var(--column);
+  margin-top: 1.6rem;
+}
+
+@media (min-width: 52rem) {
+  .ledger {
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem;
+    max-width: 52rem;
+  }
+}
+
+.prose-body .ledger-head {
+  margin: 0 0 0.8rem;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--link);
+}
+
+.prose-body .ledger-head::before {
+  display: none;
+}
+
+.prose-body .ledger-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prose-body .ledger-list > li {
+  position: relative;
+  max-width: none;
+  margin: 0 0 0.7rem;
+  padding-left: 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.prose-body .ledger-list > li::before {
+  position: absolute;
+  top: 0.62em;
+  left: 0;
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 9999px;
+  background: var(--rule);
+  content: "";
+}
+
+.prose-body .ledger-list > li > strong {
   color: var(--fg);
+  font-weight: 650;
 }
 
 /* The repository list: one card per repository, name in mono over its line. */
@@ -234,15 +574,9 @@ body {
   display: grid;
   gap: 0.7rem;
   max-width: var(--column);
-  margin: 1.6rem 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
-}
-
-@media (min-width: 40rem) {
-  .prose-body ul.repos {
-    grid-template-columns: 1fr 1fr;
-  }
 }
 
 .prose-body ul.repos li {
@@ -269,24 +603,63 @@ body {
     font-size: 0.78rem;
     line-height: 1.6;
   }
+
+  .invite {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.6875rem;
+  }
+
+  .invite-label {
+    display: none;
+  }
 }
 
 a:focus-visible,
 input:focus-visible,
-button:focus-visible {
+button:focus-visible,
+summary:focus-visible {
   outline: 2px solid var(--link);
   outline-offset: 2px;
 }
 
-/* Hero visual: a quiet matte panel, not a capture and not a product mock — a
-   dark field the colour of the page, a fine rule texture that fades out from
-   the top-right, one soft mauve glow, the site mark, and one glass card
-   carrying the project's own sentences. Deliberately dark and low-key: the
-   panel is a surface beside the headline, not a light wash competing with it.
-   The literal stops below are what scripts/check-contrast.py measures the card
-   against, so a new colour here has to clear 4.5:1 for the card's text. */
+/* The footer: licences beside the repositories, the page's own note beneath. */
+.prose-body.page-foot {
+  grid-template-columns: minmax(0, 60rem);
+  padding-top: 3rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.9375rem;
+}
+
+.foot-grid {
+  display: grid;
+  gap: 2.5rem;
+}
+
+@media (min-width: 56rem) {
+  .foot-grid {
+    grid-template-columns: minmax(0, 30rem) minmax(0, 1fr);
+    gap: 3rem;
+  }
+}
+
+.prose-body.page-foot h2 {
+  margin: 0 0 1rem;
+  font-size: 1.125rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* Hero visual: a matte panel carrying the product surface — the guest's tree, one
+   open file with two carets in it, and the invite link that put them there — over
+   a fine rule texture faded out from the top-right. Deliberately dark and low-key:
+   the panel is a surface beside the headline, not a light wash competing with it.
+   The literal stops below are what scripts/check-contrast.py measures the panel's
+   text and the glass card against, so a new colour here has to clear 4.5:1. */
 .hero-visual {
   position: relative;
+  max-width: 36rem;
+  margin: 0;
+  padding: 1.1rem;
   overflow: hidden;
   border: 1px solid var(--rule);
   border-radius: 0.875rem;
@@ -295,6 +668,12 @@ button:focus-visible {
     radial-gradient(85% 75% at 6% 108%, #232a3d 0%, transparent 62%),
     linear-gradient(168deg, #232134 0%, #1b1a28 58%, #16161f 100%);
   box-shadow: inset 0 1px 0 rgba(205, 214, 244, 0.07);
+}
+
+@media (min-width: 48rem) {
+  .hero-visual {
+    padding: 1.35rem;
+  }
 }
 
 .hero-visual-rules {
@@ -316,15 +695,121 @@ button:focus-visible {
   );
 }
 
+.hero-visual > figcaption {
+  position: relative;
+  margin-top: 0.9rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.room {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+@media (min-width: 40rem) {
+  .room {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0.85rem;
+  }
+
+  .room-tree {
+    flex: none;
+    width: 7.5rem;
+  }
+
+  .room-tree ul {
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+}
+
+/* The open file. The card's own fill is the `rgba()` the contrast check reads, so
+   a restyle that changes the alpha without touching the check measures a surface
+   nobody renders. */
 .hero-glass {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
   background: rgba(24, 24, 37, 0.86);
   border: 1px solid rgba(203, 166, 247, 0.28);
   box-shadow: 0 20px 45px -32px rgba(0, 0, 0, 0.95);
   backdrop-filter: blur(6px);
 }
 
+.room-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.8rem;
+  border-bottom: 1px solid rgba(49, 50, 68, 0.6);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+
+.room-dot {
+  flex: none;
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 9999px;
+  background: var(--link);
+}
+
+.room-file {
+  color: var(--fg);
+}
+
+.room-count {
+  margin-left: auto;
+}
+
+.hero-glass .code {
+  padding: 0.7rem 0.85rem;
+  overflow-x: auto;
+}
+
+.room-invite {
+  display: flex;
+  margin-top: auto;
+  padding: 0 0.85rem 0.8rem;
+}
+
 /* The sticky bar slides away on scroll-down through a transform class; without
-   motion it still hides and returns, just without the slide. */
+   motion it still hides and returns, just without the slide. Everything else that
+   moves is CSS-only and stands down under the same preference. */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-visual {
+    animation: rise 520ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+
+  .prose-body ul.cards > li,
+  .prose-body ul.repos li {
+    transition:
+      transform 160ms ease-out,
+      border-color 160ms ease-out;
+  }
+
+  .prose-body ul.cards > li:hover,
+  .prose-body ul.repos li:hover {
+    transform: translateY(-2px);
+    border-color: rgba(203, 166, 247, 0.45);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

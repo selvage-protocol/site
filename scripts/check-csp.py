@@ -50,7 +50,7 @@ from urllib.parse import urljoin, urlparse
 
 # The origin an absolute URL is resolved against. Only matters for `'self'`: every URL the page
 # serves today is root-relative, and a root-relative URL is same-origin whatever this is.
-DEFAULT_ORIGIN = "https://selvageprotocol.com"
+DEFAULT_ORIGIN = "https://selvage-protocol.vercel.app"
 
 HASHES = {"sha256": hashlib.sha256, "sha384": hashlib.sha384, "sha512": hashlib.sha512}
 
@@ -411,7 +411,7 @@ def self_test() -> str | None:
         ("script-src 'self' does not carry the inline bootstrap", "default-src 'none'; script-src 'self'", SUITE_HTML, "blocked"),
         ("script-src 'self' carries the chunk", "default-src 'none'; script-src 'self'", '<script src="/_next/a.js"></script>', "clean"),
         ("a third-party chunk", "default-src 'none'; script-src 'self' 'unsafe-inline'", '<script src="https://cdn.example/a.js"></script>', "blocked"),
-        ("an absolute same-origin chunk under 'self'", "default-src 'none'; script-src 'self'", '<script src="https://selvageprotocol.com/_next/a.js"></script>', "clean"),
+        ("an absolute same-origin chunk under 'self'", "default-src 'none'; script-src 'self'", '<script src="https://selvage-protocol.vercel.app/_next/a.js"></script>', "clean"),
         ("an inline style body under style-src 'self'", "default-src 'none'; style-src 'self'", "<style>body{}</style>", "blocked"),
         ("a style attribute under style-src 'self'", "default-src 'none'; style-src 'self'", '<p style="color:red">x</p>', "blocked"),
         ("a style attribute under 'unsafe-inline'", "default-src 'none'; style-src 'self' 'unsafe-inline'", '<p style="color:red">x</p>', "clean"),

@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { href: "#who-its-for", label: "Who it's for" },
-  { href: "#session", label: "Session" },
+  { href: "#how-it-works", label: "How it works" },
+  { href: "#why-a-spec", label: "Why a spec" },
   { href: "#run-it", label: "Run it" },
-  { href: "#not-yet", label: "Not yet" },
+  { href: "#status", label: "Status" },
 ];
 
 export function SiteHeader() {

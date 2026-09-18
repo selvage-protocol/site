@@ -5,5 +5,7 @@
 # is expected to resolve and is checked. In particular `selvageprotocol.com`
 # is not registered yet, so the page carries no canonical link and no Open
 # Graph URL pointing at it — there is nothing to exclude because there is
-# nothing there. When the domain exists, the metadata goes in and nothing
-# comes out of this file.
+# nothing there. The page is live at `selvage-protocol.vercel.app`, and its
+# `og:image` is that origin's own path (see the README's "The live origin"),
+# which is why the metadata resolves without the domain. When the domain
+# exists, the metadata goes in and nothing comes out of this file.
