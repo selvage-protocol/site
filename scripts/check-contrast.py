@@ -6,7 +6,7 @@ actually renders: body and muted prose, links (visited included), the button
 label on its mauve fill, code blocks, the tinted badge and secondary button
 (computed as alpha composites over the page background, the way the browser
 composes them), and the worst case of the translucent glass card over every
-stop of the hero gradient. The secondary button's boundary is parsed out of
+stop of the hero panel. The secondary button's boundary is parsed out of
 `components/ui/button.tsx` (`border-mauve/*`) and asserted at the non-text
 3.0:1 floor too, so weakening the class fails the build. Thresholds are WCAG
 2.2 AA: 4.5:1 for normal text, 3.0:1 for non-text UI.
