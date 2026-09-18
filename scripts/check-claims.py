@@ -48,6 +48,13 @@ SKIP_DIRS = {".git", ".tmp", "node_modules"}
 # pinned value the only one that passes.
 VEHICLE = r"\d[\d,]*"
 
+# The route-shaped overclaim the browser pattern's other alternatives miss: a browser mention
+# sharing a sentence with an address, in either order. The window stops at the sentence's full stop
+# because the filter joins the whole page into one string, so an unbounded one would pair a browser
+# mention with a host in another section.
+HOSTLIKE = r"(?:https?://|wss?://|\b[\w-]+(?:\.[\w-]+)+)"
+BROWSER_ROUTE = rf"\bbrowser\b[^.]{{0,48}}{HOSTLIKE}|{HOSTLIKE}[^.]{{0,48}}\bbrowser\b"
+
 DASHES = re.compile("[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]")
 
 
@@ -56,8 +63,10 @@ class Phrase:
     pattern: str
     sample: str
     reason: str
-    # Rendered spellings of the same wording with markup inside its tokens. Each one has to
-    # match the pattern too: markup that joins tokens in the browser must not split them here.
+    # Spellings of the same claim that must match too: the wording with markup inside its
+    # tokens, which the browser joins and this scan does not, and a reworded version that
+    # evades a bounded window or another verb. Each one has to match — an evasion that slips
+    # through is an overclaim the filter passes.
     evasions: tuple[str, ...] = ()
     # Honest wordings the pattern must not match. Each one has to stay clean: a broadening
     # that reintroduces a false positive fails the gate instead of passing everything.
@@ -104,7 +113,8 @@ FORBIDDEN: list[Phrase] = [
         r"|no clients? (?:to|that|which)? ?(?:runs?|open)\w* in a (?:web page|tab|browser)"
         r"|\b(?:open|visit|try|browse|use|join)\w*\b[^.]{0,24}\bin (?:a|the|your) browser\b"
         r"|\bruns? in (?:a|the|your) browser\b"
-        r"|\bbrowser\b[^.]{0,16}\b(?:no install\w*|nothing to install)\b",
+        r"|\bbrowser\b[^.]{0,16}\b(?:no install\w*|nothing to install)\b"
+        r"|" + BROWSER_ROUTE,
         "open the page in your browser and start typing",
         "the browser client exists — it is the project's third client — but it is guests-only "
         "and served over the project's own private network: there is no public page a reader "
@@ -115,10 +125,15 @@ FORBIDDEN: list[Phrase] = [
             "nothing runs in a web page",
             "there is no client to open in a tab",
             "try it in the browser with no install",
+            "the browser demo is at https://selvage.example/room",
+            "browse selvage-protocol.vercel.app in your browser",
+            "selvage is available in your browser at selvage-protocol.vercel.app",
         ),
         (
             "A browser client is the third client: guests only, served over a private network.",
             "The browser page joins the same room from a tab.",
+            "The browser page joins the same room from a tab. The server listens on "
+            "ws://127.0.0.1:8080.",
         ),
     ),
     Phrase(
@@ -189,7 +204,7 @@ FORBIDDEN: list[Phrase] = [
         r"|subscribers)\b",
         "used in production by 40 engineering teams",
         "no user count exists. The only numbers this project can show are the corpus counts its "
-        "own validator pins (28 vectors, 34766 frame checks, 8617 assertions)",
+        "own validator pins (31 vectors, 34858 frame checks, 8642 assertions)",
     ),
     Phrase(
         r"\bfirst\b",
@@ -212,22 +227,26 @@ FORBIDDEN: list[Phrase] = [
         "0, which is not this one",
     ),
     Phrase(
-        rf"\b(?!34766\b){VEHICLE}\s+frame[- ]checks?\b",
-        "34765 frame checks",
-        "the pinned number is 34766 frame checks (`specification/schema/validate.py`); a different "
+        rf"\b(?!34858\b){VEHICLE}\s+frame[- ]checks?\b",
+        "34857 frame checks",
+        "the pinned number is 34858 frame checks (`specification/schema/validate.py`); a different "
         "number is a claim the corpus disproves",
+        clean=("34858 frame checks",),
     ),
     Phrase(
-        rf"\b(?!28\b){VEHICLE}\s+vectors?\b",
-        "27 vectors",
-        "the pinned number is 28 vectors (`specification/schema/validate.py`); a different "
-        "number is a claim the corpus disproves",
+        rf"\b(?!31\b){VEHICLE}\s+(?:\w+\s+){{0,2}}vectors?\b",
+        "30 conformance vectors",
+        "the pinned number is 31 vectors (`specification/schema/validate.py`); a different number "
+        "is a claim the corpus disproves, and the count is pinned wherever the word sits — the "
+        "page writes both 'conformance vectors' and 'wire vectors'",
+        clean=("31 conformance vectors", "the 31 wire vectors"),
     ),
     Phrase(
-        rf"\b(?!8617\b){VEHICLE}\s+assertions?\b",
-        "8616 assertions",
-        "the pinned number is 8617 assertions (`specification/schema/validate.py`); a different "
+        rf"\b(?!8642\b){VEHICLE}\s+assertions?\b",
+        "8641 assertions",
+        "the pinned number is 8642 assertions (`specification/schema/validate.py`); a different "
         "number is a claim the corpus disproves",
+        clean=("8642 assertions",),
     ),
     Phrase(
         r"third[- ]part[^.]{0,24}sees?\b|no third[- ]part[^.]{0,24}saw\b",
@@ -257,9 +276,12 @@ FORBIDDEN: list[Phrase] = [
     Phrase(
         r"proven in one room|across editors too|(?:VS ?Code|Neovim|Vim|Emacs|editors?)\b[^.]{0,48}\bon one end and\b",
         "Proven in one room with VS Code on one end and Neovim on the other.",
-        "the cross-editor pairing has never run: both existing proofs drive two instances of "
-        "one editor. 'Built so either editor can join the same room' is the design goal, not "
-        "a demonstrated pairing",
+        "the first cross-editor session has run, and the design notes' hand-run proof of it "
+        "(`selvage-protocol/ai_notes`, `docs/proof-cross-editor.md`, 2026-09-17) records grant, "
+        "cursors and follow in both directions passing while the concurrent-edit step falls short "
+        "by one trailing newline byte. So a pairing across the two editors is demonstrated and "
+        "byte-identical replicas are not: state what the clients are built to do rather than that "
+        "it is proven",
         ("with VS Code on one end and Neovim on the other.",
          "with VS Code on one\nend and Neovim on the other."),
     ),
@@ -515,7 +537,7 @@ def main() -> int:
             if not pattern.search(normalise(evasion)[0]):
                 print(
                     f"check-claims: the pattern {phrase.pattern!r} does not match its evasion "
-                    f"sample {evasion!r}; markup inside its tokens defeats it",
+                    f"sample {evasion!r}; the claim is written in a shape the pattern misses",
                     file=sys.stderr,
                 )
                 return 2
