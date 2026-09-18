@@ -156,7 +156,7 @@ def main() -> int:
         print(f"check-contrast: cannot read {path}: {exc}", file=sys.stderr)
         return 2
     tok = tokens(css)
-    need = ["bg", "fg", "muted", "link", "link-visited", "code-bg", "mantle"]
+    need = ["bg", "fg", "muted", "link", "link-visited", "code-bg", "mantle", "teal"]
     missing = [n for n in need if n not in tok]
     if missing:
         print(
@@ -198,6 +198,9 @@ def main() -> int:
         ("code text", fg, code_bg, TEXT_MIN),
         ("muted text on code background", muted, code_bg, TEXT_MIN),
         ("badge text on badge fill", link, composite(link, bg, 0.10), TEXT_MIN),
+        # The second peer's name is a chip in the page's second accent: the same
+        # dark-on-colour pair as the default button, in the other tone.
+        ("peer chip label on teal fill", bg, tok["teal"], TEXT_MIN),
         ("focus outline against the page", link, bg, NON_TEXT_MIN),
     ]
     tsx_path = os.environ.get(
@@ -273,6 +276,10 @@ def main() -> int:
         surface = composite(glass_rgb, stop, glass_alpha)
         checks.append((f"glass card text over {stop}", fg, surface, TEXT_MIN))
         checks.append((f"glass card muted text over {stop}", muted, surface, TEXT_MIN))
+        # The tree, the bar's count and the figure's caption sit on the panel itself
+        # rather than on the card, so the panel's own stops carry text too.
+        checks.append((f"panel text over {stop}", fg, stop, TEXT_MIN))
+        checks.append((f"panel muted text over {stop}", muted, stop, TEXT_MIN))
 
     failures = 0
     for name, a, b, minimum in checks:
