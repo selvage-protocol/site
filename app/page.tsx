@@ -101,7 +101,8 @@ const steps = [
       <>
         Copy the invite link and send it however you already talk to each other.
         The token in it is the permission, and only the paths you granted are
-        behind it.
+        behind it &mdash; a confinement the host&apos;s client holds, not one the
+        wire enforces.
       </>
     ),
   },
@@ -176,8 +177,10 @@ const notYet = [
   <>
     <strong>The specification is a draft.</strong> <code>NOTES.md</code> lists
     what the prose deliberately leaves open: the invite carries the token in its
-    URL, the host role is claimed rather than proven, and a document path is any
-    non-blank string.
+    URL, the host role is claimed rather than proven, a document path is any
+    non-blank string free of control characters, and a grant is a listing rather
+    than a confinement &mdash; a peer may still name any path it likes, listed or
+    not.
   </>,
 ];
 
@@ -301,8 +304,8 @@ export default function Home() {
             <p>
               The specification is Selvage&apos;s flagship artifact: that layer,
               written out as prose, a canonical byte form for a frame, JSON Schema
-              documents, and 28 conformance vectors &mdash; 34766 frame checks and
-              8617 assertions &mdash; replayed byte for byte against a real server.
+              documents, and 31 conformance vectors &mdash; 34858 frame checks and
+              8642 assertions &mdash; replayed byte for byte against a real server.
               The numbers are constants in <code>schema/validate.py</code>, so
               deleting an assertion is a red run rather than smaller totals in a
               line of output.
@@ -356,7 +359,7 @@ export default function Home() {
                     selvage-protocol/specification
                   </a>{" "}
                   holds the prose, the canonical byte form, the JSON Schema
-                  documents, the 28 wire vectors, a language-neutral replay of
+                  documents, the 31 wire vectors, a language-neutral replay of
                   those vectors in Python, and <code>NOTES.md</code>, which says
                   what the prose deliberately leaves open.
                 </p>
