@@ -254,7 +254,7 @@ summarised here so that the constraint survives without the file that produced i
 | "your code never leaves your machine" | Document payloads travel through the server to the peers that ask for them, and there is no encryption layer. What is bounded is the grant: the paths the host enumerates, and the reads it serves from inside the granted root |
 | invented proof: screenshots, testimonials, user counts, a production deployment, a demo link | None of them exist. There is no recording, no user count and no production deployment in this project, and the only server that has ever run was a local debug build. The one image the page carries is the project's own site mark (see above), not proof of anything |
 | a claim of priority ("the first protocol to specify …") | The design record surveys prior art — Eclipse Open Collaboration Tools and others. The project's claim is that the session layer is unspecified, not that this is first |
-| a corpus number other than the pinned one | The counts (23 vectors, 806 frame checks, 192 assertions) are constants in `specification/schema/validate.py`; any other number is a claim the corpus disproves |
+| a corpus number other than the pinned one | The counts (28 vectors, 34766 frame checks, 8617 assertions) are constants in `specification/schema/validate.py`; any other number is a claim the corpus disproves |
 | a third party seeing the room | The relay is payload-opaque but plaintext with no transport security in this slice, so the operator and the network path can see the room's text. Only the page's own weak reading (no third party's cloud holding the room) is backed |
 | a bare "no cloud", qualified or not ("no cloud in between" included) | A self-hosted server can itself run on a cloud VM, so only the weak reading is backed — no third party's cloud holding the room. The backed storage sentence is "nothing written to disk" |
 | a proven cross-editor pairing | Both existing proofs drive two instances of one editor; the cross-editor session has never run. "Built so either editor can join the same room" states the design goal, not a demonstrated pairing |
@@ -266,7 +266,7 @@ summarised here so that the constraint survives without the file that produced i
 
 Three things the check cannot make mechanical, and which a reader of a change has to hold:
 
-- **A number on the page has a home.** The corpus counts (23 vectors, 806 frame checks, 192
+- **A number on the page has a home.** The corpus counts (28 vectors, 34766 frame checks, 8617
   assertions) are the constants `specification/schema/validate.py` pins; when the corpus moves,
   the page moves with it. The commands are the ones the repositories' own READMEs document.
 - **No adjective does the work of a fact.** If a sentence could be true of any project, it does

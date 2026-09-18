@@ -167,7 +167,7 @@ FORBIDDEN: list[Phrase] = [
         r"|subscribers)\b",
         "used in production by 40 engineering teams",
         "no user count exists. The only numbers this project can show are the corpus counts its "
-        "own validator pins (23 vectors, 806 frame checks, 192 assertions)",
+        "own validator pins (28 vectors, 34766 frame checks, 8617 assertions)",
     ),
     Phrase(
         r"\bfirst\b",
@@ -190,21 +190,21 @@ FORBIDDEN: list[Phrase] = [
         "0, which is not this one",
     ),
     Phrase(
-        rf"\b(?!806\b){VEHICLE}\s+frame[- ]checks?\b",
-        "804 frame checks",
-        "the pinned number is 806 frame checks (`specification/schema/validate.py`); a different "
+        rf"\b(?!34766\b){VEHICLE}\s+frame[- ]checks?\b",
+        "34765 frame checks",
+        "the pinned number is 34766 frame checks (`specification/schema/validate.py`); a different "
         "number is a claim the corpus disproves",
     ),
     Phrase(
-        rf"\b(?!23\b){VEHICLE}\s+vectors?\b",
-        "22 vectors",
-        "the pinned number is 23 vectors (`specification/schema/validate.py`); a different "
+        rf"\b(?!28\b){VEHICLE}\s+vectors?\b",
+        "27 vectors",
+        "the pinned number is 28 vectors (`specification/schema/validate.py`); a different "
         "number is a claim the corpus disproves",
     ),
     Phrase(
-        rf"\b(?!192\b){VEHICLE}\s+assertions?\b",
-        "190 assertions",
-        "the pinned number is 192 assertions (`specification/schema/validate.py`); a different "
+        rf"\b(?!8617\b){VEHICLE}\s+assertions?\b",
+        "8616 assertions",
+        "the pinned number is 8617 assertions (`specification/schema/validate.py`); a different "
         "number is a claim the corpus disproves",
     ),
     Phrase(

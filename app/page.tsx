@@ -7,7 +7,7 @@ import { SiteHeader } from "@/components/site-header";
 const checklist = [
   "One Rust binary holds the room \u2014 in memory only, nothing on disk.",
   "The invite is the share \u2014 the token is the permission, with no approval step.",
-  "Prose, nine schemas and 23 vectors \u2014 replayed byte for byte against a real server.",
+  "Prose, nine schemas and 28 vectors \u2014 replayed byte for byte against a real server.",
 ];
 
 export default function Home() {
@@ -137,7 +137,7 @@ export default function Home() {
             </p>
             <p>
               <strong>Tooling people who want the session layer written down.</strong> The specification is prose, a
-              canonical byte form, nine JSON Schema 2020-12 documents, 23 wire vectors, and a runner
+              canonical byte form, nine JSON Schema 2020-12 documents, 28 wire vectors, and a runner
               that replays them byte for byte against a real server &mdash; written to be implemented
               on its own, without reading the Rust.
             </p>
@@ -201,7 +201,7 @@ export default function Home() {
                 selvage-protocol/specification
               </a>{" "}
               holds the prose (<code>PROTOCOL.md</code>), the canonical byte form of a frame (
-              <code>CANONICAL.md</code>), nine JSON Schema 2020-12 documents, 23 wire vectors, a
+              <code>CANONICAL.md</code>), nine JSON Schema 2020-12 documents, 28 wire vectors, a
               language-neutral replay of those vectors in Python, and <code>NOTES.md</code>, which
               says what the prose deliberately leaves open &mdash; written to be implemented on its
               own, without reading the Rust.
@@ -210,7 +210,7 @@ export default function Home() {
             <p>
               The validator checks every frame of every vector against the schemas and against the
               canonical form, and pins the size of the corpus:{" "}
-              <strong>23 vectors, 806 frame checks and 192 assertions</strong>. The numbers are
+              <strong>28 vectors, 34766 frame checks and 8617 assertions</strong>. The numbers are
               constants in <code>schema/validate.py</code>, so deleting an assertion is a red run
               rather than smaller totals in a line of output.
             </p>
