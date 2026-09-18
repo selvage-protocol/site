@@ -13,7 +13,7 @@ The canonical material lives in the other repositories —
 protocol, prose and vectors, [`selvage-protocol/reference_server`](https://github.com/selvage-protocol/reference_server)
 for the server and client library, and [`selvage-protocol/vscode_client`](https://github.com/selvage-protocol/vscode_client)
 and [`selvage-protocol/nvim_client`](https://github.com/selvage-protocol/nvim_client) for the two
-editor clients. This repository holds the page, the three checks that gate it, and nothing else.
+editor clients. This repository holds the page, the four checks that gate it, and nothing else.
 
 | Path | What it is |
 |---|---|
@@ -34,9 +34,10 @@ editor clients. This repository holds the page, the three checks that gate it, a
 | `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason |
 | `scripts/check-button-props.tsx` | the button check: renders the button and anchor variants and asserts their props reach the DOM (run by `npm run check:button` inside the gate) |
 | `scripts/check-contrast.py` | the contrast check: parses the theme tokens out of `style.css` and asserts the rendered pairs sit at or above WCAG AA, with measured ratios (run by `scripts/ci-local.sh contrast` inside the gate) |
+| `scripts/check-csp.py` | the policy check: reads the Content-Security-Policy out of `vercel.json` and the served HTML, and fails when the policy would refuse a script, stylesheet or image the page carries (run by `scripts/ci-local.sh csp` inside the gate; see "The Content-Security-Policy") |
 | `scripts/ci-local.sh` | the gate, running the same commands as the workflow |
 | `lychee.toml` | what the link check does not check, and why |
-| `vercel.json` | platform configuration: the Next.js framework preset, and three response headers |
+| `vercel.json` | platform configuration: the Next.js framework preset, and three response headers — the Content-Security-Policy the page's own scripts are permitted by, the file it was once refused by (see "The Content-Security-Policy"), plus `X-Content-Type-Options: nosniff` and `Referrer-Policy: strict-origin-when-cross-origin` |
 | `.github/workflows/ci.yml` | the gate, on `push` to `main` and on `pull_request` |
 
 ## The site mark
@@ -120,7 +121,10 @@ in the gate (`NEXT_TELEMETRY_DISABLED=1`).
 
 Vercel, connected to this repository over the GitHub integration, building the Next.js project:
 `vercel.json` carries `"framework": "nextjs"` so the dashboard does not have to, plus the three
-response headers. There is nothing to configure beyond connecting the repository.
+response headers — the `Content-Security-Policy` (its own section, below), `X-Content-Type-Options:
+nosniff` and `Referrer-Policy: strict-origin-when-cross-origin`. `next.config.ts` turns the
+framework's own `X-Powered-By: Next.js` banner off, so the HTML response does not name the stack
+it was rendered by. There is nothing to configure beyond connecting the repository.
 
 Production deploys on `main` and every branch and pull request gets a preview URL. That is all
 Vercel is used for. It does not run the checks — the workflow does, and those are the ones worth
@@ -136,6 +140,53 @@ advertises anything, but should that change the plan question returns with it:
   Guidelines](https://vercel.com/docs/limits/fair-use-guidelines), [Terms](https://vercel.com/legal/terms).
 - The Hobby terms also allow Hobby content to be used for model training. A paid plan turns that
   off by default.
+
+## The Content-Security-Policy
+
+The header is `vercel.json`'s, applied by Vercel:
+
+```
+default-src 'none'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; style-src 'self'; base-uri 'none'; frame-ancestors 'none'
+```
+
+It read without `script-src` until this was found, and that absence is the whole reason this
+section exists. With `default-src 'none'` and nothing for scripts to fall back to, the page's
+own seven chunks and all fifteen of its inline scripts were refused: `window.__next_f` stayed
+the string `undefined`, the page never hydrated, and `SiteHeader`'s hide-on-scroll silently did
+nothing while the accessibility section below read as if it worked. A policy that refuses the
+page it ships with is not strict, it is broken, and nothing in the gate said so.
+
+`script-src 'self' 'unsafe-inline'` is the smallest thing that is also true, and the route
+itself is why it cannot be narrower. `'self'` is the seven chunks. `'unsafe-inline'` is the
+bootstrap and the flight data Next writes into the HTML: a **nonce** would permit those instead,
+but a nonce has to be fresh per request, which means dynamic rendering, and the page is a static
+prerender (`○ /`) — the route would be traded for the directive. A committed **hash list** is
+worse than it looks: any prose edit rewrites the flight payload the hashes are computed over,
+and a stale hash fails the same silent way the missing directive did. The cost of the compromise
+is stated rather than hidden: `'unsafe-inline'` permits an inline `on*` attribute too, the page
+carries none, and one appearing is counted into the checker's summary line.
+
+What the policy still refuses: every origin that is not this one, `eval`, a `<base>` that would
+retarget the page's relative URLs, framing, and every resource kind the page does not name.
+`data:` is allowed for `img-src` alone.
+
+Two pieces of evidence, with their limits:
+
+- `scripts/check-csp.py` runs in the gate over the HTML the production server renders. It takes
+  the policy *from* `vercel.json` — not a copy — and decides every script, stylesheet and image
+  against the directive that governs it, following the fallback chains a browser follows. The
+  policy as it read without `script-src` is one of its own fixtures, so it fails on the defect
+  it was written for. It is a model of the policy, not a browser, and a source expression it
+  does not model is an error rather than an assumption.
+- A real Chromium run against the built page served with these exact headers (a local proxy
+  reads them out of `vercel.json`, because `next start` does not apply them): zero
+  `securitypolicyviolation` events, `window.__next_f` an object, and the header concealed
+  (`translate: 0px -100%`) at `scrollY` 900 and back at 300. It needs a browser the runner does
+  not have, so it is not in the workflow.
+
+Neither of them can see the deployed response headers. If Vercel stops applying the `headers`
+block, or applies it to a path this policy was not written for, nothing in this repository
+notices.
 
 ## Privacy: controller and no collection
 
@@ -248,12 +299,13 @@ Until then the page is reachable at its `*.vercel.app` URL, which is honest.
 ## The gate
 
 ```console
-$ scripts/ci-local.sh              # typecheck, build, button, contrast, claims, links, lint
+$ scripts/ci-local.sh              # typecheck, build, button, contrast, claims, csp, links, lint
 $ scripts/ci-local.sh typecheck    # tsc --noEmit
 $ scripts/ci-local.sh build        # next build
 $ scripts/ci-local.sh button       # render the button/anchor variants and assert their props reach the DOM
 $ scripts/ci-local.sh contrast     # theme token pairs at or above WCAG AA, with measured ratios
 $ scripts/ci-local.sh claims       # rebuild, serve production, fetch / and scan the rendered HTML
+$ scripts/ci-local.sh csp          # the policy in vercel.json over the served page: nothing it carries is refused
 $ scripts/ci-local.sh links        # serve production, lychee over the rendered page and README.md
 $ scripts/ci-local.sh lint         # actionlint over the workflows (nix; the workflow pins a release)
 ```
@@ -264,9 +316,14 @@ than a pass, and every pattern must match its own sample before the scan, so a d
 the gate instead of passing everything; named honest wordings must stay unmatched, so a broadening
 that reintroduces a false positive fails it too.
 
+The policy step reads the same rendered file, and the policy out of `vercel.json`, and fails when
+the policy would refuse a script, stylesheet or image the page carries — the defect described
+under "The Content-Security-Policy". Its fixtures run first: a policy without `script-src` and a
+policy that drops `default-src 'none'` both have to fail it, so the check cannot have gone blind.
+
 `.github/workflows/ci.yml` runs the same commands on `ubuntu-24.04` on every push to `main`
 and every pull request: Node from `.nvmrc`, `npm ci`, then `typecheck`, `build`, `button`,
-`contrast`, `claims`, `links` and `lint`. It installs lychee and actionlint from pinned releases — the runner has no
+`contrast`, `claims`, `csp`, `links` and `lint`. It installs lychee and actionlint from pinned releases — the runner has no
 nix, so `scripts/ci-local.sh` takes both from `PATH` when they are there and from nixpkgs
 otherwise, and all three places run the same checkers.
 
@@ -305,7 +362,10 @@ What no ratio proves is read against the code by a person on every change:
   at a 2 px offset; the `Button` primitive repeats it as a utility, so both spellings agree.
 - **Keyboard.** Every control is a native anchor or button. The sticky header slides away
   on scroll-down but carries `focus-within:translate-y-0`, so a tabbed-to link is never
-  focused off-screen. No skip link: the page is one route, so there is no repeated block
+  focused off-screen. That slide is the `SiteHeader` client boundary running, so it is only as
+  true as the page's scripts being permitted — "The Content-Security-Policy" records the
+  interval in which they were not, and the gate step that now fails if it happens again.
+  No skip link: the page is one route, so there is no repeated block
   to bypass.
 - **Reduced motion.** `scroll-behavior: smooth` stands down to `auto` and the header slide
   to `transition: none` inside `prefers-reduced-motion`; nothing else on the page moves.
