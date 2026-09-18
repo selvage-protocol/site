@@ -7,9 +7,10 @@
 #   scripts/ci-local.sh button     # render the button/anchor variants, assert props reach the DOM
 #   scripts/ci-local.sh contrast   # theme token pairs at or above WCAG AA
 #   scripts/ci-local.sh claims     # build, serve production, fetch / and scan the rendered HTML
+#   scripts/ci-local.sh csp        # the CSP in vercel.json over the served page: nothing it carries is refused
 #   scripts/ci-local.sh links      # serve production, lychee over the rendered page and the README
 #   scripts/ci-local.sh lint       # actionlint over the workflow files
-#   scripts/ci-local.sh all        # typecheck + build + button + contrast + claims + links + lint
+#   scripts/ci-local.sh all        # typecheck + build + button + contrast + claims + csp + links + lint
 #
 # Keep this in step with the workflow — it runs the same commands, so that a red job is found
 # here rather than on a runner.
@@ -18,6 +19,11 @@
 # production server, fetches `/` over HTTP, saves that HTML and runs the phrase check over it.
 # A phrase wrapped across lines or encoded as entities in the served bytes is still one phrase
 # to the check. The check is a filter, not a proof: see scripts/check-claims.py.
+#
+# The CSP step reads the same rendered HTML and the policy out of `vercel.json`, and fails when
+# the policy would refuse a script, stylesheet or image the page carries. That is the defect it
+# was written for: `default-src 'none'` with no `script-src` blocked the page's own chunks and
+# its inline bootstrap, so it never hydrated. See scripts/check-csp.py.
 set -euo pipefail
 
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
@@ -126,6 +132,13 @@ job_claims() {
   with_server fetch_and_scan
 }
 
+job_csp() {
+  say "csp: the policy in vercel.json over the served page (nothing it carries is refused)"
+  # Always rebuilt, so the policy can never pass over a stale page.
+  npm run build >/dev/null
+  with_server fetch_and_csp
+}
+
 fetch_and_scan() {
   curl -sSf "$BASE/" -o "$RENDERED"
   # Named rather than globbed: a scan that reaches no file reports a clean page, so reaching
@@ -133,8 +146,19 @@ fetch_and_scan() {
   ./scripts/check-claims.py "$RENDERED"
 }
 
+fetch_and_csp() {
+  curl -sSf "$BASE/" -o "$RENDERED"
+  scan_csp
+}
+
+scan_csp() {
+  # The policy comes from vercel.json, which the local server does not apply: this compares the
+  # two, it does not verify the host applies the header.
+  ./scripts/check-csp.py "$RENDERED"
+}
+
 all_served() {
-  fetch_and_scan && run_lychee --config lychee.toml --no-progress "$BASE/" README.md
+  fetch_and_scan && scan_csp && run_lychee --config lychee.toml --no-progress "$BASE/" README.md
 }
 
 job_links() {
@@ -157,6 +181,7 @@ case "${1:-all}" in
   button) job_button ;;
   contrast) job_contrast ;;
   claims) job_claims ;;
+  csp) job_csp ;;
   links) job_links ;;
   lint) job_lint ;;
   all) job_typecheck && job_build && job_button && job_contrast && with_server all_served && job_lint ;;
