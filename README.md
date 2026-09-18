@@ -13,7 +13,8 @@ The canonical material lives in the other repositories —
 protocol, prose and vectors, [`selvage-protocol/reference_server`](https://github.com/selvage-protocol/reference_server)
 for the server and client library, and [`selvage-protocol/vscode_client`](https://github.com/selvage-protocol/vscode_client)
 and [`selvage-protocol/nvim_client`](https://github.com/selvage-protocol/nvim_client) for the two
-editor clients. This repository holds the page, the four checks that gate it, and nothing else.
+editor clients. This repository holds the page, the four checks that gate it, the one
+browser proof the runner cannot run, and nothing else.
 
 | Path | What it is |
 |---|---|
@@ -35,6 +36,7 @@ editor clients. This repository holds the page, the four checks that gate it, an
 | `scripts/check-button-props.tsx` | the button check: renders the button and anchor variants and asserts their props reach the DOM (run by `npm run check:button` inside the gate) |
 | `scripts/check-contrast.py` | the contrast check: parses the theme tokens out of `style.css` and asserts the rendered pairs sit at or above WCAG AA, with measured ratios (run by `scripts/ci-local.sh contrast` inside the gate) |
 | `scripts/check-csp.py` | the policy check: reads the Content-Security-Policy out of `vercel.json` and the served HTML, and fails when the policy would refuse a script, stylesheet or image the page carries (run by `scripts/ci-local.sh csp` inside the gate; see "The Content-Security-Policy") |
+| `scripts/check-csp-browser.mjs` | the browser proof: serves the built page with the headers out of `vercel.json`, drives headless Chromium over CDP, and asserts zero `securitypolicyviolation` events, `window.__next_f` an object, the header's concealment on scroll and no `X-Powered-By`. Not in the gate — the runner has no browser — and it needs `npm run build` first |
 | `scripts/ci-local.sh` | the gate, running the same commands as the workflow |
 | `lychee.toml` | what the link check does not check, and why |
 | `vercel.json` | platform configuration: the Next.js framework preset, and three response headers — the Content-Security-Policy the page's own scripts are permitted by, the file it was once refused by (see "The Content-Security-Policy"), plus `X-Content-Type-Options: nosniff` and `Referrer-Policy: strict-origin-when-cross-origin` |
@@ -178,11 +180,14 @@ Two pieces of evidence, with their limits:
   policy as it read without `script-src` is one of its own fixtures, so it fails on the defect
   it was written for. It is a model of the policy, not a browser, and a source expression it
   does not model is an error rather than an assumption.
-- A real Chromium run against the built page served with these exact headers (a local proxy
-  reads them out of `vercel.json`, because `next start` does not apply them): zero
-  `securitypolicyviolation` events, `window.__next_f` an object, and the header concealed
-  (`translate: 0px -100%`) at `scrollY` 900 and back at 300. It needs a browser the runner does
-  not have, so it is not in the workflow.
+- A real Chromium run against the built page served with these exact headers, kept runnable as
+  `scripts/check-csp-browser.mjs`: it applies the `headers` block out of `vercel.json` through a
+  local proxy — `next start` does not apply it, only the host does — and asserts zero
+  `securitypolicyviolation` events, `window.__next_f` an object, the header concealed
+  (`translate: 0px -100%`) at `scrollY` 900 and back at 300, and no `X-Powered-By`. Point
+  `VERCEL_JSON` at the policy as it read without `script-src` and it fails, which is checked
+  rather than assumed. It needs a browser the runner does not have, so it is not in the
+  workflow: `npm run build && CHROMIUM=/path/to/chromium npm run check:csp-browser`.
 
 Neither of them can see the deployed response headers. If Vercel stops applying the `headers`
 block, or applies it to a path this policy was not written for, nothing in this repository
