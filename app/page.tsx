@@ -28,10 +28,13 @@ export default function Home() {
               </Badge>
               {/* Two sentences, one per line: the headline breaks where the
                   argument does. The size steps down until the longest line fits
-                  the column, so the second sentence never wraps mid-clause
-                  above 30rem wide. */}
+                  the column, so the second sentence wraps mid-clause only below
+                  `sm`; there the break at its comma takes over. The space between
+                  the two blocks is a real one: the claims filter joins block
+                  markup with a single space, and without it the sentence boundary
+                  reads as `code.Share` to it. */}
               <h1 className="mt-7 text-[1.5rem] font-semibold leading-[1.22] tracking-[-0.02em] text-text sm:text-[1.875rem] xl:text-[2.125rem]">
-                <span className="block">Your server, your code.</span>
+                <span className="block">Your server, your code.</span>{" "}
                 <span className="block">
                   Share a link,<br className="sm:hidden" />{" "}come edit with me.
                 </span>
