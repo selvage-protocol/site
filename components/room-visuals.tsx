@@ -3,12 +3,18 @@ import { Copy } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 /* Renderings of the product surface: the guest's window, the invite chip, the mirrored
-   tree, the three clients. They are drawn in markup and the page's own stylesheet — no
+   tree, the clients. They are drawn in markup and the page's own stylesheet — no
    image, no dependency, nothing fetched — and each one is `aria-hidden` inside a
    labelled `figure`, so a screen reader hears the caption instead of the drawing.
 
-   The code sample is an illustration, not a transcript: the page's caption says so. */
+   The code in them is an illustration rather than a transcript, and it is the API the
+   client crate has: the calls, the types and the paths are the ones in
+   `crates/client`, with the `use selvage_client::…` line elided. A peer's name is
+   never written into the source; the carets are drawn in a row under the sample,
+   where a caret marker belongs. Every line fits the narrowest panel the page is
+   drawn at. */
 
+/** One line of a sample: its number in the gutter, then the code. */
 function CodeLine({ n, children }: { n: number; children: ReactNode }) {
   return (
     <span className="code-line">
@@ -21,6 +27,16 @@ function CodeLine({ n, children }: { n: number; children: ReactNode }) {
 /** One peer's caret in a document: a bar in the peer's colour with their name beside it. */
 function Peer({ name, tone }: { name: string; tone: "mauve" | "teal" }) {
   return <span className={`peer peer-${tone}`}>{name}</span>;
+}
+
+/** The two carets in the open file, drawn beside the sample rather than inside it. */
+function Carets() {
+  return (
+    <span className="code-carets">
+      <Peer name="mira" tone="mauve" />
+      <Peer name="jonas" tone="teal" />
+    </span>
+  );
 }
 
 export function InviteChip() {
@@ -51,23 +67,26 @@ export function TreeFigure({ label = "guest" }: { label?: string }) {
   );
 }
 
-/** Two people in one file: two carets on one line. */
+/** Two people in one file: one client publishes its caret, and both are drawn under it. */
 export function CaretLines() {
   return (
     <pre className="code fig-code" aria-hidden="true">
       <code>
-        <CodeLine n={3}>
-          {"    doc.write("}
-          <Peer name="mira" tone="mauve" />
-          {"\"hi\");"}
-          <Peer name="jonas" tone="teal" />
-        </CodeLine>
+        <CodeLine n={1}>{"/// Publish where this peer's caret sits."}</CodeLine>
+        <CodeLine n={2}>{"async fn caret("}</CodeLine>
+        <CodeLine n={3}>{"    engine: &SyncEngine,"}</CodeLine>
+        <CodeLine n={4}>{"    path: &str,"}</CodeLine>
+        <CodeLine n={5}>{"    at: SelectionOffsets,"}</CodeLine>
+        <CodeLine n={6}>{") -> Result<(), Error> {"}</CodeLine>
+        <CodeLine n={7}>{"    engine.set_selection(path, at).await"}</CodeLine>
+        <CodeLine n={8}>{"}"}</CodeLine>
+        <Carets />
       </code>
     </pre>
   );
 }
 
-/** The three clients and the one wire version they all speak. */
+/** The clients and the one wire version they all speak. */
 export function ClientChips() {
   return (
     <div className="clients" aria-hidden="true">
@@ -96,21 +115,17 @@ export function RoomWindow() {
           </div>
           <pre className="code">
             <code>
-              <CodeLine n={1}>{"fn invite(&mut self, peer: Peer) {"}</CodeLine>
-              <CodeLine n={2}>
-                {"    let doc = open("}
-                <span className="code-style">&quot;room.rs&quot;</span>
-                {");"}
-              </CodeLine>
-              <CodeLine n={3}>
-                {"    doc.write("}
-                <Peer name="mira" tone="mauve" />
-                {"\"hi\");"}
-                <Peer name="jonas" tone="teal" />
-              </CodeLine>
-              <CodeLine n={4}>{"}"}</CodeLine>
+              <CodeLine n={1}>{"/// Say hi in the room's file."}</CodeLine>
+              <CodeLine n={2}>{"async fn greet("}</CodeLine>
+              <CodeLine n={3}>{"    engine: &SyncEngine,"}</CodeLine>
+              <CodeLine n={4}>{") -> Result<(), Error> {"}</CodeLine>
+              <CodeLine n={5}>{"    let file = \"room.rs\";"}</CodeLine>
+              <CodeLine n={6}>{"    engine.open(file).await?;"}</CodeLine>
+              <CodeLine n={7}>{"    engine.insert(file, 0, \"hi\").await"}</CodeLine>
+              <CodeLine n={8}>{"}"}</CodeLine>
             </code>
           </pre>
+          <Carets />
           <div className="room-invite">
             <InviteChip />
           </div>
