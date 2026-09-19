@@ -67,8 +67,8 @@ const roomCards = [
       <>
         The VS Code client, the Neovim client and the browser page each drive a copy
         of the same engine and bridge, so a room&apos;s rules live in one
-        implementation. The browser page is guests-only, and served over the
-        project&apos;s own private network.
+        implementation. The browser page is guests-only: it opens what the room
+        shares while hosting stays in the editors.
       </>
     ),
     figure: (
@@ -391,7 +391,7 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="page-foot mx-auto w-full max-w-6xl px-5 pb-20">
+      <footer className="prose-body page-foot mx-auto w-full max-w-6xl px-5 pb-20">
         <div className="foot-grid">
           <div>
             <h2>Licences</h2>
@@ -442,6 +442,12 @@ export default function Home() {
                 nvim_client
               </a>{" "}
               (the Neovim client)
+            </li>
+            <li>
+              <a href="https://github.com/selvage-protocol/web_client">
+                web_client
+              </a>{" "}
+              (the browser client and the page the server serves)
             </li>
           </ul>
         </div>
