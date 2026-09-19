@@ -11,30 +11,26 @@ import {
 
 const heroFacts = [
   <>
-    <strong>The specification is the artifact.</strong> Prose, JSON Schema and
-    conformance vectors: the session layer that language tooling has as LSP and
-    debugging has as DAP, and that collaborative editing has never had.
+    The session layer is written down as a specification: prose, JSON Schema and
+    conformance vectors.
   </>,
   <>
-    <strong>Your working copy is the truth.</strong> Guests see the paths you
-    grant and edit the room&apos;s text; nothing writes to your folder, and the
-    room ends when you leave.
+    Guests see the paths you grant and edit the room&apos;s text. Nothing writes to
+    your folder, and the room ends when you leave.
   </>,
   <>
-    <strong>No account on either end.</strong> Rooms live in memory on the
-    server you chose, the invite is the whole permission, and nothing is
-    written to disk.
+    There is no account on either side. Rooms live in memory on the server you host,
+    and nothing is written to disk.
   </>,
 ];
 
 const roomCards = [
   {
-    lead: "The invite is the permission",
+    lead: "Anyone with the link is in",
     body: (
       <>
-        Anyone holding the link is in the room: no account, no approval step,
-        and no waiting for the host to let you in. Treat an invite the way you
-        would treat a password.
+        Hold the link and you are in. There is no approval step, and nobody waits for
+        the host to let them in. Treat an invite the way you would treat a password.
       </>
     ),
     figure: <InviteCard />,
@@ -43,21 +39,20 @@ const roomCards = [
     lead: "Two carets, one text",
     body: (
       <>
-        Everyone&apos;s edits land in the one CRDT, and carets and selections
-        travel as anchors inside it — so a peer&apos;s caret stays where it was
-        while the text around it moves.
+        Everyone&apos;s edits land in the one CRDT, and carets and selections travel
+        as anchors inside it. A peer&apos;s caret stays where it was while the text
+        around it moves.
       </>
     ),
     figure: <CaretLines />,
   },
   {
-    lead: "Your tree, not your disk",
+    lead: "A guest sees the paths you granted",
     body: (
       <>
-        The host publishes the paths inside the folder it granted — paths, never
-        content — and reads a file from its own disk when somebody opens it. The
-        room carries no file mutations, so nothing adds, renames or removes a
-        path in your working copy.
+        The host publishes the paths inside the folder it granted, and reads a file
+        from its own disk when somebody opens it. The room never adds, renames or
+        removes a path in your working copy.
       </>
     ),
     figure: (
@@ -67,13 +62,13 @@ const roomCards = [
     ),
   },
   {
-    lead: "Three clients, one engine",
+    lead: "Multiple clients, one engine",
     body: (
       <>
-        The VS Code client, the Neovim client and the browser page all drive a
-        copy of the same engine and bridge, so the room&apos;s rules are one
-        implementation rather than three. The browser page is the third client:
-        guests only, and served over the project&apos;s own private network.
+        The VS Code client, the Neovim client and the browser page each drive a copy
+        of the same engine and bridge, so a room&apos;s rules live in one
+        implementation. The browser page is guests-only, and served over the
+        project&apos;s own private network.
       </>
     ),
     figure: (
@@ -90,8 +85,8 @@ const steps = [
     body: (
       <>
         Start the server, open a folder in VS Code or Neovim, and host a session
-        from the command palette. The client lists the paths inside the folder
-        you granted and puts that listing on the wire.
+        from the command palette. The client lists the paths inside that folder and
+        sends the listing.
       </>
     ),
   },
@@ -99,10 +94,10 @@ const steps = [
     lead: "Send the invite",
     body: (
       <>
-        Copy the invite link and send it however you already talk to each other.
-        The token in it is the permission, and only the paths you granted are
-        behind it &mdash; a confinement the host&apos;s client holds, not one the
-        wire enforces.
+        Copy the invite link and send it however you already talk to each other. The
+        token in it is the permission, and only the paths you granted are behind it.
+        The host&apos;s client holds that confinement; nothing on the wire enforces
+        it.
       </>
     ),
   },
@@ -110,9 +105,9 @@ const steps = [
     lead: "Type in the same file",
     body: (
       <>
-        Each guest opens a file when they want it, and it is read from the
-        host&apos;s disk at that moment. A file nobody has opened sends no text,
-        so looking at one file never moves the whole project over the wire.
+        A guest opens a file when they want it, and the host reads it from disk at
+        that moment. A file nobody has opened sends no text, so opening one file
+        never moves the whole project over the wire.
       </>
     ),
   },
@@ -121,8 +116,8 @@ const steps = [
     body: (
       <>
         The room dies with its host after a short grace period, so a dropped
-        connection does not end it. Rooms live in memory only: nothing survives
-        a restart of the server.
+        connection does not end it. Rooms live in memory: nothing survives a restart
+        of the server.
       </>
     ),
   },
@@ -130,57 +125,56 @@ const steps = [
 
 const built = [
   <>
-    <strong>The specification, in draft</strong> — prose, a canonical byte form,
-    JSON Schema and conformance vectors.
+    <strong>The specification, in draft:</strong> prose, a canonical byte form, JSON
+    Schema and conformance vectors.
   </>,
   <>
     <strong>
-      <code>selvaged</code>, the server
+      <code>selvaged</code>, the server:
     </strong>{" "}
-    — one Rust binary, rooms in memory, nothing written to disk.
+    one Rust binary, rooms in memory, nothing written to disk.
   </>,
   <>
-    <strong>The VS Code and Neovim clients</strong> — host, join, presence, a
-    mirrored tree, follow.
+    <strong>The VS Code and Neovim clients:</strong> host, join, presence, a mirrored
+    tree, follow.
   </>,
   <>
-    <strong>The browser client</strong> — guests only, in a page, served over
-    the project&apos;s own private network.
+    <strong>The browser client:</strong> guests only, in a page, served over the
+    project&apos;s own private network.
   </>,
 ];
 
 const notYet = [
   <>
-    <strong>No public demo.</strong> The demo instance and the browser page run
-    on a private network of ours, so there is no open link to hand out.
+    <strong>No public demo.</strong> The demo instance and the browser page run on a
+    private network of ours, so there is no open link to hand out.
   </>,
   <>
-    <strong>No release.</strong> The wire version is <code>selvage/1</code> and
-    the compatibility rule in force for it is the same major; nothing has been
-    published to an extension store.
+    <strong>No release.</strong> The wire version is <code>selvage/1</code> and the
+    compatibility rule in force for it is the same major; nothing has been published
+    to an extension store.
   </>,
   <>
-    <strong>No persistence.</strong> Rooms die with the host, and nothing
-    survives a restart of the server.
+    <strong>No persistence.</strong> Rooms die with the host, and nothing survives a
+    restart of the server.
   </>,
   <>
     <strong>No encryption layer in version 1.</strong> Frames travel through the
-    server as unencrypted bytes, and this slice has no transport security
-    either, so treat the server&apos;s operator and the network path as able to
-    see the room&apos;s text.
+    server as unencrypted bytes, and this slice has no transport security either, so
+    treat the server&apos;s operator and the network path as able to see the
+    room&apos;s text.
   </>,
   <>
-    <strong>One engine.</strong> The three clients drive a copy of the same
-    engine, so a client written from the prose alone has not been shown to agree
-    with it byte for byte.
+    <strong>One engine.</strong> Every client drives a copy of the same engine, so a
+    client written from the prose alone has not been shown to agree with it byte for
+    byte.
   </>,
   <>
-    <strong>The specification is a draft.</strong> <code>NOTES.md</code> lists
-    what the prose deliberately leaves open: the invite carries the token in its
-    URL, the host role is claimed rather than proven, a document path is any
-    non-blank string free of control characters, and a grant is a listing rather
-    than a confinement &mdash; a peer may still name any path it likes, listed or
-    not.
+    <strong>The specification is a draft.</strong> <code>NOTES.md</code> lists what
+    the prose deliberately leaves open: the invite carries the token in its URL, the
+    host role is whatever a client claims, a document path is any non-blank string free
+    of control characters, and a grant is a listing rather than a confinement, so a
+    peer may still name any path it likes, listed or not.
   </>,
 ];
 
@@ -218,7 +212,7 @@ export default function Home() {
                 Selvage is a live-coding collaboration protocol: one Rust binary
                 you host holds the room, and an invite link is the whole
                 permission. VS Code, Neovim and a browser page join the same
-                file &mdash; no account, and no third party&apos;s cloud holding
+                file, with no account and no third party&apos;s cloud holding
                 the room.
               </p>
               <ul className="mt-8 max-w-[35rem] space-y-3">
@@ -260,7 +254,7 @@ export default function Home() {
             <h2>See it working</h2>
             <p>
               A room is the host&apos;s folder, seen from somebody else&apos;s
-              editor. Four things are true of every one.
+              editor.
             </p>
             <ul className="cards">
               {roomCards.map((card) => (
@@ -277,8 +271,8 @@ export default function Home() {
             <h2>How it works</h2>
             <p>
               The workflow is one sentence:{" "}
-              <strong>share a link, come edit my code with me.</strong> In
-              order, it is four moves.
+              <strong>share a link, come edit my code with me.</strong> In order, it
+              comes to four moves.
             </p>
             <ol className="steps">
               {steps.map((step) => (
@@ -290,38 +284,36 @@ export default function Home() {
           </section>
 
           <section id="why-a-spec" className="scroll-mt-28 md:scroll-mt-24">
-            <h2>Collaboration never had its LSP</h2>
+            <h2>The session layer has no specification</h2>
             <p>
-              Language tooling has the Language Server Protocol and debugging
-              has the Debug Adapter Protocol. Document sync has{" "}
-              <code>y-protocols</code> and the CRDT libraries beneath it. The
-              session layer &mdash; which rooms exist, who is in one, what their
-              role is, which documents are open, where their carets are, what
-              happens when somebody leaves &mdash; has never been written down,
-              so every collaborative tool invents it again and none of the
-              inventions can talk to each other.
+              Language tooling has the Language Server Protocol and debugging has
+              the Debug Adapter Protocol. Document sync has{" "}
+              <code>y-protocols</code> and the CRDT libraries beneath it. Which
+              rooms exist, who is in one, what their role is, which documents are
+              open, where their carets are, what happens when somebody leaves:
+              every collaborative tool decides those for itself, so none of the
+              tools can talk to each other.
             </p>
             <p>
               The specification is Selvage&apos;s flagship artifact: that layer,
               written out as prose, a canonical byte form for a frame, JSON Schema
-              documents, and 31 conformance vectors &mdash; 34858 frame checks and
-              8642 assertions &mdash; replayed byte for byte against a real server.
-              The numbers are constants in <code>schema/validate.py</code>, so
-              deleting an assertion is a red run rather than smaller totals in a
-              line of output.
+              documents, and 31 conformance vectors (34858 frame checks and 8642
+              assertions) replayed byte for byte against a real server. The numbers
+              are constants in <code>schema/validate.py</code>, so deleting an
+              assertion fails the run instead of shrinking a total in a line of
+              output.
             </p>
             <p>
-              The vectors are also the honest test of the whole idea: nothing
-              yet shows that code written from the prose alone agrees with this
-              implementation byte for byte, and a corpus you can replay is what
-              would settle it.
+              The vectors are also the honest test: nothing yet shows that code
+              written from the prose alone agrees with this implementation byte for
+              byte, and a corpus you can replay is what would settle it.
             </p>
             <p>
               <a href="https://github.com/selvage-protocol/specification">
                 Read the specification
-              </a>{" "}
-              &mdash; it is written to be implemented on its own, without
-              reading the Rust.
+              </a>
+              . It is written to be implemented on its own, without reading the
+              Rust.
             </p>
           </section>
 
@@ -340,16 +332,16 @@ export default function Home() {
             </pre>
             <p>
               Then open a folder in one editor and host a session against{" "}
-              <code>ws://127.0.0.1:8080</code>. Both clients are built from
-              their own checkouts: the VS Code client with{" "}
-              <code>npm ci</code> and <code>npm run package</code>, its{" "}
-              <code>.vsix</code> installed by hand, and the Neovim client by
-              pointing a plugin manager at the clone (
+              <code>ws://127.0.0.1:8080</code>. Each client is built from its own
+              checkout: the VS Code client with <code>npm ci</code> and{" "}
+              <code>npm run package</code>, its <code>.vsix</code> installed by
+              hand, and the Neovim client by pointing a plugin manager at the clone
+              (
               <code>{"{ dir = '/path/to/nvim_client' }"}</code> in lazy.nvim).
             </p>
             <details className="quickstart">
               <summary>
-                The long version: the spec route, the vector replay, and both
+                The long version: the spec route, the vector replay, and two
                 editors in one room
               </summary>
               <div className="quickstart-body">
@@ -359,9 +351,9 @@ export default function Home() {
                     selvage-protocol/specification
                   </a>{" "}
                   holds the prose, the canonical byte form, the JSON Schema
-                  documents, the 31 wire vectors, a language-neutral replay of
-                  those vectors in Python, and <code>NOTES.md</code>, which says
-                  what the prose deliberately leaves open.
+                  documents, the 31 wire vectors, a Python replay of those vectors,
+                  and <code>NOTES.md</code>, which says what the prose deliberately
+                  leaves open.
                 </p>
                 <pre>
                   <code>
@@ -372,18 +364,18 @@ export default function Home() {
                 </pre>
                 <p>
                   The validator checks every frame of every vector against the
-                  schemas and against the canonical form, and pins the size of
-                  the corpus, so a dropped assertion fails the run instead of
-                  quietly shrinking a total.
+                  schemas and against the canonical form, and pins the size of the
+                  corpus, so a dropped assertion fails the run instead of shrinking
+                  a total.
                 </p>
 
                 <h3>Replay the vectors against a server</h3>
                 <p>
-                  The same transcripts replayed against a real{" "}
-                  <code>selvaged</code> over a WebSocket, with no Rust in the
-                  comparison: <code>runner/run_vectors.py</code> reads the
-                  vectors, starts a server of its own on an ephemeral port, and
-                  compares what comes back byte for byte.
+                  <code>runner/run_vectors.py</code> replays the same transcripts
+                  against a real <code>selvaged</code> over a WebSocket, with no
+                  Rust in the comparison: it reads the vectors, starts a server of
+                  its own on an ephemeral port, and compares what comes back byte
+                  for byte.
                 </p>
                 <pre>
                   <code>
@@ -396,14 +388,14 @@ export default function Home() {
                   <code>selvaged</code> serves <code>ws://&hellip;/session</code>{" "}
                   and <code>http://&hellip;/meta</code>, and keeps nothing on
                   disk. Running it is the documented way to stand up a server:
-                  there is no image to pull and no service unit to install in
-                  any repository yet.
+                  there is no image to pull and no service unit to install in any
+                  repository yet.
                 </p>
 
                 <h3>Two editors in one room</h3>
                 <p>
-                  Start a server to host on, then build the client you want to
-                  host from:
+                  Start a server to host on, then build the client you want to host
+                  from:
                 </p>
                 <pre>
                   <code>
@@ -416,11 +408,11 @@ export default function Home() {
                   Open a folder in one window, run{" "}
                   <em>Selvage: Host a session</em> from the command palette, and
                   give it the server address plus a display name. Open a file
-                  inside that folder: it joins the room as soon as it is open.
-                  Run <em>Selvage: Copy the invite link</em>, and in a second
-                  window &mdash; of the same editor or the other one &mdash; run{" "}
-                  <em>Selvage: Join a session from an invite link</em> and paste
-                  it. The host&apos;s file opens in the guest as{" "}
+                  inside that folder: it joins the room as soon as it is open. Run{" "}
+                  <em>Selvage: Copy the invite link</em>, open a second window in
+                  the same editor or in the other one, and run{" "}
+                  <em>Selvage: Join a session from an invite link</em> with the
+                  link pasted in. The host&apos;s file opens in the guest as{" "}
                   <code>selvage:/&lt;path&gt;</code> and both windows type into
                   the same text.
                 </p>
@@ -475,15 +467,14 @@ export default function Home() {
           <div>
             <h2>Licences</h2>
             <p>
-              The specification &mdash; prose, canonical form, JSON Schema and
-              vectors &mdash; is CC-BY-4.0, and its tooling is MIT OR
-              Apache-2.0. The reference server and the clients are MIT OR
-              Apache-2.0, with one exception that matters: the server binary{" "}
-              <code>selvaged</code> is <strong>FSL-1.1-MIT</strong>. That is
-              source-available, not OSI-approved: free for any non-competing
-              purpose, converting to MIT two years after each release, with a
-              non-compete clause that reserves exactly the thing a hosted
-              Selvage would be.
+              The specification (prose, canonical form, JSON Schema and vectors) is
+              CC-BY-4.0, and its tooling is MIT OR Apache-2.0. The reference server
+              and the clients are MIT OR Apache-2.0, with one exception: the server
+              binary <code>selvaged</code> is <strong>FSL-1.1-MIT</strong>, which
+              is source-available and not OSI-approved. It is free for any
+              non-competing purpose, converts to MIT two years after each release,
+              and carries a non-compete clause that reserves exactly the thing a
+              hosted Selvage would be.
             </p>
             <p>
               This page prerenders to static HTML with one stylesheet and a
@@ -503,25 +494,25 @@ export default function Home() {
               <a href="https://github.com/selvage-protocol/specification">
                 specification
               </a>{" "}
-              &mdash; the protocol, in prose, schema and vectors
+              (the protocol, in prose, schema and vectors)
             </li>
             <li>
               <a href="https://github.com/selvage-protocol/reference_server">
                 reference_server
               </a>{" "}
-              &mdash; the server, the client library, the harness
+              (the server, the client library, the harness)
             </li>
             <li>
               <a href="https://github.com/selvage-protocol/vscode_client">
                 vscode_client
               </a>{" "}
-              &mdash; the VS Code client
+              (the VS Code client)
             </li>
             <li>
               <a href="https://github.com/selvage-protocol/nvim_client">
                 nvim_client
               </a>{" "}
-              &mdash; the Neovim client
+              (the Neovim client)
             </li>
           </ul>
         </div>
