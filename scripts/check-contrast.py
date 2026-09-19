@@ -23,6 +23,10 @@ out of `components/room-visuals.tsx`, so moving the fill over a dimmer token
 fails the build. A quarter-alpha tint cannot also clear the non-text floor (see
 `TINT_MIN`), and the pair below says so rather than pretending otherwise.
 
+The figure's one mark that is not a peer is the dot on the open file, in the panel's own
+text colour; it is floored where it is drawn, on the panel, so a restyle that dims it
+below the non-text floor fails here rather than in a reader's eyes.
+
 This is a floor, not an audit. It cannot see layout: touch-target sizes,
 keyboard reachability, focus visibility and reduced-motion handling are read
 against the code by a person (see the README's accessibility notes), because
@@ -448,6 +452,10 @@ def main() -> int:
         # rather than on the card, so the panel's own stops carry text too.
         checks.append((f"panel text over {stop}", fg, stop, TEXT_MIN))
         checks.append((f"panel muted text over {stop}", muted, stop, TEXT_MIN))
+        # The open file's dot wears the panel's own text colour and is the one mark for
+        # that file: a mark nobody can see marks nothing, so it is floored as non-text UI
+        # on the ground it is drawn on.
+        checks.append((f"open-file dot on the panel over {stop}", fg, stop, NON_TEXT_MIN))
 
     failures = 0
     for name, a, b, minimum in checks:

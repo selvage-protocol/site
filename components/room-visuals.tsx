@@ -21,7 +21,12 @@ import { Card } from "@/components/ui/card";
    line the caret is on, where that client puts its glyph-margin badge. The name is
    never written into the Rust text — read as a word there it would pass for syntax —
    so it stays in the gutter lane, beside the line number. Every line fits the narrowest
-   panel the page is drawn at. */
+   panel the page is drawn at.
+
+   The file the room has open is named twice, in the guest's tree and in the room bar,
+   and both names carry the same colour. It wears one mark: the dot beside it in the
+   tree, drawn in the panel's own text colour. No second dot and no peer's colour, so
+   the mark reads as the file rather than as somebody's caret. */
 
 /** The colours of `selvage-mocha`, the theme the browser client defines
     (`defineTheme` in web_client/src/browser/main.ts), so the figure and the real
@@ -93,7 +98,8 @@ export function InviteChip() {
   );
 }
 
-/** The paths the host granted, as a guest sees them. */
+/** The paths the host granted, as a guest sees them, with the one the room has open
+    carrying the figure's only mark. */
 export function TreeFigure({ label = "guest" }: { label?: string }) {
   return (
     <div className="room-tree" aria-hidden="true">
@@ -103,7 +109,7 @@ export function TreeFigure({ label = "guest" }: { label?: string }) {
         <li>main.rs</li>
         <li className="room-tree-here">
           room.rs
-          <span className="peer-dot" />
+          <span className="open-dot" />
         </li>
         <li>session.rs</li>
       </ul>
@@ -189,7 +195,6 @@ export function RoomWindow() {
         <TreeFigure />
         <Card className="hero-glass">
           <div className="room-bar">
-            <span className="room-dot" />
             <span className="room-file">room.rs</span>
             <span className="room-count">2 in the room</span>
           </div>
@@ -248,8 +253,9 @@ export function RoomWindow() {
         </Card>
       </div>
       <figcaption>
-        An illustration of a guest&apos;s window: the paths the host granted, one file open,
-        two carets in it, and the invite link that put them there.
+        An illustration of a guest&apos;s window: the paths the host granted, the dot
+        beside the file the room has open, the two carets in it, and the invite link that
+        put them there.
       </figcaption>
     </figure>
   );

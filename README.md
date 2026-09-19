@@ -144,13 +144,13 @@ The must-not-say table below still binds every line. Two rows moved with what is
 
 The page shows the product instead of describing it, without an image, a font, a dependency or a
 third-party request: `components/room-visuals.tsx` draws the room window from inline markup styled
-by `style.css`. The hero figure is the whole surface at once: the guest's mirrored tree, one open
-file, the two carets in it (a 2 px bar in the peer's colour at a column between two characters of
-the line, the peer's name in the gutter lane on that line, and a quarter-alpha fill behind what one
-of them has selected), and the invite chip that put them there. Each card in *See it
-working* carries one smaller drawing of the thing it claims.
+by `style.css`. The hero figure is the whole surface at once: the guest's mirrored tree with the
+open file marked by the figure's only dot, the two carets in it (a 2 px bar in the peer's colour at
+a column between two characters of the line, the peer's name in the gutter lane on that line, and a
+quarter-alpha fill behind what one of them has selected), and the invite chip that put them there.
+Each card in *See it working* carries one smaller drawing of the thing it claims.
 
-Four rules hold it together:
+Five rules hold it together:
 
 - **It is an illustration, and it says so.** The caption under the hero figure names it. Each code
   sample is a short function against the client crate's own API, with the `use` line left out, and
@@ -160,6 +160,12 @@ Four rules hold it together:
   never written into the text of a line: inside Rust it would read as syntax, which is a claim
   about the source that is not true — so it stays in the lane beside the line number, where that
   client's glyph-margin badge goes.
+- **The open file is named twice and marked once.** The file the room has open is written in the
+  guest's tree and in the room bar, both times in the panel's own text colour (`--fg`), and the dot
+  beside it in the tree is the figure's only mark for it, in that same colour. It used to be two
+  dots, one in each peer's colour, beside the same filename: two identical shapes in two peer
+  colours read either as the peers themselves or as an inconsistency, and a peer's colour belongs
+  to their caret. The caption names the dot, and the peers keep mauve and teal to themselves.
 - **The sample is coloured the way the editor colours it.** The token colours are the browser
   client's own `selvage-mocha` theme (`defineTheme` in `web_client/src/browser/main.ts`): comment
   `#868ca2`, keyword `#cba6f7`, string `#a6e3a1`, number `#fab387`, type `#f9e2af`, on the sample's
@@ -434,6 +440,7 @@ regression fails the build instead of waiting for a look. Measured today:
 | focus outline against the page | 8.07:1 | 3.0:1 |
 | glass-card text, worst of the five panel stops | 11.71:1 (muted 7.61:1) | 4.5:1 |
 | panel text, worst stop (the tree, the file bar and the figure's caption sit on the panel, not on the card) | 9.08:1 (muted 5.90:1) | 4.5:1 |
+| the open file's dot on the panel, worst stop (the figure's one mark that is not a peer's) | 9.08:1 | 3.0:1 |
 
 Four groups the check does not parse are computed the same way, from the colours the browser
 composites, and are re-measured whenever the fills around them move: inline code text on its
