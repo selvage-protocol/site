@@ -474,15 +474,25 @@ body {
   --peer: var(--color-teal);
 }
 
-/* The caret: 2 px of the peer's colour, in the line's own flow, between two characters.
-   The height and the offset keep it inside the font's own box, so a caret never changes
-   the height of the line it is on. */
+/* The caret: a 2 px overlay at a zero-width anchor between two characters, so the
+   following text stays in its editor columns. The height and the offset keep it inside
+   the font's own box, so a caret never changes the height of the line it is on. */
 .caret {
   display: inline-block;
-  width: 2px;
+  position: relative;
+  width: 0;
   height: 1.15em;
-  background: var(--peer);
   vertical-align: -0.16em;
+}
+
+.caret::after {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 100%;
+  background: var(--peer);
+  content: "";
 }
 
 /* The peer's selection: their colour at 25%, the alpha the client's own `translucent()`
