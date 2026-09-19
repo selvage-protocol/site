@@ -23,7 +23,7 @@ browser proof the runner cannot run, and nothing else.
 
 | Path | What it is |
 |---|---|
-| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (promise, three landed facts, two CTAs, the room figure, and the version line under them), *See it working* (four cards), *How it works* (four steps), *The session layer has no specification* (why the specification is the artifact), *Run it* (two commands in the open, the three long routes folded into one `details`), then the footer |
+| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (promise, three landed facts, two CTAs, the room figure, and the version line under them), *Get it working* (the server commands, one card per client, and the long routes folded into one `details`), *See it working* (four cards), *How it works* (four steps), *The session layer has no specification* (why the specification is the artifact), then the footer |
 | `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, the one origin the metadata resolves against (`metadataBase`, `alternates.canonical`, `openGraph.url`; see "The live origin"), and the global stylesheet. The favicons are deliberately absent: they are Next file conventions, so the framework writes their tags and `sizes` from the files themselves |
 | `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, and a system font stack, so no font is fetched from a third party. Two widths are named there and the page keeps to them: `--measure` for running prose and `--column` for everything that is not prose (section rules, code blocks, the repo grid), so a wide figure is deliberate inside a narrow measure |
 | `app/icon.png` / `app/icon1.png` / `app/icon2.png` / `app/apple-icon.png` | the favicon set: the owner's opaque export resized to the four sizes a browser asks for (32, 16 and 48 px, and the 180 px home-screen icon), named for Next's file convention so the framework writes their `<link>` tags and `sizes`. Nothing here is redrawn; there is no vector favicon (see "The site mark") |
@@ -105,12 +105,12 @@ the reader can name.
 | See it working | four cards, each with a drawing of the thing it claims: anyone with the link is in, two carets in one text, the paths a guest sees, multiple clients on one engine |
 | How it works | the four moves in order (host a folder, send the invite, type in the same file, close the window), under the design record's one-sentence workflow |
 | The session layer has no specification | the wedge: language tooling has the Language Server Protocol and debugging the Debug Adapter Protocol, document sync has `y-protocols`, and the session layer is unspecified, so every collaborative tool decides those for itself. The specification is the flagship artifact, and the corpus counts appear here once, as the evidence they are |
-| Run it | two commands in the open (`git clone`, `cargo run`), the client routes named in a sentence, and the three long routes folded into one `details`. It opens on the product's own shape rather than on a missing feature: you run the server and the invite link is how somebody joins you, so there is nothing hosted to open and every route in starts with a checkout |
-| Footer | the licences, the four repository cards, and the page's own privacy line |
+| Get it working | the server in the open — compose from a checkout, and the published image for a reader who would rather not clone — then one card per client: VS Code, Neovim and the browser page, each with its prerequisites, its exact commands and its repository. The long routes (the server from source, the corpus check, the vector replay) fold into one `details`. It opens on the product's own shape rather than on a missing feature: you run the server and the invite link is how somebody joins you, so there is nothing hosted to open and the server runs on the reader's own machine |
+| Footer | the licences, the five repository cards, and the page's own privacy line |
 
 The page used to end on a two-column ledger of what is built and what is not. On a product page
 that reads as a to-do list, so it is gone, and its honest facts now sit where they do a job rather
-than in a list: *Run it* opens on the shape of the thing (you run the server, the invite link is
+than in a list: *Get it working* opens on the shape of the thing (you run the server, the invite link is
 how somebody joins you), and the hero's line under the CTAs carries the version. What the ledger
 spelled out is recorded where it is a decision or a gap: the design record's non-goals for v1
 (`DESIGN.md` §11, in `selvage-protocol/ai_notes`), the
@@ -136,9 +136,10 @@ The must-not-say table below still binds every line. Two rows moved with what is
   built and served over the project's own private network, so "nothing runs in a web page" is no
   longer true and the filter no longer forbids the bare word. What the filter forbids instead is
   both of the lies that replaced it: that a reader can open a page (there is no public URL on that
-  network), and the stale denial itself. The page says the browser page is guests-only and served
-  over a private network, and *Run it* opens on the same fact in the product's own words: you run
-  the server, and the invite link is how somebody joins you. The
+  network), and the stale denial itself. The page says what the browser client is — guests only,
+  with no editor code of its own — and that the server the reader starts serves the same page on
+  the same port, which the filter permits because the mention and the loopback address sit in
+  different sentences. The
   pattern also holds the route shape neither a verb nor a denial covers (a browser mention sharing
   a sentence with a URL or a host name, in either order), because that is what "a page a reader can
   open" looks like in prose. The `clean` fixtures on that pattern are the honest sentences, and the
@@ -333,10 +334,10 @@ summarised here so that the constraint survives without the file that produced i
 | `salvage/1` | The wire version is `selvage/1`. "Selvage" is heard as "salvage", which is why the full protocol title appears at least once in the page's first paragraph |
 | end-to-end encryption, E2EE | Version 1 has no encryption layer: frames travel through the server as unencrypted bytes, and the slice has no transport security either. The relay is payload-opaque but not confidential |
 | "the server cannot read it" / "the text never reaches the server" | The relay routes opaque bytes and keeps no document text, but it can read a frame as it passes and there is no transport security. It is not a confidential relay |
-| a browser route a reader can open | The browser client exists (`web_client`, Monaco in a page, guests only), but it is served over the project's own private network, so there is no public URL to open one at, and no install-free route to a page. The page says what the browser client is and where it is served, and that the two desktop clients are the published ones. It may not say "nothing runs in a web page" either: that sentence was true when the filter forbade the bare word and it is false now |
+| a browser route a reader can open | The browser client exists (`web_client`, Monaco in a page, guests only), but it is served over the project's own private network, so there is no public URL to open one at, and no page a reader can reach without a server of their own. The page says what the browser client is and that the server they run serves it, and links the repository; the loopback address it prints stays in a sentence of its own, which is the shape the pattern permits. It may not say "nothing runs in a web page" either: that sentence was true when the filter forbade the bare word and it is false now |
 | file create, rename or delete | The room carries no file mutations and nothing writes to the host's working copy. The host's own editor still changes that folder, and a Neovim guest's mirror materialises the granted paths |
-| Docker, or a one-command self-host | No image, compose file or service unit exists in any repository. The documented path is `cargo run -p selvaged -- --listen …` |
-| a stable 1.0 | The wire version is `selvage/1`; the compatibility rule in force is the same major. Nothing has been released and no shape is frozen. No corpus line puts the design at 0.x |
+| the server route denied: no image to pull, nothing to install on the server | The reason this entry used to give — that no Dockerfile, compose file or service unit exists in any repository — is false now. `ghcr.io/selvage-protocol/selvaged:0.1.0` is published and pulls anonymously, `reference_server/compose.yaml` runs it, and `reference_server/packaging/systemd/selvaged.service` installs the binary. The pattern used to forbid the word `docker` itself, on that stale reason; it holds the denial of those artefacts instead, which is the sentence the page carried |
+| a stable 1.0 | The wire version is `selvage/1`; the compatibility rule in force is the same major. Nothing has been released and no shape is frozen. No corpus line puts the design at 0.x. The pattern's lookbehind keeps `0.1.0` out of it: that is the version of the published image, a number inside a number, not a claim that 1.0 exists |
 | a second implementation, or interoperability | There is none. The Neovim client drives a byte-identical copy of the same engine, so nothing yet shows a client built from the prose alone agreeing byte for byte with the Rust one |
 | marketplace or extension-gallery availability | The extension is unpublished, and publishing it is a non-goal until it works with a friend |
 | "guests are read-only" or "view-only" | The design inverts it: read-only scopes the host's filesystem, never the shared buffer, and every holder of the invite edits the session CRDT. Saying otherwise would be a lie about the product's central idea |
@@ -348,7 +349,7 @@ summarised here so that the constraint survives without the file that produced i
 | a bare "no cloud", qualified or not ("no cloud in between" included) | A self-hosted server can itself run on a cloud VM, so only the weak reading is backed: no third party's cloud holding the room. The backed storage sentence is "nothing written to disk" |
 | a proven cross-editor pairing | The first cross-editor session has run. The design notes' hand-run proof (2026-09-17) passes grant, cursors and follow in both directions, but its concurrent-edit step falls short by one trailing-newline byte, so byte-identical replicas across the two editors are not demonstrated. State what the clients are built to do rather than that it is proven |
 | a speed adjective (instant, real-time, lag-free) | No performance data exists anywhere in the corpus |
-| an ease claim (takes seconds, one-click, just works) | No image, compose file or service unit exists; the documented path is `cargo run`, and no ease claim is backed |
+| an ease claim (takes seconds, one-click, just works) | The image, the compose file and the systemd unit all exist; no ease claim around them is backed, because no install time, start-up time or latency has been measured or recorded anywhere in the corpus |
 | an only-machine claim (untouched by the network) | Document payloads travel through the server to the peers that ask for them; the grant bounds which paths are served, not which machines code touches |
 | a "live" / "now available" status | Nothing is released, hosted or published. The honest status line is the wire version plus the specification draft |
 | SaaS-creep words (sign in/up, get started, download, pricing) | No accounts exist, so nothing can be signed into; no package exists to download and no price exists to show. The page offers the specification to read and a server to run |
@@ -427,7 +428,7 @@ regression fails the build instead of waiting for a look. Measured today:
 | body text on page | 11.34:1 | 4.5:1 |
 | muted prose on page | 7.37:1 | 4.5:1 |
 | link on page | 8.07:1 | 4.5:1 |
-| visited link on page | 5.81:1 | 4.5:1 |
+| visited link on page | 5.18:1 | 4.5:1 |
 | button label on its mauve fill | 8.07:1 | 4.5:1 |
 | peer badge label on its mauve fill (the first caret in the hero figure) | 8.07:1 | 4.5:1 |
 | peer badge label on its teal fill (the second caret in the hero figure) | 11.01:1 | 4.5:1 |
@@ -451,13 +452,32 @@ regression fails the build instead of waiting for a look. Measured today:
 | panel text, worst stop (the tree, the file bar and the figure's caption sit on the panel, not on the card) | 9.08:1 (muted 5.90:1) | 4.5:1 |
 | the open file's dot on the panel, worst stop (the figure's one mark that is not a peer's) | 9.08:1 | 3.0:1 |
 
+WCAG 1.4.1 is the one criterion measured the other way round, because both of its floors cannot
+hold at once here. It asks for 3.0:1 between a link and the text beside it when colour is the only
+thing distinguishing the two, and the link's own text is separately floored at 4.5:1 against its
+background. `--fg` is 11.34:1 on `--bg`, so a colour that just clears the text floor is
+11.34 / 4.5 = 2.52:1 from the prose, and a colour 3.0:1 from the prose is at most 3.78:1 on the
+page, below the text floor. The page takes 1.4.1's other allowed affordance instead: every prose
+link is underlined (`text-decoration-line` named in `style.css`, because preflight's
+`text-decoration: inherit` had left every link colour-only, which is why the thickness and offset
+already there drew nothing). `scripts/check-contrast.py` reads that declaration out of the
+stylesheet and asserts the 3.0:1 pair whenever it is missing, so a colour-only link scheme fails
+the gate: the stylesheet as it stood before the underline went in measures 1.40:1 unvisited and
+1.95:1 visited and fails the check.
+
+`--link-visited` is a deeper mauve, `#a181d6`, rather than the neutral `#9399b2` it was: that grey
+sat 1.27:1 from `--muted`, so a visited link was the colour of the prose around it, and every
+repository link is on the org's own history the moment anyone has browsed it. The underline
+carries the affordance now; the colour keeps a visited link looking like a link, at 5.18:1 on the
+page.
+
 Four groups the check does not parse are computed the same way, from the colours the browser
 composites, and are re-measured whenever the fills around them move: inline code text on its
 chip fill (`rgba(205, 214, 244, 0.07)` over `--bg`) 9.62:1; the invite chip's label and its URL
 on the chip's own tint (`rgba(203, 166, 247, 0.08)` over the figure's fill over the card's) 6.77:1
 and 10.41:1; the card body text on the card fill (`rgba(24, 24, 37, 0.5)` over `--bg`) 7.63:1;
 the client chips and the rail label under them 10.56:1 and 8.55:1. The repo cards' muted text and
-links on their fill are 7.63:1 and 8.36:1, the visited link on the same fill 6.02:1. The section
+links on their fill are 7.63:1 and 8.36:1, the visited link on the same fill 5.36:1. The section
 hairlines and the card borders sit at 1.30:1 against the page on
 purpose: they are decorative separators, they carry no state, and nothing is identified by
 them.
@@ -485,7 +505,7 @@ What no ratio proves is read against the code by a person on every change:
   true as the page's scripts being permitted. "The Content-Security-Policy" records the
   interval in which they were not, and the gate step that now fails if it happens again.
   No skip link: the page is one route, so there is no repeated block
-  to bypass. The run-it fold is a native `details`, so it opens without a script.
+  to bypass. The fold at the end of *Get it working* is a native `details`, so it opens without a script.
 - **Reduced motion.** Two things move, and both stand down under `prefers-reduced-motion`: the
   hero figure's 520 ms entrance (an `opacity`/`translateY` animation) and the 2 px hover lift on
   the figure cards and the repository cards, each inside a `prefers-reduced-motion:
@@ -502,9 +522,8 @@ What no ratio proves is read against the code by a person on every change:
   reader hears the sentence describing the room rather than four lines of code.
 - **The figure grid is a list.** Each card's drawing is followed by a bold lead and a sentence, so
   the four claims are readable as a list before they are readable as a picture.
-- **Repo links.** The repository cards drop the default underline, so a link is told apart
-  from the muted text beside it by its monospace face and size rather than by colour alone
-  (mauve against that text is 1.10:1); the focus outline is unchanged.
+- **Repo links.** The repository cards keep the underline every other prose link carries, so a
+  link is not told apart by its colour and monospace face alone; the focus outline is unchanged.
 
 ## Licence
 
