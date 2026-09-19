@@ -156,13 +156,15 @@ FORBIDDEN: list[Phrase] = [
         # `reference_server/Dockerfile`, `reference_server/compose.yaml`,
         # `reference_server/packaging/systemd/selvaged.service` and the anonymously pullable
         # `ghcr.io/selvage-protocol/selvaged:0.1.0` are all in the repositories.
-        r"\bno (?:image|container) to pull\b|\bnothing to install on the server\b",
+        r"\bno (?:image|container) to pull\b|\bnothing to install on the server\b"
+        r"|\bno compose (?:file|configuration)\b|\bno systemd (?:service|unit)\b",
         "there is no image to pull and no service unit to install in any repository yet",
         "the server image is published (`ghcr.io/selvage-protocol/selvaged:0.1.0`) and pulls "
         "with no account, `reference_server/compose.yaml` runs it, and "
         "`reference_server/packaging/systemd/selvaged.service` installs the binary: a page "
         "saying none of that exists states the opposite of the truth",
-        ("there is no im<!-- -->age to pull", "no conta<span></span>iner to pull"),
+        ("there is no im<!-- -->age to pull", "no conta<span></span>iner to pull",
+         "there is no comp<!-- -->ose file", "there is no systemd <span>u</span>nit"),
         ("the published image pulls with no account and no login",
          "the image is published, so there is nothing to clone"),
     ),
