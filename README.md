@@ -40,7 +40,7 @@ browser proof the runner cannot run, and nothing else.
 | `.nvmrc` | the pinned Node version for local work and CI (`nvm use` reads it); `package.json` `engines` carries the major (`24.x`), because Vercel only deploys major versions |
 | `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason |
 | `scripts/check-button-props.tsx` | the button check: renders the button and anchor variants and asserts their props reach the DOM (run by `npm run check:button` inside the gate) |
-| `scripts/check-contrast.py` | the contrast check: parses the theme tokens out of `style.css` and asserts the rendered pairs sit at or above WCAG AA, with measured ratios (run by `scripts/ci-local.sh contrast` inside the gate) |
+| `scripts/check-contrast.py` | the contrast check: parses the theme tokens out of `style.css` — including the sample's `selvage-mocha` token colours and the ground the code figure draws them on — and asserts the rendered pairs sit at or above WCAG AA, with measured ratios (run by `scripts/ci-local.sh contrast` inside the gate) |
 | `scripts/check-csp.py` | the policy check: reads the Content-Security-Policy out of `vercel.json` and the served HTML, and fails when the policy would refuse a script, stylesheet or image the page carries (run by `scripts/ci-local.sh csp` inside the gate; see "The Content-Security-Policy") |
 | `scripts/check-csp-browser.mjs` | the browser proof: serves the built page with the headers out of `vercel.json`, drives headless Chromium over CDP, and asserts zero `securitypolicyviolation` events, `window.__next_f` an object, the header's concealment on scroll and no `X-Powered-By`. Not in the gate (the runner has no browser), and it needs `npm run build` first |
 | `scripts/ci-local.sh` | the gate, running the same commands as the workflow |
@@ -145,15 +145,24 @@ The must-not-say table below still binds every line. Two rows moved with what is
 The page shows the product instead of describing it, without an image, a font, a dependency or a
 third-party request: `components/room-visuals.tsx` draws the room window from inline markup styled
 by `style.css`. The hero figure is the whole surface at once: the guest's mirrored tree, one open
-file, the two carets in it (a bar in the peer's colour with their name in a chip beside it), and the
+file, the two carets in it (a bar in the peer's colour with their name in a chip beside it, each at
+one of the lines they sit on), and the
 invite chip that put them there. Each card in *See it working* carries one smaller
 drawing of the thing it claims.
 
 Three rules hold it together:
 
 - **It is an illustration, and it says so.** The caption under the hero figure names it. Each code
-  sample is a short function against the client crate's own API, with the `use` line left out; the
-  two carets are drawn beside the sample, never inside it.
+  sample is a short function against the client crate's own API, with the `use` line left out, and
+  each peer's caret is drawn at the end of the line it sits on — the bar and the name chip an
+  editor draws beside a remote cursor. A name is never written into the text of a line: inside
+  Rust it would read as syntax, which is a claim about the source that is not true.
+- **The sample is coloured the way the editor colours it.** The token colours are the browser
+  client's own `selvage-mocha` theme (`defineTheme` in `web_client/src/browser/main.ts`): comment
+  `#868ca2`, keyword `#cba6f7`, string `#a6e3a1`, number `#fab387`, type `#f9e2af`, on the sample's
+  ground and in the body colour `#cdd6f4` otherwise. Punctuation has no rule in that theme, so it
+  keeps the body colour here too. The samples are fixed and short, so each token is a span written
+  by hand in `components/room-visuals.tsx` — no highlighter, no dependency, no parser.
 - **The drawings are `aria-hidden`; the captions are not.** A screen reader hears the sentence that
   describes the room, not the code in it.
 - **No inline `style`, no `<style>`, no webfont, no external image.** The policy in `vercel.json`
@@ -403,6 +412,12 @@ regression fails the build instead of waiting for a look. Measured today:
 | visited link on page | 5.81:1 | 4.5:1 |
 | button label on its mauve fill | 8.07:1 | 4.5:1 |
 | peer chip label on its teal fill (the second caret in the hero figure) | 11.01:1 | 4.5:1 |
+| code comment on the sample's ground (the editor theme's `comment`) | 5.07:1 | 4.5:1 |
+| code keyword on the sample's ground (`keyword`, the mauve the page already uses) | 8.34:1 | 4.5:1 |
+| code string on the sample's ground (`string`) | 11.39:1 | 4.5:1 |
+| code number on the sample's ground (`number`) | 9.57:1 | 4.5:1 |
+| code type on the sample's ground (`type`) | 13.33:1 | 4.5:1 |
+| the peers' caret markers on the sample's ground (the bar and the chip's fill) | 8.34:1 / 11.37:1 | 3.0:1 |
 | code text on code background | 12.14:1 | 4.5:1 |
 | muted text on code background | 7.89:1 | 4.5:1 |
 | badge text on its fill | 6.63:1 | 4.5:1 |
