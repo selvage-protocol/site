@@ -145,12 +145,11 @@ The must-not-say table below still binds every line. Two rows moved with what is
 The page shows the product instead of describing it, without an image, a font, a dependency or a
 third-party request: `components/room-visuals.tsx` draws the room window from inline markup styled
 by `style.css`. The hero figure is the whole surface at once: the guest's mirrored tree, one open
-file, the two carets in it (a bar in the peer's colour with their name in a chip beside it, each at
-one of the lines they sit on), and the
-invite chip that put them there. Each card in *See it working* carries one smaller
-drawing of the thing it claims.
+file, the two carets in it (a bar in the peer's colour with their name in a chip beside it, each
+at one of the lines they sit on), and the invite chip that put them there. Each card in *See it
+working* carries one smaller drawing of the thing it claims.
 
-Three rules hold it together:
+Four rules hold it together:
 
 - **It is an illustration, and it says so.** The caption under the hero figure names it. Each code
   sample is a short function against the client crate's own API, with the `use` line left out, and
