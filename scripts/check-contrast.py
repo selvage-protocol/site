@@ -126,6 +126,28 @@ def rgba_fill(css: str, selector: str) -> tuple[str, float] | None:
     return "#%02x%02x%02x" % (red, green, blue), alpha
 
 
+def solid_fill(css: str, selector: str) -> str | None:
+    """Read a solid hex background or palette variable; unsupported fills fail closed."""
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
+    value = None
+    for rule in re.finditer(r"([^{}]+)\{([^{}]*)\}", css):
+        if selector not in [s.strip() for s in rule.group(1).split(",")]:
+            continue
+        for declaration in rule.group(2).split(";"):
+            name, separator, fill = declaration.partition(":")
+            if separator and name.strip() in ("background", "background-color"):
+                value = fill.strip()
+    if value is None:
+        return None
+    variable = re.fullmatch(r"var\(\s*--([\w-]+)\s*\)", value)
+    if variable:
+        palette = dict(re.findall(r"--([\w-]+)\s*:\s*([^;{}]+)", css))
+        value = palette.get(variable.group(1), "").strip()
+    if value is None or not re.fullmatch(r"#[0-9a-fA-F]{6}", value):
+        return None
+    return value.lower()
+
+
 def glass_fill(css: str) -> tuple[str, float] | None:
     """The `.hero-glass` fill as (hex, alpha), or None when unusable."""
     return rgba_fill(css, r"\.hero-glass")
@@ -444,6 +466,14 @@ def main() -> int:
                         TEXT_MIN,
                     )
                 )
+    dot_fill = solid_fill(css, ".open-dot")
+    if dot_fill is None:
+        print(
+            "check-contrast: no usable solid background on .open-dot; "
+            "the open-file mark cannot be measured",
+            file=sys.stderr,
+        )
+        return 2
     for stop in stops:
         surface = composite(glass_rgb, stop, glass_alpha)
         checks.append((f"glass card text over {stop}", fg, surface, TEXT_MIN))
@@ -452,10 +482,9 @@ def main() -> int:
         # rather than on the card, so the panel's own stops carry text too.
         checks.append((f"panel text over {stop}", fg, stop, TEXT_MIN))
         checks.append((f"panel muted text over {stop}", muted, stop, TEXT_MIN))
-        # The open file's dot wears the panel's own text colour and is the one mark for
-        # that file: a mark nobody can see marks nothing, so it is floored as non-text UI
-        # on the ground it is drawn on.
-        checks.append((f"open-file dot on the panel over {stop}", fg, stop, NON_TEXT_MIN))
+        # Read the open-file mark's fill rather than assuming it still wears --fg,
+        # so a stylesheet change cannot silently bypass the non-text floor.
+        checks.append((f"open-file dot on the panel over {stop}", dot_fill, stop, NON_TEXT_MIN))
 
     failures = 0
     for name, a, b, minimum in checks:
