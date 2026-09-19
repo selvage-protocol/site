@@ -14,6 +14,15 @@ figure's own fill over the card's, rather than a constant that would measure a
 surface nobody renders. Thresholds are WCAG 2.2 AA: 4.5:1 for normal text,
 3.0:1 for non-text UI.
 
+A peer is three colours on the page and each is measured where it lands: the 2 px
+caret bar and the badge fill are the peer's own colour over the surface they are
+drawn on (non-text), the badge's label is a dark text on that fill (text), and
+the selection is the peer's colour at the client's quarter alpha *behind* the
+sample's text, so the pair that matters is the token the fill sits under — read
+out of `components/room-visuals.tsx`, so moving the fill over a dimmer token
+fails the build. A quarter-alpha tint cannot also clear the non-text floor (see
+`TINT_MIN`), and the pair below says so rather than pretending otherwise.
+
 This is a floor, not an audit. It cannot see layout: touch-target sizes,
 keyboard reachability, focus visibility and reduced-motion handling are read
 against the code by a person (see the README's accessibility notes), because
@@ -23,9 +32,10 @@ Exit 0 lists every asserted pair with its measured ratio. Exit 1 names the
 pairs below threshold. Exit 2 means the check itself cannot run (a token it
 needs is missing or unparsable): that is a failure, not a pass.
 
-`STYLE_CSS` overrides the stylesheet under test, and `BUTTON_TSX` overrides the
-button component under test, so a probe can run the check against deliberately
-broken copies: a gate that only ever sees passing tokens proves nothing.
+`STYLE_CSS` overrides the stylesheet under test, `BUTTON_TSX` the button
+component and `ROOM_TSX` the figure component, so a probe can run the check
+against deliberately broken copies: a gate that only ever sees passing tokens
+proves nothing.
 """
 
 from __future__ import annotations
@@ -36,6 +46,16 @@ import sys
 
 TEXT_MIN = 4.5
 NON_TEXT_MIN = 3.0
+
+# A peer's selection is a background and not a mark, and it wears the alpha the client
+# itself builds for one (`translucent(colour, 0.25)`, web_client/src/bridge/cursors.ts).
+# That tint cannot reach the non-text floor: over the page's code ground a mauve fill
+# measures 1.70:1 and a teal one 1.90:1, and the alpha that would reach 3.0:1 — about a
+# half — drags the sample's own text below 4.5:1 on it. The two floors cannot both hold
+# for a translucent fill, so the text one is asserted (it is the one a reader reads) and
+# this one only fails a tint nobody can see at all. The mark that carries a peer at the
+# non-text floor is their caret bar, opaque, asserted at 3.0:1 below.
+TINT_MIN = 1.5
 
 
 def lum(hexcode: str) -> float:
@@ -107,6 +127,11 @@ def glass_fill(css: str) -> tuple[str, float] | None:
     return rgba_fill(css, r"\.hero-glass")
 
 
+def selection_fill(css: str, tone: str) -> tuple[str, float] | None:
+    """The `.selected-<tone>` fill a peer's selection is drawn in, as (hex, alpha)."""
+    return rgba_fill(css, rf"\.selected-{tone}")
+
+
 def hero_stops(css: str) -> list[str]:
     block = re.search(r"\.hero-visual\s*\{(.*?)\}", css, re.DOTALL)
     if block is None:
@@ -155,6 +180,26 @@ def boundary_alphas(tsx: str) -> list[int]:
     in the component fails the build.
     """
     return [int(a) for a in re.findall(r"border-mauve/(\d+)", tsx)]
+
+
+def selected_kinds(tsx: str) -> list[str]:
+    """Every token class the sample draws inside a `<Selected>` span, `body` for the text
+    that carries no token of its own.
+
+    The fill is a background, so the pair that matters is the text it sits under, and the
+    component is where that is written down: a check that guessed a token would measure a
+    surface nobody renders, and one that measured all five would fail a page that is
+    right. Reading the spans keeps the pair on what is drawn — moving the fill over the
+    comment colour, which clears neither floor, fails the build.
+    """
+    spans = re.findall(r"<Selected\b[^>]*>(.*?)</Selected>", tsx, re.DOTALL)
+    if not spans:
+        raise FillError("no <Selected> span in the component")
+    kinds: list[str] = []
+    for body in spans:
+        found = re.findall(r'kind="(\w+)"', body)
+        kinds.extend(found if found else ["body"])
+    return kinds
 
 
 def main() -> int:
@@ -225,9 +270,10 @@ def main() -> int:
         ("code text", fg, code_bg, TEXT_MIN),
         ("muted text on code background", muted, code_bg, TEXT_MIN),
         ("badge text on badge fill", link, composite(link, bg, 0.10), TEXT_MIN),
-        # The second peer's name is a chip in the page's second accent: the same
-        # dark-on-colour pair as the default button, in the other tone.
-        ("peer chip label on teal fill", bg, tok["teal"], TEXT_MIN),
+        # A peer's name wears the glyph-margin badge's pair, in both tones: a dark label on
+        # the peer's own colour, the same pair the default button's label is measured on.
+        ("peer badge label on mauve fill", bg, link, TEXT_MIN),
+        ("peer badge label on teal fill", bg, tok["teal"], TEXT_MIN),
         ("focus outline against the page", link, bg, NON_TEXT_MIN),
     ]
     tsx_path = os.environ.get(
@@ -327,11 +373,73 @@ def main() -> int:
         checks.append((f"code {token} on the glass card", colour, worst_glass, TEXT_MIN))
     # The line numbers are drawn on the same grounds as the sample's own text.
     checks.append(("code line numbers on the code figure", muted, figure_ground, TEXT_MIN))
-    # A peer's caret is a bar and a fill in the peer's colour: a mark nobody can see is
-    # not a caret, so both tones are floored as non-text UI on both grounds.
+    # A peer's caret bar and the fill of their badge are one colour, opaque, drawn on both
+    # grounds: a mark nobody can see is not a caret, so both tones are floored as non-text
+    # UI on both grounds.
     for tone, colour in (("mauve", link), ("teal", tok["teal"])):
-        checks.append((f"{tone} caret marker on the code figure", colour, figure_ground, NON_TEXT_MIN))
-        checks.append((f"{tone} caret marker on the glass card", colour, worst_glass, NON_TEXT_MIN))
+        checks.append(
+            (f"{tone} caret bar and badge fill on the code figure", colour, figure_ground, NON_TEXT_MIN)
+        )
+        checks.append(
+            (f"{tone} caret bar and badge fill on the glass card", colour, worst_glass, NON_TEXT_MIN)
+        )
+    room_tsx_path = os.environ.get(
+        "ROOM_TSX", os.path.join(here, "..", "components", "room-visuals.tsx")
+    )
+    try:
+        with open(room_tsx_path, encoding="utf-8") as handle:
+            room_tsx = handle.read()
+    except OSError as exc:
+        print(f"check-contrast: cannot read {room_tsx_path}: {exc}", file=sys.stderr)
+        return 2
+    try:
+        kinds = selected_kinds(room_tsx)
+    except FillError as exc:
+        print(
+            f"check-contrast: {exc} in {room_tsx_path}; the ground a peer's selection puts "
+            "its text on cannot be computed",
+            file=sys.stderr,
+        )
+        return 2
+    token_colours = {
+        "comment": tok["code-comment"],
+        "keyword": tok["code-keyword"],
+        "string": tok["code-string"],
+        "number": tok["code-number"],
+        "type": tok["code-type"],
+        "body": fg,
+    }
+    for tone, colour in (("mauve", link), ("teal", tok["teal"])):
+        spec = selection_fill(css, tone)
+        if spec is None:
+            print(
+                f"check-contrast: no usable rgba() background on .selected-{tone}; "
+                "a peer's selection fill cannot be measured",
+                file=sys.stderr,
+            )
+            return 2
+        peer_rgb, peer_alpha = spec
+        if peer_rgb != colour:
+            print(
+                f"check-contrast: .selected-{tone} is {peer_rgb} where that peer's own colour "
+                f"is {colour}; the fill is not the colour the caret wears",
+                file=sys.stderr,
+            )
+            return 2
+        for ground_name, ground in (("code figure", figure_ground), ("glass card", worst_glass)):
+            filled = composite(peer_rgb, ground, peer_alpha)
+            checks.append(
+                (f"{tone} selection tint over the {ground_name}", filled, ground, TINT_MIN)
+            )
+            for kind in kinds:
+                checks.append(
+                    (
+                        f"{tone} selection fill under the code {kind} on the {ground_name}",
+                        token_colours[kind],
+                        filled,
+                        TEXT_MIN,
+                    )
+                )
     for stop in stops:
         surface = composite(glass_rgb, stop, glass_alpha)
         checks.append((f"glass card text over {stop}", fg, surface, TEXT_MIN))

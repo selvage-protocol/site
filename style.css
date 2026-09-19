@@ -274,9 +274,10 @@ body {
 /* A figure is one framed drawing. The code figure is the same frame on a `pre`,
    so the four cards agree. Its sample is set at the size of the figure's own mono
    text (the tree, the bar, the chips), and its frame and gutter are set no wider
-   than they need to be: the sample's longest line is what decides the width of its
-   card, so at 390 px the four cards only stay the width of the column — 350 px
-   inside the page's own padding — while the line fits in it. */
+   than they need to be: the lane a peer's name is drawn in, plus the sample's
+   longest line, is what decides the width of its card, so at 390 px the four cards
+   only stay the width of the column — 350 px inside the page's own padding — while
+   every line fits in it. */
 .fig,
 .prose-body pre.fig-code {
   min-height: 6.25rem;
@@ -424,6 +425,14 @@ body {
   white-space: pre;
 }
 
+/* The left lane: where the client puts a peer's badge — the glyph margin, left of the
+   line numbers — then the number itself. It is a lane on every line and not a chip on
+   the lines that happen to have a caret, so the code keeps one left edge. */
+.code-gutter {
+  display: inline-block;
+  width: 2.6rem;
+}
+
 .code-num {
   display: inline-block;
   width: 0.9rem;
@@ -452,19 +461,11 @@ body {
   color: var(--code-type);
 }
 
-/* A peer's caret in the open file: the bar the editor draws at the position, with the
-   peer's name in a chip beside it. It is drawn at the end of the line the caret sits on,
-   in that line's own flow, so the marker points at a place in the file — read as text
-   inside a line of Rust, a name would read as syntax. The chip is the default button's
-   pair (dark label on mauve or teal), so both tones are measured rather than chosen by
-   eye. */
-.peer {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 0.45rem;
-  vertical-align: 0.1em;
-}
-
+/* A peer in the open file, drawn as the browser client draws one: a bar at the column
+   the caret is at, a fill behind what they hold, and their name in the gutter on that
+   line. The name is the one thing that cannot go into the text — read as a word inside a
+   line of Rust it would pass for syntax — so it wears the glyph-margin badge's pair
+   instead: the peer's colour behind a dark label, which the contrast check measures. */
 .peer-mauve {
   --peer: var(--link);
 }
@@ -473,22 +474,47 @@ body {
   --peer: var(--color-teal);
 }
 
-.peer::before {
+/* The caret: 2 px of the peer's colour, in the line's own flow, between two characters.
+   The height and the offset keep it inside the font's own box, so a caret never changes
+   the height of the line it is on. */
+.caret {
+  display: inline-block;
   width: 2px;
-  height: 1.2em;
-  margin-right: 3px;
-  border-radius: 1px;
+  height: 1.15em;
   background: var(--peer);
-  content: "";
+  vertical-align: -0.16em;
 }
 
-.peer-name {
-  padding: 0.05em 0.35em;
-  border-radius: 0.25rem;
+/* The peer's selection: their colour at 25%, the alpha the client's own `translucent()`
+   builds, behind the characters covered and nothing else — no padding, so the line the
+   fill is on does not move. */
+.selected {
+  border-radius: 0.1rem;
+}
+
+.selected-mauve {
+  background: rgba(203, 166, 247, 0.25);
+}
+
+.selected-teal {
+  background: rgba(148, 226, 213, 0.25);
+}
+
+/* The name in the lane: the badge `badgeCss` paints in the glyph margin, at the size the
+   panel is drawn at. */
+.peer-badge {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0 0.2em;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  border-radius: 0.2rem;
   background: var(--peer);
+  font-family: var(--mono);
   font-size: 0.625rem;
-  font-weight: 650;
+  font-weight: 700;
+  line-height: 1.35;
   color: var(--bg);
+  vertical-align: 0.08em;
 }
 
 /* The run-it fold: the three commands a reader needs stay in the open, the long

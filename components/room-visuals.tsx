@@ -12,10 +12,16 @@ import { Card } from "@/components/ui/card";
    `crates/client`, with the `use selvage_client::…` line elided. It is coloured by
    hand with the browser client's own `selvage-mocha` token rules, a span per token
    rather than a highlighter: punctuation has no rule in that theme, so it keeps the
-   sample's body colour. A peer's name is never written into the source — a name inside
-   a line of Rust reads as syntax — and their caret is drawn at the end of the line it
-   sits on: the bar and the name chip an editor draws beside a remote cursor, in the
-   line's own flow. Every line fits the narrowest panel the page is drawn at. */
+   sample's body colour.
+
+   A peer is drawn the way the browser client draws one (`renderCursors` in
+   web_client/src/browser/editor.ts): a 2 px bar in their colour at the caret's own
+   range, which is a column *between two characters* of the line; a translucent fill
+   over the characters they have selected; and their name in the left gutter, on the
+   line the caret is on, where that client puts its glyph-margin badge. The name is
+   never written into the Rust text — read as a word there it would pass for syntax —
+   so it stays in the gutter lane, beside the line number. Every line fits the narrowest
+   panel the page is drawn at. */
 
 /** The colours of `selvage-mocha`, the theme the browser client defines
     (`defineTheme` in web_client/src/browser/main.ts), so the figure and the real
@@ -32,8 +38,10 @@ function Tok({ kind, children }: { kind: Token; children: ReactNode }) {
 const PEERS = { mira: "mauve", jonas: "teal" } as const;
 type PeerName = keyof typeof PEERS;
 
-/** One line of a sample: its number in the gutter, the code token by token, and — when a
-    peer's caret sits at the end of it — that peer's marker. */
+/** One line of a sample: the gutter lane — the peer's name badge when their caret is on
+    this line, then the line's number — and the code token by token. The lane is on every
+    line, so the code keeps one left edge and the badges line up with the lines they
+    name. */
 function CodeLine({
   n,
   at,
@@ -45,22 +53,34 @@ function CodeLine({
 }) {
   return (
     <span className="code-line">
+      <span className="code-gutter">{at ? <PeerBadge name={at} /> : null}</span>
       <span className="code-num">{n}</span>
       {children}
-      {at ? <Peer name={at} /> : null}
     </span>
   );
 }
 
-/** A peer's caret at the end of a line: the bar in their colour, with their name in a
-    chip beside it. The chip is the default button's pair — a dark label on mauve or
-    teal — so both tones are measured rather than chosen by eye. */
-function Peer({ name }: { name: PeerName }) {
-  return (
-    <span className={`peer peer-${PEERS[name]}`}>
-      <span className="peer-name">{name}</span>
-    </span>
-  );
+/** A peer's caret: the 2 px bar the browser client's editor draws on the caret's range
+    (`className: … 'border-left: 2px solid …'`), written into the line between the two
+    characters it stands between. */
+function Caret({ name }: { name: PeerName }) {
+  return <span className={`caret peer-${PEERS[name]}`} />;
+}
+
+/** The characters a peer has selected: their colour at the client's quarter alpha
+    (`translucent(colour, 0.25)` in web_client/src/bridge/cursors.ts) behind the text,
+    which is the other half of how an editor shows a peer. */
+function Selected({ name, children }: { name: PeerName; children: ReactNode }) {
+  return <span className={`selected selected-${PEERS[name]}`}>{children}</span>;
+}
+
+/** A peer's name in the gutter, on the line their caret is on: the badge the browser
+    client paints in the glyph margin (`badgeCss` in web_client/src/browser/presence.ts)
+    — the peer's colour behind a dark label. It is the peer's name and not their
+    initials: the name has nowhere else to be drawn, since the Rust text is not the
+    place for it. */
+function PeerBadge({ name }: { name: PeerName }) {
+  return <span className={`peer-badge peer-${PEERS[name]}`}>{name}</span>;
 }
 
 export function InviteChip() {
@@ -92,7 +112,8 @@ export function TreeFigure({ label = "guest" }: { label?: string }) {
 }
 
 /** Two people in one file: their carets travel as anchors inside the text, so each one
-    is drawn where it sits rather than listed beside the sample. */
+    is drawn where it sits rather than listed beside the sample — a bar at a column of a
+    line, the name in the gutter on that line's row, and a fill behind what they hold. */
 export function CaretLines() {
   return (
     <pre className="code fig-code" aria-hidden="true">
@@ -113,12 +134,19 @@ export function CaretLines() {
         </CodeLine>
         <CodeLine n={4} at="mira">
           {"    path: &"}
-          <Tok kind="type">str</Tok>
+          <Tok kind="type">
+            {"st"}
+            <Caret name="mira" />
+            {"r"}
+          </Tok>
           {","}
         </CodeLine>
         <CodeLine n={5} at="jonas">
           {"    at: "}
-          <Tok kind="type">SelectionOffsets</Tok>
+          <Selected name="jonas">
+            <Tok kind="type">SelectionOffsets</Tok>
+          </Selected>
+          <Caret name="jonas" />
           {","}
         </CodeLine>
         <CodeLine n={6}>
@@ -129,10 +157,10 @@ export function CaretLines() {
           {"> {"}
         </CodeLine>
         <CodeLine n={7}>
-          {"    engine.set_selection(path, at)."}
-          <Tok kind="keyword">await</Tok>
+          {"    engine.set_selection(path, at)"}
         </CodeLine>
-        <CodeLine n={8}>{"}"}</CodeLine>
+        <CodeLine n={8}>{"        .await"}</CodeLine>
+        <CodeLine n={9}>{"}"}</CodeLine>
       </code>
     </pre>
   );
@@ -188,27 +216,30 @@ export function RoomWindow() {
                 <Tok kind="type">Error</Tok>
                 {"> {"}
               </CodeLine>
-              <CodeLine n={5} at="mira">
+              <CodeLine n={5} at="jonas">
                 {"    "}
                 <Tok kind="keyword">let</Tok>
                 {" file = "}
-                <Tok kind="string">{'"room.rs"'}</Tok>
+                <Selected name="jonas">
+                  <Tok kind="string">{'"room.rs"'}</Tok>
+                </Selected>
+                <Caret name="jonas" />
                 {";"}
               </CodeLine>
-              <CodeLine n={6} at="jonas">
-                {"    engine.open(file)."}
-                <Tok kind="keyword">await</Tok>
-                {"?;"}
+              <CodeLine n={6} at="mira">
+                {"    engine.open(file"}
+                <Caret name="mira" />
+                {").await?;"}
               </CodeLine>
               <CodeLine n={7}>
                 {"    engine.insert(file, "}
                 <Tok kind="number">0</Tok>
                 {", "}
                 <Tok kind="string">{'"hi"'}</Tok>
-                {")."}
-                <Tok kind="keyword">await</Tok>
+                {")"}
               </CodeLine>
-              <CodeLine n={8}>{"}"}</CodeLine>
+              <CodeLine n={8}>{"        .await"}</CodeLine>
+              <CodeLine n={9}>{"}"}</CodeLine>
             </code>
           </pre>
           <div className="room-invite">
