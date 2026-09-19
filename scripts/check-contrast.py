@@ -3,13 +3,16 @@
 
 Parses the theme tokens out of `style.css` and asserts the pairs the page
 actually renders: body and muted prose, links (visited included), the button
-label on its mauve fill, code blocks, the tinted badge and secondary button
-(computed as alpha composites over the page background, the way the browser
-composes them), and the worst case of the translucent glass card over every
-stop of the hero panel. The secondary button's boundary is parsed out of
-`components/ui/button.tsx` (`border-mauve/*`) and asserted at the non-text
-3.0:1 floor too, so weakening the class fails the build. Thresholds are WCAG
-2.2 AA: 4.5:1 for normal text, 3.0:1 for non-text UI.
+label on its mauve fill, code blocks, the sample's own token colours, the
+tinted badge and secondary button (computed as alpha composites over the page
+background, the way the browser composes them), and the worst case of the
+translucent glass card over every stop of the hero panel. The secondary
+button's boundary is parsed out of `components/ui/button.tsx` (`border-mauve/*`)
+and asserted at the non-text 3.0:1 floor too, so weakening the class fails the
+build, and the ground a code sample is drawn on is parsed the same way: the
+figure's own fill over the card's, rather than a constant that would measure a
+surface nobody renders. Thresholds are WCAG 2.2 AA: 4.5:1 for normal text,
+3.0:1 for non-text UI.
 
 This is a floor, not an audit. It cannot see layout: touch-target sizes,
 keyboard reachability, focus visibility and reduced-motion handling are read
@@ -66,21 +69,24 @@ def tokens(css: str) -> dict[str, str]:
     return out
 
 
-def glass_fill(css: str) -> tuple[str, float] | None:
-    """The `.hero-glass` fill as (hex, alpha), or None when unusable.
+def rgba_fill(css: str, selector: str) -> tuple[str, float] | None:
+    """The fill of the rule whose selector list contains `selector`, as (hex, alpha).
 
-    The card's surface is the value the browser composites, so the check reads
-    it instead of trusting a constant: a restyle that changes the alpha
-    without touching the code would otherwise measure a surface nobody renders.
-    Only an `rgba()` background counts — anything else (a hex, a gradient, a
-    missing rule) is exit 2, not a pass.
+    A surface is the value the browser composites, so the check reads it instead of
+    trusting a constant: a restyle that changes the alpha without touching the code
+    would otherwise measure a surface nobody renders. Only an `rgba()` background
+    counts — anything else (a hex, a gradient, a missing rule) is exit 2, not a pass.
     """
-    block = re.search(r"\.hero-glass\s*\{(.*?)\}", css, re.DOTALL)
-    if block is None:
+    rule = re.search(
+        r"([^{}]*" + selector + r"[^{}]*)\{([^{}]*)\}",
+        css,
+        re.DOTALL,
+    )
+    if rule is None:
         return None
     fill = re.search(
         r"background\s*:\s*rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([0-9.]+)\s*\)",
-        block.group(1),
+        rule.group(2),
     )
     if fill is None:
         return None
@@ -94,6 +100,11 @@ def glass_fill(css: str) -> tuple[str, float] | None:
     if not 0 < alpha <= 1:
         return None
     return "#%02x%02x%02x" % (red, green, blue), alpha
+
+
+def glass_fill(css: str) -> tuple[str, float] | None:
+    """The `.hero-glass` fill as (hex, alpha), or None when unusable."""
+    return rgba_fill(css, r"\.hero-glass")
 
 
 def hero_stops(css: str) -> list[str]:
@@ -156,7 +167,23 @@ def main() -> int:
         print(f"check-contrast: cannot read {path}: {exc}", file=sys.stderr)
         return 2
     tok = tokens(css)
-    need = ["bg", "fg", "muted", "link", "link-visited", "code-bg", "mantle", "teal"]
+    need = [
+        "bg",
+        "fg",
+        "muted",
+        "link",
+        "link-visited",
+        "code-bg",
+        "mantle",
+        "teal",
+        # The sample's token colours: each one is a pair below, and a missing token would
+        # leave the code in one colour without failing anything.
+        "code-comment",
+        "code-keyword",
+        "code-string",
+        "code-number",
+        "code-type",
+    ]
     missing = [n for n in need if n not in tok]
     if missing:
         print(
@@ -272,6 +299,39 @@ def main() -> int:
         )
         return 2
     glass_rgb, glass_alpha = fill
+    # The samples sit on two grounds, and both are read out of the stylesheet rather than
+    # restated: the glass card over the panel's gradient, and the code figure inside a card
+    # of the prose column, which is the figure's own fill over the card's over the page.
+    # A light colour is at its worst on the lightest surface it can sit on, so the sample's
+    # own colours are asserted there rather than on every stop.
+    figure = rgba_fill(css, r"\.prose-body pre\.fig-code")
+    card = rgba_fill(css, r"\.prose-body ul\.cards > li")
+    if figure is None or card is None:
+        print(
+            "check-contrast: no usable rgba() background on the code figure or on the card "
+            "it sits in; the ground the sample's own colours are measured against cannot "
+            "be computed",
+            file=sys.stderr,
+        )
+        return 2
+    figure_ground = composite(figure[0], composite(card[0], bg, card[1]), figure[1])
+    worst_glass = max((composite(glass_rgb, stop, glass_alpha) for stop in stops), key=lum)
+    for token, colour in (
+        ("comment", tok["code-comment"]),
+        ("keyword", tok["code-keyword"]),
+        ("string", tok["code-string"]),
+        ("number", tok["code-number"]),
+        ("type", tok["code-type"]),
+    ):
+        checks.append((f"code {token} on the code figure", colour, figure_ground, TEXT_MIN))
+        checks.append((f"code {token} on the glass card", colour, worst_glass, TEXT_MIN))
+    # The line numbers are drawn on the same grounds as the sample's own text.
+    checks.append(("code line numbers on the code figure", muted, figure_ground, TEXT_MIN))
+    # A peer's caret is a bar and a fill in the peer's colour: a mark nobody can see is
+    # not a caret, so both tones are floored as non-text UI on both grounds.
+    for tone, colour in (("mauve", link), ("teal", tok["teal"])):
+        checks.append((f"{tone} caret marker on the code figure", colour, figure_ground, NON_TEXT_MIN))
+        checks.append((f"{tone} caret marker on the glass card", colour, worst_glass, NON_TEXT_MIN))
     for stop in stops:
         surface = composite(glass_rgb, stop, glass_alpha)
         checks.append((f"glass card text over {stop}", fg, surface, TEXT_MIN))
@@ -292,7 +352,8 @@ def main() -> int:
         print(f"check-contrast: {failures} pair(s) below WCAG AA")
         return 1
     print(f"check-contrast: {len(checks)} pairs at or above WCAG AA "
-          f"(glass {glass_rgb} at alpha {glass_alpha} parsed from .hero-glass)")
+          f"(glass {glass_rgb} at alpha {glass_alpha} parsed from .hero-glass, "
+          f"sample ground {figure_ground} parsed from the code figure)")
     return 0
 
 
