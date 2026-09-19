@@ -149,15 +149,36 @@ FORBIDDEN: list[Phrase] = [
         "path, and nothing writes to the host's working copy",
     ),
     Phrase(
-        r"\bdocker\b|compose file|one[- ]command",
-        "docker compose up",
-        "no Dockerfile, compose file or service unit exists in any repository; the documented "
-        "way to run the server is `cargo run -p selvaged -- --listen ...`",
+        # This entry used to forbid the word `docker`, on the reason that no Dockerfile, compose
+        # file or service unit existed. All three exist today, so those wordings are truth and
+        # the pattern was enforcing the opposite of it. What it holds now is the denial those
+        # artefacts refute, which is the sentence the page carried until this was corrected:
+        # `reference_server/Dockerfile`, `reference_server/compose.yaml`,
+        # `reference_server/packaging/systemd/selvaged.service` and the anonymously pullable
+        # `ghcr.io/selvage-protocol/selvaged:0.1.0` are all in the repositories.
+        r"\bno (?:image|container) to pull\b|\bnothing to install on the server\b"
+        r"|\bno compose (?:file|configuration)\b|\bno systemd (?:service|unit)\b",
+        "there is no image to pull and no service unit to install in any repository yet",
+        "the server image is published (`ghcr.io/selvage-protocol/selvaged:0.1.0`) and pulls "
+        "with no account, `reference_server/compose.yaml` runs it, and "
+        "`reference_server/packaging/systemd/selvaged.service` installs the binary: a page "
+        "saying none of that exists states the opposite of the truth",
+        ("there is no im<!-- -->age to pull", "no conta<span></span>iner to pull",
+         "there is no comp<!-- -->ose file", "there is no systemd <span>u</span>nit"),
+        ("the published image pulls with no account and no login",
+         "the image is published, so there is nothing to clone"),
     ),
     Phrase(
-        r"\bv?1\.0\b|production[- ]ready|production[- ]grade|battle[- ]tested|stable release",
+        # The lookbehind is what keeps a published tag out of a pattern about a 1.0 claim:
+        # `ghcr.io/selvage-protocol/selvaged:0.1.0` carries `1.0` inside a version inside a
+        # version, and a page naming the tag it publishes is describing the artefact, not
+        # claiming a frozen release. A 1.0 that stands on its own still matches.
+        r"(?<![\d.])v?1\.0\b|production[- ]ready|production[- ]grade|battle[- ]tested|stable release",
         "the stable release, version 1.0",
-        "the wire version is `selvage/1`; nothing has been released and no shape is frozen",
+        "the wire version is `selvage/1`; nothing has been released and no shape is frozen. "
+        "`0.1.0` is the version of the image that is published, not a 1.0",
+        ("we are at v1.0", "the stable rele<!-- -->ase, version 1.0"),
+        ("ghcr.io/selvage-protocol/selvaged:0.1.0", "0.1.0", "version 0.1.0"),
     ),
     Phrase(
         r"second implementation|interoperab\w*",
@@ -297,8 +318,9 @@ FORBIDDEN: list[Phrase] = [
         r"|(?:server|selvaged|setup|install\w*|deploy\w*|build|app|site|page|service)\b[^.]{0,32}\b(?:starts?|runs?|boots?)\b[^.]{0,24}\bin seconds\b(?!-)"
         r"|one[- ]click|just works",
         "Self-hosting takes seconds on any machine you choose.",
-        "no image, compose file or service unit exists in any repository; the documented path "
-        "is `cargo run -p selvaged -- --listen ...`, and no ease claim is backed",
+        "the image, the compose file and the systemd unit all exist, and no ease claim around "
+        "them is backed: no install time, start-up time or latency has been measured or "
+        "recorded anywhere in the corpus",
         ("up and running in seconds.",
          "up and running in\nseconds.",
          "the server starts in seconds."),

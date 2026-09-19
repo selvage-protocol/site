@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
+  { href: "#get-it-working", label: "Get it working" },
   { href: "#how-it-works", label: "How it works" },
   { href: "#why-a-spec", label: "Why a spec" },
-  { href: "#run-it", label: "Run it" },
 ];
 
 export function SiteHeader() {
@@ -83,11 +83,8 @@ export function SiteHeader() {
             GitHub
             <ArrowUpRight className="h-3.5 w-3.5" />
           </a>
-          <Button
-            href="https://github.com/selvage-protocol/specification"
-            size="sm"
-          >
-            Read the spec
+          <Button href="#get-it-working" size="sm">
+            Run it
           </Button>
         </div>
       </nav>

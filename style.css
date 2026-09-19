@@ -47,8 +47,11 @@
   --code-number: #fab387;
   --code-type: #f9e2af;
   --link: #cba6f7;
-  /* Overlay, not dimmer: visited prose links still need 4.5:1 on --bg. */
-  --link-visited: #9399b2;
+  /* Visited is a deeper mauve rather than the neutral grey it was: `#9399b2` sat 1.27:1 from
+     `--muted`, so a visited link was the colour of the prose around it, and every repository
+     link is on the org's own history the moment anyone has browsed it. The underline carries
+     the affordance; this colour keeps a visited link looking like a link. */
+  --link-visited: #a181d6;
   --measure: 40rem;
   --column: 44rem;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
@@ -148,6 +151,10 @@ body {
 
 .prose-body a {
   color: var(--link);
+  /* Preflight sets `text-decoration: inherit`, which resolves to the parent's `none`, so the
+     thickness and offset below draw nothing without this line: every link on the page was
+     distinguished by colour alone. */
+  text-decoration-line: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
 }
@@ -187,7 +194,7 @@ body {
 }
 
 /* Tailwind's preflight removes list markers, so every list on the page puts its
-   own back: a numbered procedure, the figure grid and the repository cards. */
+   own back: a numbered procedure and the figure grid. */
 
 .prose-body ol.steps {
   margin: 0.4rem 0 0;
@@ -242,6 +249,17 @@ body {
   .prose-body ul.cards {
     grid-template-columns: 1fr 1fr;
   }
+}
+
+/* Each editor's steps live in a folded row, so long commands never widen
+   the card grid; the code inside keeps the figure grid's own frame. */
+.prose-body .quickstart-body pre {
+  max-width: none;
+  margin: 0.75rem 0 0;
+}
+
+.prose-body .quickstart-body pre code {
+  font-size: 0.78rem;
 }
 
 .prose-body ul.cards > li {
@@ -581,33 +599,11 @@ body {
   margin-top: 1.15rem;
 }
 
-/* The repository list: one card per repository, name in mono over its line. */
-.prose-body ul.repos {
-  display: grid;
-  gap: 0.7rem;
-  max-width: var(--column);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.prose-body ul.repos li {
-  max-width: none;
-  margin: 0;
-  padding: 0.8rem 1rem;
-  border: 1px solid var(--rule);
-  border-radius: 0.5rem;
-  background: rgba(24, 24, 37, 0.5);
-}
-
-.prose-body ul.repos a {
-  font-family: var(--mono);
-  font-size: 0.875rem;
-  text-decoration: none;
-}
-
-.prose-body ul.repos a:hover {
-  text-decoration: underline;
+/* The footer is the licences in one flow, nothing more: a newcomer at the
+   bottom of the page needs the terms and the privacy line, not a second
+   navigation. Each client section above already links its own repository. */
+.prose-body.page-foot {
+  grid-template-columns: minmax(0, 60rem);
 }
 
 @media (max-width: 30rem) {
@@ -634,24 +630,15 @@ summary:focus-visible {
   outline-offset: 2px;
 }
 
-/* The footer: licences beside the repositories, the page's own note beneath. */
+/* The footer is the licences in one flow. It was a two-column grid beside a
+   repository list; the prose is the widest thing down here and reads better
+   at its own measure, and the client sections above already link their own
+   repositories. */
 .prose-body.page-foot {
   grid-template-columns: minmax(0, 60rem);
   padding-top: 3rem;
   border-top: 1px solid var(--rule);
   font-size: 0.9375rem;
-}
-
-.foot-grid {
-  display: grid;
-  gap: 2.5rem;
-}
-
-@media (min-width: 56rem) {
-  .foot-grid {
-    grid-template-columns: minmax(0, 30rem) minmax(0, 1fr);
-    gap: 3rem;
-  }
 }
 
 .prose-body.page-foot h2 {
@@ -794,15 +781,13 @@ summary:focus-visible {
     animation: rise 520ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
   }
 
-  .prose-body ul.cards > li,
-  .prose-body ul.repos li {
+  .prose-body ul.cards > li {
     transition:
       transform 160ms ease-out,
       border-color 160ms ease-out;
   }
 
-  .prose-body ul.cards > li:hover,
-  .prose-body ul.repos li:hover {
+  .prose-body ul.cards > li:hover {
     transform: translateY(-2px);
     border-color: rgba(203, 166, 247, 0.45);
   }

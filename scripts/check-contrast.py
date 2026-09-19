@@ -32,6 +32,18 @@ keyboard reachability, focus visibility and reduced-motion handling are read
 against the code by a person (see the README's accessibility notes), because
 no ratio proves a link can be tabbed to.
 
+The one pair the floor cannot hold on this palette is the link against the body text
+beside it, and that is asserted the other way round rather than dropped. WCAG 1.4.1
+(Use of Color) asks for 3.0:1 between a link and its neighbours when colour is the only
+thing distinguishing it, and WCAG 1.4.3 asks for 4.5:1 between the link text and its
+background. Both cannot hold here: `--fg` is 11.34:1 on `--bg`, so a colour that just
+clears 4.5:1 on the background is 11.34 / 4.5 = 2.52:1 from the prose, and any colour
+3.0:1 from the prose is at most 11.34 / 3.0 = 3.78:1 on the background, below the text
+floor. So the page carries 1.4.1's other allowed affordance — every prose link is
+underlined — and this check reads the underline out of the stylesheet and asserts the
+3.0:1 pair whenever it is missing. A link distinguished by colour alone therefore still
+has to clear the floor, and a link that is underlined does not have to pretend it could.
+
 Exit 0 lists every asserted pair with its measured ratio. Exit 1 names the
 pairs below threshold. Exit 2 means the check itself cannot run (a token it
 needs is missing or unparsable): that is a failure, not a pass.
@@ -226,6 +238,27 @@ def selected_kinds(tsx: str) -> list[str]:
         found = re.findall(r'kind="(\w+)"', body)
         kinds.extend(found if found else ["body"])
     return kinds
+
+
+def underlines(css: str, selector: str) -> bool:
+    """Whether the rule for `selector` puts an underline on a link.
+
+    This is the affordance WCAG 1.4.1 allows instead of a 3.0:1 colour difference, and it
+    is a declaration the stylesheet has to make: Tailwind's preflight sets
+    `a { text-decoration: inherit }`, so a rule naming only the thickness and the offset
+    draws nothing. Both spellings count, the shorthand and `text-decoration-line`; a rule
+    that is missing, or that sets `none`, is read as no affordance.
+    """
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
+    found = False
+    for rule in re.finditer(r"([^{}]+)\{([^{}]*)\}", css):
+        if selector not in [s.strip() for s in rule.group(1).split(",")]:
+            continue
+        for declaration in rule.group(2).split(";"):
+            name, separator, value = declaration.partition(":")
+            if separator and name.strip() in ("text-decoration", "text-decoration-line"):
+                found = "underline" in value
+    return found
 
 
 def main() -> int:
@@ -486,6 +519,21 @@ def main() -> int:
         # so a stylesheet change cannot silently bypass the non-text floor.
         checks.append((f"open-file dot on the panel over {stop}", dot_fill, stop, NON_TEXT_MIN))
 
+    # WCAG 1.4.1, and the pair this check went blind to: a link judged against the page's
+    # background and never against the prose beside it. The two floors cannot both hold on
+    # this palette (see the module docstring), so the pair is asserted where colour is the
+    # lone affordance, read out of the stylesheet rather than assumed.
+    notes: list[str] = []
+    if underlines(css, ".prose-body a"):
+        notes.append(
+            f"prose links are underlined, the non-colour affordance WCAG 1.4.1 allows "
+            f"instead of 3.0:1 against the text beside them ({link} on {fg} would be "
+            f"{ratio(link, fg):.2f}:1)"
+        )
+    else:
+        checks.append(("link vs body text, colour alone", link, fg, NON_TEXT_MIN))
+        checks.append(("visited link vs body text, colour alone", visited, fg, NON_TEXT_MIN))
+
     failures = 0
     for name, a, b, minimum in checks:
         measured = ratio(a, b)
@@ -493,6 +541,8 @@ def main() -> int:
         print(f"check-contrast: [{mark}] {name}: {a} on {b} = {measured:.2f}:1 (needs {minimum:.1f}:1)")
         if measured < minimum:
             failures += 1
+    for note in notes:
+        print(f"check-contrast: [ok] {note}")
     if failures:
         print(f"check-contrast: {failures} pair(s) below WCAG AA")
         return 1

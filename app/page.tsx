@@ -1,4 +1,4 @@
-import { ArrowUpRight, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site-header";
@@ -67,8 +67,8 @@ const roomCards = [
       <>
         The VS Code client, the Neovim client and the browser page each drive a copy
         of the same engine and bridge, so a room&apos;s rules live in one
-        implementation. The browser page is guests-only, and served over the
-        project&apos;s own private network.
+        implementation. The browser page is guests-only: it opens what the room
+        shares while hosting stays in the editors.
       </>
     ),
     figure: (
@@ -177,15 +177,15 @@ export default function Home() {
                 ))}
               </ul>
               <div className="mt-9 flex flex-wrap items-center gap-3">
+                <Button href="#get-it-working" size="lg">
+                  Run it in your editor
+                </Button>
                 <Button
                   href="https://github.com/selvage-protocol/specification"
+                  variant="secondary"
                   size="lg"
                 >
                   Read the specification
-                  <ArrowUpRight />
-                </Button>
-                <Button href="#run-it" variant="secondary" size="lg">
-                  Run it
                 </Button>
               </div>
               <p className="mt-4 font-mono text-[12px] text-subtext">
@@ -199,6 +199,197 @@ export default function Home() {
         </section>
 
         <div className="prose-body mx-auto w-full max-w-6xl px-5 pb-14">
+          <section
+            id="get-it-working"
+            className="scroll-mt-28 md:scroll-mt-24"
+          >
+            <h2>Get it working</h2>
+            <p>
+              One server holds the room, and the editor you already use is where
+              you type. Run the published container, then open one row per
+              editor below.
+            </p>
+
+            <h3>Start a server</h3>
+            <p>
+              The image is published, so there is nothing to clone and nothing
+              to build: it pulls with no account and no login.
+            </p>
+            <pre>
+              <code>
+                {
+                  "docker run --rm -p 127.0.0.1:8080:8080 ghcr.io/selvage-protocol/selvaged:0.1.0"
+                }
+              </code>
+            </pre>
+            <p>
+              The server answers{" "}
+              <code>ws://127.0.0.1:8080/session</code> and reports on{" "}
+              <code>http://127.0.0.1:8080/meta</code>, one port for the room and
+              the page that joins it. Rooms live in memory, so a restart ends
+              them. The <code>127.0.0.1</code> binding keeps the room on your
+              own machine; serving guests on other machines means rebinding
+              (for example <code>-p 8080:8080</code>) and an invite URL that
+              names a reachable address.{" "}
+              <a href="https://github.com/selvage-protocol/reference_server">
+                selvage-protocol/reference_server
+              </a>{" "}
+              owns the compose file and the source build for anything beyond
+              this line.
+            </p>
+
+            <h3>Pick your editor</h3>
+            <p>
+              One row per editor, folded shut. The commands inside are the ones
+              the editor&apos;s own README documents.
+            </p>
+            <details className="quickstart">
+              <summary>
+                VS Code: package the unpublished extension, then host a session
+              </summary>
+              <div className="quickstart-body">
+                <p>
+                  Needs VS Code 1.85 or newer, and Node 22.18 or newer to build
+                  the extension. It is unpublished, so a checkout and one package
+                  step stand in for an install:
+                </p>
+                <pre>
+                  <code>
+                    {
+                      "git clone https://github.com/selvage-protocol/vscode_client\ncd vscode_client\nnpm ci --no-audit --no-fund\nnpm run package\ncode --install-extension selvage-client-<version>.vsix"
+                    }
+                  </code>
+                </pre>
+                <p>
+                  Open the folder you want to share and run{" "}
+                  <em>Selvage: Host a session</em> against{" "}
+                  <code>ws://127.0.0.1:8080</code>; the invite link is copied as
+                  the room opens. A guest runs{" "}
+                  <em>Selvage: Join a session from an invite link</em> and pastes
+                  it, which reloads that window onto the room&apos;s own folder.{" "}
+                  <a href="https://github.com/selvage-protocol/vscode_client">
+                    selvage-protocol/vscode_client
+                  </a>
+                </p>
+              </div>
+            </details>
+            <details className="quickstart">
+              <summary>
+                Neovim: the plugin manager installs it, then host with one command
+              </summary>
+              <div className="quickstart-body">
+                <p>
+                  Needs Neovim 0.10 or newer, and Node 22.18 or newer on{" "}
+                  <code>PATH</code> for the companion process the plugin runs.
+                  The plugin manager installs it; there is no build step beyond
+                  the dependencies:
+                </p>
+                <pre>
+                  <code>{`{ 'selvage-protocol/nvim_client', build = 'npm ci' }`}</code>
+                </pre>
+                <p>
+                  That is the whole lazy.nvim spec, and vim-plug takes{" "}
+                  <code>
+                    {"Plug 'selvage-protocol/nvim_client', { 'do': 'npm ci' }"}
+                  </code>
+                  . Then <code>:SelvageHost ws://127.0.0.1:8080</code> shares the
+                  current buffer and copies the invite,{" "}
+                  <code>:SelvageCopyInvite</code> copies it again later, and{" "}
+                  <code>{":SelvageJoin <invite>"}</code> joins the room the link
+                  names.{" "}
+                  <a href="https://github.com/selvage-protocol/nvim_client">
+                    selvage-protocol/nvim_client
+                  </a>
+                </p>
+              </div>
+            </details>
+            <details className="quickstart">
+              <summary>
+                Browser page: guests only, served by the server above
+              </summary>
+              <div className="quickstart-body">
+                <p>
+                  Guests only, with hosting staying in the two editors. The
+                  server above serves the page on the same port. A guest opens
+                  the invite link the host copied and edits in the page. The
+                  page the server serves takes the room and token in its query
+                  string:
+                </p>
+                <pre>
+                  <code>
+                    {"http://127.0.0.1:8080/?room=<room>&token=<token>"}
+                  </code>
+                </pre>
+                <p>
+                  The page lives in{" "}
+                  <a href="https://github.com/selvage-protocol/web_client">
+                    web_client
+                  </a>
+                  , which touches no editor code: <code>npm ci</code>,{" "}
+                  <code>npm run build</code> and <code>npm run serve</code> build
+                  and serve it on its own.
+                </p>
+              </div>
+            </details>
+
+            <details className="quickstart">
+              <summary>
+                The long version: the corpus checks, and what the clients do
+                with the room
+              </summary>
+              <div className="quickstart-body">
+                <h3>Check the corpus</h3>
+                <p>
+                  The schemas and the vectors are checked on their own, with no
+                  server and no Rust: every schema-eligible frame parses and
+                  validates against the schema for the concern it names, and
+                  every expected frame is written in the canonical byte form.
+                </p>
+                <pre>
+                  <code>
+                    {
+                      "git clone https://github.com/selvage-protocol/specification\ncd specification\npip install jsonschema referencing\npython3 schema/validate.py"
+                    }
+                  </code>
+                </pre>
+
+                <h3>Replay the vectors against a server</h3>
+                <p>
+                  The same transcripts are replayed against a real{" "}
+                  <code>selvaged</code> over a WebSocket, with no Rust in the
+                  comparison: the runner reads the vectors, starts a server of
+                  its own on an ephemeral port, and compares what comes back byte
+                  for byte. It exits non-zero on any mismatch.
+                </p>
+                <pre>
+                  <code>
+                    {
+                      "git clone https://github.com/selvage-protocol/reference_server\ngit clone https://github.com/selvage-protocol/specification\ncd reference_server\nnix develop . -c cargo build -p selvaged\nexport SELVAGE_SELVAGED=$PWD/target/debug/selvaged\ncd ../specification\npip install websockets jsonschema referencing\npython3 runner/run_vectors.py"
+                    }
+                  </code>
+                </pre>
+
+                <h3>What the clients do with the room</h3>
+                <p>
+                  A host shares the documents it has open under the folder it
+                  granted, and a guest reads a file from that folder when it opens
+                  one, so nothing is copied until somebody asks for it. The
+                  Neovim client mirrors the granted folder into a real directory
+                  of its own, so ripgrep, ctags and a language server see ordinary
+                  paths, and it keeps its engine in a companion process.
+                </p>
+                <p>
+                  VS Code adds <code>Selvage: Copy the invite link</code>,{" "}
+                  <code>Selvage: Open a document from the room</code> and{" "}
+                  <code>Selvage: Leave the session</code>; Neovim answers with{" "}
+                  <code>:SelvageCopyInvite</code>, <code>:SelvageJoin</code> and{" "}
+                  <code>:SelvageLeave</code>. Each repository&apos;s own README is
+                  the full command list.
+                </p>
+              </div>
+            </details>
+          </section>
+
           <section id="see-it" className="scroll-mt-28 md:scroll-mt-24">
             <h2>See it working</h2>
             <p>
@@ -266,135 +457,13 @@ export default function Home() {
             </p>
           </section>
 
-          <section id="run-it" className="scroll-mt-28 md:scroll-mt-24">
-            <h2>Run it</h2>
-            <p>
-              You run the server, and the invite link is how somebody joins you.
-              There is nothing hosted to open, so every route in starts with a
-              checkout. The server is one binary:
-            </p>
-            <pre>
-              <code>
-                {
-                  "git clone https://github.com/selvage-protocol/reference_server\ncd reference_server\ncargo run -p selvaged -- --listen 127.0.0.1:8080"
-                }
-              </code>
-            </pre>
-            <p>
-              Then open a folder in one editor and host a session against{" "}
-              <code>ws://127.0.0.1:8080</code>. Each client is built from its own
-              checkout: the VS Code client with <code>npm ci</code> and{" "}
-              <code>npm run package</code>, its <code>.vsix</code> installed by
-              hand, and the Neovim client by pointing a plugin manager at the clone
-              (
-              <code>{"{ dir = '/path/to/nvim_client' }"}</code> in lazy.nvim).
-            </p>
-            <details className="quickstart">
-              <summary>
-                The long version: the spec route, the vector replay, and two
-                editors in one room
-              </summary>
-              <div className="quickstart-body">
-                <h3>Read the specification</h3>
-                <p>
-                  <a href="https://github.com/selvage-protocol/specification">
-                    selvage-protocol/specification
-                  </a>{" "}
-                  holds the prose, the canonical byte form, the JSON Schema
-                  documents, the 31 wire vectors, a Python replay of those vectors,
-                  and <code>NOTES.md</code>, which says what the prose deliberately
-                  leaves open.
-                </p>
-                <pre>
-                  <code>
-                    {
-                      "git clone https://github.com/selvage-protocol/specification\ncd specification\npip install jsonschema referencing\npython3 schema/validate.py"
-                    }
-                  </code>
-                </pre>
-                <p>
-                  The validator checks every frame of every vector against the
-                  schemas and against the canonical form, and pins the size of the
-                  corpus, so a dropped assertion fails the run instead of shrinking
-                  a total.
-                </p>
-
-                <h3>Replay the vectors against a server</h3>
-                <p>
-                  <code>runner/run_vectors.py</code> replays the same transcripts
-                  against a real <code>selvaged</code> over a WebSocket, with no
-                  Rust in the comparison: it reads the vectors, starts a server of
-                  its own on an ephemeral port, and compares what comes back byte
-                  for byte.
-                </p>
-                <pre>
-                  <code>
-                    {
-                      "git clone https://github.com/selvage-protocol/reference_server\ngit clone https://github.com/selvage-protocol/specification\ncd reference_server\ncargo build -p selvaged\nexport SELVAGE_SELVAGED=$PWD/target/debug/selvaged\ncd ../specification\npip install websockets jsonschema referencing\npython3 runner/run_vectors.py"
-                    }
-                  </code>
-                </pre>
-                <p>
-                  <code>selvaged</code> serves <code>ws://&hellip;/session</code>{" "}
-                  and <code>http://&hellip;/meta</code>, and keeps nothing on
-                  disk. Running it is the documented way to stand up a server:
-                  there is no image to pull and no service unit to install in any
-                  repository yet.
-                </p>
-
-                <h3>Two editors in one room</h3>
-                <p>
-                  Start a server to host on, then build the client you want to host
-                  from:
-                </p>
-                <pre>
-                  <code>
-                    {
-                      "git clone https://github.com/selvage-protocol/vscode_client\ncd vscode_client\nnpm ci --no-audit --no-fund\nnpm run package\ncode --install-extension selvage-client-<version>.vsix"
-                    }
-                  </code>
-                </pre>
-                <p>
-                  Open a folder in one window, run{" "}
-                  <em>Selvage: Host a session</em> from the command palette, and
-                  give it the server address plus a display name. Open a file
-                  inside that folder: it joins the room as soon as it is open. Run{" "}
-                  <em>Selvage: Copy the invite link</em>, open a second window in
-                  the same editor or in the other one, and run{" "}
-                  <em>Selvage: Join a session from an invite link</em> with the
-                  link pasted in. The host&apos;s file opens in the guest as{" "}
-                  <code>selvage:/&lt;path&gt;</code> and both windows type into
-                  the same text.
-                </p>
-                <p>
-                  The Neovim client mirrors the granted folder into a real
-                  directory of its own, so ripgrep, ctags and a language server
-                  see ordinary paths, and it keeps its engine in a companion
-                  process:
-                </p>
-                <pre>
-                  <code>
-                    {
-                      "git clone https://github.com/selvage-protocol/nvim_client\ncd nvim_client\nnpm ci --no-audit --no-fund"
-                    }
-                  </code>
-                </pre>
-                <p>
-                  Point a plugin manager at the checkout, then use{" "}
-                  <code>:SelvageHost ws://127.0.0.1:8080</code>,{" "}
-                  <code>:SelvageCopyInvite</code> and <code>:SelvageJoin</code>.
-                </p>
-              </div>
-            </details>
-          </section>
 
         </div>
       </main>
 
-      <footer className="page-foot mx-auto w-full max-w-6xl px-5 pb-20">
-        <div className="foot-grid">
-          <div>
-            <h2>Licences</h2>
+      <footer className="prose-body page-foot mx-auto w-full max-w-6xl px-5 pb-20">
+        <div>
+          <h2>Licences</h2>
             <p>
               The specification (prose, canonical form, JSON Schema and vectors) is
               CC-BY-4.0, and its tooling is MIT OR Apache-2.0. The reference server
@@ -418,33 +487,6 @@ export default function Home() {
               MIT OR Apache-2.0.
             </p>
           </div>
-          <ul className="repos">
-            <li>
-              <a href="https://github.com/selvage-protocol/specification">
-                specification
-              </a>{" "}
-              (the protocol, in prose, schema and vectors)
-            </li>
-            <li>
-              <a href="https://github.com/selvage-protocol/reference_server">
-                reference_server
-              </a>{" "}
-              (the server, the client library, the harness)
-            </li>
-            <li>
-              <a href="https://github.com/selvage-protocol/vscode_client">
-                vscode_client
-              </a>{" "}
-              (the VS Code client)
-            </li>
-            <li>
-              <a href="https://github.com/selvage-protocol/nvim_client">
-                nvim_client
-              </a>{" "}
-              (the Neovim client)
-            </li>
-          </ul>
-        </div>
       </footer>
     </div>
   );
