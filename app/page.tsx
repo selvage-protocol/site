@@ -211,10 +211,6 @@ export default function Home() {
             </p>
 
             <h3>Start a server</h3>
-            <p>
-              The image is published, so there is nothing to clone and nothing
-              to build: it pulls with no account and no login.
-            </p>
             <pre>
               <code>
                 {
@@ -281,8 +277,8 @@ export default function Home() {
                 <p>
                   Needs Neovim 0.10 or newer, and Node 22.18 or newer on{" "}
                   <code>PATH</code> for the companion process the plugin runs.
-                  The plugin manager installs it; there is no build step beyond
-                  the dependencies:
+                  The plugin manager runs <code>npm ci</code> when it installs the
+                  plugin:
                 </p>
                 <pre>
                   <code>{`{ 'selvage-protocol/nvim_client', build = 'npm ci' }`}</code>
@@ -328,63 +324,6 @@ export default function Home() {
                   , which touches no editor code: <code>npm ci</code>,{" "}
                   <code>npm run build</code> and <code>npm run serve</code> build
                   and serve it on its own.
-                </p>
-              </div>
-            </details>
-
-            <details className="quickstart">
-              <summary>
-                The long version: the corpus checks, and what the clients do
-                with the room
-              </summary>
-              <div className="quickstart-body">
-                <h3>Check the corpus</h3>
-                <p>
-                  The schemas and the vectors are checked on their own, with no
-                  server and no Rust: every schema-eligible frame parses and
-                  validates against the schema for the concern it names, and
-                  every expected frame is written in the canonical byte form.
-                </p>
-                <pre>
-                  <code>
-                    {
-                      "git clone https://github.com/selvage-protocol/specification\ncd specification\npip install jsonschema referencing\npython3 schema/validate.py"
-                    }
-                  </code>
-                </pre>
-
-                <h3>Replay the vectors against a server</h3>
-                <p>
-                  The same transcripts are replayed against a real{" "}
-                  <code>selvaged</code> over a WebSocket, with no Rust in the
-                  comparison: the runner reads the vectors, starts a server of
-                  its own on an ephemeral port, and compares what comes back byte
-                  for byte. It exits non-zero on any mismatch.
-                </p>
-                <pre>
-                  <code>
-                    {
-                      "git clone https://github.com/selvage-protocol/reference_server\ngit clone https://github.com/selvage-protocol/specification\ncd reference_server\nnix develop . -c cargo build -p selvaged\nexport SELVAGE_SELVAGED=$PWD/target/debug/selvaged\ncd ../specification\npip install websockets jsonschema referencing\npython3 runner/run_vectors.py"
-                    }
-                  </code>
-                </pre>
-
-                <h3>What the clients do with the room</h3>
-                <p>
-                  A host shares the documents it has open under the folder it
-                  granted, and a guest reads a file from that folder when it opens
-                  one, so nothing is copied until somebody asks for it. The
-                  Neovim client mirrors the granted folder into a real directory
-                  of its own, so ripgrep, ctags and a language server see ordinary
-                  paths, and it keeps its engine in a companion process.
-                </p>
-                <p>
-                  VS Code adds <code>Selvage: Copy the invite link</code>,{" "}
-                  <code>Selvage: Open a document from the room</code> and{" "}
-                  <code>Selvage: Leave the session</code>; Neovim answers with{" "}
-                  <code>:SelvageCopyInvite</code>, <code>:SelvageJoin</code> and{" "}
-                  <code>:SelvageLeave</code>. Each repository&apos;s own README is
-                  the full command list.
                 </p>
               </div>
             </details>
@@ -455,6 +394,61 @@ export default function Home() {
               . It is written to be implemented on its own, without reading the
               Rust.
             </p>
+            <details className="quickstart">
+              <summary>
+                Verify the corpus, and see what the clients do with the room
+              </summary>
+              <div className="quickstart-body">
+                <h3>Check the corpus</h3>
+                <p>
+                  The schemas and the vectors are checked on their own, with no
+                  server and no Rust: every schema-eligible frame parses and
+                  validates against the schema for the concern it names, and
+                  every expected frame is written in the canonical byte form.
+                </p>
+                <pre>
+                  <code>
+                    {
+                      "git clone https://github.com/selvage-protocol/specification\ncd specification\npip install jsonschema referencing\npython3 schema/validate.py"
+                    }
+                  </code>
+                </pre>
+
+                <h3>Replay the vectors against a server</h3>
+                <p>
+                  The same transcripts are replayed against a real{" "}
+                  <code>selvaged</code> over a WebSocket, with no Rust in the
+                  comparison: the runner reads the vectors, starts a server of
+                  its own on an ephemeral port, and compares what comes back byte
+                  for byte. It exits non-zero on any mismatch.
+                </p>
+                <pre>
+                  <code>
+                    {
+                      "git clone https://github.com/selvage-protocol/reference_server\ngit clone https://github.com/selvage-protocol/specification\ncd reference_server\nnix develop . -c cargo build -p selvaged\nexport SELVAGE_SELVAGED=$PWD/target/debug/selvaged\ncd ../specification\npip install websockets jsonschema referencing\npython3 runner/run_vectors.py"
+                    }
+                  </code>
+                </pre>
+
+                <h3>What the clients do with the room</h3>
+                <p>
+                  A host shares the documents it has open under the folder it
+                  granted, and a guest reads a file from that folder when it opens
+                  one, so nothing is copied until somebody asks for it. The
+                  Neovim client mirrors the granted folder into a real directory
+                  of its own, so ripgrep, ctags and a language server see ordinary
+                  paths, and it keeps its engine in a companion process.
+                </p>
+                <p>
+                  VS Code adds <code>Selvage: Copy the invite link</code>,{" "}
+                  <code>Selvage: Open a document from the room</code> and{" "}
+                  <code>Selvage: Leave the session</code>; Neovim answers with{" "}
+                  <code>:SelvageCopyInvite</code>, <code>:SelvageJoin</code> and{" "}
+                  <code>:SelvageLeave</code>. Each repository&apos;s own README is
+                  the full command list.
+                </p>
+              </div>
+            </details>
           </section>
 
 
