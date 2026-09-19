@@ -178,8 +178,8 @@ const notYet = [
   </>,
 ];
 
-// The invite, at card weight: the same chip the hero figure carries, with the copy glyph's
-// job done by the label alone.
+/** The invite, at card weight: the same chip the hero figure carries, with the copy glyph's
+    job done by the label alone. */
 function InviteCard() {
   return (
     <div className="fig fig-invite">

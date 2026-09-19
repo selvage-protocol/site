@@ -14,6 +14,7 @@ import { Card } from "@/components/ui/card";
    where a caret marker belongs. Every line fits the narrowest panel the page is
    drawn at. */
 
+/** One line of a sample: its number in the gutter, then the code. */
 function CodeLine({ n, children }: { n: number; children: ReactNode }) {
   return (
     <span className="code-line">
