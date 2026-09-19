@@ -102,11 +102,11 @@ the reader can name.
 | Part | Its job |
 |---|---|
 | Hero | the promise, three landed facts, two CTAs, the room figure, and one line under the CTAs naming the specification as a draft at wire version `selvage/1`. The `h1`, *Edit the same file together, on a server you run.*, says what the product does and carries the self-hosted wedge from the design record's hook |
-| Get it working | the server in the open — compose from a checkout, and the published image for a reader who would rather not clone — then one card per client: VS Code, Neovim and the browser page, each with its prerequisites, its exact commands and its repository. The long routes (the server from source, the corpus check, the vector replay) fold into one `details`. It opens on the product's own shape rather than on a missing feature: you run the server and the invite link is how somebody joins you, so there is nothing hosted to open and the server runs on the reader's own machine |
+| Get it working | the published image as one `docker run`, with the compose file and the source build one quiet link away — then one folded row per editor: VS Code, Neovim and the browser page, each with its prerequisites, its exact commands and its repository. The long routes (the corpus check, the vector replay) fold into one `details`. It opens on the product's own shape rather than on a missing feature: you run the server and the invite link is how somebody joins you, so there is nothing hosted to open and the server runs on the reader's own machine |
 | See it working | four cards, each with a drawing of the thing it claims: anyone with the link is in, two carets in one text, the paths a guest sees, multiple clients on one engine |
 | How it works | the four moves in order (host a folder, send the invite, type in the same file, close the window), under the design record's one-sentence workflow |
 | The session layer has no specification | the wedge: language tooling has the Language Server Protocol and debugging the Debug Adapter Protocol, document sync has `y-protocols`, and the session layer is unspecified, so every collaborative tool decides those for itself. The specification is the flagship artifact, and the corpus counts appear here once, as the evidence they are |
-| Footer | the licences, the five repository cards, and the page's own privacy line |
+| Footer | the licences and the page's own privacy line, nothing more |
 
 The page used to end on a two-column ledger of what is built and what is not. On a product page
 that reads as a to-do list, so it is gone, and its honest facts now sit where they do a job rather
@@ -476,8 +476,7 @@ composites, and are re-measured whenever the fills around them move: inline code
 chip fill (`rgba(205, 214, 244, 0.07)` over `--bg`) 9.62:1; the invite chip's label and its URL
 on the chip's own tint (`rgba(203, 166, 247, 0.08)` over the figure's fill over the card's) 6.77:1
 and 10.41:1; the card body text on the card fill (`rgba(24, 24, 37, 0.5)` over `--bg`) 7.63:1;
-the client chips and the rail label under them 10.56:1 and 8.55:1. The repo cards' muted text and
-links on their fill are 7.63:1 and 8.36:1, the visited link on the same fill 5.36:1. The section
+the client chips and the rail label under them 10.56:1 and 8.55:1. The section
 hairlines and the card borders sit at 1.30:1 against the page on
 purpose: they are decorative separators, they carry no state, and nothing is identified by
 them.
@@ -505,10 +504,10 @@ What no ratio proves is read against the code by a person on every change:
   true as the page's scripts being permitted. "The Content-Security-Policy" records the
   interval in which they were not, and the gate step that now fails if it happens again.
   No skip link: the page is one route, so there is no repeated block
-  to bypass. The fold at the end of *Get it working* is a native `details`, so it opens without a script.
+  to bypass. The folds in *Get it working* are native `details`, so they open without a script.
 - **Reduced motion.** Two things move, and both stand down under `prefers-reduced-motion`: the
   hero figure's 520 ms entrance (an `opacity`/`translateY` animation) and the 2 px hover lift on
-  the figure cards and the repository cards, each inside a `prefers-reduced-motion:
+  the figure cards, each inside a `prefers-reduced-motion:
   no-preference` query, with `scroll-behavior: smooth` and the header slide switched off in a
   `reduce` block. The buttons' lift is a `motion-safe:` utility for the same reason. Verified in
   the browser: under emulated `reduce` the hero's `animation-name` is `none` and `scroll-behavior`
@@ -522,7 +521,7 @@ What no ratio proves is read against the code by a person on every change:
   reader hears the sentence describing the room rather than four lines of code.
 - **The figure grid is a list.** Each card's drawing is followed by a bold lead and a sentence, so
   the four claims are readable as a list before they are readable as a picture.
-- **Repo links.** The repository cards keep the underline every other prose link carries, so a
+- **Client links.** The per-editor rows keep the underline every other prose link carries, so a
   link is not told apart by its colour and monospace face alone; the focus outline is unchanged.
 
 ## Licence

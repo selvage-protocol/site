@@ -194,7 +194,7 @@ body {
 }
 
 /* Tailwind's preflight removes list markers, so every list on the page puts its
-   own back: a numbered procedure, the figure grid and the repository cards. */
+   own back: a numbered procedure and the figure grid. */
 
 .prose-body ol.steps {
   margin: 0.4rem 0 0;
@@ -251,22 +251,14 @@ body {
   }
 }
 
-/* One editor per row at every width: each of these cards carries commands, and half the grid
-   is narrower than the longest line in them. */
-.prose-body ul.cards.editors {
-  grid-template-columns: 1fr;
-}
-
-.prose-body ul.cards.editors .card-lead {
-  margin-top: 0;
-}
-
-.prose-body ul.cards.editors pre {
+/* Each editor's steps live in a folded row, so long commands never widen
+   the card grid; the code inside keeps the figure grid's own frame. */
+.prose-body .quickstart-body pre {
   max-width: none;
   margin: 0.75rem 0 0;
 }
 
-.prose-body ul.cards.editors pre code {
+.prose-body .quickstart-body pre code {
   font-size: 0.78rem;
 }
 
@@ -607,29 +599,11 @@ body {
   margin-top: 1.15rem;
 }
 
-/* The repository list: one card per repository, name in mono over its line. The name is a
-   link like any other, so it keeps the underline the prose links carry. */
-.prose-body ul.repos {
-  display: grid;
-  gap: 0.7rem;
-  max-width: var(--column);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.prose-body ul.repos li {
-  max-width: none;
-  margin: 0;
-  padding: 0.8rem 1rem;
-  border: 1px solid var(--rule);
-  border-radius: 0.5rem;
-  background: rgba(24, 24, 37, 0.5);
-}
-
-.prose-body ul.repos a {
-  font-family: var(--mono);
-  font-size: 0.875rem;
+/* The footer is the licences in one flow, nothing more: a newcomer at the
+   bottom of the page needs the terms and the privacy line, not a second
+   navigation. Each client section above already links its own repository. */
+.prose-body.page-foot {
+  grid-template-columns: minmax(0, 60rem);
 }
 
 @media (max-width: 30rem) {
@@ -656,19 +630,15 @@ summary:focus-visible {
   outline-offset: 2px;
 }
 
-/* The footer: the licences in one flow, with the repository cards beneath them. It was a
-   two-column grid, which put a 30rem column of licence prose beside the list; the prose is
-   the widest thing down here and reads better at its own measure. */
+/* The footer is the licences in one flow. It was a two-column grid beside a
+   repository list; the prose is the widest thing down here and reads better
+   at its own measure, and the client sections above already link their own
+   repositories. */
 .prose-body.page-foot {
   grid-template-columns: minmax(0, 60rem);
   padding-top: 3rem;
   border-top: 1px solid var(--rule);
   font-size: 0.9375rem;
-}
-
-.foot-grid {
-  display: grid;
-  gap: 2.5rem;
 }
 
 .prose-body.page-foot h2 {
@@ -811,15 +781,13 @@ summary:focus-visible {
     animation: rise 520ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
   }
 
-  .prose-body ul.cards > li,
-  .prose-body ul.repos li {
+  .prose-body ul.cards > li {
     transition:
       transform 160ms ease-out,
       border-color 160ms ease-out;
   }
 
-  .prose-body ul.cards > li:hover,
-  .prose-body ul.repos li:hover {
+  .prose-body ul.cards > li:hover {
     transform: translateY(-2px);
     border-color: rgba(203, 166, 247, 0.45);
   }

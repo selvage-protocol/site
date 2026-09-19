@@ -206,26 +206,14 @@ export default function Home() {
             <h2>Get it working</h2>
             <p>
               One server holds the room, and the editor you already use is where
-              you type. The server is one container, and each client below is a
-              checkout plus one install step.
+              you type. Run the published container, then open one row per
+              editor below.
             </p>
 
             <h3>Start a server</h3>
             <p>
-              From a <code>reference_server</code> checkout, compose builds the
-              image and runs it hardened: every capability dropped, no new
-              privileges, and a root filesystem it cannot write to.
-            </p>
-            <pre>
-              <code>
-                {
-                  "git clone https://github.com/selvage-protocol/reference_server\ncd reference_server\ndocker compose up"
-                }
-              </code>
-            </pre>
-            <p>
-              The same image is published, so the clone is optional: it pulls
-              with no account and no login.
+              The image is published, so there is nothing to clone and nothing
+              to build: it pulls with no account and no login.
             </p>
             <pre>
               <code>
@@ -235,23 +223,29 @@ export default function Home() {
               </code>
             </pre>
             <p>
-              Either way the server answers{" "}
+              The server answers{" "}
               <code>ws://127.0.0.1:8080/session</code> and reports on{" "}
               <code>http://127.0.0.1:8080/meta</code>, one port for the room and
               the page that joins it. Rooms live in memory, so a restart ends
-              them. Without a container runtime,{" "}
-              <code>
-                nix develop . -c cargo run -p selvaged -- --listen 127.0.0.1:8080
-              </code>{" "}
-              builds and runs the same binary, and{" "}
-              <code>packaging/systemd/</code> installs it as a user service.
+              them.{" "}
+              <a href="https://github.com/selvage-protocol/reference_server">
+                selvage-protocol/reference_server
+              </a>{" "}
+              owns the compose file and the source build for anything beyond
+              this line.
             </p>
 
             <h3>Pick your editor</h3>
-            <ul className="cards editors">
-              <li>
-                <p className="card-lead">VS Code</p>
-                <p className="card-body">
+            <p>
+              One row per editor, folded shut. The commands inside are the ones
+              the editor&apos;s own README documents.
+            </p>
+            <details className="quickstart">
+              <summary>
+                VS Code: package the unpublished extension, then host a session
+              </summary>
+              <div className="quickstart-body">
+                <p>
                   Needs VS Code 1.85 or newer, and Node 22.18 or newer to build
                   the extension. It is unpublished, so a checkout and one package
                   step stand in for an install:
@@ -263,7 +257,7 @@ export default function Home() {
                     }
                   </code>
                 </pre>
-                <p className="card-body">
+                <p>
                   Open the folder you want to share and run{" "}
                   <em>Selvage: Host a session</em> against{" "}
                   <code>ws://127.0.0.1:8080</code>; the invite link is copied as
@@ -274,10 +268,14 @@ export default function Home() {
                     selvage-protocol/vscode_client
                   </a>
                 </p>
-              </li>
-              <li>
-                <p className="card-lead">Neovim</p>
-                <p className="card-body">
+              </div>
+            </details>
+            <details className="quickstart">
+              <summary>
+                Neovim: the plugin manager installs it, then host with one command
+              </summary>
+              <div className="quickstart-body">
+                <p>
                   Needs Neovim 0.10 or newer, and Node 22.18 or newer on{" "}
                   <code>PATH</code> for the companion process the plugin runs.
                   The plugin manager installs it; there is no build step beyond
@@ -286,7 +284,7 @@ export default function Home() {
                 <pre>
                   <code>{`{ 'selvage-protocol/nvim_client', build = 'npm ci' }`}</code>
                 </pre>
-                <p className="card-body">
+                <p>
                   That is the whole lazy.nvim spec, and vim-plug takes{" "}
                   <code>
                     {"Plug 'selvage-protocol/nvim_client', { 'do': 'npm ci' }"}
@@ -300,22 +298,26 @@ export default function Home() {
                     selvage-protocol/nvim_client
                   </a>
                 </p>
-              </li>
-              <li>
-                <p className="card-lead">Browser page</p>
-                <p className="card-body">
+              </div>
+            </details>
+            <details className="quickstart">
+              <summary>
+                Browser page: guests only, served by the server above
+              </summary>
+              <div className="quickstart-body">
+                <p>
                   Guests only, with hosting staying in the two editors. The
-                  server above serves the page on the same port, so there is
-                  nothing new to install for it: a guest opens the invite link
-                  the host copied and edits in the page. The page the server
-                  serves takes the room and token in its query string:
+                  server above serves the page on the same port. A guest opens
+                  the invite link the host copied and edits in the page. The
+                  page the server serves takes the room and token in its query
+                  string:
                 </p>
                 <pre>
                   <code>
                     {"http://127.0.0.1:8080/?room=<room>&token=<token>"}
                   </code>
                 </pre>
-                <p className="card-body">
+                <p>
                   The page lives in{" "}
                   <a href="https://github.com/selvage-protocol/web_client">
                     web_client
@@ -324,35 +326,15 @@ export default function Home() {
                   <code>npm run build</code> and <code>npm run serve</code> build
                   and serve it on its own.
                 </p>
-              </li>
-            </ul>
+              </div>
+            </details>
 
             <details className="quickstart">
               <summary>
-                The long version: the server from source, the corpus checks, and
-                what the clients do with the room
+                The long version: the corpus checks, and what the clients do
+                with the room
               </summary>
               <div className="quickstart-body">
-                <h3>Build the server from source</h3>
-                <p>
-                  Without a container runtime the same binary comes from the
-                  workspace. It is one binary with no configuration file:
-                </p>
-                <pre>
-                  <code>
-                    {
-                      "git clone https://github.com/selvage-protocol/reference_server\ncd reference_server\nnix develop . -c cargo run -p selvaged -- --listen 127.0.0.1:8080"
-                    }
-                  </code>
-                </pre>
-                <p>
-                  Without Nix, <a href="https://rust-lang.org/tools/install/">install Rust via rustup</a>{" "}
-                  and the same <code>cargo run</code> needs no other setup. For a
-                  binary to keep, build it release and run that:{" "}
-                  <code>nix develop . -c cargo build --release --locked -p selvaged</code>{" "}
-                  writes <code>./target/release/selvaged</code>.
-                </p>
-
                 <h3>Check the corpus</h3>
                 <p>
                   The schemas and the vectors are checked on their own, with no
@@ -477,9 +459,8 @@ export default function Home() {
       </main>
 
       <footer className="prose-body page-foot mx-auto w-full max-w-6xl px-5 pb-20">
-        <div className="foot-grid">
-          <div>
-            <h2>Licences</h2>
+        <div>
+          <h2>Licences</h2>
             <p>
               The specification (prose, canonical form, JSON Schema and vectors) is
               CC-BY-4.0, and its tooling is MIT OR Apache-2.0. The reference server
@@ -503,39 +484,6 @@ export default function Home() {
               MIT OR Apache-2.0.
             </p>
           </div>
-          <ul className="repos">
-            <li>
-              <a href="https://github.com/selvage-protocol/specification">
-                specification
-              </a>{" "}
-              (the protocol, in prose, schema and vectors)
-            </li>
-            <li>
-              <a href="https://github.com/selvage-protocol/reference_server">
-                reference_server
-              </a>{" "}
-              (the server, the client library, the harness)
-            </li>
-            <li>
-              <a href="https://github.com/selvage-protocol/vscode_client">
-                vscode_client
-              </a>{" "}
-              (the VS Code client)
-            </li>
-            <li>
-              <a href="https://github.com/selvage-protocol/nvim_client">
-                nvim_client
-              </a>{" "}
-              (the Neovim client)
-            </li>
-            <li>
-              <a href="https://github.com/selvage-protocol/web_client">
-                web_client
-              </a>{" "}
-              (the browser client and the page the server serves)
-            </li>
-          </ul>
-        </div>
       </footer>
     </div>
   );
