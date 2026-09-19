@@ -227,7 +227,10 @@ export default function Home() {
               <code>ws://127.0.0.1:8080/session</code> and reports on{" "}
               <code>http://127.0.0.1:8080/meta</code>, one port for the room and
               the page that joins it. Rooms live in memory, so a restart ends
-              them.{" "}
+              them. The <code>127.0.0.1</code> binding keeps the room on your
+              own machine; serving guests on other machines means rebinding
+              (for example <code>-p 8080:8080</code>) and an invite URL that
+              names a reachable address.{" "}
               <a href="https://github.com/selvage-protocol/reference_server">
                 selvage-protocol/reference_server
               </a>{" "}
