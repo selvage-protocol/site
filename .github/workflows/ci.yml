@@ -6,10 +6,12 @@ name: ci
 # and the workflow lint. The claim step
 # matches known wordings only — a green run is not a proof that every sentence is true, so the
 # page's claims are still read against the corpus by a person.
+# No `push: branches: [main]`: a pull request already runs the whole gate, and the
+# merge commit carries the same content, so the merge would run it a second time.
+# `workflow_dispatch` is the re-run for a commit that reached `main` without one.
 on:
-  push:
-    branches: [main]
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}

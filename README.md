@@ -388,8 +388,8 @@ the policy would refuse a script, stylesheet or image the page carries — the d
 under "The Content-Security-Policy". Its fixtures run first: a policy without `script-src` and a
 policy that drops `default-src 'none'` both have to fail it, so the check cannot have gone blind.
 
-`.github/workflows/ci.yml` runs the same commands on `ubuntu-24.04` on every push to `main`
-and every pull request: Node from `.nvmrc`, `npm ci`, then `typecheck`, `build`, `button`,
+`.github/workflows/ci.yml` runs the same commands on `ubuntu-24.04` on every pull request (and
+on demand, through `workflow_dispatch`): Node from `.nvmrc`, `npm ci`, then `typecheck`, `build`, `button`,
 `contrast`, `claims`, `csp`, `links` and `lint`. It installs lychee and actionlint from pinned releases — the runner has no
 nix, so `scripts/ci-local.sh` takes both from `PATH` when they are there and from nixpkgs
 otherwise, and all three places run the same checkers.
