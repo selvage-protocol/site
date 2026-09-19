@@ -123,61 +123,6 @@ const steps = [
   },
 ];
 
-const built = [
-  <>
-    <strong>The specification, in draft:</strong> prose, a canonical byte form, JSON
-    Schema and conformance vectors.
-  </>,
-  <>
-    <strong>
-      <code>selvaged</code>, the server:
-    </strong>{" "}
-    one Rust binary, rooms in memory, nothing written to disk.
-  </>,
-  <>
-    <strong>The VS Code and Neovim clients:</strong> host, join, presence, a mirrored
-    tree, follow.
-  </>,
-  <>
-    <strong>The browser client:</strong> guests only, in a page, served over the
-    project&apos;s own private network.
-  </>,
-];
-
-const notYet = [
-  <>
-    <strong>No public demo.</strong> The demo instance and the browser page run on a
-    private network of ours, so there is no open link to hand out.
-  </>,
-  <>
-    <strong>No release.</strong> The wire version is <code>selvage/1</code> and the
-    compatibility rule in force for it is the same major; nothing has been published
-    to an extension store.
-  </>,
-  <>
-    <strong>No persistence.</strong> Rooms die with the host, and nothing survives a
-    restart of the server.
-  </>,
-  <>
-    <strong>No encryption layer in version 1.</strong> Frames travel through the
-    server as unencrypted bytes, and this slice has no transport security either, so
-    treat the server&apos;s operator and the network path as able to see the
-    room&apos;s text.
-  </>,
-  <>
-    <strong>One engine.</strong> Every client drives a copy of the same engine, so a
-    client written from the prose alone has not been shown to agree with it byte for
-    byte.
-  </>,
-  <>
-    <strong>The specification is a draft.</strong> <code>NOTES.md</code> lists what
-    the prose deliberately leaves open: the invite carries the token in its URL, the
-    host role is whatever a client claims, a document path is any non-blank string free
-    of control characters, and a grant is a listing rather than a confinement, so a
-    peer may still name any path it likes, listed or not.
-  </>,
-];
-
 /** The invite, at card weight: the same chip the hero figure carries, with the copy glyph's
     job done by the label alone. */
 function InviteCard() {
@@ -243,6 +188,10 @@ export default function Home() {
                   Run it
                 </Button>
               </div>
+              <p className="mt-4 font-mono text-[12px] text-subtext">
+                The specification is a draft, and the wire version is{" "}
+                <code>selvage/1</code>.
+              </p>
             </div>
 
             <RoomWindow />
@@ -320,8 +269,9 @@ export default function Home() {
           <section id="run-it" className="scroll-mt-28 md:scroll-mt-24">
             <h2>Run it</h2>
             <p>
-              No package to install from a store and no image to pull, so every
-              route in starts with a checkout. The server is one binary:
+              You run the server, and the invite link is how somebody joins you.
+              There is nothing hosted to open, so every route in starts with a
+              checkout. The server is one binary:
             </p>
             <pre>
               <code>
@@ -438,27 +388,6 @@ export default function Home() {
             </details>
           </section>
 
-          <section id="status" className="scroll-mt-28 md:scroll-mt-24">
-            <h2>What is built, and what is not</h2>
-            <div className="ledger">
-              <div>
-                <h3 className="ledger-head">Built today</h3>
-                <ul className="ledger-list">
-                  {built.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3 className="ledger-head">Not yet</h3>
-                <ul className="ledger-list">
-                  {notYet.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </section>
         </div>
       </main>
 

@@ -9,7 +9,6 @@ const navLinks = [
   { href: "#how-it-works", label: "How it works" },
   { href: "#why-a-spec", label: "Why a spec" },
   { href: "#run-it", label: "Run it" },
-  { href: "#status", label: "Status" },
 ];
 
 export function SiteHeader() {
