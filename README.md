@@ -23,7 +23,7 @@ browser proof the runner cannot run, and nothing else.
 
 | Path | What it is |
 |---|---|
-| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (promise, three landed facts, two CTAs, the room figure), *See it working* (four cards), *How it works* (four steps), *The session layer has no specification* (why the specification is the artifact), *Run it* (two commands in the open, the three long routes folded into one `details`), *What is built, and what is not* (the honest ledger), then the footer |
+| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (promise, three landed facts, two CTAs, the room figure, and the version line under them), *See it working* (four cards), *How it works* (four steps), *The session layer has no specification* (why the specification is the artifact), *Run it* (two commands in the open, the three long routes folded into one `details`), then the footer |
 | `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, the one origin the metadata resolves against (`metadataBase`, `alternates.canonical`, `openGraph.url`; see "The live origin"), and the global stylesheet. The favicons are deliberately absent: they are Next file conventions, so the framework writes their tags and `sizes` from the files themselves |
 | `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, and a system font stack, so no font is fetched from a third party. Two widths are named there and the page keeps to them: `--measure` for running prose and `--column` for everything that is not prose (section rules, code blocks, the repo grid), so a wide figure is deliberate inside a narrow measure |
 | `app/icon.png` / `app/icon1.png` / `app/icon2.png` / `app/apple-icon.png` | the favicon set: the owner's opaque export resized to the four sizes a browser asks for (32, 16 and 48 px, and the 180 px home-screen icon), named for Next's file convention so the framework writes their `<link>` tags and `sizes`. Nothing here is redrawn; there is no vector favicon (see "The site mark") |
@@ -96,18 +96,26 @@ export's field, a re-framing of the owner's composition, so it is not done here.
 
 ## The page, and its copy
 
-The page is a product page, not a numbered document: seven parts in order, each one doing a job
+The page is a product page, not a numbered document: six parts in order, each one doing a job
 the reader can name.
 
 | Part | Its job |
 |---|---|
-| Hero | the promise, three landed facts, two CTAs, and the room figure. The `h1`, *Edit the same file together, on a server you run.*, says what the product does and carries the self-hosted wedge from the design record's hook |
+| Hero | the promise, three landed facts, two CTAs, the room figure, and one line under the CTAs naming the specification as a draft at wire version `selvage/1`. The `h1`, *Edit the same file together, on a server you run.*, says what the product does and carries the self-hosted wedge from the design record's hook |
 | See it working | four cards, each with a drawing of the thing it claims: anyone with the link is in, two carets in one text, the paths a guest sees, multiple clients on one engine |
 | How it works | the four moves in order (host a folder, send the invite, type in the same file, close the window), under the design record's one-sentence workflow |
 | The session layer has no specification | the wedge: language tooling has the Language Server Protocol and debugging the Debug Adapter Protocol, document sync has `y-protocols`, and the session layer is unspecified, so every collaborative tool decides those for itself. The specification is the flagship artifact, and the corpus counts appear here once, as the evidence they are |
-| Run it | two commands in the open (`git clone`, `cargo run`), the client routes named in a sentence, and the three long routes folded into one `details` |
-| What is built, and what is not | the honest ledger, two columns: four things that exist, six that do not |
+| Run it | two commands in the open (`git clone`, `cargo run`), the client routes named in a sentence, and the three long routes folded into one `details`. It opens on the product's own shape rather than on a missing feature: you run the server and the invite link is how somebody joins you, so there is nothing hosted to open and every route in starts with a checkout |
 | Footer | the licences, the four repository cards, and the page's own privacy line |
+
+The page used to end on a two-column ledger of what is built and what is not. On a product page
+that reads as a to-do list, so it is gone, and its honest facts now sit where they do a job rather
+than in a list: *Run it* opens on the shape of the thing (you run the server, the invite link is
+how somebody joins you), and the hero's line under the CTAs carries the version. What the ledger
+spelled out is recorded where it is a decision or a gap: the design record's non-goals for v1
+(`DESIGN.md` §11, in `selvage-protocol/ai_notes`), the
+specification's `NOTES.md` for what the prose leaves open, and each repository's own README for
+what its checkout does and does not do.
 
 No section carries a number. The `01`…`07` counters in front of every section, the privacy notice
 and the licences included, were the clearest signal that the page was a document rather than a
@@ -129,7 +137,8 @@ The must-not-say table below still binds every line. Two rows moved with what is
   longer true and the filter no longer forbids the bare word. What the filter forbids instead is
   both of the lies that replaced it: that a reader can open a page (there is no public URL on that
   network), and the stale denial itself. The page says the browser page is guests-only and served
-  over a private network, and that there is no public demo to open. The
+  over a private network, and *Run it* opens on the same fact in the product's own words: you run
+  the server, and the invite link is how somebody joins you. The
   pattern also holds the route shape neither a verb nor a denial covers (a browser mention sharing
   a sentence with a URL or a host name, in either order), because that is what "a page a reader can
   open" looks like in prose. The `clean` fixtures on that pattern are the honest sentences, and the
@@ -449,7 +458,7 @@ on the chip's own tint (`rgba(203, 166, 247, 0.08)` over the figure's fill over 
 and 10.41:1; the card body text on the card fill (`rgba(24, 24, 37, 0.5)` over `--bg`) 7.63:1;
 the client chips and the rail label under them 10.56:1 and 8.55:1. The repo cards' muted text and
 links on their fill are 7.63:1 and 8.36:1, the visited link on the same fill 6.02:1. The section
-hairlines, the card borders and the status dots sit at 1.30:1 against the page on
+hairlines and the card borders sit at 1.30:1 against the page on
 purpose: they are decorative separators, they carry no state, and nothing is identified by
 them.
 
