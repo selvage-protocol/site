@@ -263,7 +263,9 @@ body {
 }
 
 /* A figure is one framed drawing. The code figure is the same frame on a `pre`,
-   so the four cards agree. */
+   so the four cards agree. Its sample is set at the size of the figure's own mono
+   text (the tree, the bar, the chips), because every line of it has to fit the
+   narrowest panel the page is drawn at. */
 .fig,
 .prose-body pre.fig-code {
   min-height: 6.25rem;
@@ -288,12 +290,12 @@ body {
   align-items: center;
   max-width: none;
   margin: 0;
-  padding: 0.85rem 0.95rem;
+  padding: 0.75rem 0.7rem;
   box-shadow: none;
 }
 
 .prose-body pre.fig-code code {
-  font-size: 0.8125rem;
+  font-size: 0.6875rem;
 }
 
 /* The invite: the one control whose whole job is to look shareable. */
@@ -420,6 +422,21 @@ body {
 
 .code-style {
   color: var(--color-teal);
+}
+
+/* The carets in the open file. They are drawn under the sample and never in it: a
+   name written into a line of Rust reads as syntax, which is a claim about the
+   source that is not true. */
+.code-carets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.5rem 0 0;
+}
+
+.hero-glass > .code-carets {
+  padding: 0 0.7rem;
 }
 
 /* A peer's caret: a bar in the peer's colour with their name in a chip beside it.
@@ -771,8 +788,9 @@ summary:focus-visible {
 }
 
 .hero-glass .code {
-  padding: 0.7rem 0.85rem;
+  padding: 0.7rem;
   overflow-x: auto;
+  font-size: 0.6875rem;
 }
 
 .room-invite {
