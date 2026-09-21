@@ -363,8 +363,9 @@ JSON** in answer: the path has to reach the server the page names, and the proxy
 `text/html`. The **WebSocket upgrade itself is not asserted**, because the host's proxy answers a
 hand-rolled upgrade from a runner's egress with `403` and a request the proxy refuses asserts
 nothing; the upgrade was verified by hand, from a client the proxy accepts, and that is recorded in
-the findings rather than claimed here. It also asks `/` for its media type, because the browser row
-tells a guest the demo serves the page. What the demo half no longer does is compare the instance's
+the findings rather than claimed here. It also asks `/` for a `200` and a `text/html`, because the
+browser row tells a guest the demo serves the page and the proxy's own `404` is `text/html` too, so
+the media type alone would let a dead page satisfy it. What the demo half no longer does is compare the instance's
 release to the page: the page named one, a reader had no use for it, and it is gone from the
 section. `PINNED_IMAGE_VERSION` still ties the page's `docker run` to the registry. The wire version is held
 to what the instance offers rather than to a constant here, because the page owns the version it

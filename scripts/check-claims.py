@@ -853,12 +853,20 @@ def demo_session_route() -> tuple[int, str]:
         return error.code, error.headers.get_content_type() if error.headers else ""
 
 
-def demo_media_type() -> str:
-    """The media type the instance answers `/` with: the guest page the browser row points at."""
+def demo_page_route() -> tuple[int, str]:
+    """What the instance answers `/` with, as its status and media type.
+
+    The status is asked for as well as the media type, because the proxy's own `404` page is
+    `text/html` too: a `/` that serves the guest page is a `200`, and anything else is that origin
+    not serving it.
+    """
     request = urllib.request.Request(f"{DEMO_ORIGIN}/")
     request.add_header("User-Agent", USER_AGENT)
-    with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
-        return response.headers.get_content_type()
+    try:
+        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+            return response.status, response.headers.get_content_type()
+    except urllib.error.HTTPError as error:
+        return error.code, error.headers.get_content_type() if error.headers else ""
 
 
 def page_names(version: str, pages: list[Scanned]) -> bool:
@@ -947,7 +955,7 @@ def check_demo_instance(pages: list[Scanned]) -> int:
     try:
         reported, offered = demo_meta()
         session_status, session_type = demo_session_route()
-        media_type = demo_media_type()
+        page_status, media_type = demo_page_route()
     except urllib.error.HTTPError as error:
         answer = error.read(200).decode("utf-8", "replace").strip()
         print(
@@ -995,11 +1003,12 @@ def check_demo_instance(pages: list[Scanned]) -> int:
         )
         return 1
 
-    if media_type != "text/html":
+    if page_status != 200 or media_type != "text/html":
         print(
-            f"check-claims: {DEMO_ORIGIN}/ answers {media_type!r}, and the browser row tells a "
-            "guest the demo serves the page: a guest following an invite link there needs a "
-            "page, not whatever else that origin answers with",
+            f"check-claims: {DEMO_ORIGIN}/ answers {page_status} {media_type!r}, and the browser "
+            "row tells a guest the demo serves the page: a guest following an invite link there "
+            "needs the page, and the proxy's own 404 is text/html as well, so a status that is "
+            "not 200 is that origin not serving it",
             file=sys.stderr,
         )
         return 1
