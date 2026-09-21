@@ -23,7 +23,7 @@ browser proof the runner cannot run, and nothing else.
 
 | Path | What it is |
 |---|---|
-| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (promise, three landed facts, two CTAs, the room figure, and the version line under them), *Get it working* (the server commands, one card per client, and the long routes folded into one `details`), *See it working* (four cards), *How it works* (four steps), *The session layer has no specification* (why the specification is the artifact), then the footer |
+| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (promise, three landed facts, two CTAs, the room figure, and the version line under them), *Get it working* (the server commands, one card per client, the demo instance, and the long routes folded into one `details`), *See it working* (four cards), *How it works* (four steps), *The session layer has no specification* (why the specification is the artifact), then the footer |
 | `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, the one origin the metadata resolves against (`metadataBase`, `alternates.canonical`, `openGraph.url`; see "The live origin"), and the global stylesheet. The favicons are deliberately absent: they are Next file conventions, so the framework writes their tags and `sizes` from the files themselves |
 | `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, and a system font stack, so no font is fetched from a third party. Two widths are named there and the page keeps to them: `--measure` for running prose and `--column` for everything that is not prose (section rules, code blocks, the repo grid), so a wide figure is deliberate inside a narrow measure |
 | `app/icon.png` / `app/icon1.png` / `app/icon2.png` / `app/apple-icon.png` | the favicon set: the owner's opaque export resized to the four sizes a browser asks for (32, 16 and 48 px, and the 180 px home-screen icon), named for Next's file convention so the framework writes their `<link>` tags and `sizes`. Nothing here is redrawn; there is no vector favicon (see "The site mark") |
@@ -38,7 +38,7 @@ browser proof the runner cannot run, and nothing else.
 | `lib/utils.ts` | the one shared helper (`cn`: `clsx` + `tailwind-merge`) |
 | `package.json` / `package-lock.json` | the only dependencies: `next`, `react`, `react-dom`, `tailwindcss` (+ its PostCSS plugin), `clsx`, `tailwind-merge`, `class-variance-authority` and `lucide-react` for icons, `typescript` and `@types/*`. No Radix, no component library, nothing else without a written reason |
 | `.nvmrc` | the pinned Node version for local work and CI (`nvm use` reads it); `package.json` `engines` carries the major (`24.x`), because Vercel only deploys major versions |
-| `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason, and the image tag it must carry |
+| `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason, the image tag it must carry, and the demo instance it must be telling the truth about |
 | `scripts/check-button-props.tsx` | the button check: renders the button and anchor variants and asserts their props reach the DOM (run by `npm run check:button` inside the gate) |
 | `scripts/check-contrast.py` | the contrast check: parses the theme tokens out of `style.css` — including the sample's `selvage-mocha` token colours, the ground the code figure draws them on, and the alpha a peer's selection fill is drawn at — reads the token a selection fill sits under out of `components/room-visuals.tsx`, and asserts the rendered pairs sit at or above WCAG AA, with measured ratios (run by `scripts/ci-local.sh contrast` inside the gate) |
 | `scripts/check-csp.py` | the policy check: reads the Content-Security-Policy out of `vercel.json` and the served HTML, and fails when the policy would refuse a script, stylesheet or image the page carries (run by `scripts/ci-local.sh csp` inside the gate; see "The Content-Security-Policy") |
@@ -102,7 +102,7 @@ the reader can name.
 | Part | Its job |
 |---|---|
 | Hero | the promise, three landed facts, two CTAs, the room figure, and one line under the CTAs naming the specification as a draft at wire version `selvage/1`. The `h1`, *Edit the same file together, on a server you run.*, says what the product does and carries the self-hosted wedge from the design record's hook |
-| Get it working | the published image as one `docker run`, with the compose file and the source build one quiet link away — then one folded row per editor: VS Code, Neovim and the browser page, each with its prerequisites, its exact commands and its repository. The long routes (the corpus check, the vector replay) fold into one `details`. It opens on the product's own shape rather than on a missing feature: you run the server and the invite link is how somebody joins you, so there is nothing hosted to open and the server runs on the reader's own machine |
+| Get it working | the published image as one `docker run`, with the compose file and the source build one quiet link away — then one folded row per editor: VS Code, Neovim and the browser page, each with its prerequisites, its exact commands and its repository. The long routes (the corpus check, the vector replay) fold into one `details`. It closes on *Try the demo*, the one small instance the project runs, last in the section so the command and the editor rows keep the ground the hero points at. It opens on the product's own shape rather than on a missing feature: you run the server and the invite link is how somebody joins you, and the demo is a guest's way into a room somebody else hosts |
 | See it working | four cards, each with a drawing of the thing it claims: anyone with the link is in, two carets in one text, the paths a guest sees, multiple clients on one engine |
 | How it works | the four moves in order (host a folder, send the invite, type in the same file, close the window), under the design record's one-sentence workflow |
 | The session layer has no specification | the wedge: language tooling has the Language Server Protocol and debugging the Debug Adapter Protocol, document sync has `y-protocols`, and the session layer is unspecified, so every collaborative tool decides those for itself. The specification is the flagship artifact, and the corpus counts appear here once, as the evidence they are |
@@ -130,21 +130,24 @@ to static HTML and names the framework runtime scripts instead; and the waitlist
 the privacy notice names its controller and collects nothing instead of carrying blanks for a
 mailing service.
 
-The must-not-say table below still binds every line. Two rows moved with what is now true:
+The must-not-say table below still binds every line. Three rows moved with what is now true:
 
-- **The browser client.** `web_client`, Monaco in a page, guests only, is
-  built and served over the project's own private network, so "nothing runs in a web page" is no
-  longer true and the filter no longer forbids the bare word. What the filter forbids instead is
-  both of the lies that replaced it: that a reader can open a page (there is no public URL on that
-  network), and the stale denial itself. The page says what the browser client is — guests only,
-  with no editor code of its own — and that the server the reader starts serves the same page on
-  the same port, which the filter permits because the mention and the loopback address sit in
-  different sentences. The
-  pattern also holds the route shape neither a verb nor a denial covers (a browser mention sharing
-  a sentence with a URL or a host name, in either order), because that is what "a page a reader can
-  open" looks like in prose. The `clean` fixtures on that pattern are the honest sentences, and the
-  last of them puts the browser mention and the server's own loopback address in different
-  sentences, so a widening past the sentence bound fails the gate.
+- **The browser client, and the instance that serves it.** `web_client`, Monaco in a page, guests
+  only, is served at one public origin now — the demo — so the page may name a route a reader can
+  follow and the patterns that denied one are gone with the reason that produced them. What the
+  filter holds instead is what is still false about that page: it is a guest join form, so joining
+  needs the invite link a host copies and hosting stays in the two editors. The stale denial
+  ("nothing runs in a web page") stays caught, because the page carried it once, and so does the
+  claim that the project's own landing page is somewhere a room is joined — the route-shaped
+  overclaim left now that a real one exists. The `clean` fixtures are the honest sentences, one of
+  them the demo origin itself, so a widening that forbids the truth fails the gate.
+- **The demo instance.** It runs, so "try the live demo" and the install-free page are truth and
+  the entry that denied the instance is replaced by the overclaim that came with one: a demo
+  described as a service. Its rooms are in memory on one small box, it keeps no work, and its terms
+  gate it to personal and evaluation use. A second entry, new with the demo, holds the mistake the
+  section makes easy: the instance is non-commercial and the software is not
+  (`MIT OR Apache-2.0`, `FSL-1.1-MIT`, `CC-BY-4.0`), so a "non-commercial licence" sentence is a
+  licence nobody granted.
 - **The corpus counts.** Still exactly the numbers `specification/schema/validate.py` pins (31
   vectors, 34858 frame checks, 8642 assertions), and they now appear in one place, as the evidence
   for the specification, instead of three. The vector count is pinned with up to two words between
@@ -331,21 +334,29 @@ beside each, and normalises the served HTML before matching: comments, tags, scr
 removed, entities decoded, whitespace collapsed. So a phrase cannot pass by wrapping across a
 line or by encoding a character. The scan runs against what the server renders, not the source:
 the gate builds, starts the production server, fetches `/` over HTTP and checks that HTML. It also
-asserts the page's pinned image tag against the registry, described just below.
+asserts two claims in the positive, the image tag and the demo instance, described just below.
 **It is a filter, not a proof.** It cannot see meaning: a false claim in different words, a
 synonym outside the list, a superlative, an unbacked sentence or a wrong number the list does not
 pin all pass it. A green gate means the known wordings are absent, nothing more. The reasons are
 summarised here so that the constraint survives without the file that produced it.
 
-The one claim it asserts in the positive, because a phrase list cannot reach it, is the image tag
-the happy path hands a reader: `scripts/check-claims.py` pins `ghcr.io/selvage-protocol/selvaged`
-to one version, requires every reference the rendered page carries to name it, and then asks the
-registry for that tag — anonymously, with no credential in the request, because no account is the
-point of the command. It compares the **per-platform manifests' layer digests**, not the index:
-a platform entry only states that a slot is *labelled* arm64, and `selvaged:0.1.1` proved the
-difference by publishing both legs around the amd64 binary, every layer digest identical across
-the two. The check fails on that shape, on a missing leg, and on a tag the registry does not
-carry; it needs egress to `ghcr.io` and exits 2 rather than passing when it cannot reach it.
+`scripts/check-claims.py` asserts two claims in the positive, because a phrase list cannot reach
+either. The first is the image tag the happy path hands a reader: the check pins
+`ghcr.io/selvage-protocol/selvaged` to one version, requires every reference the rendered page
+carries to name it, and then asks the registry for that tag — anonymously, with no credential in
+the request, because no account is the point of the command. It compares the **per-platform
+manifests' layer digests**, not the index: a platform entry only states that a slot is *labelled*
+arm64, and `selvaged:0.1.1` proved the difference by publishing both legs around the amd64 binary,
+every layer digest identical across the two. The two versions a page must never name are `0.1.0`
+and `0.1.1`; `0.1.2` was correct and is superseded by `0.2.0`, which is the pin. The second is the
+demo instance: the page points at one host, no other reference to that host is allowed, and the
+`server` name the instance reports from `/meta` has to be the name the page gives it. **That second
+assertion couples the site's gate to a running box**: a demo that is down, moved, or upgraded
+without the page, and a host that refuses the check, all fail the build, because a page claiming a
+demo that is not there is the defect it exists to catch. It sends its own user agent, since the
+host's proxy answers `403` to an interpreter's default signature. The image half needs egress to
+`ghcr.io` and exits 2 rather than passing when it cannot reach it; the demo half does the same for
+an instance that does not answer.
 
 | Must not appear | Why not |
 |---|---|
@@ -354,7 +365,7 @@ carry; it needs egress to `ghcr.io` and exits 2 rather than passing when it cann
 | `salvage/1` | The wire version is `selvage/1`. "Selvage" is heard as "salvage", which is why the full protocol title appears at least once in the page's first paragraph |
 | end-to-end encryption, E2EE | Version 1 has no encryption layer: frames travel through the server as unencrypted bytes, and the slice has no transport security either. The relay is payload-opaque but not confidential |
 | "the server cannot read it" / "the text never reaches the server" | The relay routes opaque bytes and keeps no document text, but it can read a frame as it passes and there is no transport security. It is not a confidential relay |
-| a browser route a reader can open | The browser client exists (`web_client`, Monaco in a page, guests only), but it is served over the project's own private network, so there is no public URL to open one at, and no page a reader can reach without a server of their own. The page says what the browser client is and that the server they run serves it, and links the repository; the loopback address it prints stays in a sentence of its own, which is the shape the pattern permits. It may not say "nothing runs in a web page" either: that sentence was true when the filter forbade the bare word and it is false now |
+| a browser route a reader can open, hosting in a browser, a room without an invite | The browser client exists (`web_client`, Monaco in a page, guests only) and the demo instance serves it at a public origin, so naming the demo page is truth. What is not: hosting in a browser (hosting is the two editors plus a server), joining without the invite link a host copies (the page is a guest join form), and the project's own site as a place to join a room (it is a landing page). The stale denial "nothing runs in a web page" stays caught too: that sentence was true when the filter forbade the bare word and it is false now |
 | file create, rename or delete | The room carries no file mutations and nothing writes to the host's working copy. The host's own editor still changes that folder, and a Neovim guest's mirror materialises the granted paths |
 | the server route denied: no image to pull, nothing to install on the server | The reason this entry used to give — that no Dockerfile, compose file or service unit exists in any repository — is false now. `ghcr.io/selvage-protocol/selvaged:0.2.0` is published and pulls anonymously, `reference_server/compose.yaml` runs it, and `reference_server/packaging/systemd/selvaged.service` installs the binary. The pattern used to forbid the word `docker` itself, on that stale reason; it holds the denial of those artefacts instead, which is the sentence the page carried |
 | a stable 1.0 | The wire version is `selvage/1`; the compatibility rule in force is the same major. No corpus line puts the design at 0.x. The pattern's lookbehind keeps `0.2.0` out of it: that is the version of the published image, a number inside a number, not a claim that 1.0 exists |
@@ -362,8 +373,9 @@ carry; it needs egress to `ghcr.io` and exits 2 rather than passing when it cann
 | marketplace or extension-gallery availability | The extension is unpublished, and publishing it is a non-goal until it works with a friend |
 | "guests are read-only" or "view-only" | The design inverts it: read-only scopes the host's filesystem, never the shared buffer, and every holder of the invite edits the session CRDT. Saying otherwise would be a lie about the product's central idea |
 | "your code never leaves your machine" | Document payloads travel through the server to the peers that ask for them, and there is no encryption layer. What is bounded is the grant: the paths the host enumerates, and the reads it serves from inside the granted root |
-| invented proof: screenshots, testimonials, user counts, a production deployment, a demo link | None of them exist. There is no recording, no user count, and no production deployment of the server or the browser client (the live origin is a deploy of this page, not of the protocol), and the only server that has ever run was a local debug build. The one image the page carries is the project's own site mark (see above), not proof of anything |
+| invented proof: screenshots, testimonials, user counts, a production deployment, a demo dressed as a service | There is no recording, no user count, and no commercial deployment behind the demo: it is one small box with in-memory rooms, gated to personal and evaluation use, and the site's own origin is a deploy of this page rather than of the protocol. The demo is named as what it is, which the entry on it enforces: no "free demo", no room that persists, no team-sized instance. The one image the page carries is the project's own site mark (see above), not proof of anything |
 | a claim of priority ("the first protocol to specify …") | The design record surveys prior art (Eclipse Open Collaboration Tools and others). The project's claim is that the session layer is unspecified, not that this is first |
+| a non-commercial licence, or software described as non-commercial | The instance's terms are non-commercial; the software's licences are not. The workspace and the clients are `MIT OR Apache-2.0`, `crates/selvaged` is `FSL-1.1-MIT` (which reserves commercial hosting for its licensor), and the specification's prose, schema and vectors are `CC-BY-4.0`, so the demo section says what it may not: that the two are different statements about different things |
 | a corpus number other than the pinned one | The counts (31 vectors, 34858 frame checks, 8642 assertions) are constants in `specification/schema/validate.py`; any other number is a claim the corpus disproves |
 | a third party seeing the room | The relay is payload-opaque but plaintext with no transport security in this slice, so the operator and the network path can see the room's text. Only the page's own weak reading (no third party's cloud holding the room) is backed |
 | a bare "no cloud", qualified or not ("no cloud in between" included) | A self-hosted server can itself run on a cloud VM, so only the weak reading is backed: no third party's cloud holding the room. The backed storage sentence is "nothing written to disk" |
@@ -371,7 +383,7 @@ carry; it needs egress to `ghcr.io` and exits 2 rather than passing when it cann
 | a speed adjective (instant, real-time, lag-free) | No performance data exists anywhere in the corpus |
 | an ease claim (takes seconds, one-click, just works) | The image, the compose file and the systemd unit all exist; no ease claim around them is backed, because no install time, start-up time or latency has been measured or recorded anywhere in the corpus |
 | an only-machine claim (untouched by the network) | Document payloads travel through the server to the peers that ask for them; the grant bounds which paths are served, not which machines code touches |
-| a "live" / "now available" status | There is no demo instance and no hosted service: the image is published and pulls with no account, and standing a room up still means running it yourself. The honest status line is the wire version plus the specification draft |
+| a "live" / "now available" status | One small demo instance runs and there is no hosted service and no launch: a status reading "live" or "now available" sells the demo as a product. The honest status line names the release and the specification draft |
 | SaaS-creep words (sign in/up, get started, download, pricing) | No accounts exist, so nothing can be signed into; no package exists to download and no price exists to show. The page offers the specification to read and a server to run |
 
 Three things the check cannot make mechanical, and which a reader of a change has to hold:
@@ -425,7 +437,9 @@ overrides the default `3100`) and scans that file by name; reaching no file is a
 than a pass, and every pattern must match its own sample before the scan, so a dead pattern fails
 the gate instead of passing everything; named honest wordings must stay unmatched, so a broadening
 that reintroduces a false positive fails it too. The scan also reads the page's image reference,
-holds it to the version pinned in `scripts/check-claims.py`, and asks `ghcr.io` for that tag.
+holds it to the version pinned in `scripts/check-claims.py`, and asks `ghcr.io` for that tag, and
+reads the page's demo reference, holds it to the one host the check allows, and asks that instance
+what it is serving.
 
 The policy step reads the same rendered file, and the policy out of `vercel.json`, and fails when
 the policy would refuse a script, stylesheet or image the page carries, the defect described
