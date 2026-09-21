@@ -7,7 +7,7 @@
 #   scripts/ci-local.sh button     # render the button/anchor variants, assert props reach the DOM
 #   scripts/ci-local.sh contrast   # theme token pairs at or above WCAG AA
 #   scripts/ci-local.sh claims     # build, serve production, fetch / and scan the rendered HTML
-#   scripts/ci-local.sh csp        # the CSP in vercel.json over the served page: nothing it carries is refused
+#   scripts/ci-local.sh csp        # the CSP in vercel.json over the served page and its not-found route: nothing either carries is refused
 #   scripts/ci-local.sh links      # serve production, lychee over the rendered page and the README
 #   scripts/ci-local.sh lint       # actionlint over the workflow files
 #   scripts/ci-local.sh all        # typecheck + build + button + contrast + claims + csp + links + lint
@@ -23,7 +23,9 @@
 # The CSP step reads the same rendered HTML and the policy out of `vercel.json`, and fails when
 # the policy would refuse a script, stylesheet or image the page carries. That is the defect it
 # was written for: `default-src 'none'` with no `script-src` blocked the page's own chunks and
-# its inline bootstrap, so it never hydrated. See scripts/check-csp.py.
+# its inline bootstrap, so it never hydrated. See scripts/check-csp.py. It reads the not-found
+# route too: the framework's own 404 markup carries a `<style>` element and four style
+# attributes, which this policy refuses, and a scan that only ever saw `/` did not know.
 set -euo pipefail
 
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
@@ -39,6 +41,10 @@ export NEXT_TELEMETRY_DISABLED=1
 PORT="${PORT:-3100}"
 BASE="http://127.0.0.1:${PORT}"
 RENDERED="$TMPDIR/rendered.html"
+RENDERED_404="$TMPDIR/rendered-404.html"
+# The path the not-found route is asked for. It has to be one no route can claim; there is one
+# route (`/`), and this name is not under it.
+NOT_FOUND_PATH="/no-such-path"
 
 say() { printf '\n=== %s ===\n' "$*"; }
 
@@ -133,7 +139,7 @@ job_claims() {
 }
 
 job_csp() {
-  say "csp: the policy in vercel.json over the served page (nothing it carries is refused)"
+  say "csp: the policy in vercel.json over the served page and its not-found route"
   # Always rebuilt, so the policy can never pass over a stale page.
   npm run build >/dev/null
   with_server fetch_and_csp
@@ -148,17 +154,31 @@ fetch_and_scan() {
 
 fetch_and_csp() {
   curl -sSf "$BASE/" -o "$RENDERED"
+  fetch_not_found
   scan_csp
+}
+
+# The not-found route is a page the site serves, so the policy has to permit what it carries
+# too. The status is asserted rather than assumed: a path that answered `200` is a route, and
+# scanning it as the 404 would be checking a page this step is not about.
+fetch_not_found() {
+  local status
+  status=$(curl -sS -o "$RENDERED_404" -w '%{http_code}' "$BASE$NOT_FOUND_PATH")
+  if [ "$status" != "404" ]; then
+    echo "ci-local: $BASE$NOT_FOUND_PATH answered $status, not 404; a path that answers is not the not-found route" >&2
+    return 1
+  fi
 }
 
 scan_csp() {
   # The policy comes from vercel.json, which the local server does not apply: this compares the
   # two, it does not verify the host applies the header.
   ./scripts/check-csp.py "$RENDERED"
+  ./scripts/check-csp.py "$RENDERED_404"
 }
 
 all_served() {
-  fetch_and_scan && scan_csp && run_lychee --config lychee.toml --no-progress "$BASE/" README.md
+  fetch_and_scan && fetch_not_found && scan_csp && run_lychee --config lychee.toml --no-progress "$BASE/" README.md
 }
 
 job_links() {

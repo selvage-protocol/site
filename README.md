@@ -5,8 +5,10 @@ The page is live at **https://selvage-protocol.vercel.app**, which is its home;
 origin").
 
 The landing page for **Selvage** (the project) and the **Selvage Session Protocol** (the protocol
-it publishes). A Next.js App Router project with one route (`/`): the page component carries the
-prose, the product figures live in one component of their own, the global stylesheet carries the
+it publishes). A Next.js App Router project with one route (`/`) and the framework's not-found
+route beside it (`app/not-found.tsx`, styled from the same stylesheet): the page component carries
+the prose, the product figures live in one component of their own, the global stylesheet carries
+the
 styling, and the browser downloads nothing beyond
 the prerendered page, the stylesheet, the images, and the framework runtime with the
 `SiteHeader` client boundary and its dependencies (header, buttons, and the arrow
@@ -25,6 +27,7 @@ browser proof the runner cannot run, and nothing else.
 |---|---|
 | `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (promise, three landed facts, two CTAs, the room figure, and the version line under them), *Get it working* (the server commands, one card per client, the demo instance and the address an editor hosts on, and the long routes folded into one `details`), *See it working* (four cards), *How it works* (four steps), *The session layer has no specification* (why the specification is the artifact), then the footer |
 | `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, the one origin the metadata resolves against (`metadataBase`, `alternates.canonical`, `openGraph.url`; see "The live origin"), and the global stylesheet. The favicons are deliberately absent: they are Next file conventions, so the framework writes their tags and `sizes` from the files themselves |
+| `app/not-found.tsx` | the not-found route: what a mistyped address renders. The framework's own 404 document is styled with a `<style>` element and four `style` attributes, every one of which the policy's `style-src 'self'` refuses; this one is styled from `style.css` and carries neither (see "The Content-Security-Policy") |
 | `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, and a system font stack, so no font is fetched from a third party. Two widths are named there and the page keeps to them: `--measure` for running prose and `--column` for everything that is not prose (section rules, code blocks, the repo grid), so a wide figure is deliberate inside a narrow measure |
 | `app/icon.png` / `app/icon1.png` / `app/icon2.png` / `app/apple-icon.png` | the favicon set: the owner's opaque export resized to the four sizes a browser asks for (32, 16 and 48 px, and the 180 px home-screen icon), named for Next's file convention so the framework writes their `<link>` tags and `sizes`. Nothing here is redrawn; there is no vector favicon (see "The site mark") |
 | `app/opengraph-image.png` | the social card image (Next file convention, served as `/opengraph-image.png`): the owner's opaque export at full size, so cards crop owner's pixels |
@@ -250,7 +253,7 @@ advertises anything, but should that change the plan question returns with it:
 The header is `vercel.json`'s, applied by Vercel:
 
 ```
-default-src 'none'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; style-src 'self'; base-uri 'none'; frame-ancestors 'none'
+default-src 'none'; script-src 'self' 'unsafe-inline'; script-src-attr 'none'; img-src 'self' data:; style-src 'self'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'
 ```
 
 It read without `script-src` until this was found, and that absence is the whole reason this
@@ -266,19 +269,31 @@ bootstrap and the flight data Next writes into the HTML: a **nonce** would permi
 but a nonce has to be fresh per request, which means dynamic rendering, and the page is a static
 prerender (`○ /`), so the route would be traded for the directive. A committed **hash list** is
 worse than it looks: any prose edit rewrites the flight payload the hashes are computed over,
-and a stale hash fails the same silent way the missing directive did. The cost of the compromise
-is stated rather than hidden: `'unsafe-inline'` permits an inline `on*` attribute too, the page
-carries none, and one appearing is counted into the checker's summary line.
+and a stale hash fails the same silent way the missing directive did.
 
-What the policy still refuses: every origin that is not this one, `eval`, a `<base>` that would
-retarget the page's relative URLs, framing, and every resource kind the page does not name.
-`data:` is allowed for `img-src` alone.
+`script-src-attr 'none'` narrows that token to the elements the route actually needs. Without
+the directive it covers an inline `on*` attribute on any element as well as an inline `<script>`,
+and with it the two are decided separately: `script-src` carries the bootstrap, and every inline
+handler attribute is refused. The page carries none, so it costs the page nothing.
+
+`form-action 'none'` closes the one element kind `default-src 'none'` does not reach: a Form
+Action has no fallback to `default-src`, so without the directive any `<form>` the page carried
+could submit to any origin. The page renders no form and no user input into itself, so the
+directive cannot break anything.
+
+What the policy still refuses: every origin that is not this one, `eval`, an inline `on*`
+attribute, a form submission, a `<base>` that would retarget the page's relative URLs, framing,
+and every resource kind the page does not name. `data:` is allowed for `img-src` alone.
 
 Two pieces of evidence, with their limits:
 
-- `scripts/check-csp.py` runs in the gate over the HTML the production server renders. It takes
-  the policy *from* `vercel.json`, not a copy of it, and decides every script, stylesheet and image
-  against the directive that governs it, following the fallback chains a browser follows. The
+- `scripts/check-csp.py` runs in the gate over the HTML the production server renders, and over
+  the HTML its not-found route renders, because that route is a page the site serves and the
+  policy has to permit it too. The framework's own 404 document is styled with a `<style>` element
+  and four `style` attributes, all five of which `style-src 'self'` refuses; `app/not-found.tsx`
+  is styled from `style.css` instead. The check takes the policy *from* `vercel.json`, not a copy
+  of it, and decides every script, stylesheet and image against the directive that governs it,
+  following the fallback chains a browser follows. The
   policy as it read without `script-src` is one of its own fixtures, so it fails on the defect
   it was written for. It is a model of the policy, not a browser, and a source expression it
   does not model is an error rather than an assumption.
@@ -286,7 +301,9 @@ Two pieces of evidence, with their limits:
   `scripts/check-csp-browser.mjs`: it applies the `headers` block out of `vercel.json` through a
   local proxy (`next start` does not apply it, only the host does) and asserts zero
   `securitypolicyviolation` events, `window.__next_f` an object, the header concealed
-  (`translate: 0px -100%`) at `scrollY` 900 and back at 300, and no `X-Powered-By`. Point
+  (`translate: 0px -100%`) at `scrollY` 900 and back at 300, and no `X-Powered-By`. It then
+  requests a path no route claims and asserts the `404` it renders carries no violation either,
+  which is the assertion that fails on the framework's own 404 document. Point
   `VERCEL_JSON` at the policy as it read without `script-src` and it fails, which is checked
   rather than assumed. It needs a browser the runner does not have, so it is not in the
   workflow: `npm run build && CHROMIUM=/path/to/chromium npm run check:csp-browser`.
@@ -321,10 +338,10 @@ Two decisions taken here, stated so that they are not re-litigated silently:
   avoid; so spam filtering would have been configured at the service, where it belongs.
   With no form there is no field to debate; the reasoning stays so a reintroduced form
   does not re-litigate it.
-- **No `form-action` in the Content-Security-Policy.** The CSP in `vercel.json` would have had to
-  name the endpoint to keep a form working, which would have been a second place to edit
-  and a way to ship a form the policy blocks. The page renders no user input into itself,
-  so the directive would defend against an injection that has no path in.
+- **`form-action 'none'`.** The page renders no form, so a Form Action could only ever carry an
+  injected one, and the directive is what refuses it. The waitlist form and its endpoint are
+  gone, which is what made the directive free: naming an endpoint to keep a form working was the
+  reason not to set it, and there is no endpoint to name.
 
 ## What the page must never say
 
@@ -463,8 +480,9 @@ reads the page's demo reference, holds it to the one host the check allows, and 
 what it reports, whether the editor address's `/session` path is answered by the server rather than
 by the proxy in front of it, and whether its `/` serves the page.
 
-The policy step reads the same rendered file, and the policy out of `vercel.json`, and fails when
-the policy would refuse a script, stylesheet or image the page carries, the defect described
+The policy step reads the same rendered file, its not-found route, and the policy out of
+`vercel.json`, and fails when the policy would refuse a script, stylesheet or image either page
+carries, the defect described
 under "The Content-Security-Policy". Its fixtures run first: a policy without `script-src` and a
 policy that drops `default-src 'none'` both have to fail it, so the check cannot have gone blind.
 
