@@ -262,6 +262,26 @@ advertises anything, but should that change the plan question returns with it:
 - The Hobby terms also allow Hobby content to be used for model training. A paid plan turns that
   off by default.
 
+### Releasing it
+
+A release here is a tag and a GitHub Release, and nothing else: there is no artefact to build, no
+image and no registry, and Vercel serves the page from `main` without reading tags. So there is no
+release workflow. One would only be `git tag` and `gh release create` behind a button, and the
+version assertion the other repositories' release workflows carry would have nothing to protect
+here: `package.json`'s version is a private, unpublished manifest that no deployment consumes.
+
+The tag is `package.json`'s version with a `v`, and an annotated tag is what the other
+repositories' release runs create, so it is made the same way by hand:
+
+```console
+$ git tag -a v0.1.0 -m v0.1.0
+$ git push origin v0.1.0
+$ gh release create v0.1.0 --title v0.1.0 --notes-file notes.md
+```
+
+The tag is a marker on the page's history rather than an input to anything. Other repositories tag
+what they build and attach it to the release; this one has nothing to attach.
+
 ## The Content-Security-Policy
 
 The header is `vercel.json`'s, applied by Vercel:
