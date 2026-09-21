@@ -7,6 +7,10 @@ sentence that is merely unbacked all pass it. What it does guarantee is narrower
 worth having: those known wordings do not appear, even when the page wraps them across lines or
 encodes the characters as HTML entities.
 
+One claim is asserted in the positive instead, because a phrase list cannot reach it: the image
+tag in the `docker run` the page hands a reader is a fact with an artefact behind it, and a wrong
+tag is a command that fails rather than a wording that lies. See `PUBLISHED_IMAGE` below.
+
 Each entry below pairs a phrase the page must not carry with the reason it must not, and with a
 sample that has to match it. The reasons are not this script's opinion: every one of them is a
 claim the research record already checked and found false or unbacked, and the sample is what
@@ -28,16 +32,20 @@ Run from anywhere; the repository root is resolved from this file's location. Ar
     scripts/check-claims.py              # every *.html in the checkout
     scripts/check-claims.py .tmp/empty   # reaches no file: that is a failure, not a pass
 
-Exit 0 when the page is clean of every known wording, 1 when it carries one, 2 when the check
-itself cannot run (a dead pattern, or nothing to scan).
+Exit 0 when the page is clean of every known wording and its image pin holds up, 1 when it
+carries a forbidden wording or the pin is wrong, 2 when the check itself cannot run (a dead
+pattern, nothing to scan, or a registry that cannot be asked).
 """
 
 from __future__ import annotations
 
 import html
+import json
 import os
 import re
 import sys
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 
 # Directories that never hold the shipped page.
@@ -56,6 +64,31 @@ HOSTLIKE = r"(?:https?://|wss?://|\b[\w-]+(?:\.[\w-]+)+)"
 BROWSER_ROUTE = rf"\bbrowser\b[^.]{{0,48}}{HOSTLIKE}|{HOSTLIKE}[^.]{{0,48}}\bbrowser\b"
 
 DASHES = re.compile("[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]")
+
+# The page's happy path is a `docker run` a reader pastes, so the tag in it is a claim with an
+# artefact behind it: a wrong tag is `manifest unknown`, not a wording a phrase list can
+# enumerate. It is therefore a *required* claim, pinned once here and asserted twice: every
+# reference the rendered page carries must name this version, and the registry must serve it.
+#
+# The registry half is the one that reaches the artefact, and it holds the distinction that
+# matters: a platform entry in an image index proves only that a slot is *labelled* arm64.
+# `selvaged:0.1.1` published one, and both its legs carried the amd64 binary — every layer
+# digest identical across the two per-platform manifests. The check compares those digests and
+# fails when they are the same set, which is what a mislabelled leg looks like, and it pulls
+# them with no credential in the request, because no account is the point of the command the
+# page hands over.
+PUBLISHED_IMAGE = "ghcr.io/selvage-protocol/selvaged"
+PINNED_IMAGE_VERSION = "0.1.2"
+IMAGE_REFERENCE = re.compile(r"ghcr\.io/selvage-protocol/selvaged(?::([\w][\w.+-]*))?")
+REGISTRY_HOST = "ghcr.io"
+REGISTRY_REPOSITORY = PUBLISHED_IMAGE.split("/", 1)[1]
+REQUEST_TIMEOUT_SECONDS = 20
+MANIFEST_TYPES = (
+    "application/vnd.oci.image.index.v1+json",
+    "application/vnd.docker.distribution.manifest.list.v2+json",
+    "application/vnd.oci.image.manifest.v1+json",
+    "application/vnd.docker.distribution.manifest.v2+json",
+)
 
 
 @dataclass(frozen=True)
@@ -155,11 +188,11 @@ FORBIDDEN: list[Phrase] = [
         # artefacts refute, which is the sentence the page carried until this was corrected:
         # `reference_server/Dockerfile`, `reference_server/compose.yaml`,
         # `reference_server/packaging/systemd/selvaged.service` and the anonymously pullable
-        # `ghcr.io/selvage-protocol/selvaged:0.1.0` are all in the repositories.
+        # `ghcr.io/selvage-protocol/selvaged:0.1.2` are all in the repositories.
         r"\bno (?:image|container) to pull\b|\bnothing to install on the server\b"
         r"|\bno compose (?:file|configuration)\b|\bno systemd (?:service|unit)\b",
         "there is no image to pull and no service unit to install in any repository yet",
-        "the server image is published (`ghcr.io/selvage-protocol/selvaged:0.1.0`) and pulls "
+        "the server image is published (`ghcr.io/selvage-protocol/selvaged:0.1.2`) and pulls "
         "with no account, `reference_server/compose.yaml` runs it, and "
         "`reference_server/packaging/systemd/selvaged.service` installs the binary: a page "
         "saying none of that exists states the opposite of the truth",
@@ -169,16 +202,18 @@ FORBIDDEN: list[Phrase] = [
          "the image is published, so there is nothing to clone"),
     ),
     Phrase(
-        # The lookbehind is what keeps a published tag out of a pattern about a 1.0 claim:
-        # `ghcr.io/selvage-protocol/selvaged:0.1.0` carries `1.0` inside a version inside a
-        # version, and a page naming the tag it publishes is describing the artefact, not
-        # claiming a frozen release. A 1.0 that stands on its own still matches.
+        # The lookbehind is what keeps a version-inside-a-version out of a pattern about a 1.0
+        # claim: a tag like `2.1.0` carries `1.0` as a substring, and naming a tag that happens
+        # to contain it is describing an artefact, not claiming a frozen release. The published
+        # image is `0.1.2` today, which carries no `1.0` substring at all, so the fixture below
+        # is synthetic rather than the live pin; the lookbehind still has to hold for whatever
+        # version a future pin carries. A 1.0 that stands on its own still matches.
         r"(?<![\d.])v?1\.0\b|production[- ]ready|production[- ]grade|battle[- ]tested|stable release",
         "the stable release, version 1.0",
-        "the wire version is `selvage/1`; nothing has been released and no shape is frozen. "
-        "`0.1.0` is the version of the image that is published, not a 1.0",
+        "the wire version is `selvage/1`; no shape is frozen. "
+        "`0.1.2` is the version of the image that is published, not a 1.0",
         ("we are at v1.0", "the stable rele<!-- -->ase, version 1.0"),
-        ("ghcr.io/selvage-protocol/selvaged:0.1.0", "0.1.0", "version 0.1.0"),
+        ("ghcr.io/selvage-protocol/selvaged:0.1.2", "0.1.2", "version 0.1.2", "tool:2.1.0"),
     ),
     Phrase(
         r"second implementation|interoperab\w*",
@@ -341,8 +376,9 @@ FORBIDDEN: list[Phrase] = [
     Phrase(
         r"\bis live\b|\bnow live\b|\bnow available\b",
         "Selvage Session Protocol is now live.",
-        "nothing is released, hosted or published: no demo instance, no release, no package. "
-        "The honest status line is the wire version plus the specification draft",
+        "the image is published and pulls with no account, and there is no demo instance and "
+        "no hosted service: standing a room up still means running it yourself. The honest "
+        "status line is the wire version plus the specification draft",
     ),
     Phrase(
         r"\bsign[ -]?in\b|\bsign[ -]?up\b|\bget started\b|\bdownload\b|\bpricing\b",
@@ -544,6 +580,112 @@ def normalise(text: str) -> tuple[str, list[int]]:
     return "".join(visible), line_of
 
 
+def _registry_json(path: str, token: str | None = None) -> dict:
+    request = urllib.request.Request(f"https://{REGISTRY_HOST}/v2/{path}")
+    request.add_header("Accept", ", ".join(MANIFEST_TYPES))
+    if token is not None:
+        request.add_header("Authorization", f"Bearer {token}")
+    with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+        return json.loads(response.read())
+
+
+def anonymous_pull_token() -> str:
+    """The token a `docker pull` gets with no credentials: ghcr mints one to a bare GET."""
+    with urllib.request.urlopen(
+        f"https://{REGISTRY_HOST}/token?scope=repository:{REGISTRY_REPOSITORY}:pull"
+        f"&service={REGISTRY_HOST}",
+        timeout=REQUEST_TIMEOUT_SECONDS,
+    ) as response:
+        return json.loads(response.read())["token"]
+
+
+def pinned_tag_legs() -> dict[str, tuple[str, ...]]:
+    """{platform: layer digests} for the pinned tag, read from the per-platform manifests.
+
+    The tag's own document is an index that points at those; the layers live in the manifests
+    it names, which is why the index alone cannot answer what this asks. Attestation entries
+    carry `platform: unknown/unknown` and are skipped by the `os` filter.
+    """
+    token = anonymous_pull_token()
+    index = _registry_json(f"{REGISTRY_REPOSITORY}/manifests/{PINNED_IMAGE_VERSION}", token)
+    legs: dict[str, tuple[str, ...]] = {}
+    for entry in index.get("manifests", []):
+        platform = entry.get("platform", {})
+        if platform.get("os") != "linux":
+            continue
+        manifest = _registry_json(f"{REGISTRY_REPOSITORY}/manifests/{entry['digest']}", token)
+        layers = tuple(layer["digest"] for layer in manifest.get("layers", []))
+        if layers:
+            legs[f"linux/{platform.get('architecture')}"] = layers
+    return legs
+
+
+def check_pinned_image(pages: list[tuple[str, str, list[int]]]) -> int:
+    """The page's version against the pin, and the pin against the registry.
+
+    Returns 0 when both hold, 1 when either does not, 2 when the registry cannot be asked.
+    """
+    root = root_of_this_checkout()
+    reference = f"{PUBLISHED_IMAGE}:{PINNED_IMAGE_VERSION}"
+    named = 0
+    wrong: list[str] = []
+    for path, text, line_of in pages:
+        for match in IMAGE_REFERENCE.finditer(text):
+            named += 1
+            if match.group(0) != reference:
+                where = os.path.relpath(path, root)
+                wrong.append(f"{where}:{line_of[match.start()]}: {match.group(0)!r}")
+    if not named:
+        print(
+            f"check-claims: none of {len(pages)} scanned file(s) carries a {PUBLISHED_IMAGE} "
+            f"reference, and the pin is {reference!r}: the page's happy path is where it is "
+            "handed to a reader, so a scan that never reaches it is not checking the pin",
+            file=sys.stderr,
+        )
+        return 1
+    if wrong:
+        for where in wrong:
+            print(
+                f"check-claims: the page hands a reader {where}, and the pinned image is "
+                f"{reference!r}",
+                file=sys.stderr,
+            )
+        return 1
+
+    try:
+        legs = pinned_tag_legs()
+    except (urllib.error.URLError, OSError, ValueError, KeyError) as error:
+        print(
+            f"check-claims: cannot ask {REGISTRY_HOST} for {reference} ({error}); the pin "
+            "cannot be checked against the artefact it names, so this is a failure rather "
+            "than a pass",
+            file=sys.stderr,
+        )
+        return 2
+
+    absent = sorted({"linux/amd64", "linux/arm64"} - set(legs))
+    if absent:
+        print(
+            f"check-claims: {reference} carries no manifest for {' or '.join(absent)}; the "
+            "image commands the page hands a reader have to run on the machine they run it on",
+            file=sys.stderr,
+        )
+        return 1
+    amd64, arm64 = legs["linux/amd64"], legs["linux/arm64"]
+    if amd64 == arm64:
+        print(
+            f"check-claims: the amd64 and arm64 manifests of {reference} carry identical "
+            f"layers ({' '.join(amd64)}). A platform entry only labels a slot: an arm64 leg "
+            "holding the other architecture's binary is the defect this asserts against",
+            file=sys.stderr,
+        )
+        return 1
+    print(
+        f"check-claims: the pinned image {reference} pulls anonymously and is not one "
+        f"binary twice — amd64 {' '.join(amd64)}, arm64 {' '.join(arm64)}"
+    )
+    return 0
+
 def main() -> int:
     compiled: list[tuple[Phrase, re.Pattern[str]]] = []
     for phrase in FORBIDDEN:
@@ -586,9 +728,11 @@ def main() -> int:
         return 2
 
     hits = 0
+    scanned: list[tuple[str, str, list[int]]] = []
     for path in paths:
         with open(path, encoding="utf-8") as handle:
             text, line_of = normalise(handle.read())
+        scanned.append((path, text, line_of))
         for phrase, pattern in compiled:
             for match in pattern.finditer(text):
                 hits += 1
@@ -601,6 +745,10 @@ def main() -> int:
     if hits:
         print(f"check-claims: {hits} forbidden phrase(s) in {len(paths)} file(s)")
         return 1
+
+    pin = check_pinned_image(scanned)
+    if pin != 0:
+        return pin
 
     print(
         f"check-claims: {len(compiled)} known wordings alive over {len(paths)} file(s), none "
