@@ -5,7 +5,11 @@ name: ci
 # in vercel.json over the same rendered page, the link check over the rendered page and the README,
 # and the workflow lint. The claim step
 # matches known wordings only — a green run is not a proof that every sentence is true, so the
-# page's claims are still read against the corpus by a person.
+# page's claims are still read against the corpus by a person. The one claim it does assert
+# positively is the image tag the page's happy path hands a reader: it asks `ghcr.io` for the
+# pinned version, requires a leg per architecture, and compares the per-platform manifests' layer
+# digests, because a platform entry only labels a slot. That step needs egress to the registry
+# and fails rather than passes when it cannot reach it.
 # No `push: branches: [main]`: a pull request already runs the whole gate, and the
 # merge commit carries the same content, so the merge would run it a second time.
 # `workflow_dispatch` is the re-run for a commit that reached `main` without one.
@@ -83,7 +87,7 @@ jobs:
       - name: contrast floor over the theme tokens (WCAG AA)
         run: scripts/ci-local.sh contrast
 
-      - name: claim filter over the rendered page (known wordings only, not a proof)
+      - name: claim filter over the rendered page (known wordings, plus the image pin against the registry)
         run: scripts/ci-local.sh claims
 
       - name: the CSP over the served page (nothing it carries is refused)
