@@ -55,10 +55,10 @@ export function SiteHeader() {
         <a href="#top" className="flex items-center gap-2.5">
           <img
             className="h-8 w-auto"
-            src="/mark-transparent.png"
+            src="/mark-header.png"
             alt=""
-            width={800}
-            height={800}
+            width={128}
+            height={128}
           />
           <span className="text-[17px] font-semibold tracking-tight text-text">
             Selvage

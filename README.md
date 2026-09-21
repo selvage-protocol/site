@@ -31,7 +31,8 @@ browser proof the runner cannot run, and nothing else.
 | `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, and a system font stack, so no font is fetched from a third party. Two widths are named there and the page keeps to them: `--measure` for running prose and `--column` for everything that is not prose (section rules, code blocks, the repo grid), so a wide figure is deliberate inside a narrow measure |
 | `app/icon.png` / `app/icon1.png` / `app/icon2.png` / `app/apple-icon.png` | the favicon set: the owner's opaque export resized to the four sizes a browser asks for (32, 16 and 48 px, and the 180 px home-screen icon), named for Next's file convention so the framework writes their `<link>` tags and `sizes`. Nothing here is redrawn; there is no vector favicon (see "The site mark") |
 | `app/opengraph-image.png` | the social card image (Next file convention, served as `/opengraph-image.png`): the owner's opaque export at full size, so cards crop owner's pixels |
-| `public/mark-transparent.png` | the mark as served in the page body: the owner's transparent 800×800 export, vendored byte-identical (see "The site mark"). The opaque export was vendored beside it while the hero panel was light; it is no longer served; `app/opengraph-image.png` is the same file |
+| `public/mark-header.png` | the mark as the page body fetches it: the owner's transparent export resized to 128×128 for the one surface that paints it, 32 CSS px in the nav header (see "The site mark") |
+| `public/mark-transparent.png` | the owner's transparent 800×800 export, vendored byte-identical (its checksum matches the owner's file) and never hotlinked. The page body no longer fetches it: it is the source the header derivative is made from, and `web_client/test/identity.test.ts` pins its bytes against that repository's own copy. The opaque export was vendored beside it while the hero panel was light; it is no longer fetched either; `app/opengraph-image.png` is the same file |
 | `postcss.config.mjs` | the one PostCSS plugin (`@tailwindcss/postcss`), so `style.css` compiles on build |
 | `next.config.ts` | the one build setting that is not a default: `poweredByHeader: false`, so the framework's `X-Powered-By: Next.js` banner is not on the page's HTML response |
 | `components/ui/button.tsx` | the button primitive (shadcn-style `cva` variants: filled default, tinted secondary, ghost; renders an anchor when given `href`): the nav CTA and the two hero CTAs, nothing else |
@@ -45,6 +46,7 @@ browser proof the runner cannot run, and nothing else.
 | `scripts/check-button-props.tsx` | the button check: renders the button and anchor variants and asserts their props reach the DOM (run by `npm run check:button` inside the gate) |
 | `scripts/check-contrast.py` | the contrast check: parses the theme tokens out of `style.css` — including the sample's `selvage-mocha` token colours, the ground the code figure draws them on, and the alpha a peer's selection fill is drawn at — reads the token a selection fill sits under out of `components/room-visuals.tsx`, and asserts the rendered pairs sit at or above WCAG AA, with measured ratios (run by `scripts/ci-local.sh contrast` inside the gate) |
 | `scripts/check-csp.py` | the policy check: reads the Content-Security-Policy out of `vercel.json` and the served HTML, and fails when the policy would refuse a script, stylesheet or image the page carries (run by `scripts/ci-local.sh csp` inside the gate; see "The Content-Security-Policy") |
+| `scripts/check-weight.py` | the weight check: reads the served HTML and the bytes on disk, and fails when an image the page body fetches out of `public/` is over its budget or declares a pixel size the file does not have (run by `scripts/ci-local.sh weight` inside the gate; see "The site mark") |
 | `scripts/check-csp-browser.mjs` | the browser proof: serves the built page with the headers out of `vercel.json`, drives headless Chromium over CDP, and asserts zero `securitypolicyviolation` events, `window.__next_f` an object, the header's concealment on scroll and no `X-Powered-By`. Not in the gate (the runner has no browser), and it needs `npm run build` first |
 | `scripts/ci-local.sh` | the gate, running the same commands as the workflow |
 | `lychee.toml` | what the link check does not check, and why |
@@ -53,16 +55,16 @@ browser proof the runner cannot run, and nothing else.
 
 ## The site mark
 
-The page serves the owner's raster mark at every size: the body from the owner's transparent
-800×800 PNG export, vendored byte-identical under `public/` (its checksum matches the owner's
-file) and never hotlinked; the icons and the social card from the same export's opaque twin.
-The one surface that carries the page-body mark is dark, and the opaque export's
-baked `#1e1e2e` base would draw a visible chip inside it, so the transparent
+The page serves the owner's raster mark at every size from the owner's own pixels: `public/`
+carries the transparent 800×800 PNG export byte-identical (its checksum matches the owner's
+file) and never hotlinked, and every surface that paints the mark is a derivative of it or of
+its opaque twin. The one surface that carries the page-body mark is dark, and the opaque
+export's baked `#1e1e2e` base would draw a visible chip inside it, so the transparent
 glyphs are the ones that sit on the surface:
 
 | Surface | File | Why |
 |---|---|---|
-| Nav header on dark Mocha | `public/mark-transparent.png` | the bar is translucent Mocha over the page; the opaque export's baked `#1e1e2e` base would draw a visible box against it, while the transparent glyphs sit straight on the bar |
+| Nav header on dark Mocha | `public/mark-header.png` | the bar is translucent Mocha over the page; the opaque export's baked `#1e1e2e` base would draw a visible box against it, while the transparent glyphs sit straight on the bar. The bar paints it at 32 CSS px, which is what the file is sized for (see below) |
 | Favicon and social card | `app/icon1.png` / `app/icon.png` / `app/icon2.png` / `app/apple-icon.png` / `app/opengraph-image.png` | tab bars and link unfurls crop unpredictably, so these stay opaque: the four favicon sizes are the opaque export resized, the social card the full-size opaque export |
 
 The hero panel used to be the second surface. It is now a figure of the product itself (see
@@ -96,6 +98,18 @@ it: its box is centred to within 1.5 px at every size, spanning 62–67% of the 
 leaves the monogram 10×4 px, the smallest this artwork gets and the reason the 180 px and
 the social card carry it best. Giving the tab more of the mark would mean cropping the
 export's field, a re-framing of the owner's composition, so it is not done here.
+
+The header mark is sized the same way the favicons are. The nav bar paints it at 32 CSS px, so
+`public/mark-header.png` is the transparent export resized to 128 —
+`magick public/mark-transparent.png -resize 128x128`, byte-identical to a fresh resize (RMSE 0)
+— which covers a device pixel ratio to 4 and carries none of the master's transparent field.
+The master is 60,595 bytes; served there it was 26% of everything the page transferred, and a
+browser resampled it to a 20×9 px monogram without saying so. The derivative is 6,573 bytes, and
+resampling it to the painted size differs from resampling the master by RMSE 0.15%, under the
+favicon set's own margins. `public/mark-transparent.png` stays in the tree at full size: another
+repository pins its bytes, so it is the source of truth rather than a fetched asset. Only the
+surfaces that paint the mark are listed above, and `scripts/check-weight.py` holds every image
+the page body fetches to a budget so a master cannot come back to one of them by accident.
 
 ## The page, and its copy
 
@@ -459,13 +473,14 @@ What that decides:
 ## The gate
 
 ```console
-$ scripts/ci-local.sh              # typecheck, build, button, contrast, claims, csp, links, lint
+$ scripts/ci-local.sh              # typecheck, build, button, contrast, claims, csp, weight, links, lint
 $ scripts/ci-local.sh typecheck    # tsc --noEmit
 $ scripts/ci-local.sh build        # next build
 $ scripts/ci-local.sh button       # render the button/anchor variants and assert their props reach the DOM
 $ scripts/ci-local.sh contrast     # theme token pairs at or above WCAG AA, with measured ratios
 $ scripts/ci-local.sh claims       # rebuild, serve production, fetch / and scan the rendered HTML
-$ scripts/ci-local.sh csp          # the policy in vercel.json over the served page: nothing it carries is refused
+$ scripts/ci-local.sh csp          # the policy in vercel.json over the served page and its not-found route, refusing nothing either carries
+$ scripts/ci-local.sh weight       # every image the page body fetches, against its byte budget
 $ scripts/ci-local.sh links        # serve production, lychee over the rendered page and README.md
 $ scripts/ci-local.sh lint         # actionlint over the workflows (nix; the workflow pins a release)
 ```
@@ -482,13 +497,20 @@ by the proxy in front of it, and whether its `/` serves the page.
 
 The policy step reads the same rendered file, its not-found route, and the policy out of
 `vercel.json`, and fails when the policy would refuse a script, stylesheet or image either page
-carries, the defect described
-under "The Content-Security-Policy". Its fixtures run first: a policy without `script-src` and a
-policy that drops `default-src 'none'` both have to fail it, so the check cannot have gone blind.
+carries, the defect described under "The Content-Security-Policy". Its fixtures run first: a
+policy without `script-src` and a policy that drops `default-src 'none'` both have to fail it, so
+the check cannot have gone blind.
+
+The weight step reads the same rendered file again and the bytes of every image it fetches out of
+`public/`, and holds each to a budget: a surface this page paints at 32 px may not be handed the
+owner's 800×800 master. It also asserts the `width`/`height` an `<img>` declares are the file's own
+pixels, because a `src` swap that leaves them behind distorts the mark and no failed request says
+so. It is a ceiling per image rather than a total for the page, so a framework upgrade that
+changes nothing a reader sees cannot redden it.
 
 `.github/workflows/ci.yml` runs the same commands on `ubuntu-24.04` on every pull request (and
 on demand, through `workflow_dispatch`): Node from `.nvmrc`, `npm ci`, then `typecheck`, `build`, `button`,
-`contrast`, `claims`, `csp`, `links` and `lint`. It installs lychee and actionlint from pinned releases: the runner has no
+`contrast`, `claims`, `csp`, `weight`, `links` and `lint`. It installs lychee and actionlint from pinned releases: the runner has no
 nix, so `scripts/ci-local.sh` takes both from `PATH` when they are there and from nixpkgs
 otherwise, and all three places run the same checkers.
 
