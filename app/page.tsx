@@ -306,10 +306,11 @@ export default function Home() {
               <div className="quickstart-body">
                 <p>
                   Guests only, with hosting staying in the two editors. The
-                  server above serves the page on the same port. A guest opens
-                  the invite link the host copied and edits in the page. The
-                  page the server serves takes the room and token in its query
-                  string:
+                  server above serves the page on the same port, and{" "}
+                  <a href="https://selvage.dontblameme.dev">the demo</a>{" "}
+                  already serves the same page. A guest opens the invite link
+                  the host copied and edits in the page. The page the server
+                  serves takes the room and token in its query string:
                 </p>
                 <pre>
                   <code>
@@ -334,11 +335,13 @@ export default function Home() {
               <a href="https://selvage.dontblameme.dev">
                 selvage.dontblameme.dev
               </a>
-              , where <code>/meta</code> reports <code>selvaged/0.2.0</code>.
-              Hosting a room there means pointing one of the editors above at{" "}
-              <code>wss://selvage.dontblameme.dev</code>; the invite link that editor
-              copies opens the room in a browser, so a guest needs nothing
-              installed.
+              . Point one of the editors above at{" "}
+              <code>wss://selvage.dontblameme.dev</code> and it hosts a room
+              there: <code>selvage.serverUrl</code> in VS Code,{" "}
+              <code>vim.g.selvage_server_url</code> in Neovim. A host started
+              with neither set asks for the address instead. The invite link it
+              copies opens the room in the browser page, so a guest needs
+              nothing installed.
             </p>
             <p>
               It is a demo: rooms live in memory on one small box, a restart ends
