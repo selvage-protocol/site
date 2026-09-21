@@ -371,7 +371,7 @@ carry; it needs egress to `ghcr.io` and exits 2 rather than passing when it cann
 | a speed adjective (instant, real-time, lag-free) | No performance data exists anywhere in the corpus |
 | an ease claim (takes seconds, one-click, just works) | The image, the compose file and the systemd unit all exist; no ease claim around them is backed, because no install time, start-up time or latency has been measured or recorded anywhere in the corpus |
 | an only-machine claim (untouched by the network) | Document payloads travel through the server to the peers that ask for them; the grant bounds which paths are served, not which machines code touches |
-| a "live" / "now available" status | Nothing is released, hosted or published. The honest status line is the wire version plus the specification draft |
+| a "live" / "now available" status | There is no demo instance and no hosted service: the image is published and pulls with no account, and standing a room up still means running it yourself. The honest status line is the wire version plus the specification draft |
 | SaaS-creep words (sign in/up, get started, download, pricing) | No accounts exist, so nothing can be signed into; no package exists to download and no price exists to show. The page offers the specification to read and a server to run |
 
 Three things the check cannot make mechanical, and which a reader of a change has to hold:

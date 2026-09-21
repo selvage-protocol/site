@@ -376,8 +376,9 @@ FORBIDDEN: list[Phrase] = [
     Phrase(
         r"\bis live\b|\bnow live\b|\bnow available\b",
         "Selvage Session Protocol is now live.",
-        "nothing is released, hosted or published: no demo instance, no release, no package. "
-        "The honest status line is the wire version plus the specification draft",
+        "the image is published and pulls with no account, and there is no demo instance and "
+        "no hosted service: standing a room up still means running it yourself. The honest "
+        "status line is the wire version plus the specification draft",
     ),
     Phrase(
         r"\bsign[ -]?in\b|\bsign[ -]?up\b|\bget started\b|\bdownload\b|\bpricing\b",
