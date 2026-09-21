@@ -357,16 +357,20 @@ are two claims: an anchor labelled with the demo host whose `href` points elsewh
 text-only scan. The allowed references are the origin, its `/terms`, and the `wss://` origin with
 **no path**, because both clients append `/session` to whatever address they are given (`sessionUrl`
 in the engine they vendor), so the page naming `wss://…/session` would hand a reader an address that
-gets a second `/session` appended and is refused; the check asserts that endpoint separately, by
-asking `https://selvage.dontblameme.dev/session` for a WebSocket upgrade and reading the status
-line, nothing minted. It also asks `/` for its media type, because the browser row tells a guest
-the demo serves the page. What the demo half no longer does is compare the instance's release to
-the page: the page named one, a reader had no use for it, and it is gone from the section.
-`PINNED_IMAGE_VERSION` still ties the page's `docker run` to the registry. The wire version is held
+gets a second `/session` appended and is refused. The check asserts that path separately, by
+asking `https://selvage.dontblameme.dev/session` for a plain `GET` and requiring the **server's own
+JSON** in answer: the path has to reach the server the page names, and the proxy's own `404` page is
+`text/html`. The **WebSocket upgrade itself is not asserted**, because the host's proxy answers a
+hand-rolled upgrade from a runner's egress with `403` and a request the proxy refuses asserts
+nothing; the upgrade was verified by hand, from a client the proxy accepts, and that is recorded in
+the findings rather than claimed here. It also asks `/` for its media type, because the browser row
+tells a guest the demo serves the page. What the demo half no longer does is compare the instance's
+release to the page: the page named one, a reader had no use for it, and it is gone from the
+section. `PINNED_IMAGE_VERSION` still ties the page's `docker run` to the registry. The wire version is held
 to what the instance offers rather than to a constant here, because the page owns the version it
 names and the instance owns the version it speaks. **That assertion couples the site's gate to a
-running box**: a demo that is down or moved, an origin whose `/session` stops answering, and a box
-whose `/` is not the page all fail the build, because a page claiming a demo that is not there is
+running box**: a demo that is down or moved, a `/session` the proxy no longer routes to the
+server, and a box whose `/` is not the page all fail the build, because a page claiming a demo that is not there is
 the defect it exists to catch. It sends its own user agent, since the host's proxy answers `403` to
 an interpreter's default signature. The image half needs egress to `ghcr.io` and exits 2 rather
 than passing when it cannot reach it; the demo half does the same for an instance that does not

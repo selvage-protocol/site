@@ -10,6 +10,7 @@ encodes the characters as HTML entities.
 Two claims are asserted in the positive instead, because a phrase list cannot reach them: the image
 tag in the `docker run` the page hands a reader, and the instance the demo section points at — the
 address it gives an editor, the wire version that address speaks, and the page a guest is sent to.
+The address half asks the path a plain `GET` can reach, not the upgrade: see `demo_session_route`.
 Each is a fact with an artefact behind it, and a wrong tag is a command that fails rather than a
 wording that lies. See `PUBLISHED_IMAGE` and `DEMO_ORIGIN` below.
 
@@ -41,13 +42,10 @@ pattern, nothing to scan, a registry that cannot be asked, or a demo host that d
 
 from __future__ import annotations
 
-import base64
 import html
 import json
 import os
 import re
-import socket
-import ssl
 import sys
 import urllib.error
 import urllib.request
@@ -835,37 +833,24 @@ def demo_meta() -> tuple[str, tuple[str, ...]]:
     return name, tuple(offered)
 
 
-def demo_session_status() -> str:
-    """The status line the instance's session endpoint answers a WebSocket upgrade with.
+def demo_session_route() -> tuple[int, str]:
+    """What answers the instance's session path, as the status and media type of a plain GET.
 
     The page hands a reader a server address and the clients append `SESSION_PATH` to it, so the
-    address is worth a sentence only if that path answers an upgrade. No frame follows the
-    handshake and no room is minted: the status line is the whole claim.
+    address is worth a sentence only if that path reaches the server. A plain GET is the request
+    this check can make: a hand-rolled WebSocket upgrade from a runner's egress is answered `403`
+    by the host's proxy, and a request the proxy refuses asserts nothing about the server. What
+    the answer is made of is the assertion instead — the server writes its own JSON there, while a
+    path the proxy routes to its own `404` page answers `text/html`. The status is reported rather
+    than required: which refusal a server gives a non-upgrade request is the server's business.
     """
-    request = (
-        f"GET {SESSION_PATH} HTTP/1.1\r\n"
-        f"Host: {DEMO_HOST}\r\n"
-        "Upgrade: websocket\r\n"
-        "Connection: Upgrade\r\n"
-        f"Sec-WebSocket-Key: {base64.b64encode(os.urandom(16)).decode()}\r\n"
-        "Sec-WebSocket-Version: 13\r\n"
-        f"User-Agent: {USER_AGENT}\r\n"
-        "\r\n"
-    )
-    context = ssl.create_default_context()
-    with socket.create_connection((DEMO_HOST, 443), timeout=REQUEST_TIMEOUT_SECONDS) as raw:
-        with context.wrap_socket(raw, server_hostname=DEMO_HOST) as tls:
-            tls.sendall(request.encode("ascii"))
-            tls.settimeout(REQUEST_TIMEOUT_SECONDS)
-            # Read to the end of the status line rather than to a size: a TLS record can split
-            # it, and half a line compared against `101` is a check that fails on the framing.
-            answered = b""
-            while b"\r\n" not in answered and len(answered) < 256:
-                part = tls.recv(16)
-                if not part:
-                    break
-                answered += part
-            return answered.split(b"\r\n", 1)[0].decode("latin-1").strip()
+    request = urllib.request.Request(f"{DEMO_ORIGIN}{SESSION_PATH}")
+    request.add_header("User-Agent", USER_AGENT)
+    try:
+        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+            return response.status, response.headers.get_content_type()
+    except urllib.error.HTTPError as error:
+        return error.code, error.headers.get_content_type() if error.headers else ""
 
 
 def demo_media_type() -> str:
@@ -961,7 +946,7 @@ def check_demo_instance(pages: list[Scanned]) -> int:
 
     try:
         reported, offered = demo_meta()
-        status = demo_session_status()
+        session_status, session_type = demo_session_route()
         media_type = demo_media_type()
     except urllib.error.HTTPError as error:
         answer = error.read(200).decode("utf-8", "replace").strip()
@@ -1000,12 +985,12 @@ def check_demo_instance(pages: list[Scanned]) -> int:
         )
         return 1
 
-    if status.split(" ")[1:2] != ["101"]:
+    if session_type != "application/json":
         print(
-            f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} answered a WebSocket upgrade with "
-            f"{status!r}, and the page hands a reader {DEMO_REFERENCES[-1]!r} as the address to "
-            f"give an editor: the clients append {SESSION_PATH} to that address themselves, so "
-            "a path that does not answer an upgrade is an address that does not work",
+            f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} answered {session_status} "
+            f"{session_type!r}, and the page hands a reader {DEMO_REFERENCES[-1]!r} as the "
+            f"address to give an editor: the clients append {SESSION_PATH} to that address, so "
+            "that path has to reach the server, and this is something else answering it",
             file=sys.stderr,
         )
         return 1
@@ -1021,8 +1006,8 @@ def check_demo_instance(pages: list[Scanned]) -> int:
 
     print(
         f"check-claims: the demo instance {DEMO_ORIGIN} answers, reports {reported!r} offering "
-        f"{', '.join(offered)}, upgrades a socket at {DEMO_ORIGIN}{SESSION_PATH}, and serves a "
-        "page"
+        f"{', '.join(offered)}, answers {SESSION_PATH} with the server's own JSON "
+        f"({session_status}), and serves a page"
     )
     return 0
 
