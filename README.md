@@ -23,7 +23,7 @@ browser proof the runner cannot run, and nothing else.
 
 | Path | What it is |
 |---|---|
-| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (promise, three landed facts, two CTAs, the room figure, and the version line under them), *Get it working* (the server commands, one card per client, the demo instance, and the long routes folded into one `details`), *See it working* (four cards), *How it works* (four steps), *The session layer has no specification* (why the specification is the artifact), then the footer |
+| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (promise, three landed facts, two CTAs, the room figure, and the version line under them), *Get it working* (the server commands, one card per client, the demo instance and the address an editor hosts on, and the long routes folded into one `details`), *See it working* (four cards), *How it works* (four steps), *The session layer has no specification* (why the specification is the artifact), then the footer |
 | `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, the one origin the metadata resolves against (`metadataBase`, `alternates.canonical`, `openGraph.url`; see "The live origin"), and the global stylesheet. The favicons are deliberately absent: they are Next file conventions, so the framework writes their tags and `sizes` from the files themselves |
 | `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, and a system font stack, so no font is fetched from a third party. Two widths are named there and the page keeps to them: `--measure` for running prose and `--column` for everything that is not prose (section rules, code blocks, the repo grid), so a wide figure is deliberate inside a narrow measure |
 | `app/icon.png` / `app/icon1.png` / `app/icon2.png` / `app/apple-icon.png` | the favicon set: the owner's opaque export resized to the four sizes a browser asks for (32, 16 and 48 px, and the 180 px home-screen icon), named for Next's file convention so the framework writes their `<link>` tags and `sizes`. Nothing here is redrawn; there is no vector favicon (see "The site mark") |
@@ -102,7 +102,7 @@ the reader can name.
 | Part | Its job |
 |---|---|
 | Hero | the promise, three landed facts, two CTAs, the room figure, and one line under the CTAs naming the specification as a draft at wire version `selvage/1`. The `h1`, *Edit the same file together, on a server you run.*, says what the product does and carries the self-hosted wedge from the design record's hook |
-| Get it working | the published image as one `docker run`, with the compose file and the source build one quiet link away — then one folded row per editor: VS Code, Neovim and the browser page, each with its prerequisites, its exact commands and its repository. The long routes (the corpus check, the vector replay) fold into one `details`. It closes on *Try the demo*, the one small instance the project runs, last in the section so the command and the editor rows keep the ground the hero points at. It opens on the product's own shape rather than on a missing feature: you run the server and the invite link is how somebody joins you, and the demo is a guest's way into a room somebody else hosts |
+| Get it working | the published image as one `docker run`, with the compose file and the source build one quiet link away — then one folded row per editor: VS Code, Neovim and the browser page, each with its prerequisites, its exact commands and its repository, and the browser row linking the demo as the page that is already served. The long routes (the corpus check, the vector replay) fold into one `details`. It closes on *Try the demo*, the one small instance the project runs, last in the section so the command and the editor rows keep the ground the hero points at; that section gives the address an editor hosts on and the setting each client takes it in, and leaves the guest to the invite link. It opens on the product's own shape rather than on a missing feature: you run the server and the invite link is how somebody joins you, and the demo is a guest's way into a room somebody else hosts |
 | See it working | four cards, each with a drawing of the thing it claims: anyone with the link is in, two carets in one text, the paths a guest sees, multiple clients on one engine |
 | How it works | the four moves in order (host a folder, send the invite, type in the same file, close the window), under the design record's one-sentence workflow |
 | The session layer has no specification | the wedge: language tooling has the Language Server Protocol and debugging the Debug Adapter Protocol, document sync has `y-protocols`, and the session layer is unspecified, so every collaborative tool decides those for itself. The specification is the flagship artifact, and the corpus counts appear here once, as the evidence they are |
@@ -350,22 +350,34 @@ arm64, and `selvaged:0.1.1` proved the difference by publishing both legs around
 every layer digest identical across the two. The two versions a page must never name are `0.1.0`
 and `0.1.1`; `0.1.2` was correct and is superseded by `0.2.0`, which is the pin. The second is the
 demo instance: the page points at one host, every reference to that host has to be one of the three
-the page may carry, a link has to point at the instance itself, and the `server` name the instance
-reports from `/meta` has to be the name the page gives it. The references are read from the visible
-text *and* from the links' destinations, because a label and the place it goes are two claims: an
-anchor labelled with the demo host whose `href` points elsewhere passes a text-only scan. The
-reported name is the instance's own rather than this file's version constant, since the two are
-different facts — the tag is the release the page hands a reader to pull, the name is what the box
-runs — and holding the page to the constant would pass while a downgraded box ran something else,
-and would force the page to name a release the box does not have between an image release and the
-redeploy. The name has to carry a version at all, or the page could satisfy the comparison with
-characters it already has for another reason. **That assertion couples the site's gate to a running
-box**: a demo that is down, moved, or upgraded without the page, and a host that refuses the check,
-all fail the build, because a page claiming a demo that is not there is the defect it exists to
-catch. It sends its own user agent, since the host's proxy answers `403` to an interpreter's
-default signature. The image half needs egress to `ghcr.io` and exits 2 rather than passing when it
-cannot reach it; the demo half does the same for an instance that does not answer or that reports
-something which is not a name and a version.
+the page may carry, a link has to point at the instance itself, and `https://selvage.dontblameme.dev/meta`
+has to report a `selvaged` server offering a wire version the page names. The references are read
+from the visible text *and* from the links' destinations, because a label and the place it goes
+are two claims: an anchor labelled with the demo host whose `href` points elsewhere passes a
+text-only scan. The allowed references are the origin, its `/terms`, and the `wss://` origin with
+**no path**, because both clients append `/session` to whatever address they are given (`sessionUrl`
+in the engine they vendor), so the page naming `wss://…/session` would hand a reader an address that
+gets a second `/session` appended and is refused. The check asserts that path separately, by
+asking `https://selvage.dontblameme.dev/session` for a plain `GET` and requiring a **4xx carrying
+the server's own JSON**: the path has to reach the server the page names, a redirect or a `5xx` must
+not stand in for it, and the proxy's own `404` page is `text/html`. Which `4xx` the server picks is
+its business, and pinning `404` would redden this gate for a change in `selvaged` that makes no
+sentence on the page false. The **WebSocket upgrade itself is not asserted**, because the host's proxy answers a
+hand-rolled upgrade from a runner's egress with `403` and a request the proxy refuses asserts
+nothing; the upgrade was verified by hand, from a client the proxy accepts, and that is recorded in
+the findings rather than claimed here. It also asks `/` for a `200` and a `text/html`, because the
+browser row tells a guest the demo serves the page and the proxy's own `404` is `text/html` too, so
+the media type alone would let a dead page satisfy it. What the demo half no longer does is compare the instance's
+release to the page: the page named one, a reader had no use for it, and it is gone from the
+section. `PINNED_IMAGE_VERSION` still ties the page's `docker run` to the registry. The wire version is held
+to what the instance offers rather than to a constant here, because the page owns the version it
+names and the instance owns the version it speaks. **That assertion couples the site's gate to a
+running box**: a demo that is down or moved, a `/session` the proxy no longer routes to the
+server, and a box whose `/` is not the page all fail the build, because a page claiming a demo that is not there is
+the defect it exists to catch. It sends its own user agent, since the host's proxy answers `403` to
+an interpreter's default signature. The image half needs egress to `ghcr.io` and exits 2 rather
+than passing when it cannot reach it; the demo half does the same for an instance that does not
+answer at all, and exits 1 when the instance answers something that disproves a sentence.
 
 | Must not appear | Why not |
 |---|---|
@@ -374,7 +386,7 @@ something which is not a name and a version.
 | `salvage/1` | The wire version is `selvage/1`. "Selvage" is heard as "salvage", which is why the full protocol title appears at least once in the page's first paragraph |
 | end-to-end encryption, E2EE | Version 1 has no encryption layer: frames travel through the server as unencrypted bytes, and the slice has no transport security either. The relay is payload-opaque but not confidential |
 | "the server cannot read it" / "the text never reaches the server" | The relay routes opaque bytes and keeps no document text, but it can read a frame as it passes and there is no transport security. It is not a confidential relay |
-| a browser route a reader can open, hosting in a browser, a room without an invite | The browser client exists (`web_client`, Monaco in a page, guests only) and the demo instance serves it at a public origin, so naming the demo page is truth. What is not: hosting in a browser (hosting is the two editors plus a server), joining without the invite link a host copies (the page is a guest join form), and the project's own site as a place to join a room (it is a landing page). The stale denial "nothing runs in a web page" stays caught too: that sentence was true when the filter forbade the bare word and it is false now |
+| a browser route a reader can open, hosting in a browser, a room without an invite | The browser client exists (`web_client`, Monaco in a page, guests only) and the demo instance serves it at a public origin, so naming the demo page is truth, and the browser row may link it as the page a guest reaches with nothing installed. What is not: hosting in a browser (hosting is the two editors plus a server), joining without the invite link a host copies (the page is a guest join form), and the project's own site as a place to join a room (it is a landing page). The stale denial "nothing runs in a web page" stays caught too: that sentence was true when the filter forbade the bare word and it is false now |
 | file create, rename or delete | The room carries no file mutations and nothing writes to the host's working copy. The host's own editor still changes that folder, and a Neovim guest's mirror materialises the granted paths |
 | the server route denied: no image to pull, nothing to install on the server | The reason this entry used to give — that no Dockerfile, compose file or service unit exists in any repository — is false now. `ghcr.io/selvage-protocol/selvaged:0.2.0` is published and pulls anonymously, `reference_server/compose.yaml` runs it, and `reference_server/packaging/systemd/selvaged.service` installs the binary. The pattern used to forbid the word `docker` itself, on that stale reason; it holds the denial of those artefacts instead, which is the sentence the page carried |
 | a stable 1.0 | The wire version is `selvage/1`; the compatibility rule in force is the same major. No corpus line puts the design at 0.x. The pattern's lookbehind keeps `0.2.0` out of it: that is the version of the published image, a number inside a number, not a claim that 1.0 exists |
@@ -448,7 +460,8 @@ the gate instead of passing everything; named honest wordings must stay unmatche
 that reintroduces a false positive fails it too. The scan also reads the page's image reference,
 holds it to the version pinned in `scripts/check-claims.py`, and asks `ghcr.io` for that tag, and
 reads the page's demo reference, holds it to the one host the check allows, and asks that instance
-what it is serving.
+what it reports, whether the editor address's `/session` path is answered by the server rather than
+by the proxy in front of it, and whether its `/` serves the page.
 
 The policy step reads the same rendered file, and the policy out of `vercel.json`, and fails when
 the policy would refuse a script, stylesheet or image the page carries, the defect described

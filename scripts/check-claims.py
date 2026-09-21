@@ -8,9 +8,11 @@ worth having: those known wordings do not appear, even when the page wraps them 
 encodes the characters as HTML entities.
 
 Two claims are asserted in the positive instead, because a phrase list cannot reach them: the image
-tag in the `docker run` the page hands a reader, and the instance the demo section points at. Each
-is a fact with an artefact behind it, and a wrong tag is a command that fails rather than a wording
-that lies. See `PUBLISHED_IMAGE` and `DEMO_ORIGIN` below.
+tag in the `docker run` the page hands a reader, and the instance the demo section points at — the
+address it gives an editor, the wire version that address speaks, and the page a guest is sent to.
+The address half asks the path a plain `GET` can reach, not the upgrade: see `demo_session_route`.
+Each is a fact with an artefact behind it, and a wrong tag is a command that fails rather than a
+wording that lies. See `PUBLISHED_IMAGE` and `DEMO_ORIGIN` below.
 
 Each entry below pairs a phrase the page must not carry with the reason it must not, and with a
 sample that has to match it. The reasons are not this script's opinion: every one of them is a
@@ -85,27 +87,33 @@ REGISTRY_REPOSITORY = PUBLISHED_IMAGE.split("/", 1)[1]
 REQUEST_TIMEOUT_SECONDS = 20
 
 # The demo section points at a running instance, a claim with an artefact behind it in the same
-# way the `docker run` is: the host has to answer, the `server` name it reports from `/meta` has to
-# be the name the page gives it, and the page has to carry the instance somewhere a reader can
-# follow. A host that has moved, a box that is down, or an instance upgraded without the page is a
-# false sentence, and no phrase list can enumerate those.
+# way the `docker run` is. Four sentences around it are checkable here: an instance of the server
+# runs at that host, the address the section hands an editor hosts a room on it, that editor
+# speaks a wire version the instance offers, and the browser row's guest page is served there. A
+# host that has moved, a box that is down, or a box that answers only part of that is a false
+# sentence, and no phrase list can enumerate those.
 #
-# The name is read from the instance rather than restated here as `PINNED_IMAGE_VERSION`, because
-# the two are different facts: the tag is the release the page hands a reader to pull, and the
-# instance's own name is what the box is running. Holding the page to a constant of this file's
-# would pass while a downgraded box ran something else, which is the defect this asserts against,
-# and it would force the page to name a release the box does not have in the window between an
-# image release and the redeploy.
+# What is deliberately no longer asserted is which release the box runs. The page named one and
+# the check compared it; the page stopped naming it, because a visitor has no use for the version
+# of an endpoint they will never call. `PINNED_IMAGE_VERSION` is still asserted, against the
+# registry, as the tag the `docker run` hands a reader.
 DEMO_HOST = "selvage.dontblameme.dev"
 DEMO_ORIGIN = "https://" + DEMO_HOST
-# Every reference the page may carry to that host: the instance's own origin, its terms page,
-# and the address a client dials for the session.
+# Every reference the page may carry to that host: the instance's own origin, and its terms page.
+# The session address is the origin as well, with no path. The clients append the endpoint path
+# themselves (`sessionUrl` in the engines both clients vendor), so the two forms are not
+# interchangeable: an address already carrying the path gets a second one appended and the socket
+# is refused, which is why the full form is not an allowed reference.
 DEMO_REFERENCES = (DEMO_ORIGIN, DEMO_ORIGIN + "/terms", "wss://" + DEMO_HOST)
 DEMO_URL = re.compile(r"(?:https?|wss?)://[^\s\"'<>)]+")
-# A name and a version. What `/meta` reports is free-form, so this is deliberately loose; what it
-# refuses is a report the page could already carry for another reason — the word `Selvage` is in
-# the hero — which would make the comparison below pass without the page ever naming the instance.
-DEMO_IDENTITY = re.compile(r"[^\s/]+/[^\s/]+")
+# The endpoint path the clients append to whatever server address they are given, so the address
+# the page hands a reader names this path's parent.
+SESSION_PATH = "/session"
+# The name the server artefact reports from `/meta`, and the artefact the page's own `docker run`
+# pulls. The page's sentence is that an instance of the server runs at that host, so a `/meta`
+# that does not name this is a different thing answering on the same host.
+SERVER_NAME = re.compile(r"selvaged/\S+")
+USER_AGENT = "selvage-site-check/1.0"
 # A link's destination lives in an attribute, and the visible text carries only its label, so both
 # are scanned: an anchor labelled with the demo host can point somewhere else entirely.
 DESTINATION = re.compile(r"\b(?:href|src|action)\s*=\s*(?:\"([^\"]*)\"|'([^']*)')", re.IGNORECASE)
@@ -802,8 +810,8 @@ def demo_host_of(reference: str) -> str:
     return authority.rsplit("@", 1)[-1].split(":", 1)[0].lower()
 
 
-def demo_server_name() -> str:
-    """The `server` name the instance reports from `/meta`, as it writes it.
+def demo_meta() -> tuple[str, tuple[str, ...]]:
+    """What the instance reports about itself from `/meta`: its name, and its wire versions.
 
     The request names itself rather than going out as the interpreter's default signature: the
     host is behind Cloudflare, whose bot list answers `403` (error 1010) to `Python-urllib`, and
@@ -811,13 +819,80 @@ def demo_server_name() -> str:
     """
     request = urllib.request.Request(f"{DEMO_ORIGIN}/meta")
     request.add_header("Accept", "application/json")
-    request.add_header("User-Agent", "selvage-site-check/1.0")
+    request.add_header("User-Agent", USER_AGENT)
     with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
         body = json.loads(response.read())
     name = body["server"]
     if not isinstance(name, str) or not name:
         raise ValueError(f"/meta carried no usable `server` name ({name!r})")
-    return name
+    offered = body["wire_versions"]
+    if not isinstance(offered, list) or not offered:
+        raise ValueError(f"/meta carried no usable `wire_versions` ({offered!r})")
+    if not all(isinstance(one, str) and one for one in offered):
+        raise ValueError(f"/meta carried a wire version that is not a name ({offered!r})")
+    return name, tuple(offered)
+
+
+def demo_session_route() -> tuple[int, str]:
+    """What answers the instance's session path, as the status and media type of a plain GET.
+
+    The page hands a reader a server address and the clients append `SESSION_PATH` to it, so the
+    address is worth a sentence only if that path reaches the server. A plain GET is the request
+    this check can make: a hand-rolled WebSocket upgrade from a runner's egress is answered `403`
+    by the host's proxy, and a request the proxy refuses asserts nothing about the server. What
+    answers the path is the assertion instead, and `session_path_reaches_the_server` is what
+    decides it.
+    """
+    request = urllib.request.Request(f"{DEMO_ORIGIN}{SESSION_PATH}")
+    request.add_header("User-Agent", USER_AGENT)
+    try:
+        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+            return response.status, response.headers.get_content_type()
+    except urllib.error.HTTPError as error:
+        return error.code, error.headers.get_content_type() if error.headers else ""
+
+
+def session_path_reaches_the_server(status: int, media_type: str) -> bool:
+    """Whether an answer to a plain GET on the session path came from the server.
+
+    The server refuses a request that asks for no upgrade with its own JSON, so a **4xx JSON**
+    answer is the server answering that path. Everything else is another conversation: a redirect
+    or a 2xx (something else serving the path, `urlopen` having followed a redirect to it), a 5xx
+    (the server failing rather than refusing), and a body that is not the server's JSON (the
+    proxy's own page, which is `text/html`).
+
+    Which 4xx the server chooses is its own business and not a sentence this page makes: pinning
+    `404` would redden the site's gate for a change in `selvaged` that makes no claim on the page
+    false, which is the coupling this file refuses elsewhere in the demo half.
+    """
+    return 400 <= status <= 499 and media_type == "application/json"
+
+
+def demo_page_route() -> tuple[int, str]:
+    """What the instance answers `/` with, as its status and media type.
+
+    The status is asked for as well as the media type, because the proxy's own `404` page is
+    `text/html` too: a `/` that serves the guest page is a `200`, and anything else is that origin
+    not serving it.
+    """
+    request = urllib.request.Request(f"{DEMO_ORIGIN}/")
+    request.add_header("User-Agent", USER_AGENT)
+    try:
+        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+            return response.status, response.headers.get_content_type()
+    except urllib.error.HTTPError as error:
+        return error.code, error.headers.get_content_type() if error.headers else ""
+
+
+def page_names(version: str, pages: list[Scanned]) -> bool:
+    """Whether the page's visible text carries this wire version as a name of its own.
+
+    The needle comes from the instance, so a page that names none of what the instance offers is
+    the failure this reports rather than a scan that quietly looked for nothing. The lookarounds
+    keep `selvage/1` from being satisfied by `selvage/12`.
+    """
+    pattern = re.compile(rf"(?<![\w/]){re.escape(version)}(?![\w/])")
+    return any(pattern.search(page.text) for page in pages)
 
 
 def demo_reference_allowed(reference: str) -> bool:
@@ -848,9 +923,10 @@ def demo_references(page: Scanned) -> list[tuple[str, int]]:
 
 
 def check_demo_instance(pages: list[Scanned]) -> int:
-    """The page's demo references against the pin, and the pin against the instance.
+    """The page's demo references against the host they name, and the host against the sentences.
 
-    Returns 0 when both hold, 1 when either does not, 2 when the instance cannot be asked.
+    Returns 0 when they hold, 1 when a sentence the page carries is disproved, 2 when the
+    instance cannot be asked.
     """
     root = root_of_this_checkout()
     followed = 0
@@ -892,11 +968,13 @@ def check_demo_instance(pages: list[Scanned]) -> int:
         return 1
 
     try:
-        reported = demo_server_name()
+        reported, offered = demo_meta()
+        session_status, session_type = demo_session_route()
+        page_status, media_type = demo_page_route()
     except urllib.error.HTTPError as error:
         answer = error.read(200).decode("utf-8", "replace").strip()
         print(
-            f"check-claims: {DEMO_ORIGIN}/meta answered {error.code} {error.reason} "
+            f"check-claims: {DEMO_ORIGIN} answered {error.code} {error.reason} "
             f"({answer[:160]!r}); the instance the page points at is not answering the check, "
             "and a name nothing can read is a name nothing can confirm",
             file=sys.stderr,
@@ -904,37 +982,58 @@ def check_demo_instance(pages: list[Scanned]) -> int:
         return 2
     except (urllib.error.URLError, OSError, ValueError, KeyError) as error:
         print(
-            f"check-claims: cannot ask {DEMO_ORIGIN}/meta what it is serving ({error}); "
-            "the name the page gives the instance cannot be checked against the instance "
-            "itself, so this is a failure rather than a pass",
+            f"check-claims: cannot ask {DEMO_ORIGIN} what it is serving ({error}); "
+            "the sentences the page carries about the instance cannot be checked against the "
+            "instance itself, so this is a failure rather than a pass",
             file=sys.stderr,
         )
         return 2
 
-    if not DEMO_IDENTITY.match(reported):
+    if not SERVER_NAME.match(reported):
         print(
-            f"check-claims: {DEMO_ORIGIN}/meta reports {reported!r}, which is not a name and a "
-            "version: the page could carry those characters for another reason, so this check "
-            "could pass without the page naming the instance at all",
-            file=sys.stderr,
-        )
-        return 2
-
-    silent = [
-        os.path.relpath(page.path, root)
-        for page in pages
-        if DEMO_HOST in page.text and reported not in page.text
-    ]
-    if silent:
-        print(
-            f"check-claims: {DEMO_ORIGIN} reports {reported!r} and {', '.join(silent)} "
-            "does not carry that name: an instance upgraded without the page, or a page "
-            "naming the wrong release, is a sentence the artefact disproves",
+            f"check-claims: {DEMO_ORIGIN}/meta reports {reported!r} and the page says an "
+            f"instance of the server runs there; the server the page's own `docker run` pulls "
+            f"is {PUBLISHED_IMAGE.rsplit('/', 1)[-1]}, so this is a different thing answering "
+            "on that host",
             file=sys.stderr,
         )
         return 1
 
-    print(f"check-claims: the demo instance {DEMO_ORIGIN} answers and reports {reported!r}")
+    if not any(page_names(one, pages) for one in offered):
+        print(
+            f"check-claims: {DEMO_ORIGIN} offers the wire versions {', '.join(offered)} and the "
+            "page names none of them: a client refuses a server that does not offer its wire "
+            "version, so an editor set to that address is a session the page cannot open",
+            file=sys.stderr,
+        )
+        return 1
+
+    if not session_path_reaches_the_server(session_status, session_type):
+        print(
+            f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} answered {session_status} "
+            f"{session_type!r}, and the page hands a reader {DEMO_REFERENCES[-1]!r} as the "
+            f"address to give an editor: the clients append {SESSION_PATH} to that address, so "
+            "the server has to answer that path with a refusal of its own, and a redirect, a "
+            "5xx or the proxy's page is something else answering it",
+            file=sys.stderr,
+        )
+        return 1
+
+    if page_status != 200 or media_type != "text/html":
+        print(
+            f"check-claims: {DEMO_ORIGIN}/ answers {page_status} {media_type!r}, and the browser "
+            "row tells a guest the demo serves the page: a guest following an invite link there "
+            "needs the page, and the proxy's own 404 is text/html as well, so a status that is "
+            "not 200 is that origin not serving it",
+            file=sys.stderr,
+        )
+        return 1
+
+    print(
+        f"check-claims: the demo instance {DEMO_ORIGIN} answers, reports {reported!r} offering "
+        f"{', '.join(offered)}, answers {SESSION_PATH} with the server's own JSON "
+        f"({session_status}), and serves a page"
+    )
     return 0
 
 def main() -> int:

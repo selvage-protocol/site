@@ -10,9 +10,11 @@ name: ci
 # reader: it asks `ghcr.io` for the pinned version, requires a leg per architecture, and compares
 # the per-platform manifests' layer digests, because a platform entry only labels a slot. And the
 # demo instance the page points at: it requires every reference to that host to be one of the
-# three the page may carry, and the `server` name the instance reports from `/meta` to be the
-# name the page gives it. Both need egress, to the registry and to the instance, and fail rather
-# than pass when they cannot reach it.
+# three the page may carry, the address the demo section hands an editor to reach the server
+# (its path answers the server's own JSON, not the proxy's page), that address's origin to report a
+# `selvaged` server offering a wire version the page names, and the origin's `/` to serve the guest
+# page the browser row points at. Both need egress, to the registry and to the instance, and fail
+# rather than pass when they cannot reach it.
 # No `push: branches: [main]`: a pull request already runs the whole gate, and the
 # merge commit carries the same content, so the merge would run it a second time.
 # `workflow_dispatch` is the re-run for a commit that reached `main` without one.
