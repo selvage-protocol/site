@@ -358,9 +358,11 @@ text-only scan. The allowed references are the origin, its `/terms`, and the `ws
 **no path**, because both clients append `/session` to whatever address they are given (`sessionUrl`
 in the engine they vendor), so the page naming `wss://…/session` would hand a reader an address that
 gets a second `/session` appended and is refused. The check asserts that path separately, by
-asking `https://selvage.dontblameme.dev/session` for a plain `GET` and requiring the **server's own
-JSON** in answer: the path has to reach the server the page names, and the proxy's own `404` page is
-`text/html`. The **WebSocket upgrade itself is not asserted**, because the host's proxy answers a
+asking `https://selvage.dontblameme.dev/session` for a plain `GET` and requiring a **4xx carrying
+the server's own JSON**: the path has to reach the server the page names, a redirect or a `5xx` must
+not stand in for it, and the proxy's own `404` page is `text/html`. Which `4xx` the server picks is
+its business, and pinning `404` would redden this gate for a change in `selvaged` that makes no
+sentence on the page false. The **WebSocket upgrade itself is not asserted**, because the host's proxy answers a
 hand-rolled upgrade from a runner's egress with `403` and a request the proxy refuses asserts
 nothing; the upgrade was verified by hand, from a client the proxy accepts, and that is recorded in
 the findings rather than claimed here. It also asks `/` for a `200` and a `text/html`, because the
@@ -458,8 +460,8 @@ the gate instead of passing everything; named honest wordings must stay unmatche
 that reintroduces a false positive fails it too. The scan also reads the page's image reference,
 holds it to the version pinned in `scripts/check-claims.py`, and asks `ghcr.io` for that tag, and
 reads the page's demo reference, holds it to the one host the check allows, and asks that instance
-what it reports, whether the address the demo section gives an editor answers a socket, and whether
-its `/` serves the page.
+what it reports, whether the editor address's `/session` path is answered by the server rather than
+by the proxy in front of it, and whether its `/` serves the page.
 
 The policy step reads the same rendered file, and the policy out of `vercel.json`, and fails when
 the policy would refuse a script, stylesheet or image the page carries, the defect described

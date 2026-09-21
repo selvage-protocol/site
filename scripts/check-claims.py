@@ -840,9 +840,8 @@ def demo_session_route() -> tuple[int, str]:
     address is worth a sentence only if that path reaches the server. A plain GET is the request
     this check can make: a hand-rolled WebSocket upgrade from a runner's egress is answered `403`
     by the host's proxy, and a request the proxy refuses asserts nothing about the server. What
-    the answer is made of is the assertion instead — the server writes its own JSON there, while a
-    path the proxy routes to its own `404` page answers `text/html`. The status is reported rather
-    than required: which refusal a server gives a non-upgrade request is the server's business.
+    answers the path is the assertion instead, and `session_path_reaches_the_server` is what
+    decides it.
     """
     request = urllib.request.Request(f"{DEMO_ORIGIN}{SESSION_PATH}")
     request.add_header("User-Agent", USER_AGENT)
@@ -851,6 +850,22 @@ def demo_session_route() -> tuple[int, str]:
             return response.status, response.headers.get_content_type()
     except urllib.error.HTTPError as error:
         return error.code, error.headers.get_content_type() if error.headers else ""
+
+
+def session_path_reaches_the_server(status: int, media_type: str) -> bool:
+    """Whether an answer to a plain GET on the session path came from the server.
+
+    The server refuses a request that asks for no upgrade with its own JSON, so a **4xx JSON**
+    answer is the server answering that path. Everything else is another conversation: a redirect
+    or a 2xx (something else serving the path, `urlopen` having followed a redirect to it), a 5xx
+    (the server failing rather than refusing), and a body that is not the server's JSON (the
+    proxy's own page, which is `text/html`).
+
+    Which 4xx the server chooses is its own business and not a sentence this page makes: pinning
+    `404` would redden the site's gate for a change in `selvaged` that makes no claim on the page
+    false, which is the coupling this file refuses elsewhere in the demo half.
+    """
+    return 400 <= status <= 499 and media_type == "application/json"
 
 
 def demo_page_route() -> tuple[int, str]:
@@ -993,12 +1008,13 @@ def check_demo_instance(pages: list[Scanned]) -> int:
         )
         return 1
 
-    if session_type != "application/json":
+    if not session_path_reaches_the_server(session_status, session_type):
         print(
             f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} answered {session_status} "
             f"{session_type!r}, and the page hands a reader {DEMO_REFERENCES[-1]!r} as the "
             f"address to give an editor: the clients append {SESSION_PATH} to that address, so "
-            "that path has to reach the server, and this is something else answering it",
+            "the server has to answer that path with a refusal of its own, and a redirect, a "
+            "5xx or the proxy's page is something else answering it",
             file=sys.stderr,
         )
         return 1
