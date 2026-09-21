@@ -20,7 +20,7 @@ The canonical material lives in the other repositories:
 protocol, prose and vectors, [`selvage-protocol/reference_server`](https://github.com/selvage-protocol/reference_server)
 for the server and client library, and [`selvage-protocol/vscode_client`](https://github.com/selvage-protocol/vscode_client)
 and [`selvage-protocol/nvim_client`](https://github.com/selvage-protocol/nvim_client) for the two
-editor clients. This repository holds the page, the four checks that gate it, the one
+editor clients. This repository holds the page, the five check scripts that gate it, the one
 browser proof the runner cannot run, and nothing else.
 
 | Path | What it is |
@@ -51,7 +51,7 @@ browser proof the runner cannot run, and nothing else.
 | `scripts/ci-local.sh` | the gate, running the same commands as the workflow |
 | `lychee.toml` | what the link check does not check, and why |
 | `vercel.json` | platform configuration: the Next.js framework preset, and three response headers: the Content-Security-Policy the page's own scripts are permitted by, the file it was once refused by (see "The Content-Security-Policy"), plus `X-Content-Type-Options: nosniff` and `Referrer-Policy: strict-origin-when-cross-origin` |
-| `.github/workflows/ci.yml` | the gate, on `push` to `main` and on `pull_request` |
+| `.github/workflows/ci.yml` | the gate, on every pull request and on demand (`workflow_dispatch`) |
 
 ## The site mark
 
@@ -261,6 +261,30 @@ advertises anything, but should that change the plan question returns with it:
   Guidelines](https://vercel.com/docs/limits/fair-use-guidelines), [Terms](https://vercel.com/legal/terms).
 - The Hobby terms also allow Hobby content to be used for model training. A paid plan turns that
   off by default.
+
+### Releasing it
+
+A release here is a tag and a GitHub Release, and nothing else: there is no release artefact to
+build or attach, no image and no registry, and Vercel serves the page from `main` without reading
+tags. The deployment does build — `next build`, on Vercel, from `main` — but that build is the
+deployment and not a release.
+
+So there is no release workflow. One would only be `git tag` and `gh release create` behind a
+button, and the version assertion the other repositories' release workflows carry would have
+nothing to protect here: `package.json`'s version is a private, unpublished manifest that no
+deployment consumes.
+
+The tag is `package.json`'s version with a `v`, and an annotated tag is what the other
+repositories' release runs create, so it is made the same way by hand:
+
+```console
+$ git tag -a v0.1.0 -m v0.1.0
+$ git push origin v0.1.0
+$ gh release create v0.1.0 --title v0.1.0 --generate-notes
+```
+
+The tag is a marker on the page's history rather than an input to anything. Other repositories tag
+what they build and attach it to the release; this one has nothing to attach.
 
 ## The Content-Security-Policy
 
