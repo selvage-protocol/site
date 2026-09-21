@@ -349,14 +349,23 @@ manifests' layer digests**, not the index: a platform entry only states that a s
 arm64, and `selvaged:0.1.1` proved the difference by publishing both legs around the amd64 binary,
 every layer digest identical across the two. The two versions a page must never name are `0.1.0`
 and `0.1.1`; `0.1.2` was correct and is superseded by `0.2.0`, which is the pin. The second is the
-demo instance: the page points at one host, no other reference to that host is allowed, and the
-`server` name the instance reports from `/meta` has to be the name the page gives it. **That second
-assertion couples the site's gate to a running box**: a demo that is down, moved, or upgraded
-without the page, and a host that refuses the check, all fail the build, because a page claiming a
-demo that is not there is the defect it exists to catch. It sends its own user agent, since the
-host's proxy answers `403` to an interpreter's default signature. The image half needs egress to
-`ghcr.io` and exits 2 rather than passing when it cannot reach it; the demo half does the same for
-an instance that does not answer.
+demo instance: the page points at one host, every reference to that host has to be one of the three
+the page may carry, a link has to point at the instance itself, and the `server` name the instance
+reports from `/meta` has to be the name the page gives it. The references are read from the visible
+text *and* from the links' destinations, because a label and the place it goes are two claims: an
+anchor labelled with the demo host whose `href` points elsewhere passes a text-only scan. The
+reported name is the instance's own rather than this file's version constant, since the two are
+different facts — the tag is the release the page hands a reader to pull, the name is what the box
+runs — and holding the page to the constant would pass while a downgraded box ran something else,
+and would force the page to name a release the box does not have between an image release and the
+redeploy. The name has to carry a version at all, or the page could satisfy the comparison with
+characters it already has for another reason. **That assertion couples the site's gate to a running
+box**: a demo that is down, moved, or upgraded without the page, and a host that refuses the check,
+all fail the build, because a page claiming a demo that is not there is the defect it exists to
+catch. It sends its own user agent, since the host's proxy answers `403` to an interpreter's
+default signature. The image half needs egress to `ghcr.io` and exits 2 rather than passing when it
+cannot reach it; the demo half does the same for an instance that does not answer or that reports
+something which is not a name and a version.
 
 | Must not appear | Why not |
 |---|---|

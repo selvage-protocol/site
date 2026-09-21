@@ -85,23 +85,52 @@ REGISTRY_REPOSITORY = PUBLISHED_IMAGE.split("/", 1)[1]
 REQUEST_TIMEOUT_SECONDS = 20
 
 # The demo section points at a running instance, a claim with an artefact behind it in the same
-# way the `docker run` is: the host has to answer, and the `server` name it reports from `/meta`
-# has to be the name the page gives it. A host that has moved, a box that is down, or an
-# instance upgraded without the page is a false sentence, and no phrase list can enumerate
-# those. The name is read from the instance rather than restated here, so the check compares the
-# page with the artefact rather than with a constant of its own.
+# way the `docker run` is: the host has to answer, the `server` name it reports from `/meta` has to
+# be the name the page gives it, and the page has to carry the instance somewhere a reader can
+# follow. A host that has moved, a box that is down, or an instance upgraded without the page is a
+# false sentence, and no phrase list can enumerate those.
+#
+# The name is read from the instance rather than restated here as `PINNED_IMAGE_VERSION`, because
+# the two are different facts: the tag is the release the page hands a reader to pull, and the
+# instance's own name is what the box is running. Holding the page to a constant of this file's
+# would pass while a downgraded box ran something else, which is the defect this asserts against,
+# and it would force the page to name a release the box does not have in the window between an
+# image release and the redeploy.
 DEMO_HOST = "selvage.dontblameme.dev"
 DEMO_ORIGIN = "https://" + DEMO_HOST
 # Every reference the page may carry to that host: the instance's own origin, its terms page,
 # and the address a client dials for the session.
 DEMO_REFERENCES = (DEMO_ORIGIN, DEMO_ORIGIN + "/terms", "wss://" + DEMO_HOST)
 DEMO_URL = re.compile(r"(?:https?|wss?)://[^\s\"'<>)]+")
+# A name and a version. What `/meta` reports is free-form, so this is deliberately loose; what it
+# refuses is a report the page could already carry for another reason — the word `Selvage` is in
+# the hero — which would make the comparison below pass without the page ever naming the instance.
+DEMO_IDENTITY = re.compile(r"[^\s/]+/[^\s/]+")
+# A link's destination lives in an attribute, and the visible text carries only its label, so both
+# are scanned: an anchor labelled with the demo host can point somewhere else entirely.
+DESTINATION = re.compile(r"\b(?:href|src|action)\s*=\s*(?:\"([^\"]*)\"|'([^']*)')", re.IGNORECASE)
 MANIFEST_TYPES = (
     "application/vnd.oci.image.index.v1+json",
     "application/vnd.docker.distribution.manifest.list.v2+json",
     "application/vnd.oci.image.manifest.v1+json",
     "application/vnd.docker.distribution.manifest.v2+json",
 )
+
+
+@dataclass(frozen=True)
+class Scanned:
+    """One rendered file, as the scan read it.
+
+    `text` and `line_of` are the visible page — what a reader sees, which is what a phrase claim
+    is made of. `destinations` are the URL-bearing attributes with the line each sits on, because
+    a link's destination is not visible: `<a href="https://elsewhere.example">selvage.example</a>`
+    renders as the label alone.
+    """
+
+    path: str
+    text: str
+    line_of: list[int]
+    destinations: list[tuple[str, int]]
 
 
 @dataclass(frozen=True)
@@ -588,6 +617,21 @@ def _visible(text: str) -> tuple[list[str], list[int], list[bool]]:
     return chars, lines, fresh
 
 
+def destinations(raw: str) -> list[tuple[str, int]]:
+    """Every URL-bearing attribute the raw page carries, with the line each sits on.
+
+    The visible text keeps a link's label and drops its destination, so this is the other half of
+    what the page tells a reader. Values are unescaped the way the text is, so an `&amp;` is not a
+    different URL; the line is the one the tag is on.
+    """
+    found: list[tuple[str, int]] = []
+    for match in DESTINATION.finditer(raw):
+        value = match.group(1) if match.group(1) is not None else match.group(2)
+        if value:
+            found.append((html.unescape(value), raw.count("\n", 0, match.start()) + 1))
+    return found
+
+
 def normalise(text: str) -> tuple[str, list[int]]:
     """The page's visible text, with the source line of every character.
 
@@ -678,7 +722,7 @@ def pinned_tag_legs() -> dict[str, tuple[str, ...]]:
     return legs
 
 
-def check_pinned_image(pages: list[tuple[str, str, list[int]]]) -> int:
+def check_pinned_image(pages: list[Scanned]) -> int:
     """The page's version against the pin, and the pin against the registry.
 
     Returns 0 when both hold, 1 when either does not, 2 when the registry cannot be asked.
@@ -687,12 +731,12 @@ def check_pinned_image(pages: list[tuple[str, str, list[int]]]) -> int:
     reference = f"{PUBLISHED_IMAGE}:{PINNED_IMAGE_VERSION}"
     named = 0
     wrong: list[str] = []
-    for path, text, line_of in pages:
-        for match in IMAGE_REFERENCE.finditer(text):
+    for page in pages:
+        for match in IMAGE_REFERENCE.finditer(page.text):
             named += 1
             if match.group(0) != reference:
-                where = os.path.relpath(path, root)
-                wrong.append(f"{where}:{line_of[match.start()]}: {match.group(0)!r}")
+                where = os.path.relpath(page.path, root)
+                wrong.append(f"{where}:{page.line_of[match.start()]}: {match.group(0)!r}")
     if not named:
         print(
             f"check-claims: none of {len(pages)} scanned file(s) carries a {PUBLISHED_IMAGE} "
@@ -747,7 +791,13 @@ def check_pinned_image(pages: list[tuple[str, str, list[int]]]) -> int:
 
 
 def demo_host_of(reference: str) -> str:
-    """The host of a URL, with any userinfo, port and path dropped."""
+    """The host of a URL, with any userinfo, port and path dropped; "" for one that names none.
+
+    A destination can be relative (`#get-it-working`), which is this page and not the instance,
+    so it answers with no host rather than failing.
+    """
+    if "://" not in reference:
+        return ""
     authority = reference.split("://", 1)[1].split("/", 1)[0]
     return authority.rsplit("@", 1)[-1].split(":", 1)[0].lower()
 
@@ -770,40 +820,75 @@ def demo_server_name() -> str:
     return name
 
 
-def check_demo_instance(pages: list[tuple[str, str, list[int]]]) -> int:
+def demo_reference_allowed(reference: str) -> bool:
+    """Whether the page may carry this reference to the instance.
+
+    A trailing slash is the same URL to a browser, so it is the same reference here.
+    """
+    return any(reference.rstrip("/") == one.rstrip("/") for one in DEMO_REFERENCES)
+
+
+def demo_references(page: Scanned) -> list[tuple[str, int]]:
+    """Every reference to the demo host the page carries, in text and in attributes.
+
+    The visible text is where a phrase claim lives, and an attribute is where a link's
+    destination lives; both are scanned, because a label and the place it goes are two claims.
+    """
+    found: list[tuple[str, int]] = []
+    for match in DEMO_URL.finditer(page.text):
+        # The sentence's own punctuation ends the match: `wss://host;` is the reference with a
+        # semicolon after it, not a reference with a semicolon in it.
+        reference = match.group(0).rstrip(".,;:!?")
+        if demo_host_of(reference) == DEMO_HOST:
+            found.append((reference, page.line_of[match.start()]))
+    for destination, line in page.destinations:
+        if demo_host_of(destination) == DEMO_HOST:
+            found.append((destination, line))
+    return found
+
+
+def check_demo_instance(pages: list[Scanned]) -> int:
     """The page's demo references against the pin, and the pin against the instance.
 
     Returns 0 when both hold, 1 when either does not, 2 when the instance cannot be asked.
     """
     root = root_of_this_checkout()
-    named = 0
-    wrong: list[str] = []
-    for path, text, line_of in pages:
-        for match in DEMO_URL.finditer(text):
-            # The sentence's own punctuation ends the match: `wss://host;` is the reference
-            # with a semicolon after it, not a reference with a semicolon in it.
-            reference = match.group(0).rstrip(".,;:!?")
-            if demo_host_of(reference) != DEMO_HOST:
-                continue
-            named += 1
-            if reference not in DEMO_REFERENCES:
-                where = os.path.relpath(path, root)
-                wrong.append(f"{where}:{line_of[match.start()]}: {reference!r}")
-    if not named:
+    followed = 0
+    wrong: list[tuple[str, str, int]] = []
+    for page in pages:
+        where = os.path.relpath(page.path, root)
+        for reference, line in demo_references(page):
+            if demo_reference_allowed(reference):
+                followed += 1
+            else:
+                wrong.append((where, reference, line))
+    if not followed:
         print(
-            f"check-claims: none of {len(pages)} scanned file(s) points at {DEMO_HOST!r}, "
-            "and the instance is what this check asserts: a scan that never reaches the demo "
-            "is not checking it",
+            f"check-claims: none of {len(pages)} scanned file(s) points at {DEMO_HOST!r}, and "
+            "the instance is what this check asserts: a scan that never reaches the demo is not "
+            "checking it",
             file=sys.stderr,
         )
         return 1
     if wrong:
-        for where in wrong:
+        for where, reference, line in wrong:
             print(
-                f"check-claims: the page points a reader at {where}, and the demo "
-                f"references are {', '.join(repr(one) for one in DEMO_REFERENCES)}",
+                f"check-claims: the page points a reader at {where}:{line}: {reference!r}, and "
+                f"the demo references are {', '.join(repr(one) for one in DEMO_REFERENCES)}",
                 file=sys.stderr,
             )
+        return 1
+    if not any(
+        destination.rstrip("/") == DEMO_ORIGIN
+        for page in pages
+        for destination, _ in page.destinations
+    ):
+        print(
+            f"check-claims: no link on the page has a destination at {DEMO_ORIGIN}; the section "
+            "points a reader at the instance, so the host its text names with nowhere to follow "
+            "is the claim without the thing that makes it usable",
+            file=sys.stderr,
+        )
         return 1
 
     try:
@@ -826,10 +911,19 @@ def check_demo_instance(pages: list[tuple[str, str, list[int]]]) -> int:
         )
         return 2
 
+    if not DEMO_IDENTITY.match(reported):
+        print(
+            f"check-claims: {DEMO_ORIGIN}/meta reports {reported!r}, which is not a name and a "
+            "version: the page could carry those characters for another reason, so this check "
+            "could pass without the page naming the instance at all",
+            file=sys.stderr,
+        )
+        return 2
+
     silent = [
-        os.path.relpath(path, root)
-        for path, text, _ in pages
-        if DEMO_HOST in text and reported not in text
+        os.path.relpath(page.path, root)
+        for page in pages
+        if DEMO_HOST in page.text and reported not in page.text
     ]
     if silent:
         print(
@@ -885,11 +979,19 @@ def main() -> int:
         return 2
 
     hits = 0
-    scanned: list[tuple[str, str, list[int]]] = []
+    scanned: list[Scanned] = []
     for path in paths:
         with open(path, encoding="utf-8") as handle:
-            text, line_of = normalise(handle.read())
-        scanned.append((path, text, line_of))
+            raw = handle.read()
+        text, line_of = normalise(raw)
+        scanned.append(
+            Scanned(
+                path=path,
+                text=text,
+                line_of=line_of,
+                destinations=destinations(raw),
+            )
+        )
         for phrase, pattern in compiled:
             for match in pattern.finditer(text):
                 hits += 1
