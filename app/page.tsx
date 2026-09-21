@@ -230,8 +230,7 @@ export default function Home() {
               <a href="https://github.com/selvage-protocol/reference_server">
                 selvage-protocol/reference_server
               </a>{" "}
-              owns the compose file and the source build for anything beyond
-              this line.
+              holds the compose file and the source build.
             </p>
 
             <h3>Pick your editor</h3>
@@ -305,12 +304,11 @@ export default function Home() {
               </summary>
               <div className="quickstart-body">
                 <p>
-                  Guests only, with hosting staying in the two editors. The
-                  server above serves the page on the same port, and{" "}
+                  The server above serves the page on the same port, and{" "}
                   <a href="https://selvage.dontblameme.dev">the demo</a>{" "}
-                  already serves the same page. A guest opens the invite link
-                  the host copied and edits in the page. The page the server
-                  serves takes the room and token in its query string:
+                  serves it too. Hosting stays in the two editors, and a guest
+                  opens the invite link the host copied and edits in the page,
+                  which takes the room and token in its query string:
                 </p>
                 <pre>
                   <code>
@@ -322,9 +320,8 @@ export default function Home() {
                   <a href="https://github.com/selvage-protocol/web_client">
                     web_client
                   </a>
-                  , which touches no editor code: <code>npm ci</code>,{" "}
-                  <code>npm run build</code> and <code>npm run serve</code> build
-                  and serve it on its own.
+                  : <code>npm ci</code>, <code>npm run build</code> and{" "}
+                  <code>npm run serve</code> build and serve it on its own.
                 </p>
               </div>
             </details>
@@ -339,19 +336,19 @@ export default function Home() {
               <code>wss://selvage.dontblameme.dev</code> and it hosts a room
               there: <code>selvage.serverUrl</code> in VS Code,{" "}
               <code>vim.g.selvage_server_url</code> in Neovim. A host started
-              with neither set asks for the address instead. The invite link it
+              with neither setting asks for the address. The invite link it
               copies opens the room in the browser page, so a guest needs
               nothing installed.
             </p>
             <p>
-              It is a demo: rooms live in memory on one small box, a restart ends
-              every one of them, and it is not a place to keep work. The instance
-              is for personal and evaluation use, and non-commercial:{" "}
+              Rooms live in memory on one small box, and a restart ends every one
+              of them. Run the server above for work you need to keep, on your
+              own machine or on one you rent. The instance is for personal and
+              evaluation use, and non-commercial:{" "}
               <a href="https://selvage.dontblameme.dev/terms">its terms</a> cover
               this one box, and the licences below decide what the software itself
               may be used for, <code>selvaged</code>&apos;s FSL-1.1-MIT reserving
-              commercial hosting for the project. For work you need to rely on, run
-              the server above, on your own machine or on one you rent.
+              commercial hosting for the project.
             </p>
           </section>
 
