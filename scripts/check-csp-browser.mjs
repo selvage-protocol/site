@@ -21,7 +21,11 @@
 //      scrolled up — the React effect, which only runs once the page hydrates. The concealed
 //      class is asserted absent from the served bytes first, so what is observed is the
 //      effect, not the prerender;
-//   5. the document response carries no `X-Powered-By` (next.config.ts's `poweredByHeader`).
+//   5. the document response carries no `X-Powered-By` (next.config.ts's `poweredByHeader`);
+//   6. a request for a path no route claims, which is the other page this policy covers, carries
+//      zero violations too. The framework's own 404 document carries a `<style>` element and four
+//      `style` attributes and `style-src 'self'` refuses all five, so this route is where the
+//      policy was refusing the site: `app/not-found.tsx` is styled from `style.css` instead.
 //
 // It needs a Chromium and so is not in the workflow; `scripts/ci-local.sh` is what CI runs.
 // Every wait is a bounded poll for the state being waited for, so a page that never hydrates
@@ -325,11 +329,48 @@ if (!returned) fail("the header stayed concealed when scrolled back up");
 const banner = Object.keys(document_?.headers ?? {}).some((key) => key.toLowerCase() === "x-powered-by");
 if (banner) fail("the document response carries X-Powered-By: next.config.ts should have stopped it");
 
+// 6. the site's own not-found route, served with the same policy. Asserted separately from the
+// page above because it is a different document with different markup: the framework's default
+// 404 is styled with a `<style>` element and four `style` attributes, every one of which
+// `style-src 'self'` refuses, and nothing looked at this route before.
+const refusalsBeforeNotFound = refusals.length;
+loaded = false;
+await send("Page.navigate", { url: `http://127.0.0.1:${PORT}/no-such-path` }, sessionId);
+for (let i = 0; i < 120 && !loaded; i += 1) await sleep(100);
+if (!loaded) fail("a request for an unrouted path never fired a load event");
+const notFoundStatus = document_?.status;
+if (notFoundStatus !== 404) {
+  fail(`a request for an unrouted path answered ${notFoundStatus}, so it did not render the not-found route`);
+}
+const notFoundViolations = JSON.parse(await evaluate("JSON.stringify(window.__violations ?? null)"));
+if (!Array.isArray(notFoundViolations)) {
+  fail("the violation listener never ran on the not-found route, so this check saw nothing there");
+}
+if (notFoundViolations.length > 0 || refusals.length > refusalsBeforeNotFound) {
+  const lines = notFoundViolations.length > 0
+    ? notFoundViolations.map((v) => `${v.directive} ${v.blockedURI}`)
+    : refusals.slice(refusalsBeforeNotFound);
+  for (const line of lines) console.error(`  refused: ${line}`);
+  fail(
+    `the policy refuses the site's own not-found route: ${notFoundViolations.length} ` +
+      `securitypolicyviolation event(s), ${refusals.length - refusalsBeforeNotFound} console refusal(s)`,
+  );
+}
+// The served bytes, not the hydrated DOM: `next-route-announcer` gets its `style` attribute from
+// CSSOM after hydration, which CSP does not police, and counting it would report a refusal risk
+// where there is none. What the policy sees is the document as it arrives.
+const notFoundHtml = await (await fetch(`http://127.0.0.1:${PORT}/no-such-path`)).text();
+const inlineStyles = /<style[\s>]/i.test(notFoundHtml) || /\sstyle\s*=/i.test(notFoundHtml);
+if (inlineStyles) {
+  fail("the not-found route's served document carries an inline style or style attribute, which style-src 'self' refuses");
+}
+
 console.log(`check-csp-browser: ${version.Browser}, headless, ${where} served from the build with
   the headers out of ${policyLabel} (a proxy; next start does not apply them)
   policy     : ${served}
   scripts    : ${page.scripts} (${page.external} external, ${page.inline} inline), window.__next_f is an object
   violations : 0 securitypolicyviolation events, 0 console refusals
+  not-found  : /no-such-path answered 404, 0 violations, no inline style or style attribute in its served bytes
   header     : concealed at scrollY 900 (translate: ${concealedTranslate}), back at scrollY 300
   banner     : no X-Powered-By on the document response
 This is a browser, not a model: what it cannot see is the deployed response headers, because

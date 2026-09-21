@@ -390,7 +390,11 @@ SUITE_HTML = (
     '<script src="/_next/static/chunks/a.js" async=""></script>'
     '<script>self.__next_f.push([1,"x"])</script>'
 )
-SHIPPED = "default-src 'none'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; style-src 'self'; base-uri 'none'; frame-ancestors 'none'"
+SHIPPED = (
+    "default-src 'none'; script-src 'self' 'unsafe-inline'; script-src-attr 'none'; "
+    "img-src 'self' data:; style-src 'self'; form-action 'none'; base-uri 'none'; "
+    "frame-ancestors 'none'"
+)
 REGRESSED = "default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; frame-ancestors 'none'"
 
 
@@ -416,6 +420,24 @@ def self_test() -> str | None:
         ("a style attribute under style-src 'self'", "default-src 'none'; style-src 'self'", '<p style="color:red">x</p>', "blocked"),
         ("a style attribute under 'unsafe-inline'", "default-src 'none'; style-src 'self' 'unsafe-inline'", '<p style="color:red">x</p>', "clean"),
         ("an inline handler under script-src 'self'", "default-src 'none'; script-src 'self'", '<a onclick="x()">x</a>', "blocked"),
+        (
+            "an inline handler under 'unsafe-inline' in script-src",
+            "default-src 'none'; script-src 'self' 'unsafe-inline'",
+            '<a onclick="x()">x</a>',
+            "clean",
+        ),
+        (
+            "script-src-attr 'none' over that same handler",
+            SHIPPED,
+            '<a onclick="x()">x</a>',
+            "blocked",
+        ),
+        (
+            "script-src-attr 'none' still leaves the inline bootstrap to script-src",
+            SHIPPED,
+            SUITE_HTML,
+            "clean",
+        ),
         ("the inline bootstrap by its own hash", f"default-src 'none'; script-src 'sha256-{digest}'", inline_only, "clean"),
         ("'unsafe-inline' is switched off by a hash in the list", f"default-src 'none'; script-src 'unsafe-inline' 'sha256-{digest}'", inline_only, "clean"),
         ("a hash that is not this element's content", "default-src 'none'; script-src 'sha256-AAAA'", inline_only, "blocked"),
@@ -425,6 +447,8 @@ def self_test() -> str | None:
         ("a base element under base-uri 'none'", "default-src 'none'; base-uri 'none'", '<base href="/">', "blocked"),
         ("a base element with no base-uri directive", "default-src 'none'", '<base href="/">', "clean"),
         ("a form action with no form-action directive", "default-src 'none'", '<form action="/x"></form>', "clean"),
+        ("a form action under form-action 'none'", SHIPPED, '<form action="/x"></form>', "blocked"),
+        ("a form with no action under form-action 'none'", SHIPPED, "<form></form>", "blocked"),
         ("an image off-origin", "default-src 'none'; img-src 'self' data:", '<img src="https://evil.example/a.png">', "blocked"),
         ("an image on-origin", "default-src 'none'; img-src 'self' data:", '<img src="/a.png">', "clean"),
         ("a data: image under img-src data:", "default-src 'none'; img-src 'self' data:", '<img src="data:image/png;base64,AA">', "clean"),
