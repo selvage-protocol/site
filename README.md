@@ -20,7 +20,7 @@ The canonical material lives in the other repositories:
 protocol, prose and vectors, [`selvage-protocol/reference_server`](https://github.com/selvage-protocol/reference_server)
 for the server and client library, and [`selvage-protocol/vscode_client`](https://github.com/selvage-protocol/vscode_client)
 and [`selvage-protocol/nvim_client`](https://github.com/selvage-protocol/nvim_client) for the two
-editor clients. This repository holds the page, the four checks that gate it, the one
+editor clients. This repository holds the page, the five checks that gate it, the one
 browser proof the runner cannot run, and nothing else.
 
 | Path | What it is |
@@ -51,7 +51,7 @@ browser proof the runner cannot run, and nothing else.
 | `scripts/ci-local.sh` | the gate, running the same commands as the workflow |
 | `lychee.toml` | what the link check does not check, and why |
 | `vercel.json` | platform configuration: the Next.js framework preset, and three response headers: the Content-Security-Policy the page's own scripts are permitted by, the file it was once refused by (see "The Content-Security-Policy"), plus `X-Content-Type-Options: nosniff` and `Referrer-Policy: strict-origin-when-cross-origin` |
-| `.github/workflows/ci.yml` | the gate, on `push` to `main` and on `pull_request` |
+| `.github/workflows/ci.yml` | the gate, on every pull request and on demand (`workflow_dispatch`) |
 
 ## The site mark
 
