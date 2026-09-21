@@ -73,12 +73,13 @@ DASHES = re.compile("[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]")
 # The registry half is the one that reaches the artefact, and it holds the distinction that
 # matters: a platform entry in an image index proves only that a slot is *labelled* arm64.
 # `selvaged:0.1.1` published one, and both its legs carried the amd64 binary — every layer
-# digest identical across the two per-platform manifests. The check compares those digests and
-# fails when they are the same set, which is what a mislabelled leg looks like, and it pulls
-# them with no credential in the request, because no account is the point of the command the
-# page hands over.
+# digest identical across the two per-platform manifests. `0.1.0` and `0.1.1` are the two
+# versions a page must never name; `0.1.2` was correct and is simply superseded. The check
+# compares those digests and fails when they are the same set, which is what a mislabelled leg
+# looks like, and it pulls them with no credential in the request, because no account is the
+# point of the command the page hands over.
 PUBLISHED_IMAGE = "ghcr.io/selvage-protocol/selvaged"
-PINNED_IMAGE_VERSION = "0.1.2"
+PINNED_IMAGE_VERSION = "0.2.0"
 IMAGE_REFERENCE = re.compile(r"ghcr\.io/selvage-protocol/selvaged(?::([\w][\w.+-]*))?")
 REGISTRY_HOST = "ghcr.io"
 REGISTRY_REPOSITORY = PUBLISHED_IMAGE.split("/", 1)[1]
@@ -188,11 +189,11 @@ FORBIDDEN: list[Phrase] = [
         # artefacts refute, which is the sentence the page carried until this was corrected:
         # `reference_server/Dockerfile`, `reference_server/compose.yaml`,
         # `reference_server/packaging/systemd/selvaged.service` and the anonymously pullable
-        # `ghcr.io/selvage-protocol/selvaged:0.1.2` are all in the repositories.
+        # `ghcr.io/selvage-protocol/selvaged:0.2.0` are all in the repositories.
         r"\bno (?:image|container) to pull\b|\bnothing to install on the server\b"
         r"|\bno compose (?:file|configuration)\b|\bno systemd (?:service|unit)\b",
         "there is no image to pull and no service unit to install in any repository yet",
-        "the server image is published (`ghcr.io/selvage-protocol/selvaged:0.1.2`) and pulls "
+        "the server image is published (`ghcr.io/selvage-protocol/selvaged:0.2.0`) and pulls "
         "with no account, `reference_server/compose.yaml` runs it, and "
         "`reference_server/packaging/systemd/selvaged.service` installs the binary: a page "
         "saying none of that exists states the opposite of the truth",
@@ -205,15 +206,15 @@ FORBIDDEN: list[Phrase] = [
         # The lookbehind is what keeps a version-inside-a-version out of a pattern about a 1.0
         # claim: a tag like `2.1.0` carries `1.0` as a substring, and naming a tag that happens
         # to contain it is describing an artefact, not claiming a frozen release. The published
-        # image is `0.1.2` today, which carries no `1.0` substring at all, so the fixture below
+        # image is `0.2.0` today, which carries no `1.0` substring at all, so the fixture below
         # is synthetic rather than the live pin; the lookbehind still has to hold for whatever
         # version a future pin carries. A 1.0 that stands on its own still matches.
         r"(?<![\d.])v?1\.0\b|production[- ]ready|production[- ]grade|battle[- ]tested|stable release",
         "the stable release, version 1.0",
         "the wire version is `selvage/1`; no shape is frozen. "
-        "`0.1.2` is the version of the image that is published, not a 1.0",
+        "`0.2.0` is the version of the image that is published, not a 1.0",
         ("we are at v1.0", "the stable rele<!-- -->ase, version 1.0"),
-        ("ghcr.io/selvage-protocol/selvaged:0.1.2", "0.1.2", "version 0.1.2", "tool:2.1.0"),
+        ("ghcr.io/selvage-protocol/selvaged:0.2.0", "0.2.0", "version 0.2.0", "tool:2.1.0"),
     ),
     Phrase(
         r"second implementation|interoperab\w*",
