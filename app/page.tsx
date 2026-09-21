@@ -214,7 +214,7 @@ export default function Home() {
             <pre>
               <code>
                 {
-                  "docker run --rm -p 127.0.0.1:8080:8080 ghcr.io/selvage-protocol/selvaged:0.1.2"
+                  "docker run --rm -p 127.0.0.1:8080:8080 ghcr.io/selvage-protocol/selvaged:0.2.0"
                 }
               </code>
             </pre>
@@ -327,6 +327,29 @@ export default function Home() {
                 </p>
               </div>
             </details>
+
+            <h3>Try the demo</h3>
+            <p>
+              A small instance of the server runs at{" "}
+              <a href="https://selvage.dontblameme.dev">
+                selvage.dontblameme.dev
+              </a>
+              , where <code>/meta</code> reports <code>selvaged/0.2.0</code>.
+              Hosting a room there means pointing one of the editors above at{" "}
+              <code>wss://selvage.dontblameme.dev</code>; the invite link that editor
+              copies opens the room in a browser, so a guest needs nothing
+              installed.
+            </p>
+            <p>
+              It is a demo: rooms live in memory on one small box, a restart ends
+              every one of them, and it is not a place to keep work. The instance
+              is for personal and evaluation use, and non-commercial:{" "}
+              <a href="https://selvage.dontblameme.dev/terms">its terms</a> cover
+              this one box, and the licences below decide what the software itself
+              may be used for, <code>selvaged</code>&apos;s FSL-1.1-MIT reserving
+              commercial hosting for the project. For work you need to rely on, run
+              the server above, on your own machine or on one you rent.
+            </p>
           </section>
 
           <section id="see-it" className="scroll-mt-28 md:scroll-mt-24">

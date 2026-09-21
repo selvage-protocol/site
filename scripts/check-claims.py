@@ -7,9 +7,10 @@ sentence that is merely unbacked all pass it. What it does guarantee is narrower
 worth having: those known wordings do not appear, even when the page wraps them across lines or
 encodes the characters as HTML entities.
 
-One claim is asserted in the positive instead, because a phrase list cannot reach it: the image
-tag in the `docker run` the page hands a reader is a fact with an artefact behind it, and a wrong
-tag is a command that fails rather than a wording that lies. See `PUBLISHED_IMAGE` below.
+Two claims are asserted in the positive instead, because a phrase list cannot reach them: the image
+tag in the `docker run` the page hands a reader, and the instance the demo section points at. Each
+is a fact with an artefact behind it, and a wrong tag is a command that fails rather than a wording
+that lies. See `PUBLISHED_IMAGE` and `DEMO_ORIGIN` below.
 
 Each entry below pairs a phrase the page must not carry with the reason it must not, and with a
 sample that has to match it. The reasons are not this script's opinion: every one of them is a
@@ -32,9 +33,9 @@ Run from anywhere; the repository root is resolved from this file's location. Ar
     scripts/check-claims.py              # every *.html in the checkout
     scripts/check-claims.py .tmp/empty   # reaches no file: that is a failure, not a pass
 
-Exit 0 when the page is clean of every known wording and its image pin holds up, 1 when it
-carries a forbidden wording or the pin is wrong, 2 when the check itself cannot run (a dead
-pattern, nothing to scan, or a registry that cannot be asked).
+Exit 0 when the page is clean of every known wording and both pins hold up, 1 when it
+carries a forbidden wording or a pin is wrong, 2 when the check itself cannot run (a dead
+pattern, nothing to scan, a registry that cannot be asked, or a demo host that does not answer).
 """
 
 from __future__ import annotations
@@ -56,12 +57,10 @@ SKIP_DIRS = {".git", ".tmp", "node_modules"}
 # pinned value the only one that passes.
 VEHICLE = r"\d[\d,]*"
 
-# The route-shaped overclaim the browser pattern's other alternatives miss: a browser mention
-# sharing a sentence with an address, in either order. The window stops at the sentence's full stop
-# because the filter joins the whole page into one string, so an unbounded one would pair a browser
-# mention with a host in another section.
-HOSTLIKE = r"(?:https?://|wss?://|\b[\w-]+(?:\.[\w-]+)+)"
-BROWSER_ROUTE = rf"\bbrowser\b[^.]{{0,48}}{HOSTLIKE}|{HOSTLIKE}[^.]{{0,48}}\bbrowser\b"
+# The address the project's own landing page is served at. The browser entry holds a claim that
+# this origin is a place to join a room: the demo instance is where a page can be opened now, and
+# the site is not a client.
+SITE_ORIGIN = r"selvage-protocol\.vercel\.app"
 
 DASHES = re.compile("[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]")
 
@@ -73,22 +72,65 @@ DASHES = re.compile("[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]")
 # The registry half is the one that reaches the artefact, and it holds the distinction that
 # matters: a platform entry in an image index proves only that a slot is *labelled* arm64.
 # `selvaged:0.1.1` published one, and both its legs carried the amd64 binary — every layer
-# digest identical across the two per-platform manifests. The check compares those digests and
-# fails when they are the same set, which is what a mislabelled leg looks like, and it pulls
-# them with no credential in the request, because no account is the point of the command the
-# page hands over.
+# digest identical across the two per-platform manifests. `0.1.0` and `0.1.1` are the two
+# versions a page must never name; `0.1.2` was correct and is simply superseded. The check
+# compares those digests and fails when they are the same set, which is what a mislabelled leg
+# looks like, and it pulls them with no credential in the request, because no account is the
+# point of the command the page hands over.
 PUBLISHED_IMAGE = "ghcr.io/selvage-protocol/selvaged"
-PINNED_IMAGE_VERSION = "0.1.2"
+PINNED_IMAGE_VERSION = "0.2.0"
 IMAGE_REFERENCE = re.compile(r"ghcr\.io/selvage-protocol/selvaged(?::([\w][\w.+-]*))?")
 REGISTRY_HOST = "ghcr.io"
 REGISTRY_REPOSITORY = PUBLISHED_IMAGE.split("/", 1)[1]
 REQUEST_TIMEOUT_SECONDS = 20
+
+# The demo section points at a running instance, a claim with an artefact behind it in the same
+# way the `docker run` is: the host has to answer, the `server` name it reports from `/meta` has to
+# be the name the page gives it, and the page has to carry the instance somewhere a reader can
+# follow. A host that has moved, a box that is down, or an instance upgraded without the page is a
+# false sentence, and no phrase list can enumerate those.
+#
+# The name is read from the instance rather than restated here as `PINNED_IMAGE_VERSION`, because
+# the two are different facts: the tag is the release the page hands a reader to pull, and the
+# instance's own name is what the box is running. Holding the page to a constant of this file's
+# would pass while a downgraded box ran something else, which is the defect this asserts against,
+# and it would force the page to name a release the box does not have in the window between an
+# image release and the redeploy.
+DEMO_HOST = "selvage.dontblameme.dev"
+DEMO_ORIGIN = "https://" + DEMO_HOST
+# Every reference the page may carry to that host: the instance's own origin, its terms page,
+# and the address a client dials for the session.
+DEMO_REFERENCES = (DEMO_ORIGIN, DEMO_ORIGIN + "/terms", "wss://" + DEMO_HOST)
+DEMO_URL = re.compile(r"(?:https?|wss?)://[^\s\"'<>)]+")
+# A name and a version. What `/meta` reports is free-form, so this is deliberately loose; what it
+# refuses is a report the page could already carry for another reason — the word `Selvage` is in
+# the hero — which would make the comparison below pass without the page ever naming the instance.
+DEMO_IDENTITY = re.compile(r"[^\s/]+/[^\s/]+")
+# A link's destination lives in an attribute, and the visible text carries only its label, so both
+# are scanned: an anchor labelled with the demo host can point somewhere else entirely.
+DESTINATION = re.compile(r"\b(?:href|src|action)\s*=\s*(?:\"([^\"]*)\"|'([^']*)')", re.IGNORECASE)
 MANIFEST_TYPES = (
     "application/vnd.oci.image.index.v1+json",
     "application/vnd.docker.distribution.manifest.list.v2+json",
     "application/vnd.oci.image.manifest.v1+json",
     "application/vnd.docker.distribution.manifest.v2+json",
 )
+
+
+@dataclass(frozen=True)
+class Scanned:
+    """One rendered file, as the scan read it.
+
+    `text` and `line_of` are the visible page — what a reader sees, which is what a phrase claim
+    is made of. `destinations` are the URL-bearing attributes with the line each sits on, because
+    a link's destination is not visible: `<a href="https://elsewhere.example">selvage.example</a>`
+    renders as the label alone.
+    """
+
+    path: str
+    text: str
+    line_of: list[int]
+    destinations: list[tuple[str, int]]
 
 
 @dataclass(frozen=True)
@@ -136,37 +178,38 @@ FORBIDDEN: list[Phrase] = [
         ("end<span></span>-to-end encrypted",),
     ),
     Phrase(
-        # The page may say the browser client exists — `web_client` is the project's third
-        # client, built and served over its own private network — and it may not claim a route
-        # a reader can follow, nor deny the client that now exists. Both lies stay caught: the
-        # stale denial ("nothing runs in a web page", which the page carried until this filter
-        # was corrected) in the first two alternatives, and the old overclaim of an
-        # install-free page a reader can open in the rest.
+        # The browser client is published now: the demo instance serves `web_client` at one
+        # public origin, so the page may name a route a reader can follow, and the alternatives
+        # that denied one are gone with the reason that produced them. What survives is what is
+        # still false about that page: it is a guest join form, so joining needs an invite link
+        # and hosting stays in the two editors; the stale denial stays caught, because the page
+        # once carried it; and so does the claim that the project's own landing page is a place
+        # to join a room, which is the route-shaped overclaim left now that a real one exists.
         r"\bnothing runs? in a (?:web page|tab|browser)\b"
         r"|no clients? (?:to|that|which)? ?(?:runs?|open)\w* in a (?:web page|tab|browser)"
-        r"|\b(?:open|visit|try|browse|use|join)\w*\b[^.]{0,24}\bin (?:a|the|your) browser\b"
-        r"|\bruns? in (?:a|the|your) browser\b"
-        r"|\bbrowser\b[^.]{0,16}\b(?:no install\w*|nothing to install)\b"
-        r"|" + BROWSER_ROUTE,
+        r"|\b(?:host|start|create|mint)\w*\s+(?:a|the|your)\s+(?:room|session)\s+"
+        r"(?:in|from|with|on)\s+(?:a|the|your)?\s*(?:browser|web page|tab)\b"
+        r"|\b(?:open|visit|browse)\w*\b[^.]{0,24}\b(?:page|browser|tab)\b[^.]{0,24}"
+        r"\bstart typing\b"
+        r"|\bwithout (?:an )?invite\b|\binvite[- ]free\b"
+        r"|" + SITE_ORIGIN + r"[^.]{0,48}\b(?:browser|client|room|join|edit)\w*\b"
+        r"|\b(?:browser|client|room|join|edit)\w*\b[^.]{0,48}" + SITE_ORIGIN,
         "open the page in your browser and start typing",
-        "the browser client exists — it is the project's third client — but it is guests-only "
-        "and served over the project's own private network: there is no public page a reader "
-        "can open, and no install-free route to one, while the two desktop clients are the "
-        "published ones. Say what the browser client is and where it is served",
+        "the browser page exists and one public origin serves it — the demo instance — but it is "
+        "a guest join form: joining needs the invite link a host copies, and hosting stays in the "
+        "two editors. The project's own site is a landing page, not a client",
         (
-            "it runs in your browser",
             "nothing runs in a web page",
             "there is no client to open in a tab",
-            "try it in the browser with no install",
-            "the browser demo is at https://selvage.example/room",
+            "host a session in the browser",
             "browse selvage-protocol.vercel.app in your browser",
             "selvage is available in your browser at selvage-protocol.vercel.app",
+            "selvage-protocol.vercel.app is where a guest joins",
         ),
         (
-            "A browser client is the third client: guests only, served over a private network.",
-            "The browser page joins the same room from a tab.",
-            "The browser page joins the same room from a tab. The server listens on "
-            "ws://127.0.0.1:8080.",
+            "The browser page joins the same room from a tab, with the invite link a host copies.",
+            "A guest works in the page at https://selvage.dontblameme.dev with nothing installed.",
+            "The server listens on ws://127.0.0.1:8080. The browser page is guests only.",
         ),
     ),
     Phrase(
@@ -188,11 +231,11 @@ FORBIDDEN: list[Phrase] = [
         # artefacts refute, which is the sentence the page carried until this was corrected:
         # `reference_server/Dockerfile`, `reference_server/compose.yaml`,
         # `reference_server/packaging/systemd/selvaged.service` and the anonymously pullable
-        # `ghcr.io/selvage-protocol/selvaged:0.1.2` are all in the repositories.
+        # `ghcr.io/selvage-protocol/selvaged:0.2.0` are all in the repositories.
         r"\bno (?:image|container) to pull\b|\bnothing to install on the server\b"
         r"|\bno compose (?:file|configuration)\b|\bno systemd (?:service|unit)\b",
         "there is no image to pull and no service unit to install in any repository yet",
-        "the server image is published (`ghcr.io/selvage-protocol/selvaged:0.1.2`) and pulls "
+        "the server image is published (`ghcr.io/selvage-protocol/selvaged:0.2.0`) and pulls "
         "with no account, `reference_server/compose.yaml` runs it, and "
         "`reference_server/packaging/systemd/selvaged.service` installs the binary: a page "
         "saying none of that exists states the opposite of the truth",
@@ -205,15 +248,15 @@ FORBIDDEN: list[Phrase] = [
         # The lookbehind is what keeps a version-inside-a-version out of a pattern about a 1.0
         # claim: a tag like `2.1.0` carries `1.0` as a substring, and naming a tag that happens
         # to contain it is describing an artefact, not claiming a frozen release. The published
-        # image is `0.1.2` today, which carries no `1.0` substring at all, so the fixture below
+        # image is `0.2.0` today, which carries no `1.0` substring at all, so the fixture below
         # is synthetic rather than the live pin; the lookbehind still has to hold for whatever
         # version a future pin carries. A 1.0 that stands on its own still matches.
         r"(?<![\d.])v?1\.0\b|production[- ]ready|production[- ]grade|battle[- ]tested|stable release",
         "the stable release, version 1.0",
         "the wire version is `selvage/1`; no shape is frozen. "
-        "`0.1.2` is the version of the image that is published, not a 1.0",
+        "`0.2.0` is the version of the image that is published, not a 1.0",
         ("we are at v1.0", "the stable rele<!-- -->ase, version 1.0"),
-        ("ghcr.io/selvage-protocol/selvaged:0.1.2", "0.1.2", "version 0.1.2", "tool:2.1.0"),
+        ("ghcr.io/selvage-protocol/selvaged:0.2.0", "0.2.0", "version 0.2.0", "tool:2.1.0"),
     ),
     Phrase(
         r"second implementation|interoperab\w*",
@@ -270,10 +313,53 @@ FORBIDDEN: list[Phrase] = [
         "is unspecified, not that this is first",
     ),
     Phrase(
-        r"(?:try|open|visit|see|browse) the (?:live |public |free )?demo|\blive demo\b",
-        "try the live demo",
-        "there is no demo instance: the only server that has ever run is a local debug build, "
-        "and standing one up means a VPS, an external account and money — an owner decision",
+        # The instance is live, so this entry no longer denies it; pointing at the demo is truth
+        # and the page's own heading says so. What it holds is the overclaim that replaced the
+        # denial: a demo described as a service. Its rooms are in memory on one small box, it
+        # keeps no work, it is not promised to be up, and it is not sized for a team.
+        r"\b(?:live|free) demo\b"
+        r"|\bdemo\b[^.]{0,48}\b(?:always (?:up|on|available)|unlimited|persist\w*|stored"
+        r"|backed up|production|guarantee\w*|reliab\w*|at scale|(?:your|a|our|the) team)\b"
+        r"|\b(?:at scale|(?:your|a|our|the) team)\b[^.]{0,32}\bdemo\b",
+        "try the free demo, it is always up and your rooms are saved",
+        "the demo is one small box with in-memory rooms: a restart ends every one of them, it "
+        "keeps no work, nothing promises it is up, and it is not sized for a team. The terms "
+        "also gate it to personal and evaluation use, so the shape of a free tier of a service "
+        "is a claim about a product that does not exist",
+        (
+            "the free demo never goes down",
+            "the demo persists your rooms",
+            "the demo is always available",
+            "run your team's sessions on the demo",
+        ),
+        (
+            "A demo instance runs at https://selvage.dontblameme.dev.",
+            "The demo's rooms live in memory: a restart ends every one of them.",
+            "Rooms on the demo are not kept; run your own server for that.",
+        ),
+    ),
+    Phrase(
+        # The instance carries a non-commercial term and the software does not. The workspace
+        # and clients are MIT OR Apache-2.0, `crates/selvaged` is FSL-1.1-MIT, and the
+        # specification's prose, schema and vectors are CC-BY-4.0, so moving the instance's
+        # term onto the software claims a licence nobody granted.
+        r"\bnon-?commercial licen[cs]e\b"
+        r"|\b(?:licen[cs]e|software|project|selvage|selvaged|workspace|clients?|source)\b"
+        r"[^.]{0,12}\b(?:is|are|stays?|remains?|becomes?)\b[^.]{0,8}\bnon-?commercial\b",
+        "the non-commercial licence covers the project",
+        "the demo instance's terms are non-commercial and the software's licences are not: the "
+        "workspace and the clients are MIT OR Apache-2.0, `crates/selvaged` is FSL-1.1-MIT, "
+        "which reserves commercial hosting for its licensor, and the specification's prose, "
+        "schema and vectors are CC-BY-4.0",
+        (
+            "Selvage is non-commercial software",
+            "the project is non-commercial",
+            "selvaged has a non-commercial licence",
+        ),
+        (
+            "The demo instance is non-commercial and for personal and evaluation use.",
+            "Those terms cover the demo's one box, not the software.",
+        ),
     ),
     Phrase(
         r"design[^.]{0,20}0\.x",
@@ -376,9 +462,10 @@ FORBIDDEN: list[Phrase] = [
     Phrase(
         r"\bis live\b|\bnow live\b|\bnow available\b",
         "Selvage Session Protocol is now live.",
-        "the image is published and pulls with no account, and there is no demo instance and "
-        "no hosted service: standing a room up still means running it yourself. The honest "
-        "status line is the wire version plus the specification draft",
+        "the image is published and pulls with no account, and one small demo instance runs. "
+        "There is no hosted service and nothing was launched: a status reading 'live' or 'now "
+        "available' sells the demo as a product. The honest status line names the release and "
+        "the specification draft",
     ),
     Phrase(
         r"\bsign[ -]?in\b|\bsign[ -]?up\b|\bget started\b|\bdownload\b|\bpricing\b",
@@ -530,6 +617,21 @@ def _visible(text: str) -> tuple[list[str], list[int], list[bool]]:
     return chars, lines, fresh
 
 
+def destinations(raw: str) -> list[tuple[str, int]]:
+    """Every URL-bearing attribute the raw page carries, with the line each sits on.
+
+    The visible text keeps a link's label and drops its destination, so this is the other half of
+    what the page tells a reader. Values are unescaped the way the text is, so an `&amp;` is not a
+    different URL; the line is the one the tag is on.
+    """
+    found: list[tuple[str, int]] = []
+    for match in DESTINATION.finditer(raw):
+        value = match.group(1) if match.group(1) is not None else match.group(2)
+        if value:
+            found.append((html.unescape(value), raw.count("\n", 0, match.start()) + 1))
+    return found
+
+
 def normalise(text: str) -> tuple[str, list[int]]:
     """The page's visible text, with the source line of every character.
 
@@ -620,7 +722,7 @@ def pinned_tag_legs() -> dict[str, tuple[str, ...]]:
     return legs
 
 
-def check_pinned_image(pages: list[tuple[str, str, list[int]]]) -> int:
+def check_pinned_image(pages: list[Scanned]) -> int:
     """The page's version against the pin, and the pin against the registry.
 
     Returns 0 when both hold, 1 when either does not, 2 when the registry cannot be asked.
@@ -629,12 +731,12 @@ def check_pinned_image(pages: list[tuple[str, str, list[int]]]) -> int:
     reference = f"{PUBLISHED_IMAGE}:{PINNED_IMAGE_VERSION}"
     named = 0
     wrong: list[str] = []
-    for path, text, line_of in pages:
-        for match in IMAGE_REFERENCE.finditer(text):
+    for page in pages:
+        for match in IMAGE_REFERENCE.finditer(page.text):
             named += 1
             if match.group(0) != reference:
-                where = os.path.relpath(path, root)
-                wrong.append(f"{where}:{line_of[match.start()]}: {match.group(0)!r}")
+                where = os.path.relpath(page.path, root)
+                wrong.append(f"{where}:{page.line_of[match.start()]}: {match.group(0)!r}")
     if not named:
         print(
             f"check-claims: none of {len(pages)} scanned file(s) carries a {PUBLISHED_IMAGE} "
@@ -686,6 +788,155 @@ def check_pinned_image(pages: list[tuple[str, str, list[int]]]) -> int:
     )
     return 0
 
+
+
+def demo_host_of(reference: str) -> str:
+    """The host of a URL, with any userinfo, port and path dropped; "" for one that names none.
+
+    A destination can be relative (`#get-it-working`), which is this page and not the instance,
+    so it answers with no host rather than failing.
+    """
+    if "://" not in reference:
+        return ""
+    authority = reference.split("://", 1)[1].split("/", 1)[0]
+    return authority.rsplit("@", 1)[-1].split(":", 1)[0].lower()
+
+
+def demo_server_name() -> str:
+    """The `server` name the instance reports from `/meta`, as it writes it.
+
+    The request names itself rather than going out as the interpreter's default signature: the
+    host is behind Cloudflare, whose bot list answers `403` (error 1010) to `Python-urllib`, and
+    a check that cannot read the instance cannot assert anything about it.
+    """
+    request = urllib.request.Request(f"{DEMO_ORIGIN}/meta")
+    request.add_header("Accept", "application/json")
+    request.add_header("User-Agent", "selvage-site-check/1.0")
+    with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+        body = json.loads(response.read())
+    name = body["server"]
+    if not isinstance(name, str) or not name:
+        raise ValueError(f"/meta carried no usable `server` name ({name!r})")
+    return name
+
+
+def demo_reference_allowed(reference: str) -> bool:
+    """Whether the page may carry this reference to the instance.
+
+    A trailing slash is the same URL to a browser, so it is the same reference here.
+    """
+    return any(reference.rstrip("/") == one.rstrip("/") for one in DEMO_REFERENCES)
+
+
+def demo_references(page: Scanned) -> list[tuple[str, int]]:
+    """Every reference to the demo host the page carries, in text and in attributes.
+
+    The visible text is where a phrase claim lives, and an attribute is where a link's
+    destination lives; both are scanned, because a label and the place it goes are two claims.
+    """
+    found: list[tuple[str, int]] = []
+    for match in DEMO_URL.finditer(page.text):
+        # The sentence's own punctuation ends the match: `wss://host;` is the reference with a
+        # semicolon after it, not a reference with a semicolon in it.
+        reference = match.group(0).rstrip(".,;:!?")
+        if demo_host_of(reference) == DEMO_HOST:
+            found.append((reference, page.line_of[match.start()]))
+    for destination, line in page.destinations:
+        if demo_host_of(destination) == DEMO_HOST:
+            found.append((destination, line))
+    return found
+
+
+def check_demo_instance(pages: list[Scanned]) -> int:
+    """The page's demo references against the pin, and the pin against the instance.
+
+    Returns 0 when both hold, 1 when either does not, 2 when the instance cannot be asked.
+    """
+    root = root_of_this_checkout()
+    followed = 0
+    wrong: list[tuple[str, str, int]] = []
+    for page in pages:
+        where = os.path.relpath(page.path, root)
+        for reference, line in demo_references(page):
+            if demo_reference_allowed(reference):
+                followed += 1
+            else:
+                wrong.append((where, reference, line))
+    if not followed:
+        print(
+            f"check-claims: none of {len(pages)} scanned file(s) points at {DEMO_HOST!r}, and "
+            "the instance is what this check asserts: a scan that never reaches the demo is not "
+            "checking it",
+            file=sys.stderr,
+        )
+        return 1
+    if wrong:
+        for where, reference, line in wrong:
+            print(
+                f"check-claims: the page points a reader at {where}:{line}: {reference!r}, and "
+                f"the demo references are {', '.join(repr(one) for one in DEMO_REFERENCES)}",
+                file=sys.stderr,
+            )
+        return 1
+    if not any(
+        destination.rstrip("/") == DEMO_ORIGIN
+        for page in pages
+        for destination, _ in page.destinations
+    ):
+        print(
+            f"check-claims: no link on the page has a destination at {DEMO_ORIGIN}; the section "
+            "points a reader at the instance, so the host its text names with nowhere to follow "
+            "is the claim without the thing that makes it usable",
+            file=sys.stderr,
+        )
+        return 1
+
+    try:
+        reported = demo_server_name()
+    except urllib.error.HTTPError as error:
+        answer = error.read(200).decode("utf-8", "replace").strip()
+        print(
+            f"check-claims: {DEMO_ORIGIN}/meta answered {error.code} {error.reason} "
+            f"({answer[:160]!r}); the instance the page points at is not answering the check, "
+            "and a name nothing can read is a name nothing can confirm",
+            file=sys.stderr,
+        )
+        return 2
+    except (urllib.error.URLError, OSError, ValueError, KeyError) as error:
+        print(
+            f"check-claims: cannot ask {DEMO_ORIGIN}/meta what it is serving ({error}); "
+            "the name the page gives the instance cannot be checked against the instance "
+            "itself, so this is a failure rather than a pass",
+            file=sys.stderr,
+        )
+        return 2
+
+    if not DEMO_IDENTITY.match(reported):
+        print(
+            f"check-claims: {DEMO_ORIGIN}/meta reports {reported!r}, which is not a name and a "
+            "version: the page could carry those characters for another reason, so this check "
+            "could pass without the page naming the instance at all",
+            file=sys.stderr,
+        )
+        return 2
+
+    silent = [
+        os.path.relpath(page.path, root)
+        for page in pages
+        if DEMO_HOST in page.text and reported not in page.text
+    ]
+    if silent:
+        print(
+            f"check-claims: {DEMO_ORIGIN} reports {reported!r} and {', '.join(silent)} "
+            "does not carry that name: an instance upgraded without the page, or a page "
+            "naming the wrong release, is a sentence the artefact disproves",
+            file=sys.stderr,
+        )
+        return 1
+
+    print(f"check-claims: the demo instance {DEMO_ORIGIN} answers and reports {reported!r}")
+    return 0
+
 def main() -> int:
     compiled: list[tuple[Phrase, re.Pattern[str]]] = []
     for phrase in FORBIDDEN:
@@ -728,11 +979,19 @@ def main() -> int:
         return 2
 
     hits = 0
-    scanned: list[tuple[str, str, list[int]]] = []
+    scanned: list[Scanned] = []
     for path in paths:
         with open(path, encoding="utf-8") as handle:
-            text, line_of = normalise(handle.read())
-        scanned.append((path, text, line_of))
+            raw = handle.read()
+        text, line_of = normalise(raw)
+        scanned.append(
+            Scanned(
+                path=path,
+                text=text,
+                line_of=line_of,
+                destinations=destinations(raw),
+            )
+        )
         for phrase, pattern in compiled:
             for match in pattern.finditer(text):
                 hits += 1
@@ -746,9 +1005,10 @@ def main() -> int:
         print(f"check-claims: {hits} forbidden phrase(s) in {len(paths)} file(s)")
         return 1
 
-    pin = check_pinned_image(scanned)
-    if pin != 0:
-        return pin
+    for check in (check_pinned_image, check_demo_instance):
+        status = check(scanned)
+        if status != 0:
+            return status
 
     print(
         f"check-claims: {len(compiled)} known wordings alive over {len(paths)} file(s), none "
