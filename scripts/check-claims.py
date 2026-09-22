@@ -113,6 +113,13 @@ SESSION_PATH = "/session"
 # pulls. The page's sentence is that an instance of the server runs at that host, so a `/meta`
 # that does not name this is a different thing answering on the same host.
 SERVER_NAME = re.compile(r"selvaged/\S+")
+# The host card's own element in the shell the client serves: `web_client`'s `public/index.html`
+# writes it into the markup rather than building it in script, so it is in the bytes `/` answers
+# with whatever the browser is and whether or not the bundle's script has run. It is the artefact
+# behind the page's sentence that a session can be started from the demo's page: a bundle older
+# than the one that added the card carries no such element, and the sentence would be about a page
+# that cannot start one.
+HOST_CARD = re.compile(r'id="host-wrap"')
 USER_AGENT = "selvage-site-check/1.0"
 # A link's destination lives in an attribute, and the visible text carries only its label, so both
 # are scanned: an anchor labelled with the demo host can point somewhere else entirely.
@@ -186,13 +193,16 @@ FORBIDDEN: list[Phrase] = [
         ("end<span></span>-to-end encrypted",),
     ),
     Phrase(
-        # The browser client is published now: the demo instance serves `web_client` at one
-        # public origin, so the page may name a route a reader can follow, and the alternatives
-        # that denied one are gone with the reason that produced them. What survives is what is
-        # still false about that page: it is a guest join form, so joining needs an invite link
-        # and hosting stays in the two editors; the stale denial stays caught, because the page
-        # once carried it; and so does the claim that the project's own landing page is a place
-        # to join a room, which is the route-shaped overclaim left now that a real one exists.
+        # The browser client is published now and it hosts: on Chrome or Edge a page its own
+        # server serves starts a room from a folder the person picks, which is the demo's shape
+        # and needs no editor at all. The page may therefore name a route a reader can follow and
+        # say a room can be started from a page. What survives is what is still false: hosting in
+        # a browser the reader may not be holding (Firefox and Safari have no directory picker,
+        # so they join and cannot host, which is the claim the unqualified "host a session in the
+        # browser" makes); joining without the invite link a host copies; the stale denial that
+        # nothing runs in a page, which the page once carried; and the claim that the project's
+        # own landing page is a place to join a room, the route-shaped overclaim left now that a
+        # real route exists.
         r"\bnothing runs? in a (?:web page|tab|browser)\b"
         r"|no clients? (?:to|that|which)? ?(?:runs?|open)\w* in a (?:web page|tab|browser)"
         r"|\b(?:host|start|create|mint)\w*\s+(?:a|the|your)\s+(?:room|session)\s+"
@@ -203,9 +213,11 @@ FORBIDDEN: list[Phrase] = [
         r"|" + SITE_ORIGIN + r"[^.]{0,48}\b(?:browser|client|room|join|edit)\w*\b"
         r"|\b(?:browser|client|room|join|edit)\w*\b[^.]{0,48}" + SITE_ORIGIN,
         "open the page in your browser and start typing",
-        "the browser page exists and one public origin serves it — the demo instance — but it is "
-        "a guest join form: joining needs the invite link a host copies, and hosting stays in the "
-        "two editors. The project's own site is a landing page, not a client",
+        "the browser page joins a room from a link in any browser, and Chrome or Edge can start "
+        "one from a folder on a page the room's own server serves, which the demo is. What is "
+        "false is the unqualified form: Firefox and Safari have no directory picker, a page no "
+        "server serves cannot host, joining needs the invite link a host copies, and the "
+        "project's own site is a landing page rather than a client",
         (
             "nothing runs in a web page",
             "there is no client to open in a tab",
@@ -217,20 +229,25 @@ FORBIDDEN: list[Phrase] = [
         (
             "The browser page joins the same room from a tab, with the invite link a host copies.",
             "A guest works in the page at https://selvage.dontblameme.dev with nothing installed.",
-            "The server listens on ws://127.0.0.1:8080. The browser page is guests only.",
+            "On Chrome or Edge, a page its own server serves starts a session from a folder you pick.",
+            "The page starts a room in Chrome or Edge, and only where its own server serves it.",
+            "Chrome or Edge can start a session from the page instead.",
         ),
     ),
     Phrase(
         r"\b(?:create|rename|delete)\w*\s+(?:files?|folders?|directories|paths)",
         "delete files in the host's folder",
         "the room carries no file mutations: nothing on the wire adds, renames or removes a "
-        "path, and nothing writes to the host's working copy",
+        "path, and the only write to the host's working copy is the host's own. A guest's "
+        "keystroke reaches the folder through the host's client, which is what writes out the "
+        "text the room settled on",
     ),
     Phrase(
         r"file (?:creat|renam|delet)\w*",
         "file creation",
         "the room carries no file mutations: nothing on the wire adds, renames or removes a "
-        "path, and nothing writes to the host's working copy",
+        "path, and the only write to the host's working copy is the host's own, so a guest "
+        "cannot create, rename or delete a file in it",
     ),
     Phrase(
         # This entry used to forbid the word `docker`, on the reason that no Dockerfile, compose
@@ -868,20 +885,26 @@ def session_path_reaches_the_server(status: int, media_type: str) -> bool:
     return 400 <= status <= 499 and media_type == "application/json"
 
 
-def demo_page_route() -> tuple[int, str]:
-    """What the instance answers `/` with, as its status and media type.
+def demo_page_route() -> tuple[int, str, str]:
+    """What the instance answers `/` with: its status, its media type, and the bytes it serves.
 
     The status is asked for as well as the media type, because the proxy's own `404` page is
     `text/html` too: a `/` that serves the guest page is a `200`, and anything else is that origin
-    not serving it.
+    not serving it. The body comes back with them because one sentence on the page is about what
+    the served bundle can do, and only the bytes say which bundle it is.
     """
     request = urllib.request.Request(f"{DEMO_ORIGIN}/")
     request.add_header("User-Agent", USER_AGENT)
     try:
         with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
-            return response.status, response.headers.get_content_type()
+            return (
+                response.status,
+                response.headers.get_content_type(),
+                response.read().decode("utf-8", "replace"),
+            )
     except urllib.error.HTTPError as error:
-        return error.code, error.headers.get_content_type() if error.headers else ""
+        body = error.read().decode("utf-8", "replace") if error.headers else ""
+        return error.code, error.headers.get_content_type() if error.headers else "", body
 
 
 def page_names(version: str, pages: list[Scanned]) -> bool:
@@ -970,7 +993,7 @@ def check_demo_instance(pages: list[Scanned]) -> int:
     try:
         reported, offered = demo_meta()
         session_status, session_type = demo_session_route()
-        page_status, media_type = demo_page_route()
+        page_status, media_type, page_body = demo_page_route()
     except urllib.error.HTTPError as error:
         answer = error.read(200).decode("utf-8", "replace").strip()
         print(
@@ -1029,10 +1052,20 @@ def check_demo_instance(pages: list[Scanned]) -> int:
         )
         return 1
 
+    if not HOST_CARD.search(page_body):
+        print(
+            f"check-claims: {DEMO_ORIGIN}/ serves a page whose shell carries no host card, and "
+            "the browser row says Chrome or Edge can start a session from the demo's page: the "
+            "card is what a bundle that can start one carries in its markup, so the bundle the "
+            "instance serves is one that cannot",
+            file=sys.stderr,
+        )
+        return 1
+
     print(
         f"check-claims: the demo instance {DEMO_ORIGIN} answers, reports {reported!r} offering "
         f"{', '.join(offered)}, answers {SESSION_PATH} with the server's own JSON "
-        f"({session_status}), and serves a page"
+        f"({session_status}), and serves a page whose shell carries the host card"
     )
     return 0
 
