@@ -119,7 +119,7 @@ the reader can name.
 | Part | Its job |
 |---|---|
 | Hero | the promise, three landed facts, two CTAs, the room figure, and one line under the CTAs naming the specification as a draft at wire version `selvage/1`. The `h1`, *Edit the same file together, on a server you run.*, says what the product does and carries the self-hosted wedge from the design record's hook |
-| Get it working | the published image as one `docker run`, and a link to the compose file and the source build — then one folded row per editor: VS Code, Neovim and the browser page, each with its prerequisites, its exact commands and its repository, and the browser row linking the demo, which serves the same page. The long routes (the corpus check, the vector replay) fold into one `details`. It closes on *Try the demo*, the one small instance the project runs, last in the section so the command and the editor rows keep the ground the hero points at; that section gives the address an editor hosts on and the setting each client takes it in, and leaves the guest to the invite link. It opens on the product's own shape: you run the server and the invite link is how somebody joins you, and the demo is a guest's way into a room somebody else hosts |
+| Get it working | the published image as one `docker run`, and a link to the compose file and the source build — then one folded row per editor: VS Code, Neovim and the browser page, each with its prerequisites, its exact commands and its repository, and the browser row linking the demo, whose page its own server serves and where Chrome or Edge can start a session. The long routes (the corpus check, the vector replay) fold into one `details`. It closes on *Try the demo*, the one small instance the project runs, last in the section so the command and the editor rows keep the ground the hero points at; that section gives the address an editor hosts on and the setting each client takes it in, leaves the guest to the invite link, and names the page as a way to start a room with no editor running. It opens on the product's own shape: you run the server and the invite link is how somebody joins you, and the demo is a guest's way into a room somebody else hosts, or a host's way to start one |
 | See it working | four cards, each with a drawing of the thing it claims: anyone with the link is in, two carets in one text, the paths a guest sees, multiple clients on one engine |
 | How it works | the four moves in order (host a folder, send the invite, type in the same file, close the window), under the design record's one-sentence workflow |
 | The session layer has no specification | the wedge: language tooling has the Language Server Protocol and debugging the Debug Adapter Protocol, document sync has `y-protocols`, and the session layer is unspecified, so every collaborative tool decides those for itself. The specification is the flagship artifact, and the corpus counts appear here once, as the evidence they are |
@@ -149,15 +149,18 @@ mailing service.
 
 The must-not-say table below still binds every line. Three rows moved with what is now true:
 
-- **The browser client, and the instance that serves it.** `web_client`, Monaco in a page, guests
-  only, is served at one public origin now — the demo — so the page may name a route a reader can
-  follow and the patterns that denied one are gone with the reason that produced them. What the
-  filter holds instead is what is still false about that page: it is a guest join form, so joining
-  needs the invite link a host copies and hosting stays in the two editors. The stale denial
-  ("nothing runs in a web page") stays caught, because the page carried it once, and so does the
-  claim that the project's own landing page is somewhere a room is joined — the route-shaped
-  overclaim left now that a real one exists. The `clean` fixtures are the honest sentences, one of
-  them the demo origin itself, so a widening that forbids the truth fails the gate.
+- **The browser client, and the instance that serves it.** `web_client`, Monaco in a page, is
+  served at one public origin now — the demo — so the page may name a route a reader can follow
+  and the patterns that denied one are gone with the reason that produced them. The page hosts as
+  well: on Chrome or Edge a page its own server serves starts a session from a folder the person
+  picks, which is the demo's shape and the one way into a room with no editor running. What the
+  filter holds instead is what is still false: hosting in a browser the reader may not be holding
+  (Firefox and Safari have no directory picker, so they join and cannot host), joining without the
+  invite link a host copies, and the project's own site as a place to join a room. The stale
+  denial ("nothing runs in a web page") stays caught, because the page carried it once, and so
+  does the unqualified "host a session in the browser", which is the shape that overclaim takes.
+  The `clean` fixtures are the honest sentences, two of them hosting sentences and one the demo
+  origin itself, so a widening that forbids the truth fails the gate.
 - **The demo instance.** It runs, so "try the live demo" and the install-free page are truth and
   the entry that denied the instance is replaced by the overclaim that came with one: a demo
   described as a service. Its rooms are in memory on one small box, it keeps no work, and its terms
@@ -422,9 +425,13 @@ hand-rolled upgrade from a runner's egress with `403` and a request the proxy re
 nothing; the upgrade was verified by hand, from a client the proxy accepts, and that is recorded in
 the findings rather than claimed here. It also asks `/` for a `200` and a `text/html`, because the
 browser row tells a guest the demo serves the page and the proxy's own `404` is `text/html` too, so
-the media type alone would let a dead page satisfy it. What the demo half no longer does is compare the instance's
-release to the page: the page named one, a reader had no use for it, and it is gone from the
-section. `PINNED_IMAGE_VERSION` still ties the page's `docker run` to the registry. The wire version is held
+the media type alone would let a dead page satisfy it. It then reads the bytes `/` answered with and
+requires the host card's own element in them, because the browser row also says a session can be
+started from the demo's page: the card is markup the client's shell carries, so it is in the served
+bytes whether or not the bundle's script has run, and a demo rolled back to a guests-only release
+is that sentence going false with nothing else to say so. What the demo half no longer does is
+compare the instance's release to the page: the page named one, a reader had no use for it, and it
+is gone from the section. `PINNED_IMAGE_VERSION` still ties the page's `docker run` to the registry. The wire version is held
 to what the instance offers rather than to a constant here, because the page owns the version it
 names and the instance owns the version it speaks. **That assertion couples the site's gate to a
 running box**: a demo that is down or moved, a `/session` the proxy no longer routes to the
@@ -441,8 +448,8 @@ answer at all, and exits 1 when the instance answers something that disproves a 
 | `salvage/1` | The wire version is `selvage/1`. "Selvage" is heard as "salvage", which is why the full protocol title appears at least once in the page's first paragraph |
 | end-to-end encryption, E2EE | Version 1 has no encryption layer: frames travel through the server as unencrypted bytes, and the slice has no transport security either. The relay is payload-opaque but not confidential |
 | "the server cannot read it" / "the text never reaches the server" | The relay routes opaque bytes and keeps no document text, but it can read a frame as it passes and there is no transport security. It is not a confidential relay |
-| a browser route a reader can open, hosting in a browser, a room without an invite | The browser client exists (`web_client`, Monaco in a page, guests only) and the demo instance serves it at a public origin, so naming the demo page is truth, and the browser row may link it as the page a guest reaches with nothing installed. What is not: hosting in a browser (hosting is the two editors plus a server), joining without the invite link a host copies (the page is a guest join form), and the project's own site as a place to join a room (it is a landing page). The stale denial "nothing runs in a web page" stays caught too: that sentence was true when the filter forbade the bare word and it is false now |
-| file create, rename or delete | The room carries no file mutations and nothing writes to the host's working copy. The host's own editor still changes that folder, and a Neovim guest's mirror materialises the granted paths |
+| hosting from a page in any browser, a room with no invite, the project's own site as a client | The browser client is published and it hosts: on Chrome or Edge a page the room's own server serves starts a session from a folder the person picks, which is the demo's shape, so the page says so. What is not true: hosting in any browser (Firefox and Safari have no `showDirectoryPicker` and can join but cannot host), a page no Selvage server serves offering it (the client says why instead of offering a control that could only refuse), joining without the invite link a host copies, and the project's own site as a place to join a room (it is a landing page). The stale denial "nothing runs in a web page" stays caught too, and so does the unqualified "host a session in the browser", which is the shape that overclaim takes |
+| file create, rename or delete | The room carries no file mutations: nothing on the wire adds, renames or removes a path, and the only write to the host's working copy is the host's own. A guest's keystroke reaches the folder through the host's client, which is what writes out the text the room settled on, and a Neovim guest's mirror materialises the granted paths |
 | the server route denied: no image to pull, nothing to install on the server | The reason this entry used to give — that no Dockerfile, compose file or service unit exists in any repository — is false now. `ghcr.io/selvage-protocol/selvaged:0.2.0` is published and pulls anonymously, `reference_server/compose.yaml` runs it, and `reference_server/packaging/systemd/selvaged.service` installs the binary. The pattern used to forbid the word `docker` itself, on that stale reason; it holds the denial of those artefacts instead, which is the sentence the page carried |
 | a stable 1.0 | The wire version is `selvage/1`; the compatibility rule in force is the same major. No corpus line puts the design at 0.x. The pattern's lookbehind keeps `0.2.0` out of it: that is the version of the published image, a number inside a number, not a claim that 1.0 exists |
 | a second implementation, or interoperability | There is none. The Neovim client drives a byte-identical copy of the same engine, so nothing yet shows a client built from the prose alone agreeing byte for byte with the Rust one |
@@ -517,7 +524,7 @@ that reintroduces a false positive fails it too. The scan also reads the page's 
 holds it to the version pinned in `scripts/check-claims.py`, and asks `ghcr.io` for that tag, and
 reads the page's demo reference, holds it to the one host the check allows, and asks that instance
 what it reports, whether the editor address's `/session` path is answered by the server rather than
-by the proxy in front of it, and whether its `/` serves the page.
+by the proxy in front of it, and whether its `/` serves the page with a host card in its shell.
 
 The policy step reads the same rendered file, its not-found route, and the policy out of
 `vercel.json`, and fails when the policy would refuse a script, stylesheet or image either page

@@ -15,8 +15,8 @@ const heroFacts = [
     conformance vectors.
   </>,
   <>
-    Guests see the paths you grant and edit the room&apos;s text. Nothing writes to
-    your folder, and the room ends when you leave.
+    Guests see the paths you grant and edit the room&apos;s text. Only your own
+    client writes to your folder, and the room ends when you leave.
   </>,
   <>
     There is no account on either side. Rooms live in memory on the server you host,
@@ -67,8 +67,9 @@ const roomCards = [
       <>
         The VS Code client, the Neovim client and the browser page each drive a copy
         of the same engine and bridge, so a room&apos;s rules live in one
-        implementation. The browser page is guests-only: it opens what the room
-        shares while hosting stays in the editors.
+        implementation. The page joins a room from a link, and on the
+        server&apos;s own page, Chrome or Edge can start one from a folder you
+        pick.
       </>
     ),
     figure: (
@@ -85,8 +86,9 @@ const steps = [
     body: (
       <>
         Start the server, open a folder in VS Code or Neovim, and host a session
-        from the command palette. The client lists the paths inside that folder and
-        sends the listing.
+        from the command palette. On the server&apos;s own page, Chrome or Edge can
+        host from a folder the page asks for. The host lists the paths inside that
+        folder and sends the listing.
       </>
     ),
   },
@@ -300,21 +302,29 @@ export default function Home() {
             </details>
             <details className="quickstart">
               <summary>
-                Browser page: guests only, served by the server above
+                Browser page: join a room, or start one in Chrome or Edge
               </summary>
               <div className="quickstart-body">
                 <p>
                   The server above serves the page on the same port, and{" "}
                   <a href="https://selvage.dontblameme.dev">the demo</a>{" "}
-                  serves it too. Hosting stays in the two editors, and a guest
-                  opens the invite link the host copied and edits in the page,
-                  which takes the room and token in its query string:
+                  serves it too. A guest opens the invite link the host copied
+                  and edits in the page, which takes the room and token in its
+                  query string:
                 </p>
                 <pre>
                   <code>
                     {"http://127.0.0.1:8080/?room=<room>&token=<token>"}
                   </code>
                 </pre>
+                <p>
+                  With no invite link, Chrome or Edge can start a session from the
+                  page instead: the page asks for a folder, lists the paths inside
+                  it, and writes the room&apos;s settled text back into the file it
+                  came from. It has to be the page its own server serves, which is
+                  how <a href="https://selvage.dontblameme.dev">the demo</a> is
+                  served.
+                </p>
                 <p>
                   The page lives in{" "}
                   <a href="https://github.com/selvage-protocol/web_client">
@@ -338,7 +348,8 @@ export default function Home() {
               <code>vim.g.selvage_server_url</code> in Neovim. A host started
               with neither setting asks for the address. The invite link it
               copies opens the room in the browser page, so a guest needs
-              nothing installed.
+              nothing installed. Chrome or Edge can start a room there from the
+              page itself, with no editor running at all.
             </p>
             <p>
               Rooms live in memory on one small box, and a restart ends every one
