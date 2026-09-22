@@ -231,6 +231,7 @@ FORBIDDEN: list[Phrase] = [
             "A guest works in the page at https://selvage.dontblameme.dev with nothing installed.",
             "On Chrome or Edge, a page its own server serves starts a session from a folder you pick.",
             "The page starts a room in Chrome or Edge, and only where its own server serves it.",
+            "Chrome or Edge can start a session from the page instead.",
         ),
     ),
     Phrase(
