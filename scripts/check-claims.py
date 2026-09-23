@@ -99,7 +99,7 @@ REQUEST_TIMEOUT_SECONDS = 20
 # the check compared it; the page stopped naming it, because a visitor has no use for the version
 # of an endpoint they will never call. `PINNED_IMAGE_VERSION` is still asserted, against the
 # registry, as the tag the `docker run` hands a reader.
-DEMO_HOST = "selvage.dontblameme.dev"
+DEMO_HOST = "selvage-demo.dontblameme.dev"
 DEMO_ORIGIN = "https://" + DEMO_HOST
 # Every reference the page may carry to that host: the instance's own origin, and its terms page.
 # The session address is the origin as well, with no path. The clients append the endpoint path
@@ -276,7 +276,7 @@ FORBIDDEN: list[Phrase] = [
         ),
         (
             "The browser page joins the same room from a tab, with the invite link a host copies.",
-            "A guest works in the page at https://selvage.dontblameme.dev with nothing installed.",
+            "A guest works in the page at https://selvage-demo.dontblameme.dev with nothing installed.",
             "On Chrome or Edge, a page its own server serves starts a session from a folder you pick.",
             "The page starts a room in Chrome or Edge, and only where its own server serves it.",
             "Chrome or Edge can start a session from the page instead.",
@@ -443,7 +443,7 @@ FORBIDDEN: list[Phrase] = [
             "run your team's sessions on the demo",
         ),
         (
-            "A demo instance runs at https://selvage.dontblameme.dev.",
+            "A demo instance runs at https://selvage-demo.dontblameme.dev.",
             "The demo's rooms live in memory: a restart ends every one of them.",
             "Rooms on the demo are not kept; run your own server for that.",
         ),

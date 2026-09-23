@@ -317,7 +317,7 @@ export default function Home() {
               <div className="quickstart-body">
                 <p>
                   The server above serves the page on the same port, and{" "}
-                  <a href="https://selvage.dontblameme.dev">the demo</a>{" "}
+                  <a href="https://selvage-demo.dontblameme.dev">the demo</a>{" "}
                   serves it too. A guest opens the invite link the host copied
                   and edits in the page, which takes the room and token in its
                   query string:
@@ -332,7 +332,7 @@ export default function Home() {
                   page instead: the page asks for a folder, lists the paths inside
                   it, and writes the room&apos;s settled text back into the file it
                   came from. It has to be the page its own server serves, which is
-                  how <a href="https://selvage.dontblameme.dev">the demo</a> is
+                  how <a href="https://selvage-demo.dontblameme.dev">the demo</a> is
                   served.
                 </p>
                 <p>
@@ -349,11 +349,11 @@ export default function Home() {
             <h3>Try the demo</h3>
             <p>
               A small instance of the server runs at{" "}
-              <a href="https://selvage.dontblameme.dev">
-                selvage.dontblameme.dev
+              <a href="https://selvage-demo.dontblameme.dev">
+                selvage-demo.dontblameme.dev
               </a>
               . Point one of the editors above at{" "}
-              <code>wss://selvage.dontblameme.dev</code> and it hosts a room
+              <code>wss://selvage-demo.dontblameme.dev</code> and it hosts a room
               there: <code>selvage.serverUrl</code> in VS Code,{" "}
               <code>vim.g.selvage_server_url</code> in Neovim. A host started
               with neither setting asks for the address. The invite link it
@@ -366,7 +366,7 @@ export default function Home() {
               of them. Run the server above for work you need to keep, on your
               own machine or on one you rent. The instance is for personal and
               evaluation use, and non-commercial:{" "}
-              <a href="https://selvage.dontblameme.dev/terms">its terms</a> cover
+              <a href="https://selvage-demo.dontblameme.dev/terms">its terms</a> cover
               this one box, and the licences below decide what the software itself
               may be used for, <code>selvaged</code>&apos;s FSL-1.1-MIT reserving
               commercial hosting for the project.

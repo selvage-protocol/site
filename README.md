@@ -409,7 +409,7 @@ arm64, and `selvaged:0.1.1` proved the difference by publishing both legs around
 every layer digest identical across the two. The two versions a page must never name are `0.1.0`
 and `0.1.1`; `0.1.2` was correct and is superseded by `0.2.0`, which is the pin. The second is the
 demo instance: the page points at one host, every reference to that host has to be one of the three
-the page may carry, a link has to point at the instance itself, and `https://selvage.dontblameme.dev/meta`
+the page may carry, a link has to point at the instance itself, and `https://selvage-demo.dontblameme.dev/meta`
 has to report a `selvaged` server offering a wire version the page names. The references are read
 from the visible text *and* from the links' destinations, because a label and the place it goes
 are two claims: an anchor labelled with the demo host whose `href` points elsewhere passes a
@@ -417,7 +417,7 @@ text-only scan. The allowed references are the origin, its `/terms`, and the `ws
 **no path**, because both clients append `/session` to whatever address they are given (`sessionUrl`
 in the engine they vendor), so the page naming `wss://…/session` would hand a reader an address that
 gets a second `/session` appended and is refused. The check asserts that path separately, by
-asking `https://selvage.dontblameme.dev/session` for a plain `GET` and requiring a **4xx carrying
+asking `https://selvage-demo.dontblameme.dev/session` for a plain `GET` and requiring a **4xx carrying
 the server's own JSON**: the path has to reach the server the page names, a redirect or a `5xx` must
 not stand in for it, and the proxy's own `404` page is `text/html`. Which `4xx` the server picks is
 its business, and pinning `404` would redden this gate for a change in `selvaged` that makes no
