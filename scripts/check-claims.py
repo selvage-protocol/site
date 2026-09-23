@@ -64,7 +64,7 @@ VEHICLE = r"\d[\d,]*"
 # The address the project's own landing page is served at. The browser entry holds a claim that
 # this origin is a place to join a room: the demo instance is where a page can be opened now, and
 # the site is not a client.
-SITE_ORIGIN = r"selvage-protocol\.vercel\.app"
+SITE_ORIGIN = r"selvage\.dontblameme\.dev"
 
 DASHES = re.compile("[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]")
 
@@ -270,9 +270,9 @@ FORBIDDEN: list[Phrase] = [
             "nothing runs in a web page",
             "there is no client to open in a tab",
             "host a session in the browser",
-            "browse selvage-protocol.vercel.app in your browser",
-            "selvage is available in your browser at selvage-protocol.vercel.app",
-            "selvage-protocol.vercel.app is where a guest joins",
+            "browse selvage.dontblameme.dev in your browser",
+            "selvage is available in your browser at selvage.dontblameme.dev",
+            "selvage.dontblameme.dev is where a guest joins",
         ),
         (
             "The browser page joins the same room from a tab, with the invite link a host copies.",

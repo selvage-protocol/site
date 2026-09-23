@@ -7,10 +7,9 @@ const description =
   "One Rust binary you host holds the room and an invite link is the whole permission: VS Code, Neovim and a browser page edit the same file, with no account and no third party's cloud holding the room. The flagship artifact is the written session-layer specification, with JSON Schema and conformance vectors.";
 
 // The page's home. `metadataBase` resolves the file conventions' paths against it, and the
-// canonical link and `og:url` name it, so one constant decides all three. `selvageprotocol.com`
-// is not registered and registering it is not being pursued; `check-csp.py`'s own
+// canonical link and `og:url` name it, so one constant decides all three. `check-csp.py`'s own
 // `DEFAULT_ORIGIN` names the same origin.
-const LIVE_ORIGIN = "https://selvage-protocol.vercel.app";
+const LIVE_ORIGIN = "https://selvage.dontblameme.dev";
 
 export const metadata: Metadata = {
   // A crawler or a link unfurl cannot fetch the convention paths under `app/`, so the
