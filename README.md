@@ -465,8 +465,9 @@ version a binary speaks. A tag with no entry in that map fails the check, so a r
 the pin has to declare the new tag's wire in the same wave; the page's sentence is checked against
 that declaration and not against a default. A page that claims sealing has to name both majors —
 the wire that seals and the wire that does not — and to say the sealed one is not in a published
-release exactly while no instance offers it. That pair moves: once the demo offers `selvage/2`, the page's "not in a published
-release" sentence is what the check rejects instead.
+release exactly while no release speaks it, which is read from the same map and not from the
+demo: an instance is one deployment of one tag, so a pin that moves before the demo is redeployed
+or a demo redeployed before the pin moves would otherwise make the page say something false.
 
 The relay-visibility disclosure is required rather than permitted, and it exists because the
 `clean` fixtures can only prove the phrase pattern does not reject the paragraph, not that the page

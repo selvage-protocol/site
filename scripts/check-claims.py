@@ -1545,7 +1545,7 @@ def page_names(version: str, pages: list[Scanned]) -> bool:
 
 
 def wire_binding_problems(
-    page: Scanned, offered: tuple[str, ...], pinned_wire: str
+    page: Scanned, offered: tuple[str, ...], pinned_wire: str, released: bool
 ) -> list[str]:
     """What this page says about wire versions that the artefacts behind it do not support."""
     problems: list[str] = []
@@ -1579,14 +1579,15 @@ def wire_binding_problems(
             f"it describes sealing and never names {PLAINTEXT_WIRE}, the wire that does not seal"
         )
     unreleased = SEALING_UNRELEASED.search(page.text) is not None
-    if SEALED_WIRE in offered and unreleased:
+    if released and unreleased:
         problems.append(
-            f"it still calls {SEALED_WIRE} unreleased, and {DEMO_ORIGIN}/meta offers it"
+            f"it still calls {SEALED_WIRE} unreleased, and a published release speaks it "
+            f"(`IMAGE_WIRE_BY_TAG`)"
         )
-    if SEALED_WIRE not in offered and not unreleased:
+    if not released and not unreleased:
         problems.append(
             f"it claims sealing and never says {SEALED_WIRE} is not in a published release, "
-            f"while {DEMO_ORIGIN}/meta offers only {', '.join(offered)}"
+            f"while no release in `IMAGE_WIRE_BY_TAG` speaks it"
         )
     return problems
 
@@ -1602,9 +1603,11 @@ def check_wire_binding(pages: list[Scanned]) -> int:
     half is measured, against what `/meta` offers, where no wording can forge it; the image's
     half is read from `IMAGE_WIRE_BY_TAG`, which a release has to extend in the same wave as the
     pin. A page that claims sealing must also name the wire that does not seal, and must say the
-    sealed one is not in a published release exactly while no instance offers it: still calling it
-    unreleased after a release tells a reader their room is plaintext when it is not, which is the
-    same defect with the sign the other way round.
+    sealed one is not in a published release exactly while no release speaks it: that is the map's
+    fact and not one instance's, because a pin can move before the demo is redeployed and the demo
+    can be redeployed before the pin moves, and neither ordering may make the page say what is
+    false. Still calling it unreleased after a release tells a reader their room is plaintext when
+    it is not, which is the same defect with the sign the other way round.
 
     Returns 0, 1 when the page says something the artefacts disprove, 2 when the instance cannot
     be asked or this file cannot say what the pin speaks.
@@ -1628,6 +1631,9 @@ def check_wire_binding(pages: list[Scanned]) -> int:
         )
         return 2
     pinned_wire = IMAGE_WIRE_BY_TAG[PINNED_IMAGE_VERSION]
+    # The release state is the map's, not the demo's: an instance is one deployment of one tag,
+    # and a page held to whichever of the two moved last would be made to say what is false.
+    released = SEALED_WIRE in IMAGE_WIRE_BY_TAG.values()
     try:
         offered = demo_meta()[1]
     except (urllib.error.URLError, OSError, ValueError, KeyError) as error:
@@ -1641,7 +1647,7 @@ def check_wire_binding(pages: list[Scanned]) -> int:
 
     failed: list[tuple[str, list[str]]] = []
     for page in binding:
-        problems = wire_binding_problems(page, offered, pinned_wire)
+        problems = wire_binding_problems(page, offered, pinned_wire, released)
         if problems:
             failed.append((os.path.relpath(page.path, root), problems))
     if failed:
@@ -1653,15 +1659,19 @@ def check_wire_binding(pages: list[Scanned]) -> int:
             )
         return 1
     sealed = SEALING.search(binding[0].text) is not None
+    note = (
+        "carries no sealing claim to bind"
+        if not sealed
+        else (
+            f"names {SEALED_WIRE} as not in a published release"
+            if not released
+            else f"does not call {SEALED_WIRE} unreleased"
+        )
+    )
     print(
         f"check-claims: the page binds its sealing claim to the wire versions the artefacts "
         f"speak — the pin {PINNED_IMAGE_VERSION} as {pinned_wire}, the demo as "
-        f"{', '.join(offered)} from `/meta` — and "
-        + (
-            f"names {SEALED_WIRE} as not in a published release"
-            if sealed
-            else "carries no sealing claim to bind"
-        )
+        f"{', '.join(offered)} from `/meta` — and {note}"
     )
     return 0
 
