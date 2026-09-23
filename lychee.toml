@@ -1,10 +1,15 @@
 # What the link check does not check, and why.
 #
-# Nothing is excluded. The waitlist form is gone (the page collects nothing), so
-# the reserved-name endpoint went with it, and every link left on the page is
-# expected to resolve and is checked. The page's home is
+# `^mailto:` is the one exclusion: the contact address in the footer. The check
+# runs lychee without `--include-mail`, so a `mailto:` is counted as excluded
+# whether or not it is named here, and nothing can follow it to a live
+# destination either way. Naming it says that on purpose rather than by default,
+# and keeps the address a link a person can write to. Nothing else is excluded.
+# The waitlist form is gone (the page collects nothing), so the reserved-name
+# endpoint went with it, and every other link left on the page is expected to
+# resolve and is checked. The page's home is
 # `https://selvage-protocol.vercel.app`: the canonical link, `og:url` and
-# `og:image` all name that origin, and it resolves, so there is nothing to
-# exclude. `selvageprotocol.com` is not registered and registering it is not
-# being pursued. If a URL ever needs an exclusion, add it here with its reason
-# beside it.
+# `og:image` all name that origin, and it resolves. `selvageprotocol.com` is not
+# registered and registering it is not being pursued. If a URL ever needs
+# another exclusion, add it here with its reason beside it.
+exclude = ["^mailto:"]

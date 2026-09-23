@@ -7,12 +7,13 @@ sentence that is merely unbacked all pass it. What it does guarantee is narrower
 worth having: those known wordings do not appear, even when the page wraps them across lines or
 encodes the characters as HTML entities.
 
-Two claims are asserted in the positive instead, because a phrase list cannot reach them: the image
-tag in the `docker run` the page hands a reader, and the instance the demo section points at — the
-address it gives an editor, the wire version that address speaks, and the page a guest is sent to.
-The address half asks the path a plain `GET` can reach, not the upgrade: see `demo_session_route`.
-Each is a fact with an artefact behind it, and a wrong tag is a command that fails rather than a
-wording that lies. See `PUBLISHED_IMAGE` and `DEMO_ORIGIN` below.
+Three claims are asserted in the positive instead, because a phrase list cannot reach them: the
+image tag in the `docker run` the page hands a reader, the instance the demo section points at —
+the address it gives an editor, the wire version that address speaks, and the page a guest is sent
+to — and the disclosure of what the sealed relay still sees. The address half asks the path a
+plain `GET` can reach, not the upgrade: see `demo_session_route`. Each is a fact with an artefact
+behind it, and a wrong tag is a command that fails rather than a wording that lies. See
+`PUBLISHED_IMAGE`, `DEMO_ORIGIN` and `RELAY_DISCLOSURE` below.
 
 Each entry below pairs a phrase the page must not carry with the reason it must not, and with a
 sample that has to match it. The reasons are not this script's opinion: every one of them is a
@@ -35,9 +36,10 @@ Run from anywhere; the repository root is resolved from this file's location. Ar
     scripts/check-claims.py              # every *.html in the checkout
     scripts/check-claims.py .tmp/empty   # reaches no file: that is a failure, not a pass
 
-Exit 0 when the page is clean of every known wording and both pins hold up, 1 when it
-carries a forbidden wording or a pin is wrong, 2 when the check itself cannot run (a dead
-pattern, nothing to scan, a registry that cannot be asked, or a demo host that does not answer).
+Exit 0 when the page is clean of every known wording and the positive claims hold up, 1 when it
+carries a forbidden wording or a positive claim is wrong, 2 when the check itself cannot run (a
+dead pattern, nothing to scan, a registry that cannot be asked, or a demo host that does not
+answer).
 """
 
 from __future__ import annotations
@@ -97,7 +99,7 @@ REQUEST_TIMEOUT_SECONDS = 20
 # the check compared it; the page stopped naming it, because a visitor has no use for the version
 # of an endpoint they will never call. `PINNED_IMAGE_VERSION` is still asserted, against the
 # registry, as the tag the `docker run` hands a reader.
-DEMO_HOST = "selvage.dontblameme.dev"
+DEMO_HOST = "selvage-demo.dontblameme.dev"
 DEMO_ORIGIN = "https://" + DEMO_HOST
 # Every reference the page may carry to that host: the instance's own origin, and its terms page.
 # The session address is the origin as well, with no path. The clients append the endpoint path
@@ -120,6 +122,35 @@ SERVER_NAME = re.compile(r"selvaged/\S+")
 # than the one that added the card carries no such element, and the sentence would be about a page
 # that cannot start one.
 HOST_CARD = re.compile(r'id="host-wrap"')
+# The page's paragraph about the sealed relay is a claim the gate has to *require*, not just
+# permit: the `clean` fixtures above only prove the pattern does not reject those sentences, and
+# an editor who deletes the paragraph would leave every one of them green. What is required is
+# the paragraph's facts, one pattern each, so a rewrite that keeps the facts passes and a page
+# that drops one fails. The sizes-and-timing fact is the one only this paragraph carries.
+RELAY_DISCLOSURE = (
+    (
+        "the room's existence",
+        re.compile(r"\b(?:room|session)s?\b[^.]{0,40}\bexists?\b", re.IGNORECASE),
+    ),
+    (
+        "its membership",
+        re.compile(
+            r"\bwho is in (?:it|one|the room|a room)\b|\bmembership\b|\bwho (?:has )?joined\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "the display names",
+        re.compile(
+            r"\bdisplay names?\b|\btheir names\b|\b(?:members?|participants?)'? names\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "the sizes and timing of what moves",
+        re.compile(r"\bsizes?\b[^.]{0,32}\btiming\b", re.IGNORECASE),
+    ),
+)
 USER_AGENT = "selvage-site-check/1.0"
 # A link's destination lives in an attribute, and the visible text carries only its label, so both
 # are scanned: an anchor labelled with the demo host can point somewhere else entirely.
@@ -186,11 +217,28 @@ FORBIDDEN: list[Phrase] = [
         "title exists to defend against",
     ),
     Phrase(
-        r"end[- ]to[- ]end|\be2ee\b",
-        "end-to-end encrypted",
-        "there is no encryption layer in version 1: frames travel through the server as "
-        "unencrypted bytes, and this slice has no transport security either",
-        ("end<span></span>-to-end encrypted",),
+        r"\bnobody (?:else )?can read\b"
+        r"|\bonly (?:you|the (?:people|two) in the room)\b"
+        r"|\bthe server learns nothing\b"
+        r"|\bfully encrypted\b"
+        r"|\bzero[- ]knowledge\b",
+        "nobody else can read the room",
+        "the relay is sealed, not omniscient: it still reads the room's existence, membership, "
+        "display names, sizes and timing, and the keys are in the link a human pastes",
+        (
+            "nobody else can read it",
+            "only the people in the room can read it",
+            "the server learns nothing",
+            "fully encrypted",
+            "zero-knowledge relay",
+        ),
+        (
+            "The server relays ciphertext, and cannot tell who is host.",
+            (
+                "It still sees that a room exists, who is in it, their names, and the sizes "
+                "and timing of what moves."
+            ),
+        ),
     ),
     Phrase(
         # The browser client is published now and it hosts: on Chrome or Edge a page its own
@@ -228,7 +276,7 @@ FORBIDDEN: list[Phrase] = [
         ),
         (
             "The browser page joins the same room from a tab, with the invite link a host copies.",
-            "A guest works in the page at https://selvage.dontblameme.dev with nothing installed.",
+            "A guest works in the page at https://selvage-demo.dontblameme.dev with nothing installed.",
             "On Chrome or Edge, a page its own server serves starts a session from a folder you pick.",
             "The page starts a room in Chrome or Edge, and only where its own server serves it.",
             "Chrome or Edge can start a session from the page instead.",
@@ -306,15 +354,52 @@ FORBIDDEN: list[Phrase] = [
         r"never leaves|never reaches|leaves? your machine|stays? on your machine"
         r"|only the people in the room",
         "your code never leaves your machine",
-        "the host's file contents travel through the server to the peers that ask for them and "
-        "there is no encryption layer in version 1; the relay is payload-opaque but plaintext, "
-        "so its operator can read a frame as it passes",
+        "the host's file contents travel through the server to the peers that ask for them, and "
+        "they are sealed in `selvage/2` but still leave the machine; 'only the people in the "
+        "room' is false whatever the version, because whoever holds the link can read the room, "
+        "its fragment included",
     ),
     Phrase(
-        r"server (?:cannot|can't|can not) (?:read|see)",
-        "the server cannot read what a room is editing",
-        "the relay is payload-opaque, not confidential: it holds no document text, but it can "
-        "read a frame as it routes it and there is no transport security in this slice",
+        # The relay is sealed, so "the server cannot read" is backed only when the thing it
+        # cannot read is named and is sealed material. Bare, or with the room or its membership
+        # as the object, it is the overclaim the page's own paragraph refutes.
+        r"\bthe server (?:cannot|can't) (?:read|see)\b"
+        r"(?!\s+(?:(?:the|any|its|your|our|a|their|all|of)\s+){0,3}"
+        r"(?:(?:sealed|encrypted)\s+|\w+['\u2019]s\s+)*"
+        r"(?:text|ciphertext|documents?|cursors?|file ?names?|roles?|listings?|bytes|"
+        r"contents?|keystrokes?)\b)"
+        # Host is a peer's signed claim the server cannot make, so that one reading is backed.
+        # It stays exempt only while it is the whole clause: an "or who is in the room" after it
+        # is the membership claim the relay does see, and is not exempt.
+        r"|\bthe server (?:cannot|can't) (?:tell|know) who\b"
+        r"(?!\s+(?:is\s+(?:the\s+)?host|the\s+host\s+is)\b"
+        r"(?!\s*(?:[,;:]|[-\u2013\u2014])?\s*(?:\b(?:and|or|nor|but)\b)?\s*"
+        r"(?:who\b|(?:the\s+)?(?:rooms?|members?|membership|people|participants)\b)))",
+        "the server cannot read anything",
+        "the relay is sealed, not omniscient: it reads no text, no cursor, no file name and no "
+        "role, and it cannot forge, mis-attribute or replay a frame, but it still reads a room's "
+        "existence, its membership, the display names and the sizes and timing of what moves, "
+        "and it can drop, delay or end any room. 'It cannot read' or 'it cannot read the room' "
+        "without naming sealed material is the unqualified form, and 'it cannot tell who is in "
+        "the room' is the membership claim it does see; the readings that stay legal are a "
+        "claim about named, sealed material and the peer's signed claim that it cannot tell who "
+        "is host",
+        (
+            "the server can't see anything",
+            "the server cannot read",
+            "the server cannot read the room",
+            "the server cannot tell who is in the room",
+            "the server cannot tell who is host or who is in the room",
+        ),
+        (
+            "The documents are sealed, so the server cannot read the text.",
+            "The server relays ciphertext, and cannot tell who is host.",
+            "The server cannot tell who the host is.",
+            (
+                "It still sees that a room exists, who is in it, their names, and the sizes "
+                "and timing of what moves."
+            ),
+        ),
     ),
     Phrase(
         r"\btrusted by\b|testimonial|case stud|\bscreenshot|\blogo\b",
@@ -358,7 +443,7 @@ FORBIDDEN: list[Phrase] = [
             "run your team's sessions on the demo",
         ),
         (
-            "A demo instance runs at https://selvage.dontblameme.dev.",
+            "A demo instance runs at https://selvage-demo.dontblameme.dev.",
             "The demo's rooms live in memory: a restart ends every one of them.",
             "Rooms on the demo are not kept; run your own server for that.",
         ),
@@ -418,16 +503,18 @@ FORBIDDEN: list[Phrase] = [
     Phrase(
         r"third[- ]part[^.]{0,24}sees?\b|no third[- ]part[^.]{0,24}saw\b",
         "No third party ever sees the room.",
-        "the relay is payload-opaque but plaintext with no transport security in this slice: "
-        "the server's operator and the network path can see the room's text. Only the page's "
-        "own weak reading ('no third party's cloud holding the room') is backed",
+        "the relay is sealed, not omniscient: the server's operator and the network path still "
+        "see the room's existence, its membership, the display names and the sizes and timing of "
+        "what moves, and the link's holder can read the room itself. Only the page's own weak "
+        "reading ('no third party's cloud holding the room') is backed",
         ("No third-party ever sees the room.",),
     ),
     Phrase(
         r"no cloud[^.]{0,24}between",
         "no cloud in between",
-        "the relay is payload-opaque but plaintext with no transport security in this slice: "
-        "the server's operator and the network path can see the room's text. Only the page's "
+        "the relay is sealed, not omniscient: the server's operator and the network path still "
+        "see the room's existence, its membership, the display names and the sizes and timing of "
+        "what moves, and the link's holder can read the room itself. Only the page's "
         "own weak reading ('no third party's cloud holding the room') is backed",
         ("no clo<!-- -->ud in between", "no cloud <em>in</em> between",
          "no cloud &#105;n between"),
@@ -1069,6 +1156,41 @@ def check_demo_instance(pages: list[Scanned]) -> int:
     )
     return 0
 
+
+def check_relay_disclosure(pages: list[Scanned]) -> int:
+    """The page's statement of what the sealed relay still sees, required rather than permitted.
+
+    The `clean` fixtures above only prove the phrase pattern does not reject those sentences;
+    they do not make the page carry one. Each fact the paragraph states has a pattern of its
+    own, so a rewritten paragraph that keeps the facts passes and one that drops a fact fails.
+    Deleting the paragraph fails too, and the sizes-and-timing fact is the one nothing else on
+    the page states. Returns 0 when a scanned page carries all four and 1 when none does; it
+    asks no network.
+    """
+    root = root_of_this_checkout()
+    failures: list[tuple[str, list[str]]] = []
+    for page in pages:
+        absent = [
+            label for label, pattern in RELAY_DISCLOSURE if not pattern.search(page.text)
+        ]
+        if not absent:
+            print(
+                "check-claims: the page states what the sealed relay still sees — the room's "
+                "existence, its membership, the display names and the sizes and timing of "
+                "what moves"
+            )
+            return 0
+        failures.append((os.path.relpath(page.path, root), absent))
+    for where, absent in failures:
+        print(
+            f"check-claims: {where} does not state what the sealed relay still sees: it is "
+            f"missing {', '.join(absent)}. The page's server section carries that disclosure, "
+            "so a page with a fact dropped from it claims more than the relay does",
+            file=sys.stderr,
+        )
+    return 1
+
+
 def main() -> int:
     compiled: list[tuple[Phrase, re.Pattern[str]]] = []
     for phrase in FORBIDDEN:
@@ -1137,7 +1259,7 @@ def main() -> int:
         print(f"check-claims: {hits} forbidden phrase(s) in {len(paths)} file(s)")
         return 1
 
-    for check in (check_pinned_image, check_demo_instance):
+    for check in (check_relay_disclosure, check_pinned_image, check_demo_instance):
         status = check(scanned)
         if status != 0:
             return status
