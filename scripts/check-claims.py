@@ -10,12 +10,15 @@ encodes the characters as HTML entities.
 Facts are asserted in the positive instead, because a phrase list cannot reach them: the image tag
 in the `docker run` the page hands a reader, the instance the demo section points at — the address
 it gives an editor, the wire version that address speaks, and the page a guest is sent to — the
-wire version the page says each artefact it hands a reader speaks, and the two disclosures the page
+wire version the page says each artefact it hands a reader speaks, the two disclosures the page
 owes a reader: what the sealed relay still sees, and that a guest who opens the room server's own
-page trusts that server for the client code as well as for the relay. The address half asks the
+page trusts that server for the client code as well as for the relay, and the identity the
+extension is published under with the two registries the release publishes it to and what an
+install is and is not. The address half asks the
 path a plain `GET` can reach, not the upgrade: see `demo_session_route`. Each is a fact with an
 artefact behind it, and a wrong tag is a command that fails rather than a wording that lies. See
-`PUBLISHED_IMAGE`, `DEMO_ORIGIN`, `RELAY_DISCLOSURE` and `check_wire_binding` below.
+`PUBLISHED_IMAGE`, `DEMO_ORIGIN`, `RELAY_DISCLOSURE`, `PUBLISHED_EXTENSION` and
+`check_wire_binding` below.
 
 Each entry below pairs a phrase the page must not carry with the reason it must not, and with a
 sample that has to match it. The reasons are not this script's opinion: every one of them is a
@@ -206,6 +209,87 @@ BROWSER_TRUST_DISCLOSURE = (
         "the clients that are not in that position",
         re.compile(r"\bnot in that position\b", re.IGNORECASE),
     ),
+)
+
+# The extension's published identity and the registries the release publishes that one `.vsix`
+# to. `selvage-protocol.selvage` is the `publisher` and `name` in `vscode_client/package.json`,
+# and the two registries are the two publish steps in that repository's `release.yml`; the page
+# hands a reader an install, so these are facts with artefacts behind them rather than wordings.
+#
+# The entry this replaces forbade the words "marketplace", "open vsx" and "gallery" outright,
+# because publishing the extension was a non-goal (`DESIGN.md` §11: "marketplace publication
+# until it works with a friend"). The owner retired that non-goal and the extension is published
+# on both registries, so the rule runs the other way now: naming the two is required, and what is
+# forbidden is a registry the project does not publish to — or "the extension gallery" without
+# naming one, which is a channel the page cannot point at.
+PUBLISHED_EXTENSION = "selvage-protocol.selvage"
+PUBLISHED_REGISTRIES = (
+    (
+        "the VS Code Marketplace",
+        re.compile(r"\b(?:VS ?Code|Visual Studio)\s+Marketplace\b", re.IGNORECASE),
+    ),
+    ("Open VSX", re.compile(r"\bOpen\s*VSX\b", re.IGNORECASE)),
+)
+# The two listings, and the identity is inside both. They are not *required* links: the page's
+# own link check reaches every URL it carries, and the Marketplace's listing URL answers 404
+# until the release that publishes the extension has run, so requiring one here would redden the
+# gate for a release that has not been dispatched. What is checked is the other direction — a
+# page that links a listing has to link one of these two, so a link to the retired
+# `selvage-protocol.selvage-client`, which still exists on the Marketplace, fails on the
+# destination rather than on the label.
+EXTENSION_LISTINGS = (
+    "https://marketplace.visualstudio.com/items?itemName=" + PUBLISHED_EXTENSION,
+    "https://open-vsx.org/extension/" + PUBLISHED_EXTENSION.replace(".", "/"),
+)
+REGISTRY_LISTING = re.compile(
+    r"marketplace\.visualstudio\.com/items\b|open-vsx\.org/extension/",
+    re.IGNORECASE,
+)
+# Registry-shaped words. Every one the page carries has to be part of one of the two names above,
+# so a page that also offers the extension from somewhere else — "the extension gallery", the
+# JetBrains or Eclipse marketplace, another editor's store — fails instead of passing on the two
+# names it carries as well. A bare "registry" is deliberately not here: `ghcr.io` is one, and the
+# image section may name it.
+REGISTRY_WORD = re.compile(
+    r"\bmarketplaces?\b|\bgaller(?:y|ies)\b|\bopen\s*vsx\b"
+    r"|\b(?:extension|plugin|add-?on)s?\s+stores?\b|\b(?:extension|plugin)s?\s+registr(?:y|ies)\b",
+    re.IGNORECASE,
+)
+# What the row has to state about the install itself, required the way the disclosures are: a
+# `clean` fixture only proves a pattern does not reject a sentence, so a page that keeps the two
+# registry names and drops what the install is would leave a reader thinking a gallery install is
+# a session. "on a server you run" is not the sentence to read — the hero carries that one — so
+# the limitation is phrased as what an install is and is not, and as the client's own binary.
+EXTENSION_INSTALL_LIMITATION = (
+    (
+        "that an install is the client and not a server",
+        re.compile(
+            r"\bclient\b[^.]{0,32}\bnot a server\b"
+            r"|\bnot a server\b"
+            r"|\bno server\b"
+            r"|\bclient only\b"
+            r"|\bserver is not part of\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "that a session needs a `selvaged` the reader runs",
+        re.compile(
+            r"\bselvaged\b[^.]{0,32}\byou run\b|\byou run\b[^.]{0,32}\bselvaged\b",
+            re.IGNORECASE,
+        ),
+    ),
+)
+EXTENSION_PUBLICATION = (
+    (
+        "the extension's published identity",
+        re.compile(rf"\b{re.escape(PUBLISHED_EXTENSION)}\b", re.IGNORECASE),
+    ),
+    *(
+        (f"{name} as a registry it is published on", pattern)
+        for name, pattern in PUBLISHED_REGISTRIES
+    ),
+    *EXTENSION_INSTALL_LIMITATION,
 )
 
 # The word the page uses to claim that frames cannot be read, and the two sentences that bind that
@@ -462,10 +546,29 @@ FORBIDDEN: list[Phrase] = [
         "byte for byte with this one",
     ),
     Phrase(
-        r"marketplace|open ?vsx|\bgallery\b",
-        "install it from the extension gallery",
-        "the extension is unpublished, and publishing it is a non-goal until it works with a "
-        "friend; the path in is a checkout and `npm run package`",
+        # The direction that is false now. Publication used to be a non-goal and the page said as
+        # much (`DESIGN.md` §11); the owner retired that, and the extension is published under
+        # both registries, so the denial is what a rewrite would reach for and what this forbids.
+        # The registries themselves are the other half of the rule, in
+        # `check_published_extension`: this one only stops the page saying there are none.
+        r"\bunpublished\b|\bnot (?:yet )?published\b|\bnothing published\b"
+        r"|\bno published (?:extension|listin\w+|build)\b",
+        "the extension is unpublished",
+        "the extension is published as `selvage-protocol.selvage` on the VS Code Marketplace "
+        "and on Open VSX, so a page saying it is not is false about the whole distribution "
+        "channel; the retired wording — that publishing was a non-goal until it worked with a "
+        "friend — is the decision this wave replaces",
+        (
+            "the extension is un<!-- -->published",
+            "it is not yet published",
+            "the extension is not yet publ<span></span>ished",
+            "there is no published extension",
+        ),
+        (
+            "It is published as `selvage-protocol.selvage` on the VS Code Marketplace and on "
+            "Open VSX.",
+            "A checkout and `npm run package` is the other way in.",
+        ),
     ),
     Phrase(
         r"read[- ]only|view[- ]only",
@@ -1529,6 +1632,100 @@ def check_browser_trust(pages: list[Scanned]) -> int:
     return 1
 
 
+def check_published_extension(pages: list[Scanned]) -> int:
+    """The page's install row against the identity and the registries the release publishes to.
+
+    Required rather than permitted, for the reason the disclosures are: a `clean` fixture proves a
+    pattern does not reject a sentence, never that the page carries one, and this page could keep
+    every fixture green while saying nothing about where the extension is installed from. Three
+    things are asked of the scanned page:
+
+    - the identity the release publishes under and both registries it publishes to, in the
+      visible text — a reader installs from one of them, so a row that names neither is not an
+      install row;
+    - that every registry-shaped word on the page is part of one of those two names, so a page
+      offering the extension from somewhere else — "the extension gallery", the JetBrains or
+      Eclipse marketplace, another editor's store — fails rather than passing on the two names
+      it also carries;
+    - that any link the page does carry to a listing is one of the two, so a link to the retired
+      ID's listing fails on the destination rather than on the label.
+
+    What it does not do is ask the galleries. A listing is the release's fact — the two publish
+    steps in `vscode_client/.github/workflows/release.yml` are what produce it — and a query here
+    would redden the site's gate for a release that has not been dispatched yet, which is the
+    ordering the release plan is the place for. The residual is stated rather than hidden: this
+    proves the page agrees with the release workflow about the identity and the registries, not
+    that either registry answers.
+
+    Returns 0 when all of it holds and 1 when it does not; it asks no network.
+    """
+    root = root_of_this_checkout()
+    page, failures = first_page_stating(pages, EXTENSION_PUBLICATION)
+    if page is None:
+        for where, absent in failures:
+            print(
+                f"check-claims: {where} does not say where the extension is published: it is "
+                f"missing {', '.join(absent)}. The VS Code row is where a reader is handed an "
+                "install, and a row that names a registry without saying what an install is and "
+                "is not leaves it claiming more than the release delivers",
+                file=sys.stderr,
+            )
+        return 1
+
+    stray: list[str] = []
+    for scanned in pages:
+        allowed = [
+            match.span()
+            for _, pattern in PUBLISHED_REGISTRIES
+            for match in pattern.finditer(scanned.text)
+        ]
+        for match in REGISTRY_WORD.finditer(scanned.text):
+            covered = any(
+                start <= match.start() and match.end() <= end for start, end in allowed
+            )
+            if not covered:
+                stray.append(
+                    f"{os.path.relpath(scanned.path, root)}:"
+                    f"{scanned.line_of[match.start()]}: {match.group(0)!r}"
+                )
+    if stray:
+        for where in stray:
+            print(
+                f"check-claims: the page names a registry at {where}, and the release publishes "
+                f"to {' and '.join(name for name, _ in PUBLISHED_REGISTRIES)}. A registry the "
+                "project does not publish to is a distribution channel it does not have, and "
+                "\"the extension gallery\" names a channel without naming which",
+                file=sys.stderr,
+            )
+        return 1
+
+    missing = [
+        f"{os.path.relpath(scanned.path, root)}:{line}: {destination!r}"
+        for scanned in pages
+        for destination, line in scanned.destinations
+        if REGISTRY_LISTING.search(destination) and destination not in EXTENSION_LISTINGS
+    ]
+    if missing:
+        for where in missing:
+            print(
+                f"check-claims: the page links a listing at {where}, and the extension is "
+                f"published as `{PUBLISHED_EXTENSION}`; the listing on each registry is "
+                f"{' and '.join(EXTENSION_LISTINGS)}. A link to a listing is a claim about "
+                "which one, and the retired ID's listing is still there to be linked by "
+                "mistake",
+                file=sys.stderr,
+            )
+        return 1
+
+    print(
+        f"check-claims: the page hands a reader `{PUBLISHED_EXTENSION}` on "
+        f"{' and '.join(name for name, _ in PUBLISHED_REGISTRIES)}, names no registry the "
+        "project does not publish to, links no other listing, and says an install is the client "
+        "and not a server"
+    )
+    return 0
+
+
 def names_wire(text: str, version: str) -> bool:
     """Whether this text names the wire version as a name of its own, not as `selvage/12`."""
     return re.search(rf"(?<![\w/]){re.escape(version)}(?![\w/])", text) is not None
@@ -1756,6 +1953,7 @@ def main() -> int:
     for check in (
         check_relay_disclosure,
         check_browser_trust,
+        check_published_extension,
         check_pinned_image,
         check_demo_instance,
         check_wire_binding,
