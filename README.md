@@ -359,8 +359,9 @@ One thing is fixed, and one thing is gone.
 
 **The controller.** The privacy notice names
 [`selvage-protocol`](https://github.com/selvage-protocol), the GitHub
-organisation, as the controller, with a link and no other contact. Only the
-owner could fill that blank, and now it is filled.
+organisation, as the controller, and names the address to write to
+(`selvage@dontblameme.dev`) beside it. Only the owner could fill that blank,
+and now it is filled.
 
 **The collection.** There is none. The waitlist form is removed (no form, no
 endpoint, no mailing service, no processor), so the notice's collection,
