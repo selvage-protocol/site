@@ -282,9 +282,9 @@ The tag is `package.json`'s version with a `v`, and an annotated tag is what the
 repositories' release runs create, so it is made the same way by hand:
 
 ```console
-$ git tag -a v0.1.0 -m v0.1.0
-$ git push origin v0.1.0
-$ gh release create v0.1.0 --title v0.1.0 --generate-notes
+$ git tag -a v0.4.0 -m v0.4.0
+$ git push origin v0.4.0
+$ gh release create v0.4.0 --title v0.4.0 --generate-notes
 ```
 
 The tag is a marker on the page's history rather than an input to anything. Other repositories tag
