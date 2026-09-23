@@ -291,6 +291,12 @@ class Phrase:
     # survives whatever order it puts its nouns in, and a false one cannot borrow an unrelated
     # noun from a sentence away because the window is the sentence around the hit.
     permitted_when: tuple[str, ...] = ()
+    # Wordings that cancel a permit: the sentence names the permitted material and denies it, so
+    # the name is not the disclosure the permit exists to read. "The relay learns no membership"
+    # names membership and asserts the opposite of what the permit is for, and the pattern is
+    # written against the permit's own noun rather than against negation in general — "the
+    # server cannot read the text" is an honest sentence with a negative in it, and it stays one.
+    voided_when: tuple[str, ...] = ()
 
 
 FORBIDDEN: list[Phrase] = [
@@ -498,6 +504,7 @@ FORBIDDEN: list[Phrase] = [
             "Your code is encrypted end-to-end, so the relay is blind.",
             "The relay is blind.",
             "It is end-to-end encrypted.",
+            "Selvage is end-to-end encrypted, so the relay learns no membership and no names.",
         ),
         (
             (
@@ -513,6 +520,14 @@ FORBIDDEN: list[Phrase] = [
             r"|\b(?:existence|membership)\b"
             r"|\b(?:their|display|member|participant) names\b"
             r"|\bsizes?\b[^.]{0,32}\btiming\b",
+        ),
+        (
+            # The permit is an honest sentence naming what the relay still reads. A sentence
+            # that names it and denies it reads the same noun the other way round — "the relay
+            # learns no membership" — and is the unqualified claim the permit exists to tell
+            # apart from this one.
+            r"\b(?:no|not|never|without|nothing|neither|nor)\b[^.]{0,16}"
+            r"\b(?:existence|membership|names?)\b",
         ),
     ),
     Phrase(
@@ -548,6 +563,7 @@ FORBIDDEN: list[Phrase] = [
             "the server has no way to read the room",
             "the server never sees your code",
             "the server cannot decrypt the room",
+            "The server cannot see anything, not even your text.",
         ),
         (
             "The documents are sealed, so the server cannot read the text.",
@@ -569,6 +585,12 @@ FORBIDDEN: list[Phrase] = [
             r"|\b(?:text|documents?|cursors?|file ?names?|roles?|listings?|bytes|contents?|"
             r"keystrokes?|characters?|lines?|words?|titles?|selections?|edits?|editing|"
             r"fragments?|invite link)\b",
+        ),
+        (
+            # A permit reads the material the sentence names. `anything` is the object that
+            # names none of it: "the server cannot see anything, not even your text" names text
+            # and claims everything besides, which is the unqualified form.
+            r"\b(?:anything|everything|nothing)\b",
         ),
     ),
     Phrase(
@@ -1015,19 +1037,29 @@ def clause_around(text: str, start: int, end: int) -> str:
 
 
 def hits(
-    pattern: re.Pattern[str], permits: list[re.Pattern[str]], text: str
+    pattern: re.Pattern[str],
+    permits: list[re.Pattern[str]],
+    text: str,
+    voiding: tuple[re.Pattern[str], ...] = (),
 ) -> list[re.Match[str]]:
-    """Every match that is a hit: the pattern matched and no permit matched its sentence.
+    """Every match that is a hit: the pattern matched and no permit that stands matched its
+    sentence.
 
-    A phrase with no permits is its own matches, so this is the only path a hit takes.
+    A phrase with no permits is its own matches, so this is the only path a hit takes. A permit
+    that matched is not enough on its own: a `voiding` pattern cancels it when the sentence
+    denies the material the permit names, which is a sentence the permit was never meant to
+    rescue.
     """
     if not permits:
         return list(pattern.finditer(text))
-    return [
-        match
-        for match in pattern.finditer(text)
-        if not any(permit.search(clause_around(text, match.start(), match.end())) for permit in permits)
-    ]
+    found: list[re.Match[str]] = []
+    for match in pattern.finditer(text):
+        clause = clause_around(text, match.start(), match.end())
+        if any(void.search(clause) for void in voiding) or not any(
+            permit.search(clause) for permit in permits
+        ):
+            found.append(match)
+    return found
 
 
 def meta_streams(raw: str) -> list[tuple[str, list[int]]]:
@@ -1635,11 +1667,16 @@ def check_wire_binding(pages: list[Scanned]) -> int:
 
 
 def main() -> int:
-    compiled: list[tuple[Phrase, re.Pattern[str], list[re.Pattern[str]]]] = []
+    compiled: list[
+        tuple[Phrase, re.Pattern[str], list[re.Pattern[str]], tuple[re.Pattern[str], ...]]
+    ] = []
     for phrase in FORBIDDEN:
         pattern = re.compile(phrase.pattern, re.IGNORECASE)
         permits = [re.compile(one, re.IGNORECASE) for one in phrase.permitted_when]
-        if not hits(pattern, permits, normalise(phrase.sample)[0]):
+        voiding = tuple(
+            re.compile(one, re.IGNORECASE) for one in phrase.voided_when
+        )
+        if not hits(pattern, permits, normalise(phrase.sample)[0], voiding):
             print(
                 f"check-claims: the pattern {phrase.pattern!r} does not match its own sample "
                 f"{phrase.sample!r}; a pattern that matches nothing passes everything",
@@ -1647,7 +1684,7 @@ def main() -> int:
             )
             return 2
         for evasion in phrase.evasions:
-            if not hits(pattern, permits, normalise(evasion)[0]):
+            if not hits(pattern, permits, normalise(evasion)[0], voiding):
                 print(
                     f"check-claims: the pattern {phrase.pattern!r} does not match its evasion "
                     f"sample {evasion!r}; the claim is written in a shape the pattern misses",
@@ -1655,14 +1692,14 @@ def main() -> int:
                 )
                 return 2
         for wording in phrase.clean:
-            if hits(pattern, permits, normalise(wording)[0]):
+            if hits(pattern, permits, normalise(wording)[0], voiding):
                 print(
                     f"check-claims: the pattern {phrase.pattern!r} matches its clean fixture "
                     f"{wording!r}; honest wording is a false positive",
                     file=sys.stderr,
                 )
                 return 2
-        compiled.append((phrase, pattern, permits))
+        compiled.append((phrase, pattern, permits, voiding))
 
     root = root_of_this_checkout()
     os.chdir(root)
@@ -1693,9 +1730,9 @@ def main() -> int:
             )
         )
         where = os.path.relpath(path, root)
-        for phrase, pattern, permits in compiled:
+        for phrase, pattern, permits, voiding in compiled:
             for stream, lines in [(text, line_of), *prose]:
-                for match in hits(pattern, permits, stream):
+                for match in hits(pattern, permits, stream, voiding):
                     found_hits += 1
                     print(
                         f"{where}:{lines[match.start()]}: forbidden phrase "
