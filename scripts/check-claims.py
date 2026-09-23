@@ -203,8 +203,10 @@ FORBIDDEN: list[Phrase] = [
         ),
         (
             "The server relays ciphertext, and cannot tell who is host.",
-            "It still sees that a room exists, who is in it, their names, and the sizes and "
-            "timing of what moves.",
+            (
+                "It still sees that a room exists, who is in it, their names, and the sizes "
+                "and timing of what moves."
+            ),
         ),
     ),
     Phrase(
@@ -327,23 +329,45 @@ FORBIDDEN: list[Phrase] = [
         "its fragment included",
     ),
     Phrase(
-        r"\bthe server (?:cannot|can't) (?:read|see) anything\b"
+        # The relay is sealed, so "the server cannot read" is backed only when the thing it
+        # cannot read is named and is sealed material. Bare, or with the room or its membership
+        # as the object, it is the overclaim the page's own paragraph refutes.
+        r"\bthe server (?:cannot|can't) (?:read|see)\b"
+        r"(?!\s+(?:(?:the|any|its|your|our|a|their|all|of)\s+){0,3}"
+        r"(?:(?:sealed|encrypted)\s+|\w+['\u2019]s\s+)*"
+        r"(?:text|ciphertext|documents?|cursors?|file ?names?|roles?|listings?|bytes|"
+        r"contents?|keystrokes?)\b)"
+        # Host is a peer's signed claim the server cannot make, so that one reading is backed.
+        # It stays exempt only while it is the whole clause: an "or who is in the room" after it
+        # is the membership claim the relay does see, and is not exempt.
         r"|\bthe server (?:cannot|can't) (?:tell|know) who\b"
-        r"(?!\s+(?:is|are|was|were)\s+(?:the\s+)?host\b)",
+        r"(?!\s+(?:is\s+(?:the\s+)?host|the\s+host\s+is)\b"
+        r"(?!\s*(?:[,;:]|[-\u2013\u2014])?\s*(?:\b(?:and|or|nor|but)\b)?\s*"
+        r"(?:who\b|(?:the\s+)?(?:rooms?|members?|membership|people|participants)\b)))",
         "the server cannot read anything",
         "the relay is sealed, not omniscient: it reads no text, no cursor, no file name and no "
         "role, and it cannot forge, mis-attribute or replay a frame, but it still reads a room's "
         "existence, its membership, the display names and the sizes and timing of what moves, "
-        "and it can drop, delay or end any room. It cannot tell who is host, which is a peer's "
-        "signed claim and not a server's, so that reading stays legal here",
+        "and it can drop, delay or end any room. 'It cannot read' or 'it cannot read the room' "
+        "without naming sealed material is the unqualified form, and 'it cannot tell who is in "
+        "the room' is the membership claim it does see; the readings that stay legal are a "
+        "claim about named, sealed material and the peer's signed claim that it cannot tell who "
+        "is host",
         (
             "the server can't see anything",
+            "the server cannot read",
+            "the server cannot read the room",
             "the server cannot tell who is in the room",
+            "the server cannot tell who is host or who is in the room",
         ),
         (
+            "The documents are sealed, so the server cannot read the text.",
             "The server relays ciphertext, and cannot tell who is host.",
-            "It still sees that a room exists, who is in it, their names, and the sizes and "
-            "timing of what moves.",
+            "The server cannot tell who the host is.",
+            (
+                "It still sees that a room exists, who is in it, their names, and the sizes "
+                "and timing of what moves."
+            ),
         ),
     ),
     Phrase(
