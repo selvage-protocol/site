@@ -36,9 +36,10 @@ Run from anywhere; the repository root is resolved from this file's location. Ar
     scripts/check-claims.py              # every *.html in the checkout
     scripts/check-claims.py .tmp/empty   # reaches no file: that is a failure, not a pass
 
-Exit 0 when the page is clean of every known wording and both pins hold up, 1 when it
-carries a forbidden wording or a pin is wrong, 2 when the check itself cannot run (a dead
-pattern, nothing to scan, a registry that cannot be asked, or a demo host that does not answer).
+Exit 0 when the page is clean of every known wording and the positive claims hold up, 1 when it
+carries a forbidden wording or a positive claim is wrong, 2 when the check itself cannot run (a
+dead pattern, nothing to scan, a registry that cannot be asked, or a demo host that does not
+answer).
 """
 
 from __future__ import annotations
