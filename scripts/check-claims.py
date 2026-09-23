@@ -7,13 +7,15 @@ sentence that is merely unbacked all pass it. What it does guarantee is narrower
 worth having: those known wordings do not appear, even when the page wraps them across lines or
 encodes the characters as HTML entities.
 
-Three claims are asserted in the positive instead, because a phrase list cannot reach them: the
-image tag in the `docker run` the page hands a reader, the instance the demo section points at —
-the address it gives an editor, the wire version that address speaks, and the page a guest is sent
-to — and the disclosure of what the sealed relay still sees. The address half asks the path a
-plain `GET` can reach, not the upgrade: see `demo_session_route`. Each is a fact with an artefact
-behind it, and a wrong tag is a command that fails rather than a wording that lies. See
-`PUBLISHED_IMAGE`, `DEMO_ORIGIN` and `RELAY_DISCLOSURE` below.
+Facts are asserted in the positive instead, because a phrase list cannot reach them: the image tag
+in the `docker run` the page hands a reader, the instance the demo section points at — the address
+it gives an editor, the wire version that address speaks, and the page a guest is sent to — the
+wire version the page says each artefact it hands a reader speaks, and the two disclosures the page
+owes a reader: what the sealed relay still sees, and that a guest who opens the room server's own
+page trusts that server for the client code as well as for the relay. The address half asks the
+path a plain `GET` can reach, not the upgrade: see `demo_session_route`. Each is a fact with an
+artefact behind it, and a wrong tag is a command that fails rather than a wording that lies. See
+`PUBLISHED_IMAGE`, `DEMO_ORIGIN`, `RELAY_DISCLOSURE` and `check_wire_binding` below.
 
 Each entry below pairs a phrase the page must not carry with the reason it must not, and with a
 sample that has to match it. The reasons are not this script's opinion: every one of them is a
@@ -29,6 +31,11 @@ leaves a single space, so a phrase ending one block and starting the next is two
 one written across a boundary. Entities are decoded, unicode dashes become hyphens, and runs of whitespace (including the line breaks the
 page wraps at) collapse to a single space. A phrase that only looks absent because it happened to
 wrap, or because a hyphen was written as `&#45;`, would otherwise pass.
+
+Prose the page carries in a `meta` attribute is scanned beside its body text, because a link unfurl
+prints that prose verbatim and a claim written there is a claim: `description`, `og:*` and
+`twitter:*` are read as text of their own. Tags are stripped otherwise, so without that half a
+page could carry an overclaim only the unfurl and no reader's eye would meet.
 
 Run from anywhere; the repository root is resolved from this file's location. Arguments are paths
 (files or directories) to scan instead of the whole checkout.
@@ -88,6 +95,26 @@ REGISTRY_HOST = "ghcr.io"
 REGISTRY_REPOSITORY = PUBLISHED_IMAGE.split("/", 1)[1]
 REQUEST_TIMEOUT_SECONDS = 20
 
+# Which wire version each published `selvaged` release speaks, and which one is the pin. The page
+# hands a reader an artefact whose wire is a fact about the artefact, not a wording: the plaintext
+# wire carries the room through the server in the clear, the sealed one does not, and a page that
+# describes sealing under a command that cannot seal is a silent downgrade. The map is a constant
+# rather than a measurement because nothing on a registry answers what wire version a binary
+# speaks: an index will say `linux/arm64` and nothing about the frames inside. A tag with no entry
+# fails the check instead of defaulting, so a release that changes the pin has to declare the new
+# tag's wire in the same wave — this map, `PINNED_IMAGE_VERSION` and the page's sentence about it
+# move together, and `check_wire_binding` is what holds the last of the three to the first two.
+PLAINTEXT_WIRE = "selvage/1"
+SEALED_WIRE = "selvage/2"
+IMAGE_WIRE_BY_TAG = {
+    "0.1.0": PLAINTEXT_WIRE,
+    "0.1.1": PLAINTEXT_WIRE,
+    "0.1.2": PLAINTEXT_WIRE,
+    "0.2.0": PLAINTEXT_WIRE,
+    "0.2.1": PLAINTEXT_WIRE,
+}
+WIRE_VERSION = re.compile(r"\bselvage/\d+\b")
+
 # The demo section points at a running instance, a claim with an artefact behind it in the same
 # way the `docker run` is. Four sentences around it are checkable here: an instance of the server
 # runs at that host, the address the section hands an editor hosts a room on it, that editor
@@ -127,15 +154,27 @@ HOST_CARD = re.compile(r'id="host-wrap"')
 # an editor who deletes the paragraph would leave every one of them green. What is required is
 # the paragraph's facts, one pattern each, so a rewrite that keeps the facts passes and a page
 # that drops one fails. The sizes-and-timing fact is the one only this paragraph carries.
+#
+# Two of the four are phrased as the disclosure's own sentence rather than as a subject and a verb,
+# because the page states three of them twice: *The session layer has no specification* writes
+# "Which rooms exist, who is in one, ...", which is a sentence about what every collaborative tool
+# decides for itself and not a disclosure of relay visibility at all. Loosely matched, that
+# paragraph would supply existence and membership for a page whose disclosure had been deleted, and
+# a rewrite that dropped the two facts while keeping "their names" and "sizes and timing" would
+# pass with them gone. `who is in it` is the disclosure's wording; `who is in one` is the donor's.
 RELAY_DISCLOSURE = (
     (
         "the room's existence",
-        re.compile(r"\b(?:room|session)s?\b[^.]{0,40}\bexists?\b", re.IGNORECASE),
+        re.compile(
+            r"\bsees that an? (?:room|session)s? exists?\b"
+            r"|\bstill (?:sees|reads)\b[^.]{0,40}\b(?:room|session)s?\b[^.]{0,24}\bexists?\b",
+            re.IGNORECASE,
+        ),
     ),
     (
         "its membership",
         re.compile(
-            r"\bwho is in (?:it|one|the room|a room)\b|\bmembership\b|\bwho (?:has )?joined\b",
+            r"\bwho is in (?:it|the room)\b|\bmembership\b|\bwho (?:has )?joined\b",
             re.IGNORECASE,
         ),
     ),
@@ -152,9 +191,59 @@ RELAY_DISCLOSURE = (
     ),
 )
 USER_AGENT = "selvage-site-check/1.0"
+
+# The second disclosure the page owes a reader, and the one the plan forbids leaving implied: the
+# browser guest is served the client by the room's own server, so that server supplies the program
+# that reads the fragment as well as the relay that carries the frames, and a page that says the
+# server cannot read must say so out loud (the desktop clients are installed artefacts and are not
+# in that position). Required the way `RELAY_DISCLOSURE` is, so one edit cannot quietly drop it.
+BROWSER_TRUST_DISCLOSURE = (
+    (
+        "the guest's trust in the server that serves it the page",
+        re.compile(r"\btrusts?\b[^.]{0,64}\bfor the client code\b", re.IGNORECASE),
+    ),
+    (
+        "the clients that are not in that position",
+        re.compile(r"\bnot in that position\b", re.IGNORECASE),
+    ),
+)
+
+# The word the page uses to claim that frames cannot be read, and the two sentences that bind that
+# claim to the wire version it is true of: which wire the pinned image speaks, and which wire the
+# demo speaks. `check_wire_binding` reads all three.
+SEALING = re.compile(r"\bseals?\b|\bsealed\b|\bsealing\b", re.IGNORECASE)
+WIRE_OF_PINNED = re.compile(
+    r"\bthe (?:published |pinned )?(?:image|container)\b"
+    r"[^.]{0,80}?\bspeaks?\b[^.]{0,40}?\b(selvage/\d+)\b",
+    re.IGNORECASE,
+)
+WIRE_OF_DEMO = re.compile(
+    r"\b(?:the demo|the instance)\b[^.]{0,80}?\bspeaks?\b[^.]{0,40}?\b(selvage/\d+)\b",
+    re.IGNORECASE,
+)
+# How the page says the sealing is not what a reader can obtain yet. Required exactly while the
+# demo does not offer the sealed wire, and forbidden once it does: a page still calling the sealed
+# wire unreleased after a release has put it on an instance tells a guest their room is plaintext
+# when it is not, which is the same defect with the sign the other way round.
+SEALING_UNRELEASED = re.compile(
+    r"\bnot in a published release\b|\bno published release\b"
+    r"|\bnot (?:yet )?(?:published|released|shipped)\b",
+    re.IGNORECASE,
+)
 # A link's destination lives in an attribute, and the visible text carries only its label, so both
 # are scanned: an anchor labelled with the demo host can point somewhere else entirely.
 DESTINATION = re.compile(r"\b(?:href|src|action)\s*=\s*(?:\"([^\"]*)\"|'([^']*)')", re.IGNORECASE)
+# Prose an attribute carries rather than the body. A `meta` element's `content` is what a link
+# unfurl prints, which is the surface a person deciding whether to paste the link meets before the
+# page renders; the tags themselves are stripped from the visible text, so this prose is invisible
+# to every pattern above unless it is read as text of its own.
+META_ELEMENT = re.compile(r"<meta\b[^>]*>", re.IGNORECASE)
+META_KEY = re.compile(r"\b(?:name|property)\s*=\s*(?:\"([^\"]*)\"|'([^']*)')", re.IGNORECASE)
+META_CONTENT = re.compile(r"\bcontent\s*=\s*(?:\"([^\"]*)\"|'([^']*)')", re.IGNORECASE)
+# `description` alone, and the two prefixed families. `og:image` and friends are URLs rather than
+# prose and are not read here: a URL is checked where it is a destination, not as a sentence.
+META_PROSE_KEYS = ("description",)
+META_PROSE_PREFIXES = ("og:", "twitter:")
 MANIFEST_TYPES = (
     "application/vnd.oci.image.index.v1+json",
     "application/vnd.docker.distribution.manifest.list.v2+json",
@@ -177,6 +266,10 @@ class Scanned:
     text: str
     line_of: list[int]
     destinations: list[tuple[str, int]]
+    # Prose carried in attributes rather than in the body: one normalised stream per `meta`
+    # element, each with the source line of every character. Scanned beside `text`, never
+    # instead of it, so a claim in a link unfurl fails the same way one in a paragraph does.
+    prose: list[tuple[str, list[int]]]
 
 
 @dataclass(frozen=True)
@@ -192,6 +285,12 @@ class Phrase:
     # Honest wordings the pattern must not match. Each one has to stay clean: a broadening
     # that reintroduces a false positive fails the gate instead of passing everything.
     clean: tuple[str, ...] = ()
+    # Wordings the pattern matches that are backed all the same, because one of these matches a
+    # sentence the hit sits in. Written this way the exemption is about what the sentence names
+    # rather than about the shape of the determiners in front of the verb, so a true sentence
+    # survives whatever order it puts its nouns in, and a false one cannot borrow an unrelated
+    # noun from a sentence away because the window is the sentence around the hit.
+    permitted_when: tuple[str, ...] = ()
 
 
 FORBIDDEN: list[Phrase] = [
@@ -217,23 +316,41 @@ FORBIDDEN: list[Phrase] = [
         "title exists to defend against",
     ),
     Phrase(
-        r"\bnobody (?:else )?can read\b"
-        r"|\bonly (?:you|the (?:people|two) in the room)\b"
-        r"|\bthe server learns nothing\b"
+        # The overclaim family the project's E2EE plan refutes
+        # (`selvage-protocol/ai_notes`, `docs/studies/e2ee-plan.md` §2), and the one a reader
+        # writes first: "no one else can see it" is the same claim as "nobody else can read it", and
+        # "the server knows nothing" is the same one with the sentence turned round. The subject,
+        # the verb and the word order are all alternated for that reason; pinning any of them to
+        # one spelling is what let four paraphrases through in the review's probe.
+        r"\b(?:nobody|no[ -]?one)\b[^.]{0,24}\bcan\b[^.]{0,16}"
+        r"\b(?:read|see|open|decrypt|view)\b"
+        r"|\bonly\b[^.]{0,32}\bcan\b[^.]{0,16}\b(?:read|see|open|decrypt|view)\b"
+        r"|\bthe (?:server|relay|box|binary|instance)\b[^.]{0,24}"
+        r"\b(?:learns|knows|sees|reads)\b[^.]{0,12}\bnothing\b"
         r"|\bfully encrypted\b"
         r"|\bzero[- ]knowledge\b",
         "nobody else can read the room",
         "the relay is sealed, not omniscient: it still reads the room's existence, membership, "
-        "display names, sizes and timing, and the keys are in the link a human pastes",
+        "display names, sizes and timing, and the keys are in the link a human pastes. Whoever "
+        "holds that link can read the room, its fragment included",
         (
             "nobody else can read it",
+            "no one else can read it",
+            "nobody else can see it",
             "only the people in the room can read it",
+            "only the two of you can read the room",
+            "only your peers can read the room",
             "the server learns nothing",
+            "the server knows nothing about your code",
+            "the server sees nothing",
             "fully encrypted",
             "zero-knowledge relay",
         ),
         (
-            "The server relays ciphertext, and cannot tell who is host.",
+            # The link's holder is inside the threat model and not outside it, so this sentence
+            # is the honest one the page carries beside the claim; a pattern that forbade it
+            # would push the page back to the sentence the claim wanted.
+            "Whoever holds the invite can read the room, its fragment included.",
             (
                 "It still sees that a room exists, who is in it, their names, and the sizes "
                 "and timing of what moves."
@@ -360,45 +477,129 @@ FORBIDDEN: list[Phrase] = [
         "its fragment included",
     ),
     Phrase(
-        # The relay is sealed, so "the server cannot read" is backed only when the thing it
-        # cannot read is named and is sealed material. Bare, or with the room or its membership
-        # as the object, it is the overclaim the page's own paragraph refutes.
-        r"\bthe server (?:cannot|can't) (?:read|see)\b"
-        r"(?!\s+(?:(?:the|any|its|your|our|a|their|all|of)\s+){0,3}"
-        r"(?:(?:sealed|encrypted)\s+|\w+['\u2019]s\s+)*"
-        r"(?:text|ciphertext|documents?|cursors?|file ?names?|roles?|listings?|bytes|"
-        r"contents?|keystrokes?)\b)"
-        # Host is a peer's signed claim the server cannot make, so that one reading is backed.
-        # It stays exempt only while it is the whole clause: an "or who is in the room" after it
-        # is the membership claim the relay does see, and is not exempt.
-        r"|\bthe server (?:cannot|can't) (?:tell|know) who\b"
-        r"(?!\s+(?:is\s+(?:the\s+)?host|the\s+host\s+is)\b"
-        r"(?!\s*(?:[,;:]|[-\u2013\u2014])?\s*(?:\b(?:and|or|nor|but)\b)?\s*"
-        r"(?:who\b|(?:the\s+)?(?:rooms?|members?|membership|people|participants)\b)))",
-        "the server cannot read anything",
+        # "End-to-end encrypted" is the promise that plan's §2 refutes in one phrase: the
+        # ordinary reading is that only the endpoints know anything, and a pwned relay knows the
+        # nine things that section lists. It is not forbidden outright — a sentence that says
+        # what stays visible beside it is the honest form, and the permit reads that — but it is
+        # not permitted either, which is what dropping the entry left: "Selvage is end-to-end
+        # encrypted" alone, or "the relay is blind", walked past every pattern the gate had.
+        r"\bend[- ]to[- ]end\b|\be2ee\b"
+        r"|\b(?:server|relay|box)\b[^.]{0,12}\b(?:is|stays?|remains?|goes)\b[^.]{0,8}"
+        r"\b(?:blind|oblivious)\b",
+        "Selvage is end-to-end encrypted.",
+        "the seal covers the room's text and not its shape: the relay still reads a room's "
+        "existence, its membership, the display names, the sizes and timing of what moves, the "
+        "epoch, how many documents and files a room has and when one is fetched, and it can "
+        "drop, delay, reorder, refuse or end a room. An unqualified 'end-to-end encrypted' or "
+        "'the relay is blind' claims the shape too",
+        (
+            "Selvage is end-to-end encrypted.",
+            "The room is encrypted end to end.",
+            "Your code is encrypted end-to-end, so the relay is blind.",
+            "The relay is blind.",
+            "It is end-to-end encrypted.",
+        ),
+        (
+            (
+                "In `selvage/2` the room is end-to-end encrypted under keys the fragment "
+                "carries, and the relay still sees a room's existence, its membership, the "
+                "display names and the sizes and timing of what moves."
+            ),
+        ),
+        (
+            # What stays visible, named in the same sentence, is what makes the claim specific.
+            # 180 lines away is not beside the claim: the fact has to sit in the sentence.
+            r"\bstill (?:sees|reads|learns|knows)\b"
+            r"|\b(?:existence|membership)\b"
+            r"|\b(?:their|display|member|participant) names\b"
+            r"|\bsizes?\b[^.]{0,32}\btiming\b",
+        ),
+    ),
+    Phrase(
+        # The relay is sealed, so "the server cannot read" is backed when the thing it cannot read
+        # is named and is sealed material, and it is the overclaim the page's own paragraph refutes
+        # when it is bare or has the room as its object. The subject is alternated because the
+        # page's own author already writes a different one — "the box … carries bytes it cannot
+        # read" — and `it` is in the list because its absence is how "It cannot read the room"
+        # passed: `it` is the server in one sentence and the host's own client in the next, and
+        # only the object tells them apart. The modality and the verb are alternated for the same
+        # reason, and `decrypt` is the verb a page about sealing reaches for first.
+        r"\b(?:the\s+(?:server|relay|box|binary|instance|daemon)|selvaged|your\s+server|it)\b"
+        r"[^.]{0,24}\b(?:cannot|can't|can not|never|has no way to|is unable to)\b"
+        r"[^.]{0,20}\b(?:read|see|open|decrypt|view)\w*\b",
+        "the relay cannot read anything",
         "the relay is sealed, not omniscient: it reads no text, no cursor, no file name and no "
         "role, and it cannot forge, mis-attribute or replay a frame, but it still reads a room's "
         "existence, its membership, the display names and the sizes and timing of what moves, "
-        "and it can drop, delay or end any room. 'It cannot read' or 'it cannot read the room' "
-        "without naming sealed material is the unqualified form, and 'it cannot tell who is in "
-        "the room' is the membership claim it does see; the readings that stay legal are a "
-        "claim about named, sealed material and the peer's signed claim that it cannot tell who "
-        "is host",
+        "and it can drop, delay, reorder or refuse frames and end any room. 'It cannot read' or "
+        "'it cannot read the room' without naming sealed material is the unqualified form, and "
+        "naming the material is what makes the sentence specific: the sentence the hit sits in "
+        "has to name what stays unread, in whatever order it puts the two",
         (
             "the server can't see anything",
             "the server cannot read",
             "the server cannot read the room",
-            "the server cannot tell who is in the room",
-            "the server cannot tell who is host or who is in the room",
+            "the relay cannot read anything",
+            "the relay cannot read the room",
+            "the box cannot see who is in the room",
+            "selvaged cannot read the room",
+            "your server cannot read the room",
+            "it cannot read the room",
+            "the server has no way to read the room",
+            "the server never sees your code",
+            "the server cannot decrypt the room",
         ),
         (
             "The documents are sealed, so the server cannot read the text.",
-            "The server relays ciphertext, and cannot tell who is host.",
-            "The server cannot tell who the host is.",
-            (
-                "It still sees that a room exists, who is in it, their names, and the sizes "
-                "and timing of what moves."
-            ),
+            "The server cannot read a character of text.",
+            "The server cannot read what a room is editing.",
+            "The server cannot read the document payloads.",
+            "The server cannot read the text.",
+            "The server cannot read the file names.",
+            "The server cannot read the room's listing.",
+            "The server cannot read the roles the host signed.",
+            "The box — and whoever holds it — carries bytes it cannot read.",
+            "The server never reads the fragment, which a browser does not send.",
+        ),
+        (
+            # What it cannot read, named in the same sentence: sealed material by name, or the
+            # material the fragment carries, which a user agent never puts in a request. A
+            # sentence naming none of them is the unqualified claim, whatever its subject is.
+            r"\b(?:sealed|encrypted|ciphertext)\b"
+            r"|\b(?:text|documents?|cursors?|file ?names?|roles?|listings?|bytes|contents?|"
+            r"keystrokes?|characters?|lines?|words?|titles?|selections?|edits?|editing|"
+            r"fragments?|invite link)\b",
+        ),
+    ),
+    Phrase(
+        # `CANONICAL.md` §6.1 puts `kind` in the clear — it is the AEAD's associated data — and
+        # `PROTOCOL.md` §7.1 makes `kind = 1` the room state the host publishes, so a relay that
+        # routes a room's frames reads one clear byte and knows which connection is the host. It
+        # reads membership whether or not it reads anything else. Both readings are therefore
+        # false, whatever else the sentence says about sealed material, which is why this phrase
+        # has no permit: the host is a peer's signed claim, and `PROTOCOL.md` §1.2 puts what the
+        # server cannot do the other way round — it seats nobody as anything, and the host is
+        # whoever holds the private half of the key the invite's fragment names.
+        r"\b(?:the\s+(?:server|relay|box|binary|instance|daemon)|selvaged|your\s+server|it)\b"
+        r"[^.]{0,24}\b(?:cannot|can't|can not|never|has no way to|is unable to)\b"
+        r"[^.]{0,16}\b(?:tell|know|learn|say)\b[^.]{0,12}\b(?:who|which)\b",
+        "the server cannot tell who is in the room",
+        "the relay reads the cleartext `kind` byte of every frame, and `kind = 1` is the room "
+        "state the host publishes (`CANONICAL.md` §6.1, `PROTOCOL.md` §7.1), so it can tell "
+        "which connection is the host; it reads membership besides. The role is a peer's signed "
+        "claim and the page may say that: the server cannot seat a host, prove one, or take the "
+        "role",
+        (
+            "the server cannot tell who is host",
+            "the server cannot tell who the host is",
+            "the server cannot tell who is in the room",
+            "the server cannot know who is hosting the room",
+            "the relay can't tell who is host",
+            "the server cannot tell who is host or who is in the room",
+        ),
+        (
+            "The host is a peer's signed claim: the server cannot seat a host, prove one, or take the role.",
+            "The host is whoever holds the private half of the room's host key; the server seats nobody as anything.",
         ),
     ),
     Phrase(
@@ -794,6 +995,67 @@ def normalise(text: str) -> tuple[str, list[int]]:
     return "".join(visible), line_of
 
 
+# How far either side of a hit a permit may sit before it stops being part of the same claim. The
+# sentence is the bound; this only keeps a sentence with no full stop in it from becoming the whole
+# page.
+CLAUSE_WINDOW = 120
+
+
+def clause_around(text: str, start: int, end: int) -> str:
+    """The sentence a hit sits in, clipped to a window either side of it.
+
+    A claim and the material it is about are written in one sentence; an exemption read from
+    anywhere on the page is the one the review reproduced, where a paragraph 180 lines away
+    supplied the fact. Clipping matters only for text that carries no full stop at all.
+    """
+    left = max(text.rfind(".", 0, start) + 1, start - CLAUSE_WINDOW)
+    stop = text.find(".", end)
+    right = len(text) if stop == -1 else min(stop + 1, end + CLAUSE_WINDOW)
+    return text[left:right]
+
+
+def hits(
+    pattern: re.Pattern[str], permits: list[re.Pattern[str]], text: str
+) -> list[re.Match[str]]:
+    """Every match that is a hit: the pattern matched and no permit matched its sentence.
+
+    A phrase with no permits is its own matches, so this is the only path a hit takes.
+    """
+    if not permits:
+        return list(pattern.finditer(text))
+    return [
+        match
+        for match in pattern.finditer(text)
+        if not any(permit.search(clause_around(text, match.start(), match.end())) for permit in permits)
+    ]
+
+
+def meta_streams(raw: str) -> list[tuple[str, list[int]]]:
+    """The prose a page carries in its `meta` attributes, normalised, with its source line.
+
+    Each `content` is normalised on its own, because it is its own text: a sentence there is not a
+    continuation of the body's prose, and joining the two would invent a phrase neither carries.
+    The line is the tag's, which is where somebody reading the source finds it.
+    """
+    found: list[tuple[str, list[int]]] = []
+    for tag in META_ELEMENT.finditer(raw):
+        element = tag.group(0)
+        key = META_KEY.search(element)
+        if key is None:
+            continue
+        name = (key.group(1) or key.group(2) or "").lower()
+        if name not in META_PROSE_KEYS and not name.startswith(META_PROSE_PREFIXES):
+            continue
+        content = META_CONTENT.search(element)
+        if content is None:
+            continue
+        text, _ = normalise(html.unescape(content.group(1) or content.group(2) or ""))
+        if text:
+            line = raw.count("\n", 0, tag.start()) + 1
+            found.append((text, [line] * len(text)))
+    return found
+
+
 def _registry_json(path: str, token: str | None = None) -> dict:
     request = urllib.request.Request(f"https://{REGISTRY_HOST}/v2/{path}")
     request.add_header("Accept", ", ".join(MANIFEST_TYPES))
@@ -914,6 +1176,11 @@ def demo_host_of(reference: str) -> str:
     return authority.rsplit("@", 1)[-1].split(":", 1)[0].lower()
 
 
+# `/meta`, asked once per run however many checks read it. Two requests to a live box can answer
+# differently, and a run whose halves disagree with each other checks nothing.
+_META: list[tuple[str, tuple[str, ...]]] = []
+
+
 def demo_meta() -> tuple[str, tuple[str, ...]]:
     """What the instance reports about itself from `/meta`: its name, and its wire versions.
 
@@ -921,6 +1188,8 @@ def demo_meta() -> tuple[str, tuple[str, ...]]:
     host is behind Cloudflare, whose bot list answers `403` (error 1010) to `Python-urllib`, and
     a check that cannot read the instance cannot assert anything about it.
     """
+    if _META:
+        return _META[0]
     request = urllib.request.Request(f"{DEMO_ORIGIN}/meta")
     request.add_header("Accept", "application/json")
     request.add_header("User-Agent", USER_AGENT)
@@ -934,7 +1203,8 @@ def demo_meta() -> tuple[str, tuple[str, ...]]:
         raise ValueError(f"/meta carried no usable `wire_versions` ({offered!r})")
     if not all(isinstance(one, str) and one for one in offered):
         raise ValueError(f"/meta carried a wire version that is not a name ({offered!r})")
-    return name, tuple(offered)
+    _META.append((name, tuple(offered)))
+    return _META[0]
 
 
 def demo_session_route() -> tuple[int, str]:
@@ -992,17 +1262,6 @@ def demo_page_route() -> tuple[int, str, str]:
     except urllib.error.HTTPError as error:
         body = error.read().decode("utf-8", "replace") if error.headers else ""
         return error.code, error.headers.get_content_type() if error.headers else "", body
-
-
-def page_names(version: str, pages: list[Scanned]) -> bool:
-    """Whether the page's visible text carries this wire version as a name of its own.
-
-    The needle comes from the instance, so a page that names none of what the instance offers is
-    the failure this reports rather than a scan that quietly looked for nothing. The lookarounds
-    keep `selvage/1` from being satisfied by `selvage/12`.
-    """
-    pattern = re.compile(rf"(?<![\w/]){re.escape(version)}(?![\w/])")
-    return any(pattern.search(page.text) for page in pages)
 
 
 def demo_reference_allowed(reference: str) -> bool:
@@ -1157,30 +1416,46 @@ def check_demo_instance(pages: list[Scanned]) -> int:
     return 0
 
 
-def check_relay_disclosure(pages: list[Scanned]) -> int:
-    """The page's statement of what the sealed relay still sees, required rather than permitted.
+def first_page_stating(
+    pages: list[Scanned], facts
+) -> tuple[Scanned | None, list[tuple[str, list[str]]]]:
+    """The first page that states every fact, and every page's missing ones.
 
-    The `clean` fixtures above only prove the phrase pattern does not reject those sentences;
-    they do not make the page carry one. Each fact the paragraph states has a pattern of its
-    own, so a rewritten paragraph that keeps the facts passes and one that drops a fact fails.
-    Deleting the paragraph fails too, and the sizes-and-timing fact is the one nothing else on
-    the page states. Returns 0 when a scanned page carries all four and 1 when none does; it
-    asks no network.
+    A disclosure is required, not permitted: a `clean` fixture proves a pattern does not reject a
+    sentence, never that the page carries one. What is required is the facts, one pattern each, so
+    a rewritten paragraph that keeps them passes and one that drops a fact fails.
     """
     root = root_of_this_checkout()
     failures: list[tuple[str, list[str]]] = []
     for page in pages:
-        absent = [
-            label for label, pattern in RELAY_DISCLOSURE if not pattern.search(page.text)
-        ]
+        absent = [label for label, pattern in facts if not pattern.search(page.text)]
         if not absent:
-            print(
-                "check-claims: the page states what the sealed relay still sees — the room's "
-                "existence, its membership, the display names and the sizes and timing of "
-                "what moves"
-            )
-            return 0
+            return page, []
         failures.append((os.path.relpath(page.path, root), absent))
+    return None, failures
+
+
+def check_relay_disclosure(pages: list[Scanned]) -> int:
+    """The page's statement of what the sealed relay still sees, required rather than permitted.
+
+    The facts are the paragraph's, and they are read from the visible text: a fact stated only in
+    a link unfurl is not on the page a reader reads. Each fact has a pattern of its own, so a
+    rewritten paragraph that keeps them passes and one that drops a fact fails. Two of the four
+    have to be phrased as the disclosure's own sentence, because the page states the same two
+    nouns a second time in *The session layer has no specification*, about what every
+    collaborative tool decides for itself; matched loosely that paragraph supplied them for a
+    page whose disclosure had been deleted, and a rewrite that dropped those two while keeping
+    "their names" and "sizes and timing" passed with them gone. Returns 0 when a scanned page
+    carries all four and 1 when none does; it asks no network.
+    """
+    page, failures = first_page_stating(pages, RELAY_DISCLOSURE)
+    if page is not None:
+        print(
+            "check-claims: the page states what the sealed relay still sees — the room's "
+            "existence, its membership, the display names and the sizes and timing of "
+            "what moves"
+        )
+        return 0
     for where, absent in failures:
         print(
             f"check-claims: {where} does not state what the sealed relay still sees: it is "
@@ -1191,11 +1466,180 @@ def check_relay_disclosure(pages: list[Scanned]) -> int:
     return 1
 
 
+def check_browser_trust(pages: list[Scanned]) -> int:
+    """The page's statement that a browser guest trusts the room's own server for the client code.
+
+    The E2EE plan's §2 closing paragraph (`selvage-protocol/ai_notes`,
+    `docs/studies/e2ee-plan.md`) forbids leaving this implied by a page that claims the
+    server cannot read: the fragment is never sent, but the program that reads it is, and it is
+    served by the same server as the relay, so a pwned one can hand the guest a client that uses
+    its own key. The mitigation the plan names first — an origin the room's server does not
+    control — is not the shape the page describes, so the second half has to be said out loud,
+    including which clients are installed artefacts rather than fetched ones. Required the way the
+    visibility facts are, so an edit that keeps every phrase pattern green cannot drop it.
+    """
+    page, failures = first_page_stating(pages, BROWSER_TRUST_DISCLOSURE)
+    if page is not None:
+        print(
+            "check-claims: the page states that a guest who opens the page the room's own "
+            "server serves trusts that server for the client code as well as for the relay, and "
+            "that the installed clients are not in that position"
+        )
+        return 0
+    for where, absent in failures:
+        print(
+            f"check-claims: {where} does not state what the browser guest trusts: it is "
+            f"missing {', '.join(absent)}. The page hands a guest the page its own server "
+            "serves and says the server cannot read the room, which is the combination the plan "
+            "forbids leaving implied",
+            file=sys.stderr,
+        )
+    return 1
+
+
+def names_wire(text: str, version: str) -> bool:
+    """Whether this text names the wire version as a name of its own, not as `selvage/12`."""
+    return re.search(rf"(?<![\w/]){re.escape(version)}(?![\w/])", text) is not None
+
+
+def page_names(version: str, pages: list[Scanned]) -> bool:
+    """Whether the page's visible text carries this wire version as a name of its own.
+
+    The needle comes from the instance, so a page that names none of what the instance offers is
+    the failure this reports rather than a scan that quietly looked for nothing. The lookarounds
+    keep `selvage/1` from being satisfied by `selvage/12`.
+    """
+    return any(names_wire(page.text, version) for page in pages)
+
+
+def wire_binding_problems(
+    page: Scanned, offered: tuple[str, ...], pinned_wire: str
+) -> list[str]:
+    """What this page says about wire versions that the artefacts behind it do not support."""
+    problems: list[str] = []
+    pinned = WIRE_OF_PINNED.search(page.text)
+    if pinned is None:
+        problems.append(
+            "it never says which wire the image under the `docker run` speaks (that release "
+            f"is {pinned_wire})"
+        )
+    elif pinned.group(1) != pinned_wire:
+        problems.append(
+            f"it says the pinned image speaks {pinned.group(1)!r}, and the pin "
+            f"{PINNED_IMAGE_VERSION} speaks {pinned_wire}"
+        )
+    demo = WIRE_OF_DEMO.search(page.text)
+    if demo is None:
+        problems.append("it never says which wire the demo speaks")
+    elif demo.group(1) not in offered:
+        problems.append(
+            f"it says the demo speaks {demo.group(1)!r}, and {DEMO_ORIGIN}/meta offers "
+            f"{', '.join(offered)}"
+        )
+    if not SEALING.search(page.text):
+        return problems
+    if not names_wire(page.text, SEALED_WIRE):
+        problems.append(
+            f"it describes sealing and never names {SEALED_WIRE}, the wire the sealing belongs to"
+        )
+    if not names_wire(page.text, PLAINTEXT_WIRE):
+        problems.append(
+            f"it describes sealing and never names {PLAINTEXT_WIRE}, the wire that does not seal"
+        )
+    unreleased = SEALING_UNRELEASED.search(page.text) is not None
+    if SEALED_WIRE in offered and unreleased:
+        problems.append(
+            f"it still calls {SEALED_WIRE} unreleased, and {DEMO_ORIGIN}/meta offers it"
+        )
+    if SEALED_WIRE not in offered and not unreleased:
+        problems.append(
+            f"it claims sealing and never says {SEALED_WIRE} is not in a published release, "
+            f"while {DEMO_ORIGIN}/meta offers only {', '.join(offered)}"
+        )
+    return problems
+
+
+def check_wire_binding(pages: list[Scanned]) -> int:
+    """Which wire version the page says each artefact it hands a reader speaks.
+
+    The page hands a reader one `docker run` and one instance address, and sealing belongs to one
+    wire version and not the other. A page that describes sealing without saying which version is
+    which invites the failure a confidentiality feature cannot have: a reader pastes the command
+    under the paragraph and gets a server that carries the room through it in the clear. So the
+    page has to say which wire the pinned image speaks and which wire the demo speaks. The demo's
+    half is measured, against what `/meta` offers, where no wording can forge it; the image's
+    half is read from `IMAGE_WIRE_BY_TAG`, which a release has to extend in the same wave as the
+    pin. A page that claims sealing must also name the wire that does not seal, and must say the
+    sealed one is not in a published release exactly while no instance offers it: still calling it
+    unreleased after a release tells a reader their room is plaintext when it is not, which is the
+    same defect with the sign the other way round.
+
+    Returns 0, 1 when the page says something the artefacts disprove, 2 when the instance cannot
+    be asked or this file cannot say what the pin speaks.
+    """
+    root = root_of_this_checkout()
+    binding = [page for page in pages if WIRE_VERSION.search(page.text)]
+    if not binding:
+        print(
+            f"check-claims: none of {len(pages)} scanned file(s) names a wire version, and the "
+            "page hands a reader a server to run: a scan that reaches no version is not "
+            "checking the versions",
+            file=sys.stderr,
+        )
+        return 1
+    if PINNED_IMAGE_VERSION not in IMAGE_WIRE_BY_TAG:
+        print(
+            f"check-claims: the pin is {PINNED_IMAGE_VERSION} and nothing here says which "
+            "wire version that release speaks (see `IMAGE_WIRE_BY_TAG`); a pin whose wire is "
+            "unknown cannot be held to the page's sentence about it",
+            file=sys.stderr,
+        )
+        return 2
+    pinned_wire = IMAGE_WIRE_BY_TAG[PINNED_IMAGE_VERSION]
+    try:
+        offered = demo_meta()[1]
+    except (urllib.error.URLError, OSError, ValueError, KeyError) as error:
+        print(
+            f"check-claims: cannot ask {DEMO_ORIGIN} which wire versions it offers ({error}); "
+            "the page says which artefact speaks which version, and the half of that sentence "
+            "about the instance cannot be checked without it",
+            file=sys.stderr,
+        )
+        return 2
+
+    failed: list[tuple[str, list[str]]] = []
+    for page in binding:
+        problems = wire_binding_problems(page, offered, pinned_wire)
+        if problems:
+            failed.append((os.path.relpath(page.path, root), problems))
+    if failed:
+        for where, problems in failed:
+            print(
+                f"check-claims: {where} does not bind what it says to a wire version: "
+                + "; ".join(problems),
+                file=sys.stderr,
+            )
+        return 1
+    sealed = SEALING.search(binding[0].text) is not None
+    print(
+        f"check-claims: the page binds its sealing claim to the wire versions the artefacts "
+        f"speak — the pin {PINNED_IMAGE_VERSION} as {pinned_wire}, the demo as "
+        f"{', '.join(offered)} from `/meta` — and "
+        + (
+            f"names {SEALED_WIRE} as not in a published release"
+            if sealed
+            else "carries no sealing claim to bind"
+        )
+    )
+    return 0
+
+
 def main() -> int:
-    compiled: list[tuple[Phrase, re.Pattern[str]]] = []
+    compiled: list[tuple[Phrase, re.Pattern[str], list[re.Pattern[str]]]] = []
     for phrase in FORBIDDEN:
         pattern = re.compile(phrase.pattern, re.IGNORECASE)
-        if not pattern.search(normalise(phrase.sample)[0]):
+        permits = [re.compile(one, re.IGNORECASE) for one in phrase.permitted_when]
+        if not hits(pattern, permits, normalise(phrase.sample)[0]):
             print(
                 f"check-claims: the pattern {phrase.pattern!r} does not match its own sample "
                 f"{phrase.sample!r}; a pattern that matches nothing passes everything",
@@ -1203,7 +1647,7 @@ def main() -> int:
             )
             return 2
         for evasion in phrase.evasions:
-            if not pattern.search(normalise(evasion)[0]):
+            if not hits(pattern, permits, normalise(evasion)[0]):
                 print(
                     f"check-claims: the pattern {phrase.pattern!r} does not match its evasion "
                     f"sample {evasion!r}; the claim is written in a shape the pattern misses",
@@ -1211,14 +1655,14 @@ def main() -> int:
                 )
                 return 2
         for wording in phrase.clean:
-            if pattern.search(normalise(wording)[0]):
+            if hits(pattern, permits, normalise(wording)[0]):
                 print(
                     f"check-claims: the pattern {phrase.pattern!r} matches its clean fixture "
                     f"{wording!r}; honest wording is a false positive",
                     file=sys.stderr,
                 )
                 return 2
-        compiled.append((phrase, pattern))
+        compiled.append((phrase, pattern, permits))
 
     root = root_of_this_checkout()
     os.chdir(root)
@@ -1232,34 +1676,43 @@ def main() -> int:
         )
         return 2
 
-    hits = 0
+    found_hits = 0
     scanned: list[Scanned] = []
     for path in paths:
         with open(path, encoding="utf-8") as handle:
             raw = handle.read()
         text, line_of = normalise(raw)
+        prose = meta_streams(raw)
         scanned.append(
             Scanned(
                 path=path,
                 text=text,
                 line_of=line_of,
                 destinations=destinations(raw),
+                prose=prose,
             )
         )
-        for phrase, pattern in compiled:
-            for match in pattern.finditer(text):
-                hits += 1
-                print(
-                    f"{os.path.relpath(path, root)}:{line_of[match.start()]}: "
-                    f"forbidden phrase {match.group(0)!r}\n"
-                    f"    {phrase.reason}"
-                )
+        where = os.path.relpath(path, root)
+        for phrase, pattern, permits in compiled:
+            for stream, lines in [(text, line_of), *prose]:
+                for match in hits(pattern, permits, stream):
+                    found_hits += 1
+                    print(
+                        f"{where}:{lines[match.start()]}: forbidden phrase "
+                        f"{match.group(0)!r}\n    {phrase.reason}"
+                    )
 
-    if hits:
-        print(f"check-claims: {hits} forbidden phrase(s) in {len(paths)} file(s)")
+    if found_hits:
+        print(f"check-claims: {found_hits} forbidden phrase(s) in {len(paths)} file(s)")
         return 1
 
-    for check in (check_relay_disclosure, check_pinned_image, check_demo_instance):
+    for check in (
+        check_relay_disclosure,
+        check_browser_trust,
+        check_pinned_image,
+        check_demo_instance,
+        check_wire_binding,
+    ):
         status = check(scanned)
         if status != 0:
             return status

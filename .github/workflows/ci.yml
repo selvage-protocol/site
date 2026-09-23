@@ -8,18 +8,23 @@ name: ci
 # and the workflow lint. The claim step
 # matches known wordings only — a green run is not a proof that every sentence is true, so the
 # page's claims are still read against the corpus by a person. The claims it does assert
-# positively are the three with artefacts behind them. The image tag the page's happy path hands a
+# positively are the ones with artefacts behind them. The image tag the page's happy path hands a
 # reader: it asks `ghcr.io` for the pinned version, requires a leg per architecture, and compares
-# the per-platform manifests' layer digests, because a platform entry only labels a slot. And the
+# the per-platform manifests' layer digests, because a platform entry only labels a slot. The
 # demo instance the page points at: it requires every reference to that host to be one of the
 # three the page may carry, the address the demo section hands an editor to reach the server
 # (its path answers the server's own JSON, not the proxy's page), that address's origin to report a
 # `selvaged` server offering a wire version the page names, and the origin's `/` to serve the guest
-# page the browser row points at. The third is the relay-visibility disclosure: the rendered page's
-# text has to state the room's existence, its membership, the display names and the sizes and
-# timing of what moves, one pattern per fact, so deleting the paragraph fails where the clean
-# fixtures alone would not. The registry and the instance halves need egress and fail rather than
-# pass when they cannot reach it.
+# page the browser row points at. The wire versions are then bound to the artefacts: the page has
+# to say which wire the pinned image speaks and which the demo speaks, the demo's half against
+# what `/meta` offers and the image's half against `IMAGE_WIRE_BY_TAG`, and a page that claims
+# sealing has to name the wire that does not seal and to say the sealed one is not in a published
+# release exactly while no instance offers it — the paragraph and the command under it are read
+# together, so the landing page cannot deliver a downgrade quietly. Two disclosures are required
+# besides: the relay-visibility facts, one pattern per fact, so deleting the paragraph fails where
+# the clean fixtures alone would not, and the browser guest's trust in the room's own server for
+# the client code, which the plan forbids leaving implied. The registry and the instance halves
+# need egress and fail rather than pass when they cannot reach it.
 # No `push: branches: [main]`: a pull request already runs the whole gate, and the
 # merge commit carries the same content, so the merge would run it a second time.
 # `workflow_dispatch` is the re-run for a commit that reached `main` without one.
@@ -97,7 +102,7 @@ jobs:
       - name: contrast floor over the theme tokens (WCAG AA)
         run: scripts/ci-local.sh contrast
 
-      - name: claim filter over the rendered page (known wordings, plus the image and demo pins against the registry and the instance)
+      - name: claim filter over the rendered page (known wordings, plus the image, the demo and the wire versions against the registry and the instance)
         run: scripts/ci-local.sh claims
 
       - name: the CSP over the served page and its not-found route (nothing either carries is refused)
