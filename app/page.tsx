@@ -234,6 +234,16 @@ export default function Home() {
               </a>{" "}
               holds the compose file and the source build.
             </p>
+            <p>
+              The server relays ciphertext, and cannot tell who is host.
+              Documents, cursors, the file listing, which files are open and who
+              may edit are sealed under keys that travel in the part of the link a
+              browser never sends to a server, and the decisions a session used to
+              ask the server to make are signed by the peers instead. The box — and
+              whoever holds it — carries bytes it cannot read. It still sees that a
+              room exists, who is in it, their names, and the sizes and timing of
+              what moves.
+            </p>
 
             <h3>Pick your editor</h3>
             <p>

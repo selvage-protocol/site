@@ -186,11 +186,26 @@ FORBIDDEN: list[Phrase] = [
         "title exists to defend against",
     ),
     Phrase(
-        r"end[- ]to[- ]end|\be2ee\b",
-        "end-to-end encrypted",
-        "there is no encryption layer in version 1: frames travel through the server as "
-        "unencrypted bytes, and this slice has no transport security either",
-        ("end<span></span>-to-end encrypted",),
+        r"\bnobody (?:else )?can read\b"
+        r"|\bonly (?:you|the (?:people|two) in the room)\b"
+        r"|\bthe server learns nothing\b"
+        r"|\bfully encrypted\b"
+        r"|\bzero[- ]knowledge\b",
+        "nobody else can read the room",
+        "the relay is sealed, not omniscient: it still reads the room's existence, membership, "
+        "display names, sizes and timing, and the keys are in the link a human pastes",
+        (
+            "nobody else can read it",
+            "only the people in the room can read it",
+            "the server learns nothing",
+            "fully encrypted",
+            "zero-knowledge relay",
+        ),
+        (
+            "The server relays ciphertext, and cannot tell who is host.",
+            "It still sees that a room exists, who is in it, their names, and the sizes and "
+            "timing of what moves.",
+        ),
     ),
     Phrase(
         # The browser client is published now and it hosts: on Chrome or Edge a page its own
@@ -306,15 +321,30 @@ FORBIDDEN: list[Phrase] = [
         r"never leaves|never reaches|leaves? your machine|stays? on your machine"
         r"|only the people in the room",
         "your code never leaves your machine",
-        "the host's file contents travel through the server to the peers that ask for them and "
-        "there is no encryption layer in version 1; the relay is payload-opaque but plaintext, "
-        "so its operator can read a frame as it passes",
+        "the host's file contents travel through the server to the peers that ask for them, and "
+        "they are sealed in `selvage/2` but still leave the machine; 'only the people in the "
+        "room' is false whatever the version, because whoever holds the link can read the room, "
+        "its fragment included",
     ),
     Phrase(
-        r"server (?:cannot|can't|can not) (?:read|see)",
-        "the server cannot read what a room is editing",
-        "the relay is payload-opaque, not confidential: it holds no document text, but it can "
-        "read a frame as it routes it and there is no transport security in this slice",
+        r"\bthe server (?:cannot|can't) (?:read|see) anything\b"
+        r"|\bthe server (?:cannot|can't) (?:tell|know) who\b"
+        r"(?!\s+(?:is|are|was|were)\s+(?:the\s+)?host\b)",
+        "the server cannot read anything",
+        "the relay is sealed, not omniscient: it reads no text, no cursor, no file name and no "
+        "role, and it cannot forge, mis-attribute or replay a frame, but it still reads a room's "
+        "existence, its membership, the display names and the sizes and timing of what moves, "
+        "and it can drop, delay or end any room. It cannot tell who is host, which is a peer's "
+        "signed claim and not a server's, so that reading stays legal here",
+        (
+            "the server can't see anything",
+            "the server cannot tell who is in the room",
+        ),
+        (
+            "The server relays ciphertext, and cannot tell who is host.",
+            "It still sees that a room exists, who is in it, their names, and the sizes and "
+            "timing of what moves.",
+        ),
     ),
     Phrase(
         r"\btrusted by\b|testimonial|case stud|\bscreenshot|\blogo\b",
@@ -418,16 +448,18 @@ FORBIDDEN: list[Phrase] = [
     Phrase(
         r"third[- ]part[^.]{0,24}sees?\b|no third[- ]part[^.]{0,24}saw\b",
         "No third party ever sees the room.",
-        "the relay is payload-opaque but plaintext with no transport security in this slice: "
-        "the server's operator and the network path can see the room's text. Only the page's "
-        "own weak reading ('no third party's cloud holding the room') is backed",
+        "the relay is sealed, not omniscient: the server's operator and the network path still "
+        "see the room's existence, its membership, the display names and the sizes and timing of "
+        "what moves, and the link's holder can read the room itself. Only the page's own weak "
+        "reading ('no third party's cloud holding the room') is backed",
         ("No third-party ever sees the room.",),
     ),
     Phrase(
         r"no cloud[^.]{0,24}between",
         "no cloud in between",
-        "the relay is payload-opaque but plaintext with no transport security in this slice: "
-        "the server's operator and the network path can see the room's text. Only the page's "
+        "the relay is sealed, not omniscient: the server's operator and the network path still "
+        "see the room's existence, its membership, the display names and the sizes and timing of "
+        "what moves, and the link's holder can read the room itself. Only the page's "
         "own weak reading ('no third party's cloud holding the room') is backed",
         ("no clo<!-- -->ud in between", "no cloud <em>in</em> between",
          "no cloud &#105;n between"),
