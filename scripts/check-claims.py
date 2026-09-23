@@ -7,12 +7,13 @@ sentence that is merely unbacked all pass it. What it does guarantee is narrower
 worth having: those known wordings do not appear, even when the page wraps them across lines or
 encodes the characters as HTML entities.
 
-Two claims are asserted in the positive instead, because a phrase list cannot reach them: the image
-tag in the `docker run` the page hands a reader, and the instance the demo section points at — the
-address it gives an editor, the wire version that address speaks, and the page a guest is sent to.
-The address half asks the path a plain `GET` can reach, not the upgrade: see `demo_session_route`.
-Each is a fact with an artefact behind it, and a wrong tag is a command that fails rather than a
-wording that lies. See `PUBLISHED_IMAGE` and `DEMO_ORIGIN` below.
+Three claims are asserted in the positive instead, because a phrase list cannot reach them: the
+image tag in the `docker run` the page hands a reader, the instance the demo section points at —
+the address it gives an editor, the wire version that address speaks, and the page a guest is sent
+to — and the disclosure of what the sealed relay still sees. The address half asks the path a
+plain `GET` can reach, not the upgrade: see `demo_session_route`. Each is a fact with an artefact
+behind it, and a wrong tag is a command that fails rather than a wording that lies. See
+`PUBLISHED_IMAGE`, `DEMO_ORIGIN` and `RELAY_DISCLOSURE` below.
 
 Each entry below pairs a phrase the page must not carry with the reason it must not, and with a
 sample that has to match it. The reasons are not this script's opinion: every one of them is a
@@ -120,6 +121,35 @@ SERVER_NAME = re.compile(r"selvaged/\S+")
 # than the one that added the card carries no such element, and the sentence would be about a page
 # that cannot start one.
 HOST_CARD = re.compile(r'id="host-wrap"')
+# The page's paragraph about the sealed relay is a claim the gate has to *require*, not just
+# permit: the `clean` fixtures above only prove the pattern does not reject those sentences, and
+# an editor who deletes the paragraph would leave every one of them green. What is required is
+# the paragraph's facts, one pattern each, so a rewrite that keeps the facts passes and a page
+# that drops one fails. The sizes-and-timing fact is the one only this paragraph carries.
+RELAY_DISCLOSURE = (
+    (
+        "the room's existence",
+        re.compile(r"\b(?:room|session)s?\b[^.]{0,40}\bexists?\b", re.IGNORECASE),
+    ),
+    (
+        "its membership",
+        re.compile(
+            r"\bwho is in (?:it|one|the room|a room)\b|\bmembership\b|\bwho (?:has )?joined\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "the display names",
+        re.compile(
+            r"\bdisplay names?\b|\btheir names\b|\b(?:members?|participants?)'? names\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "the sizes and timing of what moves",
+        re.compile(r"\bsizes?\b[^.]{0,32}\btiming\b", re.IGNORECASE),
+    ),
+)
 USER_AGENT = "selvage-site-check/1.0"
 # A link's destination lives in an attribute, and the visible text carries only its label, so both
 # are scanned: an anchor labelled with the demo host can point somewhere else entirely.
@@ -1125,6 +1155,41 @@ def check_demo_instance(pages: list[Scanned]) -> int:
     )
     return 0
 
+
+def check_relay_disclosure(pages: list[Scanned]) -> int:
+    """The page's statement of what the sealed relay still sees, required rather than permitted.
+
+    The `clean` fixtures above only prove the phrase pattern does not reject those sentences;
+    they do not make the page carry one. Each fact the paragraph states has a pattern of its
+    own, so a rewritten paragraph that keeps the facts passes and one that drops a fact fails.
+    Deleting the paragraph fails too, and the sizes-and-timing fact is the one nothing else on
+    the page states. Returns 0 when a scanned page carries all four and 1 when none does; it
+    asks no network.
+    """
+    root = root_of_this_checkout()
+    failures: list[tuple[str, list[str]]] = []
+    for page in pages:
+        absent = [
+            label for label, pattern in RELAY_DISCLOSURE if not pattern.search(page.text)
+        ]
+        if not absent:
+            print(
+                "check-claims: the page states what the sealed relay still sees — the room's "
+                "existence, its membership, the display names and the sizes and timing of "
+                "what moves"
+            )
+            return 0
+        failures.append((os.path.relpath(page.path, root), absent))
+    for where, absent in failures:
+        print(
+            f"check-claims: {where} does not state what the sealed relay still sees: it is "
+            f"missing {', '.join(absent)}. The page's server section carries that disclosure, "
+            "so a page with a fact dropped from it claims more than the relay does",
+            file=sys.stderr,
+        )
+    return 1
+
+
 def main() -> int:
     compiled: list[tuple[Phrase, re.Pattern[str]]] = []
     for phrase in FORBIDDEN:
@@ -1193,7 +1258,7 @@ def main() -> int:
         print(f"check-claims: {hits} forbidden phrase(s) in {len(paths)} file(s)")
         return 1
 
-    for check in (check_pinned_image, check_demo_instance):
+    for check in (check_relay_disclosure, check_pinned_image, check_demo_instance):
         status = check(scanned)
         if status != 0:
             return status
