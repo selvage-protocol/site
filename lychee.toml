@@ -8,7 +8,7 @@
 # The waitlist form is gone (the page collects nothing), so the reserved-name
 # endpoint went with it, and every other link left on the page is expected to
 # resolve and is checked. The page's home is
-# `https://selvage-protocol.vercel.app`: the canonical link, `og:url` and
+# `https://selvage.dontblameme.dev`: the canonical link, `og:url` and
 # `og:image` all name that origin, and it resolves. `selvageprotocol.com` is not
 # registered and registering it is not being pursued. If a URL ever needs
 # another exclusion, add it here with its reason beside it.

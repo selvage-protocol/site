@@ -1,6 +1,6 @@
 # The public landing page
 
-The page is live at **https://selvage-protocol.vercel.app**, which is its home;
+The page is live at **https://selvage.dontblameme.dev**, which is its home;
 `selvageprotocol.com` is not registered and registering it is not being pursued (see "The live
 origin").
 
@@ -250,7 +250,7 @@ nosniff` and `Referrer-Policy: strict-origin-when-cross-origin`. `next.config.ts
 framework's own `X-Powered-By: Next.js` banner off, so the HTML response does not name the stack
 it was rendered by. There is nothing to configure beyond connecting the repository.
 
-Production deploys on `main`, at **https://selvage-protocol.vercel.app**, and every branch and pull request gets a preview URL. That is all
+Production deploys on `main`, at **https://selvage.dontblameme.dev**, and every branch and pull request gets a preview URL. That is all
 Vercel is used for. It does not run the checks; the workflow does, and those are the ones worth
 making required status checks under branch protection.
 
@@ -493,7 +493,7 @@ Three things the check cannot make mechanical, and which a reader of a change ha
 
 ## The live origin
 
-The page is live and public at **https://selvage-protocol.vercel.app**, served by Vercel with the
+The page is live and public at **https://selvage.dontblameme.dev**, served by Vercel with the
 two headers above. That origin is the page's home. `selvageprotocol.com` is **not registered**, and
 registering it is not being pursued: nothing here is waiting on a domain.
 
@@ -502,11 +502,11 @@ What that decides:
 - **One origin, named once.** `app/layout.tsx` holds it in `LIVE_ORIGIN` and nothing else in the
   page names a host. `metadataBase` resolves the file conventions' paths against it, so `og:image`
   and `twitter:image` read a URL that resolves,
-  `https://selvage-protocol.vercel.app/opengraph-image.png`, instead of the
+  `https://selvage.dontblameme.dev/opengraph-image.png`, instead of the
   `http://localhost:3000/…` a local or preview build published while the layout had no
   `metadataBase` at all. `check-csp.py`'s `DEFAULT_ORIGIN` names the same origin.
 - **`rel="canonical"` and `og:url` name that origin too.** Both are written from the same constant,
-  so the document carries `<link rel="canonical" href="https://selvage-protocol.vercel.app"/>` and
+  so the document carries `<link rel="canonical" href="https://selvage.dontblameme.dev"/>` and
   the matching `og:url`, and a card unfurled from a branch preview names the same URL and image as
   production. Moving the page to another origin is one constant, and the two tags follow it.
 - **The title, description and `og:title`/`og:description` mirror the page's own heading and lede.**
