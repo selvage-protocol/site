@@ -267,13 +267,23 @@ export default function Home() {
             </p>
             <details className="quickstart">
               <summary>
-                VS Code: package the unpublished extension, then host a session
+                VS Code: install the extension, then host a session
               </summary>
               <div className="quickstart-body">
                 <p>
-                  Needs VS Code 1.85 or newer, and Node 22.18 or newer to build
-                  the extension. It is unpublished, so a checkout and one package
-                  step stand in for an install:
+                  Needs VS Code 1.85 or newer. The extension is published as{" "}
+                  <code>selvage-protocol.selvage</code> on the VS Code Marketplace
+                  and on Open VSX:
+                </p>
+                <pre>
+                  <code>
+                    {"code --install-extension selvage-protocol.selvage"}
+                  </code>
+                </pre>
+                <p>
+                  An install is the client and not a server: a session pairs with
+                  a <code>selvaged</code> you run. Or build the <code>.vsix</code>{" "}
+                  from a checkout, which needs Node 22.18 or newer:
                 </p>
                 <pre>
                   <code>
