@@ -16,7 +16,8 @@ const heroFacts = [
   </>,
   <>
     Guests see the paths you grant and edit the room&apos;s text. Only your own
-    client writes to your folder, and the room ends when you leave.
+    client writes to your folder, and a room ends when its host&apos;s connection
+    does.
   </>,
   <>
     There is no account on either side. Rooms live in memory on the server you host,
@@ -117,9 +118,10 @@ const steps = [
     lead: "Close the window",
     body: (
       <>
-        The room dies with its host after a short grace period, so a dropped
-        connection does not end it. Rooms live in memory: nothing survives a restart
-        of the server.
+        A room follows its host&apos;s connection, with a short grace period, so a
+        dropped one does not end it. On <code>selvage/2</code> the timer moves to the
+        room&apos;s last connection, and the room outlives its host. Rooms live in
+        memory: nothing survives a restart of the server.
       </>
     ),
   },
@@ -191,8 +193,8 @@ export default function Home() {
                 </Button>
               </div>
               <p className="mt-4 font-mono text-[12px] text-subtext">
-                The specification is a draft, and the wire version is{" "}
-                <code>selvage/1</code>.
+                The specification is a draft, and the wire version the published
+                release speaks is <code>selvage/1</code>.
               </p>
             </div>
 
@@ -235,14 +237,28 @@ export default function Home() {
               holds the compose file and the source build.
             </p>
             <p>
-              The server relays ciphertext, and cannot tell who is host.
-              Documents, cursors, the file listing, which files are open and who
-              may edit are sealed under keys that travel in the part of the link a
-              browser never sends to a server, and the decisions a session used to
-              ask the server to make are signed by the peers instead. The box — and
-              whoever holds it — carries bytes it cannot read. It still sees that a
-              room exists, who is in it, their names, and the sizes and timing of
-              what moves.
+              The image above and the demo speak <code>selvage/1</code> today, which
+              has no encryption layer: the room&apos;s bytes travel through that
+              server unencrypted, and a server that keeps them keeps the room. The
+              sealing is <code>selvage/2</code>, and it is not in a published release
+              yet.
+            </p>
+            <p>
+              On <code>selvage/2</code> the server relays ciphertext: documents,
+              cursors, the file listing, which files are open and who may edit are
+              sealed under keys that travel in the part of the link a browser never
+              sends to a server, and the decisions a session used to ask the server
+              to make are signed by the peers instead. The box — and whoever holds it
+              — carries bytes it cannot read, and the host is a peer&apos;s signed
+              claim rather than a server fact: it cannot seat a host, prove one or
+              take the role. It still sees that a room exists, who is in it, their
+              names, and the sizes and timing of what moves, and it can still drop,
+              delay, reorder or refuse frames and end any room.
+            </p>
+            <p>
+              Whoever holds the invite holds the keys to it: a leaked link is a leaked
+              room, fragment included, so treat an invite the way you would treat a
+              password.
             </p>
 
             <h3>Pick your editor</h3>
@@ -334,6 +350,13 @@ export default function Home() {
                   came from. It has to be the page its own server serves, which is
                   how <a href="https://selvage-demo.dontblameme.dev">the demo</a> is
                   served.
+                </p>
+                <p>
+                  A guest who opens the page the room&apos;s own server serves trusts
+                  that server for the client code as well as for the relay: the
+                  program that reads the link&apos;s fragment was served by the party
+                  the sealing is meant to keep out. The VS Code and Neovim clients
+                  are installed artefacts and are not in that position.
                 </p>
                 <p>
                   The page lives in{" "}
@@ -516,17 +539,21 @@ export default function Home() {
               This page prerenders to static HTML with one stylesheet and a
               favicon, and the served document includes the framework&apos;s
               runtime scripts. It sets no cookie, makes no third-party request
-              and collects no personal data; the{" "}
+              and collects no personal data of its own; the{" "}
               <a href="https://github.com/selvage-protocol">selvage-protocol</a>{" "}
-              GitHub organisation is its controller. Write to{" "}
+              GitHub organisation is its controller.
+            </p>
+            <p>
+              Mail you send to{" "}
               <a href="mailto:selvage@dontblameme.dev">
                 selvage@dontblameme.dev
               </a>{" "}
-              about the project or a security problem in it. The page is MIT
-              OR Apache-2.0. Its framing follows the project&apos;s own design
-              record, which is private and carries no licence; the workflow
-              sentence is adapted from the Neovim client&apos;s README, which is
-              MIT OR Apache-2.0.
+              about the project or a security problem in it is the one thing here
+              that carries your own address back: the controller receives it and keeps
+              it only to answer. The page is MIT OR Apache-2.0. Its framing follows
+              the project&apos;s own design record, which is private and carries no
+              licence; the workflow sentence is adapted from the Neovim client&apos;s
+              README, which is MIT OR Apache-2.0.
             </p>
           </div>
       </footer>
