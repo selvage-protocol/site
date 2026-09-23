@@ -16,8 +16,7 @@ const heroFacts = [
   </>,
   <>
     Guests see the paths you grant and edit the room&apos;s text. Only your own
-    client writes to your folder, and a room ends when its host&apos;s connection
-    does.
+    client writes to your folder.
   </>,
   <>
     There is no account on either side. Rooms live in memory on the server you host,
