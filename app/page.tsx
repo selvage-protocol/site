@@ -518,8 +518,12 @@ export default function Home() {
               runtime scripts. It sets no cookie, makes no third-party request
               and collects no personal data; the{" "}
               <a href="https://github.com/selvage-protocol">selvage-protocol</a>{" "}
-              GitHub organisation is its controller. The page is MIT OR
-              Apache-2.0. Its framing follows the project&apos;s own design
+              GitHub organisation is its controller. Write to{" "}
+              <a href="mailto:selvage@dontblameme.dev">
+                selvage@dontblameme.dev
+              </a>{" "}
+              about the project or a security problem in it. The page is MIT
+              OR Apache-2.0. Its framing follows the project&apos;s own design
               record, which is private and carries no licence; the workflow
               sentence is adapted from the Neovim client&apos;s README, which is
               MIT OR Apache-2.0.
