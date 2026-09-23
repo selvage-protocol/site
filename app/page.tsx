@@ -278,7 +278,7 @@ export default function Home() {
                 <pre>
                   <code>
                     {
-                      "git clone https://github.com/selvage-protocol/vscode_client\ncd vscode_client\nnpm ci --no-audit --no-fund\nnpm run package\ncode --install-extension selvage-client-<version>.vsix"
+                      "git clone https://github.com/selvage-protocol/vscode_client\ncd vscode_client\nnpm ci --no-audit --no-fund\nnpm run package\ncode --install-extension selvage-<version>.vsix"
                     }
                   </code>
                 </pre>
