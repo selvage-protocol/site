@@ -392,14 +392,15 @@ beside each, and normalises the served HTML before matching: comments, tags, scr
 removed, entities decoded, whitespace collapsed. So a phrase cannot pass by wrapping across a
 line or by encoding a character. The scan runs against what the server renders, not the source:
 the gate builds, starts the production server, fetches `/` over HTTP and checks that HTML. It also
-asserts two claims in the positive, the image tag and the demo instance, described just below.
+asserts three claims in the positive — the image tag, the demo instance and the relay-visibility
+disclosure — described just below.
 **It is a filter, not a proof.** It cannot see meaning: a false claim in different words, a
 synonym outside the list, a superlative, an unbacked sentence or a wrong number the list does not
 pin all pass it. A green gate means the known wordings are absent, nothing more. The reasons are
 summarised here so that the constraint survives without the file that produced it.
 
-`scripts/check-claims.py` asserts two claims in the positive, because a phrase list cannot reach
-either. The first is the image tag the happy path hands a reader: the check pins
+`scripts/check-claims.py` asserts three claims in the positive, because a phrase list cannot reach
+them. The first is the image tag the happy path hands a reader: the check pins
 `ghcr.io/selvage-protocol/selvaged` to one version, requires every reference the rendered page
 carries to name it, and then asks the registry for that tag — anonymously, with no credential in
 the request, because no account is the point of the command. It compares the **per-platform
@@ -441,13 +442,22 @@ an interpreter's default signature. The image half needs egress to `ghcr.io` and
 than passing when it cannot reach it; the demo half does the same for an instance that does not
 answer at all, and exits 1 when the instance answers something that disproves a sentence.
 
+The third positive assertion is the relay-visibility disclosure itself, and it exists because the
+`clean` fixtures can only prove the phrase pattern does not reject the paragraph, not that the
+page carries one. The check requires the rendered page's visible text to state each of the four
+facts the paragraph is there to state — the room's existence, its membership, the display names,
+and the sizes and timing of what moves — as a small pattern of its own rather than the sentence,
+so a rewritten paragraph that keeps the facts passes and one that drops a fact fails. Deleting
+the paragraph fails the check: the sizes-and-timing fact is the one nothing else on the page
+states. It asks no network.
+
 | Must not appear | Why not |
 |---|---|
 | "open source" of the server or the project | The server binary is `FSL-1.1-MIT`: source-available, not OSI-approved, free for non-competing use and under MIT two years after each release. The specification and the clients are the open ones, and the page names their licences instead of reaching for the phrase |
 | "SSP" | The abbreviation is taken by stack-smashing protection and by supply-side platforms. The protocol is the Selvage Session Protocol, written out |
 | `salvage/1` | The wire version is `selvage/1`. "Selvage" is heard as "salvage", which is why the full protocol title appears at least once in the page's first paragraph |
-| end-to-end encryption, E2EE | Version 1 has no encryption layer; `selvage/2` seals and signs documents, cursors, the listing, the open-document set and the roles under keys in the link's fragment, and the server still reads rooms, membership, names, sizes and timing |
-| "the server cannot read it" / "the text never reaches the server", unqualified | The relay is sealed, not omniscient: it reads no text, no cursor, no file name and no role, and it cannot forge, mis-attribute or replay a frame, but it still reads a room's existence, its membership, the display names and the sizes and timing of what moves, and it can drop, delay or end any room. Unqualified, it must not appear: a page may not say the server cannot read anything, nor that it cannot know who is in the room. It may say the one thing that is a peer's signed claim and not the server's: that it cannot tell who is host |
+| "nobody else can read it", "only the people in the room", "the server learns nothing", "fully encrypted", "zero-knowledge" | The relay is sealed, not omniscient: it reads no text, no cursor, no file name and no role, and the keys are in the link a human pastes, but it still reads a room's existence, its membership, the display names and the sizes and timing of what moves, and it can drop, delay or end any room. Each of these wordings claims more than `selvage/2`'s sealing buys. `selvage/1` is weaker still: it has no encryption layer, frames travel through the server as unencrypted bytes, and the slice carries no transport security |
+| "the server cannot read" (unqualified) / "the server cannot read the room" / "the text never reaches the server" / the host reading that adds membership | The relay is sealed, not omniscient: it reads no text, no cursor, no file name and no role, and it cannot forge, mis-attribute or replay a frame, but it still reads a room's existence, its membership, the display names and the sizes and timing of what moves, and it can drop, delay or end any room. A claim about named, sealed material is specific and backed; unqualified it must not appear, nor may the room itself or the membership be the object. It may say the one thing that is a peer's signed claim and not the server's: that it cannot tell who is host, as long as that clause stands alone and does not add who is in the room |
 | hosting from a page in any browser, a room with no invite, the project's own site as a client | The browser client is published and it hosts: on Chrome or Edge a page the room's own server serves starts a session from a folder the person picks, which is the demo's shape, so the page says so. What is not true: hosting in any browser (Firefox and Safari have no `showDirectoryPicker` and can join but cannot host), a page no Selvage server serves offering it (the client says why instead of offering a control that could only refuse), joining without the invite link a host copies, and the project's own site as a place to join a room (it is a landing page). The stale denial "nothing runs in a web page" stays caught too, and so does the unqualified "host a session in the browser", which is the shape that overclaim takes |
 | file create, rename or delete | The room carries no file mutations: nothing on the wire adds, renames or removes a path, and the only write to the host's working copy is the host's own. A guest's keystroke reaches the folder through the host's client, which is what writes out the text the room settled on, and a Neovim guest's mirror materialises the granted paths |
 | the server route denied: no image to pull, nothing to install on the server | The reason this entry used to give — that no Dockerfile, compose file or service unit exists in any repository — is false now. `ghcr.io/selvage-protocol/selvaged:0.2.0` is published and pulls anonymously, `reference_server/compose.yaml` runs it, and `reference_server/packaging/systemd/selvaged.service` installs the binary. The pattern used to forbid the word `docker` itself, on that stale reason; it holds the denial of those artefacts instead, which is the sentence the page carried |
@@ -520,11 +530,14 @@ The claims step fetches `/` from the production server into `.tmp/rendered.html`
 overrides the default `3100`) and scans that file by name; reaching no file is an error rather
 than a pass, and every pattern must match its own sample before the scan, so a dead pattern fails
 the gate instead of passing everything; named honest wordings must stay unmatched, so a broadening
-that reintroduces a false positive fails it too. The scan also reads the page's image reference,
-holds it to the version pinned in `scripts/check-claims.py`, and asks `ghcr.io` for that tag, and
-reads the page's demo reference, holds it to the one host the check allows, and asks that instance
-what it reports, whether the editor address's `/session` path is answered by the server rather than
-by the proxy in front of it, and whether its `/` serves the page with a host card in its shell.
+that reintroduces a false positive fails it too. It also requires the relay-visibility disclosure
+in the scanned file: the four facts the server section states, each as its own pattern, so the
+paragraph cannot be deleted while the fixtures stay green. The scan then reads the page's image
+reference, holds it to the version pinned in `scripts/check-claims.py`, and asks `ghcr.io` for that
+tag, and reads the page's demo reference, holds it to the one host the check allows, and asks that
+instance what it reports, whether the editor address's `/session` path is answered by the server
+rather than by the proxy in front of it, and whether its `/` serves the page with a host card in
+its shell.
 
 The policy step reads the same rendered file, its not-found route, and the policy out of
 `vercel.json`, and fails when the policy would refuse a script, stylesheet or image either page
