@@ -387,6 +387,48 @@ def main() -> int:
             TEXT_MIN,
         )
     )
+    # The hero's third CTA is the ghost variant, whose hover state is the one pair on the
+    # page the two checks above do not reach: a `text-text` label over a `bg-surface0`
+    # wash. Its resting label is `text-subtext`, which is the muted-prose pair already.
+    # Both halves are read out of the component rather than named here, and anything this
+    # cannot read is exit 2, as everywhere else in this file.
+    try:
+        ghost = variant_classes(tsx, "ghost")
+    except FillError as exc:
+        print(
+            f"check-contrast: {exc}; a hover state the check cannot measure is a failure, "
+            "not a pass",
+            file=sys.stderr,
+        )
+        return 2
+    hover_fill = re.search(r"hover:bg-([\w-]+)/(\d+)", ghost)
+    hover_label = re.search(r"hover:text-([\w-]+)", ghost)
+    if hover_fill is None or hover_label is None:
+        print(
+            "check-contrast: the ghost variant carries no `hover:bg-<token>/<n>` and "
+            "`hover:text-<token>` pair, so the state the hero's third CTA is drawn in has "
+            "nothing to measure it from",
+            file=sys.stderr,
+        )
+        return 2
+    hover_token, hover_strength = hover_fill.group(1), int(hover_fill.group(2))
+    hover_fill_hex, hover_label_hex = tok.get(hover_token), tok.get(hover_label.group(1))
+    if hover_fill_hex is None or hover_label_hex is None or not 1 <= hover_strength <= 100:
+        print(
+            f"check-contrast: the ghost variant's hover state names "
+            f"{hover_token!r} at {hover_strength} and {hover_label.group(1)!r}, and the "
+            "palette does not carry both as tokens in that range",
+            file=sys.stderr,
+        )
+        return 2
+    checks.append(
+        (
+            f"ghost button label on its hover fill (bg-{hover_token}/{hover_strength})",
+            hover_label_hex,
+            composite(hover_fill_hex, bg, hover_strength / 100),
+            TEXT_MIN,
+        )
+    )
     stops = hero_stops(css)
     if not stops:
         print(

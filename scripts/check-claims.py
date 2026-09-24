@@ -68,7 +68,10 @@ SKIP_DIRS = {".git", ".tmp", "node_modules"}
 
 # A claimed corpus number that is not the one `specification/schema/validate.py` pins is a wrong
 # number the page would otherwise show without failing anything. The lookahead is what makes the
-# pinned value the only one that passes.
+# pinned value the only one that passes. There are two layers and each is pinned on its own — the
+# wire corpus's 24 vectors, 33760 frame checks and 8387 assertions, and the peer corpus's 26
+# vectors, 221 checks and 74 assertions — so a number before one of those nouns has to be that
+# layer's pin, and the peer layer's count is written with the layer named ('26 peer vectors').
 VEHICLE = r"\d[\d,]*"
 
 # The address the project's own landing page is served at. The browser entry holds a claim that
@@ -405,11 +408,17 @@ FORBIDDEN: list[Phrase] = [
         # "the server knows nothing" is the same one with the sentence turned round. The subject,
         # the verb and the word order are all alternated for that reason; pinning any of them to
         # one spelling is what let four paraphrases through in the review's probe.
+        #
+        # The window between the subject and the verb is the sentence's, not a word's: a page
+        # that writes "the server relays the room as ciphertext and learns nothing" states the
+        # claim 35 characters after its subject, which a 24-character window passed. There is no
+        # permit on this entry — naming what the relay still reads does not make the overclaim
+        # true — so the wider window is what closes it.
         r"\b(?:nobody|no[ -]?one)\b[^.]{0,24}\bcan\b[^.]{0,16}"
         r"\b(?:read|see|open|decrypt|view)\b"
         r"|\bonly\b[^.]{0,32}\bcan\b[^.]{0,16}\b(?:read|see|open|decrypt|view)\b"
-        r"|\bthe (?:server|relay|box|binary|instance)\b[^.]{0,24}"
-        r"\b(?:learns|knows|sees|reads)\b[^.]{0,12}\bnothing\b"
+        r"|\bthe (?:server|relay|box|binary|instance)\b[^.]{0,64}"
+        r"\b(?:learns|knows|sees|reads)\b[^.]{0,24}\bnothing\b"
         r"|\bfully encrypted\b"
         r"|\bzero[- ]knowledge\b",
         "nobody else can read the room",
@@ -428,6 +437,8 @@ FORBIDDEN: list[Phrase] = [
             "the server sees nothing",
             "fully encrypted",
             "zero-knowledge relay",
+            "the server relays the room as ciphertext and learns nothing",
+            "the relay carries the room and sees nothing of what is in it",
         ),
         (
             # The link's holder is inside the threat model and not outside it, so this sentence
@@ -801,24 +812,64 @@ FORBIDDEN: list[Phrase] = [
     Phrase(
         rf"\b(?!33760\b){VEHICLE}\s+frame[- ]checks?\b",
         "33759 frame checks",
-        "the pinned number is 33760 frame checks (`specification/schema/validate.py`); a different "
-        "number is a claim the corpus disproves",
+        "the wire corpus's pinned number is 33760 frame checks "
+        "(`specification/schema/validate.py`); a different number is a claim the corpus "
+        "disproves. The peer layer's 221 are checks and are pinned by that entry",
         clean=("33760 frame checks",),
     ),
     Phrase(
-        rf"\b(?!24\b){VEHICLE}\s+(?:\w+\s+){{0,2}}vectors?\b",
+        # The wire corpus and the peer corpus are two layers of one corpus and each is counted
+        # and pinned on its own (`EXPECTED_WIRE_VECTORS` and `EXPECTED_PEER_VECTORS`,
+        # `EXPECTED_PEER_CHECKS`). One number pinned wherever the word sits would read the peer
+        # layer's count as the wire layer's — `26 peer vectors` is the peer layer's pin, not a
+        # wrong count — so the wire entries exclude the shape the peer entries pin, exactly:
+        # `26 peer vectors`, never `26 peer-ish vectors`. The window is `\S+` rather than `\w+`
+        # for that: a hyphenated word between the number and the noun is still a word in front
+        # of it, and `26 peer-ish vectors` was a rewrite the `\w+` window passed.
+        rf"\b(?!24\b)(?!26\s+peer\s+vectors?\b){VEHICLE}\s+(?:\S+\s+){{0,2}}vectors?\b",
         "23 conformance vectors",
-        "the pinned number is 24 vectors (`specification/schema/validate.py`); a different number "
-        "is a claim the corpus disproves, and the count is pinned wherever the word sits — the "
-        "page writes both 'conformance vectors' and 'wire vectors'",
-        clean=("24 conformance vectors", "the 24 wire vectors"),
+        "the wire corpus's pinned number is 24 vectors (`specification/schema/validate.py`); a "
+        "different number is a claim the corpus disproves, and the count is pinned wherever the "
+        "word sits — the page writes both 'conformance vectors' and 'wire vectors'. The peer "
+        "layer's own count is a separate pin and is written '26 peer vectors'; any other number "
+        "before that noun is still a failure",
+        clean=("24 conformance vectors", "the 24 wire vectors", "26 peer vectors"),
     ),
     Phrase(
         rf"\b(?!8387\b){VEHICLE}\s+assertions?\b",
         "8386 assertions",
-        "the pinned number is 8387 assertions (`specification/schema/validate.py`); a different "
-        "number is a claim the corpus disproves",
-        clean=("8387 assertions",),
+        "the wire corpus's pinned number is 8387 assertions "
+        "(`specification/schema/validate.py`); a different number is a claim the corpus "
+        "disproves. The peer layer's count is its own pin and is written '74 peer assertions'",
+        clean=("8387 assertions", "74 peer assertions"),
+    ),
+    Phrase(
+        rf"\b(?!26\b){VEHICLE}\s+peer\s+vectors?\b",
+        "27 peer vectors",
+        "the peer corpus's pinned number is 26 vectors and 221 checks "
+        "(`EXPECTED_PEER_VECTORS` and `EXPECTED_PEER_CHECKS` in "
+        "`specification/schema/validate.py`, where the validator prints 'peer vectors 26 files, "
+        "19 frame, 7 decision, 221 checks, 74 assertion steps'); a different number is a claim "
+        "the corpus disproves. The layer has to be named: `26 vectors` is read as the wire "
+        "layer's count and fails on that entry",
+        ("27 peer ve<!-- -->ctors",),
+        clean=("26 peer vectors",),
+    ),
+    Phrase(
+        rf"\b(?!221\b){VEHICLE}\s+peer\s+checks?\b",
+        "220 peer checks",
+        "the peer corpus's pinned count is 221 checks (`EXPECTED_PEER_CHECKS` in "
+        "`specification/schema/validate.py`); a different number is a claim the corpus "
+        "disproves. The wire layer's 33760 are frame checks and are pinned by that entry",
+        clean=("221 peer checks",),
+    ),
+    Phrase(
+        rf"\b(?!74\b){VEHICLE}\s+peer\s+assertions?\b",
+        "75 peer assertions",
+        "the peer corpus's pinned number is 74 assertion steps (`EXPECTED_PEER_ASSERTIONS` in "
+        "`specification/schema/validate.py`); a different number is a claim the corpus "
+        "disproves. The wire layer's 8387 are pinned by that entry",
+        clean=("74 peer assertions",),
     ),
     Phrase(
         r"third[- ]part[^.]{0,24}sees?\b|no third[- ]part[^.]{0,24}saw\b",
@@ -1545,19 +1596,37 @@ def check_demo_instance(pages: list[Scanned]) -> int:
     return 0
 
 
+def disclosure_region(page: Scanned) -> str:
+    """The page from its own `docker run` on: the text the relay's disclosure is read from.
+
+    The paragraph sits under the packed command because a reader can take the claim and the
+    command together, which is also what tells the paragraph apart from the hero. The hero's
+    second fact states the same four facts, and it is above the command: reading the whole page
+    let a hero line satisfy a check written to require the paragraph, and deleting the paragraph
+    then passed. What is read is the page from the pinned image's own reference onwards, so the
+    hero cannot stand in for it. Returns "" when the page carries no such reference, which the
+    image half also fails on; this one names the absence rather than reporting four missing facts.
+    """
+    match = IMAGE_REFERENCE.search(page.text)
+    return page.text[match.start():] if match else ""
+
+
 def first_page_stating(
-    pages: list[Scanned], facts
+    pages: list[Scanned], facts, region_of=None
 ) -> tuple[Scanned | None, list[tuple[str, list[str]]]]:
     """The first page that states every fact, and every page's missing ones.
 
     A disclosure is required, not permitted: a `clean` fixture proves a pattern does not reject a
     sentence, never that the page carries one. What is required is the facts, one pattern each, so
-    a rewritten paragraph that keeps them passes and one that drops a fact fails.
+    a rewritten paragraph that keeps them passes and one that drops a fact fails. `region_of`
+    bounds where they may be read, for the one whose place is part of the claim (see
+    `disclosure_region`); the default reads the whole page.
     """
     root = root_of_this_checkout()
     failures: list[tuple[str, list[str]]] = []
     for page in pages:
-        absent = [label for label, pattern in facts if not pattern.search(page.text)]
+        text = page.text if region_of is None else region_of(page)
+        absent = [label for label, pattern in facts if not pattern.search(text)]
         if not absent:
             return page, []
         failures.append((os.path.relpath(page.path, root), absent))
@@ -1574,10 +1643,21 @@ def check_relay_disclosure(pages: list[Scanned]) -> int:
     nouns a second time in *The session layer has no specification*, about what every
     collaborative tool decides for itself; matched loosely that paragraph supplied them for a
     page whose disclosure had been deleted, and a rewrite that dropped those two while keeping
-    "their names" and "sizes and timing" passed with them gone. Returns 0 when a scanned page
-    carries all four and 1 when none does; it asks no network.
+    "their names" and "sizes and timing" passed with them gone. The region is the page from the
+    `docker run` that pulls the pinned image onwards: the paragraph's place under that command is
+    part of the claim, the hero states the same facts above it, and a page whose hero line is all
+    that is left has dropped the paragraph a reader is owed. Returns 0 when a scanned page carries
+    all four below its own command and 1 when none does; it asks no network.
     """
-    page, failures = first_page_stating(pages, RELAY_DISCLOSURE)
+    if not any(IMAGE_REFERENCE.search(page.text) for page in pages):
+        print(
+            f"check-claims: none of {len(pages)} scanned file(s) carries a {PUBLISHED_IMAGE} "
+            "reference, and what the relay still sees is read from the page's own `docker run` "
+            "onwards: without that command the paragraph has nowhere its place puts it",
+            file=sys.stderr,
+        )
+        return 1
+    page, failures = first_page_stating(pages, RELAY_DISCLOSURE, disclosure_region)
     if page is not None:
         print(
             "check-claims: the page states what the sealed relay still sees — the room's "
@@ -1588,8 +1668,10 @@ def check_relay_disclosure(pages: list[Scanned]) -> int:
     for where, absent in failures:
         print(
             f"check-claims: {where} does not state what the sealed relay still sees: it is "
-            f"missing {', '.join(absent)}. The page's server section carries that disclosure, "
-            "so a page with a fact dropped from it claims more than the relay does",
+            f"missing {', '.join(absent)}. That disclosure is read from the page's own "
+            "`docker run` onwards, which is where the paragraph sits and where the hero's own "
+            "fact does not reach, so a page with a fact dropped from the paragraph claims more "
+            "than the relay does",
             file=sys.stderr,
         )
     return 1

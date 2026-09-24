@@ -93,7 +93,11 @@ export function InviteChip() {
     <span className="invite" aria-hidden="true">
       <Copy className="invite-glyph" aria-hidden="true" />
       <span className="invite-label">invite link</span>
-      <span className="invite-url">?room=k7m2&amp;token=4f9c&hellip;</span>
+      <span className="invite-url">
+        ?room=k7m2&amp;token=4f9c
+        <wbr />
+        #k=&hellip;&amp;h=&hellip;
+      </span>
     </span>
   );
 }

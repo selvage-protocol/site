@@ -83,8 +83,8 @@ export function SiteHeader() {
             GitHub
             <ArrowUpRight className="h-3.5 w-3.5" />
           </a>
-          <Button href="#get-it-working" size="sm">
-            Run it
+          <Button href="https://selvage-demo.dontblameme.dev" size="sm">
+            Try the demo
           </Button>
         </div>
       </nav>

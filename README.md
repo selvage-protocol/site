@@ -25,7 +25,7 @@ browser proof the runner cannot run, and nothing else.
 
 | Path | What it is |
 |---|---|
-| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (promise, three landed facts, two CTAs, the room figure, and the version line under them), *Get it working* (the server commands, the sealed-relay paragraph under them with its wire-version binding, one folded row per editor, the demo instance and the address an editor hosts on, and the long routes folded into one `details`), *See it working* (four cards), *How it works* (four steps), *The session layer has no specification* (why the specification is the artifact), then the footer |
+| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (promise, four landed facts, three CTAs, the room figure, and the version line under them), *Get it working* (the server commands, the sealed-relay paragraph under them with its wire-version binding and the peer corpus's counts, one folded row per editor, the demo instance and the address an editor hosts on, and the long routes folded into one `details`), *See it working* (four cards), *How it works* (four steps), *The session layer has no specification* (why the specification is the artifact), then the footer |
 | `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, the one origin the metadata resolves against (`metadataBase`, `alternates.canonical`, `openGraph.url`; see "The live origin"), and the global stylesheet. The favicons are deliberately absent: they are Next file conventions, so the framework writes their tags and `sizes` from the files themselves |
 | `app/not-found.tsx` | the not-found route: what a mistyped address renders. The framework's own 404 document is styled with a `<style>` element and four `style` attributes, every one of which the policy's `style-src 'self'` refuses; this one is styled from `style.css` and carries neither (see "The Content-Security-Policy") |
 | `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, and a system font stack, so no font is fetched from a third party. Two widths are named there and the page keeps to them: `--measure` for running prose and `--column` for everything that is not prose (section rules, code blocks, the repo grid), so a wide figure is deliberate inside a narrow measure |
@@ -35,7 +35,7 @@ browser proof the runner cannot run, and nothing else.
 | `public/mark-transparent.png` | the owner's transparent 800×800 export, vendored byte-identical (its checksum matches the owner's file) and never hotlinked. The page body no longer fetches it: it is the source the header derivative is made from, and `web_client/test/identity.test.ts` pins its bytes against that repository's own copy. The opaque export was vendored beside it while the hero panel was light; it is no longer fetched either; `app/opengraph-image.png` is the same file |
 | `postcss.config.mjs` | the one PostCSS plugin (`@tailwindcss/postcss`), so `style.css` compiles on build |
 | `next.config.ts` | the one build setting that is not a default: `poweredByHeader: false`, so the framework's `X-Powered-By: Next.js` banner is not on the page's HTML response |
-| `components/ui/button.tsx` | the button primitive (shadcn-style `cva` variants: filled default, tinted secondary, ghost; renders an anchor when given `href`): the nav CTA and the two hero CTAs, nothing else |
+| `components/ui/button.tsx` | the button primitive (shadcn-style `cva` variants: filled default, tinted secondary, ghost; renders an anchor when given `href`): the nav CTA and the three hero CTAs, nothing else |
 | `components/ui/badge.tsx` | the pill primitive: the hero status line, a mono caps chip |
 | `components/room-visuals.tsx` | the product figures: the hero's room window (the guest's mirrored tree, one open file, the two carets in it, the invite chip) and the three smaller drawings the cards carry. Inline markup and the page's own CSS, with no image, no dependency and nothing fetched (see "The product figures") |
 | `components/ui/card.tsx` | the card primitive: the hero panel's glass card |
@@ -44,7 +44,7 @@ browser proof the runner cannot run, and nothing else.
 | `.nvmrc` | the pinned Node version for local work and CI (`nvm use` reads it); `package.json` `engines` carries the major (`24.x`), because Vercel only deploys major versions |
 | `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason, and the facts it asserts in the positive — the image tag, the demo instance, the wire version the page says each of them speaks, the two disclosures a reader is owed, and the identity the extension is published under with the two registries it is on |
 | `scripts/check-button-props.tsx` | the button check: renders the button and anchor variants and asserts their props reach the DOM (run by `npm run check:button` inside the gate) |
-| `scripts/check-contrast.py` | the contrast check: parses the theme tokens out of `style.css` — including the sample's `selvage-mocha` token colours, the ground the code figure draws them on, and the alpha a peer's selection fill is drawn at — reads the token a selection fill sits under out of `components/room-visuals.tsx`, and asserts the rendered pairs sit at or above WCAG AA, with measured ratios (run by `scripts/ci-local.sh contrast` inside the gate) |
+| `scripts/check-contrast.py` | the contrast check: parses the theme tokens out of `style.css` — including the sample's `selvage-mocha` token colours, the ground the code figure draws them on, and the alpha a peer's selection fill is drawn at — reads the token a selection fill sits under out of `components/room-visuals.tsx` and the fills and labels of the button variants out of `components/ui/button.tsx`, and asserts the rendered pairs sit at or above WCAG AA, with measured ratios (run by `scripts/ci-local.sh contrast` inside the gate) |
 | `scripts/check-csp.py` | the policy check: reads the Content-Security-Policy out of `vercel.json` and the served HTML, and fails when the policy would refuse a script, stylesheet or image the page carries (run by `scripts/ci-local.sh csp` inside the gate; see "The Content-Security-Policy") |
 | `scripts/check-weight.py` | the weight check: reads the served HTML and the bytes on disk, and fails when an image the page body fetches out of `public/` is over its budget or declares a pixel size the file does not have (run by `scripts/ci-local.sh weight` inside the gate; see "The site mark") |
 | `scripts/check-csp-browser.mjs` | the browser proof: serves the built page with the headers out of `vercel.json`, drives headless Chromium over CDP, and asserts zero `securitypolicyviolation` events, `window.__next_f` an object, the header's concealment on scroll and no `X-Powered-By`. Not in the gate (the runner has no browser), and it needs `npm run build` first |
@@ -118,11 +118,11 @@ the reader can name.
 
 | Part | Its job |
 |---|---|
-| Hero | the promise, three landed facts, two CTAs, the room figure, and one line under the CTAs naming the specification as a draft and the wire version, `selvage/2`. The `h1`, *Edit the same file together, on a server you run.*, says what the product does and carries the self-hosted wedge from the design record's hook |
-| Get it working | the published image as one `docker run`, and a link to the compose file and the source build — then the sealed-relay paragraph, which sits under that command because a reader can take the two together: that the image above and the demo speak the one wire version `selvage/2` and that it is the sealed one, then what that wire seals, what the relay still sees and still does. Then one folded row per editor: VS Code, Neovim and the browser page, each with its prerequisites, its exact commands and its repository — the VS Code row opening on the identity the extension is published under and the two registries it is on, and on what an install is and is not — the browser row linking the demo, whose page its own server serves, where Chrome or Edge can start a session, and where it says that a guest who opens that page trusts the room's server for the client code too. The long routes (the corpus check, the vector replay) fold into one `details`. It closes on *Try the demo*, the one small instance the project runs, last in the section so the command and the editor rows keep the ground the hero points at; that section gives the address an editor hosts on and the setting each client takes it in, leaves the guest to the invite link, and names the page as a way to start a room with no editor running. It opens on the product's own shape: you run the server and the invite link is how somebody joins you, and the demo is a guest's way into a room somebody else hosts, or a host's way to start one |
+| Hero | the promise, four landed facts, three CTAs, the room figure, and one line under the CTAs naming the specification as a draft and the wire version, `selvage/2`. The CTAs lead with the demo — the fastest thing a stranger can do, with nothing installed — then running it in the editor, then the specification; the header's own CTA points at the demo for the same reason. The second fact is what the relay sees and does not: it relays the room as ciphertext, sees that a room exists, who is in it, their names and the sizes and timing of what moves, and never the file text, the cursors or the file names. The fourth says the server writes nothing to disk, which is whose disk the sentence is about — it used to read "nothing is written to disk", beside a fact about the host's own folder writing to it. The `h1`, *Edit the same file together, on a server you run.*, says what the product does and carries the self-hosted wedge from the design record's hook |
+| Get it working | the published image as one `docker run`, and a link to the compose file and the source build — then the sealed-relay paragraph, which sits under that command because a reader can take the two together: that the container image above and the demo speak the one wire version `selvage/2` and that it is the sealed one, then what that wire seals, what the relay still sees and still does, and the peer layer's own corpus counts (26 vectors, 221 checks, 74 assertions), which sit under the sentence they back — that the host is a peer's signed claim rather than a server fact. Then one folded row per editor: VS Code, Neovim and the browser page, each with its prerequisites, its exact commands and its repository — the VS Code row opening on the identity the extension is published under and the two registries it is on, and on what an install is and is not — the browser row linking the demo, whose page its own server serves, where Chrome or Edge can start a session, where the page link it hands a guest carries the room and token in its query and the keys in its fragment, and where it says that a guest who opens that page trusts the room's server for the client code too. The long routes (the corpus check, the vector replay) fold into one `details`. It closes on *Try the demo*, the one small instance the project runs, last in the section so the command and the editor rows keep the ground the hero points at; that section gives the address an editor hosts on and the setting each client takes it in, leaves the guest to the invite link, and names the page as a way to start a room with no editor running. It opens on the product's own shape: you run the server and the invite link is how somebody joins you, and the demo is a guest's way into a room somebody else hosts, or a host's way to start one |
 | See it working | four cards, each with a drawing of the thing it claims: anyone with the link is in, two carets in one text, the paths a guest sees, multiple clients on one engine |
-| How it works | the four moves in order (host a folder, send the invite, type in the same file, close the window), under the design record's one-sentence workflow |
-| The session layer has no specification | the wedge: language tooling has the Language Server Protocol and debugging the Debug Adapter Protocol, document sync has `y-protocols`, and the session layer is unspecified, so every collaborative tool decides those for itself. The specification is the flagship artifact, and the corpus counts appear here once, as the evidence they are |
+| How it works | the four moves in order (host a folder, send the invite, type in the same file, close the window), under the design record's one-sentence workflow. The fourth move states both clocks the protocol has: the room lives while it has connections and for a short grace period after its last one ends, and the host's own absence is a second clock on every guest's client, which keeps editing through a short countdown and then ends its own session |
+| The session layer has no specification | the wedge: language tooling has the Language Server Protocol and debugging the Debug Adapter Protocol, document sync has `y-protocols`, and the session layer is unspecified, so every collaborative tool decides those for itself. The wire corpus's counts appear here once, as the evidence they are; the peer corpus's appear in *Get it working*, under the claim they back |
 | Footer | the licences, the page's own privacy line and the contact address, nothing more |
 
 The page used to end on a two-column ledger of what is built and what is not. On a product page
@@ -143,7 +143,10 @@ one foldable block.
 The prose still descends from the static page's, and every sentence is a paraphrase of an
 already-audited true sentence or framed as direction. Two sentences differ on purpose: the static
 page's "loads no JavaScript" is false once Next.js serves the route, so the page says it prerenders
-to static HTML and names the framework runtime scripts instead; and the waitlist form is gone, so
+to static HTML and names what the browser fetches from this origin instead: one stylesheet, the mark
+in its header, the favicon set and the framework runtime scripts. The sentence used to name one
+stylesheet and a favicon and to leave the mark out, which is the kind of inexactness a
+privacy-adjacent sentence cannot afford; and the waitlist form is gone, so
 the privacy notice names its controller and collects nothing instead of carrying blanks for a
 mailing service.
 
@@ -169,10 +172,17 @@ The must-not-say table below still binds every line. Three rows moved with what 
   section makes easy: the instance is non-commercial and the software is not
   (`MIT OR Apache-2.0`, `FSL-1.1-MIT`, `CC-BY-4.0`), so a "non-commercial licence" sentence is a
   licence nobody granted.
-- **The corpus counts.** Still exactly the numbers `specification/schema/validate.py` pins (24
-  vectors, 33760 frame checks, 8387 assertions), and they now appear in one place, as the evidence
-  for the specification, instead of three. The vector count is pinned with up to two words between
-  the number and the word, so the page's "conformance vectors" and "wire vectors" are both gated.
+- **The corpus counts.** Still exactly the numbers `specification/schema/validate.py` pins, and the
+  two layers are pinned apart because they are two corpora: the wire layer's 24 vectors, 33760
+  frame checks and 8387 assertions, and the peer layer's 26 vectors, 221 checks and 74 assertions.
+  The wire layer's counts appear in one place, as the evidence for the specification; the peer
+  layer's sit under the sentence they back, that the host is a peer's signed claim, because a claim
+  with a countable backing carries it. A number before `vectors`, `frame checks` or `assertions` has
+  to be that layer's pin, and the peer layer's count is written with the layer named — `26 peer
+  vectors`, `221 peer checks`, `74 peer assertions` — because `26 vectors` alone is read as the wire
+  layer's count and fails. The window between the number and the word is any two whitespace-separated
+  tokens (`\S+`, not `\w+`, so a hyphenated word in front of the noun is still a word in front of
+  it), which is what the page's "conformance vectors" and "wire vectors" both need.
 
 ## The product figures
 
@@ -184,8 +194,14 @@ a column between two characters of the line, the peer's name in the gutter lane 
 quarter-alpha fill behind what one of them has selected), and the invite chip that put them there.
 Each card in *See it working* carries one smaller drawing of the thing it claims.
 
-Five rules hold it together:
+Six rules hold it together:
 
+- **The invite chip draws a link that works.** Both chips — the hero's and the one *See it
+  working* carries — read `?room=k7m2&token=4f9c#k=…&h=…`: the query the page takes and the fragment
+  the keys travel in, the shape `PROTOCOL.md` §5.1 fixes. They used to stop at the query, which is
+  the link shape that cannot seal a room; the chip teaches the shape the clients hand a guest. The
+  fragment goes on its own line where the column has no width for it (a `<wbr>` is the chip's only
+  break opportunity), and the label and the glyph keep their own lines either way.
 - **It is an illustration, and it says so.** The caption under the hero figure names it. Each code
   sample is a short function against the client crate's own API, with the `use` line left out, and
   each peer's caret is drawn where the browser client draws it (`renderCursors` in
@@ -480,7 +496,12 @@ are phrased as the disclosure's own sentence, because the page states the same t
 time in *The session layer has no specification*: matched loosely, that earlier paragraph supplied
 them for a page whose disclosure had been deleted, and a rewrite that dropped those two while
 keeping the other two passed with them gone. Deleting the paragraph now fails the check on all
-four. It asks no network.
+four. The facts are read from the page's own `docker run` onwards, and not over the whole page:
+the hero's second fact states the same four facts in the same wording, and it is above the command,
+so a page-wide scan let the hero satisfy a check written to require the paragraph — deleting the
+paragraph passed with the hero standing in for it, which is the mutation that added the bound. What
+is required is the paragraph's place, which is under the command a reader can take it together
+with. It asks no network.
 
 The browser guest's own residual is required the same way. A guest who opens the page the room's
 own server serves trusts that server for the client code as well as for the relay, and the
@@ -514,7 +535,7 @@ answers.
 | "open source" of the server or the project | The server binary is `FSL-1.1-MIT`: source-available, not OSI-approved, free for non-competing use and under MIT two years after each release. The specification and the clients are the open ones, and the page names their licences instead of reaching for the phrase |
 | "SSP" | The abbreviation is taken by stack-smashing protection and by supply-side platforms. The protocol is the Selvage Session Protocol, written out |
 | `salvage/1`, `salvage/2` | The wire version is `selvage/2`. "Selvage" is heard as "salvage", which is why the full protocol title appears at least once in the page's first paragraph |
-| "nobody else can read it", "no one else can see it", "only the people in the room", "the server knows nothing", "fully encrypted", "zero-knowledge", a bare "end-to-end encrypted" or "e2ee", "the relay is blind" | The relay is sealed, not omniscient: it reads no text, no cursor, no file name and no role, and the keys are in the link a human pastes, but it still reads a room's existence, its membership, the display names and the sizes and timing of what moves, and it can drop, delay, reorder or end any room. Each of these wordings claims more than the wire's sealing buys, and the list alternates the subject and the verb because the paraphrase is how the sentence is written first: "no one else can see it" is the same claim as "nobody else can read it". No version of this protocol has less than that: `selvage/2` is the one wire version it has, and every release the page hands a reader speaks it. An "end-to-end encrypted" that names what stays visible in the same sentence is backed and stays legal; one that names it and denies it — "so the relay learns no membership and no names" — is the unqualified claim with a disclosure's noun in it, and the permit is cancelled for it |
+| "nobody else can read it", "no one else can see it", "only the people in the room", "the server knows nothing", "fully encrypted", "zero-knowledge", a bare "end-to-end encrypted" or "e2ee", "the relay is blind" | The relay is sealed, not omniscient: it reads no text, no cursor, no file name and no role, and the keys are in the link a human pastes, but it still reads a room's existence, its membership, the display names and the sizes and timing of what moves, and it can drop, delay, reorder or end any room. Each of these wordings claims more than the wire's sealing buys, and the list alternates the subject and the verb because the paraphrase is how the sentence is written first: "no one else can see it" is the same claim as "nobody else can read it". The window between the subject and the verb is the sentence's and not a word's — 64 characters, the same unit `clause_around` reads a permit from — because "the server relays the room as ciphertext and learns nothing" puts the claim 35 characters after its subject, which a 24-character window passed: that evasion is a fixture now, and it fails the gate. No version of this protocol has less than that: `selvage/2` is the one wire version it has, and every release the page hands a reader speaks it. An "end-to-end encrypted" that names what stays visible in the same sentence is backed and stays legal; one that names it and denies it — "so the relay learns no membership and no names" — is the unqualified claim with a disclosure's noun in it, and the permit is cancelled for it |
 | "the server cannot read" (unqualified) / "the server cannot read the room" / "the text never reaches the server" / the host reading, and the membership one with it | The relay is sealed, not omniscient: it reads no text, no cursor, no file name and no role, and it cannot forge, mis-attribute or replay a frame, but it still reads a room's existence, its membership, the display names and the sizes and timing of what moves, and it can drop, delay, reorder or refuse frames and end any room. A claim about named, sealed material is specific and backed — the same sentence has to name it, which is what the pattern reads rather than the determiners in front of the verb — and unqualified it must not appear, nor may the room itself or the membership be the object. A sentence that names sealed material and claims *everything* is not specific either: "the server cannot see anything, not even your text" carries a permitted noun and the widest object there is, and the permit is cancelled for it. "It cannot tell who is host" is forbidden too, and the reason is a measurement rather than a reading: `CANONICAL.md` §6.1 puts `kind` in the clear and `PROTOCOL.md` §7.1 makes `kind = 1` the host's own frame, so a relay that routes a room reads one clear byte and knows. What the page may say is what the threat model supports — the host is a peer's signed claim, and the server cannot seat a host, prove one or take the role |
 | hosting from a page in any browser, a room with no invite, the project's own site as a client | The browser client is published and it hosts: on Chrome or Edge a page the room's own server serves starts a session from a folder the person picks, which is the demo's shape, so the page says so. What is not true: hosting in any browser (Firefox and Safari have no `showDirectoryPicker` and can join but cannot host), a page no Selvage server serves offering it (the client says why instead of offering a control that could only refuse), joining without the invite link a host copies, and the project's own site as a place to join a room (it is a landing page). The stale denial "nothing runs in a web page" stays caught too, and so does the unqualified "host a session in the browser", which is the shape that overclaim takes |
 | file create, rename or delete | The room carries no file mutations: nothing on the wire adds, renames or removes a path, and the only write to the host's working copy is the host's own. A guest's keystroke reaches the folder through the host's client, which is what writes out the text the room settled on, and a Neovim guest's mirror materialises the granted paths |
@@ -527,9 +548,9 @@ answers.
 | invented proof: screenshots, testimonials, user counts, a production deployment, a demo dressed as a service | There is no recording, no user count, and no commercial deployment behind the demo: it is one small box with in-memory rooms, gated to personal and evaluation use, and the site's own origin is a deploy of this page rather than of the protocol. The demo is named as what it is, which the entry on it enforces: no "free demo", no room that persists, no team-sized instance. The one image the page carries is the project's own site mark (see above), not proof of anything |
 | a claim of priority ("the first protocol to specify …") | The design record surveys prior art (Eclipse Open Collaboration Tools and others). The project's claim is that the session layer is unspecified, not that this is first |
 | a non-commercial licence, or software described as non-commercial | The instance's terms are non-commercial; the software's licences are not. The workspace and the clients are `MIT OR Apache-2.0`, `crates/selvaged` is `FSL-1.1-MIT` (which reserves commercial hosting for its licensor), and the specification's prose, schema and vectors are `CC-BY-4.0`, so the demo section says what it may not: that the two are different statements about different things |
-| a corpus number other than the pinned one | The counts (24 vectors, 33760 frame checks, 8387 assertions) are constants in `specification/schema/validate.py`; any other number is a claim the corpus disproves |
+| a corpus number other than the pinned one | The counts are constants in `specification/schema/validate.py`, layer by layer: the wire corpus's 24 vectors, 33760 frame checks and 8387 assertions, and the peer corpus's 26 vectors, 221 checks and 74 assertions. Any other number is a claim the corpus disproves, and each number is pinned against its own layer's constant, so neither layer's count can be paid by the other's |
 | a third party seeing the room | The relay is sealed, so the operator and the network path can see the room's existence and shape, and not its text, its file names or its roles. Only the page's own weak reading (no third party's cloud holding the room) is backed |
-| a bare "no cloud", qualified or not ("no cloud in between" included) | A self-hosted server can itself run on a cloud VM, so only the weak reading is backed: no third party's cloud holding the room. The backed storage sentence is "nothing written to disk" |
+| a bare "no cloud", qualified or not ("no cloud in between" included) | A self-hosted server can itself run on a cloud VM, so only the weak reading is backed: no third party's cloud holding the room. The backed storage sentence is the hero's "the server writes nothing to disk", which names whose disk it is about |
 | a proven cross-editor pairing | The first cross-editor session has run. The design notes' hand-run proof (2026-09-17) passes grant, cursors and follow in both directions, but its concurrent-edit step falls short by one trailing-newline byte, so byte-identical replicas across the two editors are not demonstrated. State what the clients are built to do rather than that it is proven |
 | a speed adjective (instant, real-time, lag-free) | No performance data exists anywhere in the corpus |
 | an ease claim (takes seconds, one-click, just works) | The image, the compose file and the systemd unit all exist; no ease claim around them is backed, because no install time, start-up time or latency has been measured or recorded anywhere in the corpus |
@@ -537,13 +558,18 @@ answers.
 | a "live" / "now available" status | One small demo instance runs and there is no hosted service and no launch: a status reading "live" or "now available" sells the demo as a product. The honest status line names the release and the specification draft |
 | SaaS-creep words (sign in/up, get started, download, pricing) | No accounts exist, so nothing can be signed into; no package exists to download and no price exists to show. The page offers the specification to read and a server to run |
 
-Three things the check cannot make mechanical, and which a reader of a change has to hold:
+Four things the check cannot make mechanical, and which a reader of a change has to hold:
 
-- **A number on the page has a home.** The corpus counts (24 vectors, 33760 frame checks, 8387
-  assertions) are the constants `specification/schema/validate.py` pins; when the corpus moves,
+- **A number on the page has a home.** The corpus counts (the wire layer's 24 vectors, 33760
+  frame checks and 8387 assertions, the peer layer's 26 vectors, 221 checks and 74 assertions) are
+  the constants `specification/schema/validate.py` pins; when the corpus moves,
   the page moves with it. The commands are the ones the repositories' own READMEs document.
 - **No adjective does the work of a fact.** If a sentence could be true of any project, it does
-  not belong on this page.
+  not belong on this page. "Flagship" was one: it says nothing a reader can check, and the
+  sentences that carried it say what the artifact is instead.
+- **Nothing a reader cannot check.** The footer's framing sentence used to say the page's framing
+  follows the project's private design record, which no reader can look up; the licence facts
+  beside it can be checked and stayed.
 - **A false claim in other words.** The check matches a list of known wordings, so a synonym, a
   paraphrase or an assertion the list does not know about passes it. Green means those wordings
   are absent; it does not mean every sentence was checked against the corpus.
@@ -656,6 +682,7 @@ regression fails the build instead of waiting for a look. Measured today:
 | muted text on code background | 7.89:1 | 4.5:1 |
 | badge text on its fill | 6.63:1 | 4.5:1 |
 | secondary-button text on its fill (hover state, the worst of rest `15` at 5.98:1) | 5.32:1 | 4.5:1 |
+| ghost-button text on its hover fill (the hero's third CTA, `bg-surface0/60`, parsed from the component) | 9.75:1 | 4.5:1 |
 | secondary button boundary (`border-mauve/60`, parsed from the component) | 3.82:1 | 3.0:1 |
 | focus outline against the page | 8.07:1 | 3.0:1 |
 | glass-card text, worst of the five panel stops | 11.71:1 (muted 7.61:1) | 4.5:1 |
