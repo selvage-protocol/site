@@ -50,7 +50,7 @@ browser proof the runner cannot run, and nothing else.
 | `scripts/check-csp-browser.mjs` | the browser proof: serves the built page with the headers out of `vercel.json`, drives headless Chromium over CDP, and asserts zero `securitypolicyviolation` events, `window.__next_f` an object, the header's concealment on scroll and no `X-Powered-By`. Not in the gate (the runner has no browser), and it needs `npm run build` first |
 | `scripts/ci-local.sh` | the gate, running the same commands as the workflow |
 | `lychee.toml` | what the link check does not check, and why |
-| `vercel.json` | platform configuration: the Next.js framework preset, and three response headers: the Content-Security-Policy the page's own scripts are permitted by, the file it was once refused by (see "The Content-Security-Policy"), plus `X-Content-Type-Options: nosniff` and `Referrer-Policy: strict-origin-when-cross-origin` |
+| `vercel.json` | platform configuration: the Next.js framework preset, and five response headers: the Content-Security-Policy the page's own scripts are permitted by, the file it was once refused by (see "The Content-Security-Policy"), plus `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, a `Permissions-Policy` that turns off the camera, microphone, geolocation and Topics APIs the page never uses, and `Cross-Origin-Opener-Policy: same-origin` |
 | `.github/workflows/ci.yml` | the gate, on every pull request and on demand (`workflow_dispatch`) |
 
 ## The site mark
@@ -245,9 +245,10 @@ in the gate (`NEXT_TELEMETRY_DISABLED=1`).
 ## Deploying it
 
 Vercel, connected to this repository over the GitHub integration, building the Next.js project:
-`vercel.json` carries `"framework": "nextjs"` so the dashboard does not have to, plus the three
+`vercel.json` carries `"framework": "nextjs"` so the dashboard does not have to, plus the five
 response headers: the `Content-Security-Policy` (its own section, below), `X-Content-Type-Options:
-nosniff` and `Referrer-Policy: strict-origin-when-cross-origin`. `next.config.ts` turns the
+nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(),
+microphone=(), geolocation=(), browsing-topics=()` and `Cross-Origin-Opener-Policy: same-origin`. `next.config.ts` turns the
 framework's own `X-Powered-By: Next.js` banner off, so the HTML response does not name the stack
 it was rendered by. There is nothing to configure beyond connecting the repository.
 
