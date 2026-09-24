@@ -41,9 +41,8 @@ permissions:
 
 jobs:
   checks:
-    # GitHub-hosted, not Blacksmith: Blacksmith runners demonstrably cannot reach nodejs.org
-    # (verified 2026-09-15), so setup-node cannot bootstrap there; ubuntu-24.04 has full egress
-    # and a preinstalled Node.
+    # GitHub-hosted ubuntu-24.04: full egress, which the setup-node step needs to fetch its Node
+    # tarball, and a preinstalled Node on the image.
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
