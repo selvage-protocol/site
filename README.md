@@ -11,8 +11,8 @@ the prose, the product figures live in one component of their own, the global st
 the
 styling, and the browser downloads nothing beyond
 the prerendered page, the stylesheet, the images, and the framework runtime with the
-`SiteHeader` client boundary and its dependencies (header, buttons, and the arrow
-icon). The page fetches no web font, runs no
+`ConcealingHeader` client boundary (the header's hide-on-scroll state alone; the header's
+markup, buttons and arrow icon render on the server). The page fetches no web font, runs no
 analytics and makes no third-party request.
 
 The canonical material lives in the other repositories:
@@ -682,7 +682,7 @@ What no ratio proves is read against the code by a person on every change:
 - **Keyboard.** Every control is a native anchor, button or `details`/`summary`. The sticky header
   slides away
   on scroll-down but carries `focus-within:translate-y-0`, so a tabbed-to link is never
-  focused off-screen. That slide is the `SiteHeader` client boundary running, so it is only as
+  focused off-screen. That slide is the `ConcealingHeader` client boundary running, so it is only as
   true as the page's scripts being permitted. "The Content-Security-Policy" records the
   interval in which they were not, and the gate step that now fails if it happens again.
   No skip link: the page is one route, so there is no repeated block

@@ -1,9 +1,6 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
+import { ConcealingHeader } from "@/components/concealing-header";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 const navLinks = [
   { href: "#get-it-working", label: "Get it working" },
@@ -12,42 +9,8 @@ const navLinks = [
 ];
 
 export function SiteHeader() {
-  const [concealed, setConcealed] = useState(false);
-
-  useEffect(() => {
-    let lastY = window.scrollY;
-    let pending = false;
-    let frame = 0;
-    const onScroll = () => {
-      // Decide synchronously: the frame callback only applies the latest
-      // verdict, so a coalesced frame can never compare a stale position, and
-      // no updater closure reads a variable this handler keeps mutating.
-      // Past the bar's own height and moving down: slide it away. Anywhere
-      // near the top, or moving up, it stays. The bar is sticky, so hiding
-      // is a visual slide only — nothing below it moves.
-      const y = window.scrollY;
-      pending = y > 64 && y > lastY;
-      lastY = y;
-      if (frame) return;
-      frame = window.requestAnimationFrame(() => {
-        frame = 0;
-        setConcealed(pending);
-      });
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (frame) window.cancelAnimationFrame(frame);
-    };
-  }, []);
-
   return (
-    <header
-      className={cn(
-        "site-header sticky top-0 z-10 border-b border-surface0/70 bg-base/85 backdrop-blur transition-transform duration-300 focus-within:translate-y-0",
-        concealed && "-translate-y-full",
-      )}
-    >
+    <ConcealingHeader className="site-header sticky top-0 z-10 border-b border-surface0/70 bg-base/85 backdrop-blur transition-transform duration-300 focus-within:translate-y-0">
       <nav
         aria-label="Page"
         className="mx-auto flex h-16 w-full max-w-6xl items-center gap-6 px-5"
@@ -102,6 +65,6 @@ export function SiteHeader() {
           </a>
         ))}
       </nav>
-    </header>
+    </ConcealingHeader>
   );
 }
