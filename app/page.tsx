@@ -118,8 +118,8 @@ const steps = [
     body: (
       <>
         A room follows its host&apos;s connection, with a short grace period, so a
-        dropped one does not end it. On <code>selvage/2</code> the timer moves to the
-        room&apos;s last connection, and the room outlives its host. Rooms live in
+        dropped one does not end it. The timer moves to the room&apos;s last connection,
+        and the room outlives its host. Rooms live in
         memory: nothing survives a restart of the server.
       </>
     ),
@@ -192,8 +192,8 @@ export default function Home() {
                 </Button>
               </div>
               <p className="mt-4 font-mono text-[12px] text-subtext">
-                The specification is a draft, and the wire version the published
-                release speaks is <code>selvage/1</code>.
+                The specification is a draft, and the wire version is{" "}
+                <code>selvage/2</code>.
               </p>
             </div>
 
@@ -217,7 +217,7 @@ export default function Home() {
             <pre>
               <code>
                 {
-                  "docker run --rm -p 127.0.0.1:8080:8080 ghcr.io/selvage-protocol/selvaged:0.2.0"
+                  "docker run --rm -p 127.0.0.1:8080:8080 ghcr.io/selvage-protocol/selvaged:0.4.0"
                 }
               </code>
             </pre>
@@ -236,14 +236,12 @@ export default function Home() {
               holds the compose file and the source build.
             </p>
             <p>
-              The image above and the demo speak <code>selvage/1</code> today, which
-              has no encryption layer: the room&apos;s bytes travel through that
-              server unencrypted, and a server that keeps them keeps the room. The
-              sealing is <code>selvage/2</code>, and it is not in a published release
-              yet.
+              The image above and the demo speak <code>selvage/2</code>, the one
+              wire version this protocol has, and it is the sealed one: the
+              room&apos;s bytes reach that server as ciphertext.
             </p>
             <p>
-              On <code>selvage/2</code> the server relays ciphertext: documents,
+              The server relays ciphertext: documents,
               cursors, the file listing, which files are open and who may edit are
               sealed under keys that travel in the part of the link a browser never
               sends to a server, and the decisions a session used to ask the server
@@ -267,18 +265,28 @@ export default function Home() {
             </p>
             <details className="quickstart">
               <summary>
-                VS Code: package the unpublished extension, then host a session
+                VS Code: install the extension, then host a session
               </summary>
               <div className="quickstart-body">
                 <p>
-                  Needs VS Code 1.85 or newer, and Node 22.18 or newer to build
-                  the extension. It is unpublished, so a checkout and one package
-                  step stand in for an install:
+                  Needs VS Code 1.85 or newer. The extension is published as{" "}
+                  <code>selvage-protocol.selvage</code> on the VS Code Marketplace
+                  and on Open VSX:
+                </p>
+                <pre>
+                  <code>
+                    {"code --install-extension selvage-protocol.selvage"}
+                  </code>
+                </pre>
+                <p>
+                  An install is the client and not a server: a session pairs with
+                  a <code>selvaged</code> you run. Or build the <code>.vsix</code>{" "}
+                  from a checkout, which needs Node 22.18 or newer:
                 </p>
                 <pre>
                   <code>
                     {
-                      "git clone https://github.com/selvage-protocol/vscode_client\ncd vscode_client\nnpm ci --no-audit --no-fund\nnpm run package\ncode --install-extension selvage-client-<version>.vsix"
+                      "git clone https://github.com/selvage-protocol/vscode_client\ncd vscode_client\nnpm ci --no-audit --no-fund\nnpm run package\ncode --install-extension selvage-<version>.vsix"
                     }
                   </code>
                 </pre>
@@ -442,7 +450,7 @@ export default function Home() {
             <p>
               The specification is Selvage&apos;s flagship artifact: that layer,
               written out as prose, a canonical byte form for a frame, JSON Schema
-              documents, and 31 conformance vectors (34858 frame checks and 8642
+              documents, and 24 conformance vectors (33760 frame checks and 8387
               assertions) replayed byte for byte against a real server. The numbers
               are constants in <code>schema/validate.py</code>, so deleting an
               assertion fails the run instead of shrinking a total in a line of

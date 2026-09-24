@@ -10,12 +10,15 @@ encodes the characters as HTML entities.
 Facts are asserted in the positive instead, because a phrase list cannot reach them: the image tag
 in the `docker run` the page hands a reader, the instance the demo section points at — the address
 it gives an editor, the wire version that address speaks, and the page a guest is sent to — the
-wire version the page says each artefact it hands a reader speaks, and the two disclosures the page
+wire version the page says each artefact it hands a reader speaks, the two disclosures the page
 owes a reader: what the sealed relay still sees, and that a guest who opens the room server's own
-page trusts that server for the client code as well as for the relay. The address half asks the
+page trusts that server for the client code as well as for the relay, and the identity the
+extension is published under with the two registries the release publishes it to and what an
+install is and is not. The address half asks the
 path a plain `GET` can reach, not the upgrade: see `demo_session_route`. Each is a fact with an
 artefact behind it, and a wrong tag is a command that fails rather than a wording that lies. See
-`PUBLISHED_IMAGE`, `DEMO_ORIGIN`, `RELAY_DISCLOSURE` and `check_wire_binding` below.
+`PUBLISHED_IMAGE`, `DEMO_ORIGIN`, `RELAY_DISCLOSURE`, `PUBLISHED_EXTENSION` and
+`check_wire_binding` below.
 
 Each entry below pairs a phrase the page must not carry with the reason it must not, and with a
 sample that has to match it. The reasons are not this script's opinion: every one of them is a
@@ -83,35 +86,29 @@ DASHES = re.compile("[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]")
 # The registry half is the one that reaches the artefact, and it holds the distinction that
 # matters: a platform entry in an image index proves only that a slot is *labelled* arm64.
 # `selvaged:0.1.1` published one, and both its legs carried the amd64 binary — every layer
-# digest identical across the two per-platform manifests. `0.1.0` and `0.1.1` are the two
-# versions a page must never name; `0.1.2` was correct and is simply superseded. The check
+# digest identical across the two per-platform manifests, the same defect `0.1.0` carries. The check
 # compares those digests and fails when they are the same set, which is what a mislabelled leg
 # looks like, and it pulls them with no credential in the request, because no account is the
 # point of the command the page hands over.
 PUBLISHED_IMAGE = "ghcr.io/selvage-protocol/selvaged"
-PINNED_IMAGE_VERSION = "0.2.0"
+PINNED_IMAGE_VERSION = "0.4.0"
 IMAGE_REFERENCE = re.compile(r"ghcr\.io/selvage-protocol/selvaged(?::([\w][\w.+-]*))?")
 REGISTRY_HOST = "ghcr.io"
 REGISTRY_REPOSITORY = PUBLISHED_IMAGE.split("/", 1)[1]
 REQUEST_TIMEOUT_SECONDS = 20
 
-# Which wire version each published `selvaged` release speaks, and which one is the pin. The page
-# hands a reader an artefact whose wire is a fact about the artefact, not a wording: the plaintext
-# wire carries the room through the server in the clear, the sealed one does not, and a page that
-# describes sealing under a command that cannot seal is a silent downgrade. The map is a constant
-# rather than a measurement because nothing on a registry answers what wire version a binary
-# speaks: an index will say `linux/arm64` and nothing about the frames inside. A tag with no entry
-# fails the check instead of defaulting, so a release that changes the pin has to declare the new
-# tag's wire in the same wave — this map, `PINNED_IMAGE_VERSION` and the page's sentence about it
-# move together, and `check_wire_binding` is what holds the last of the three to the first two.
-PLAINTEXT_WIRE = "selvage/1"
-SEALED_WIRE = "selvage/2"
+# The wire version this protocol has, and which wire the pinned `selvaged` release speaks. The
+# page hands a reader an artefact whose wire is a fact about the artefact, not a wording: under this
+# version the room's bytes reach the server sealed, so a page that puts the sealing claim over a
+# command yielding a relay that cannot seal is a silent downgrade. The map is a constant rather
+# than a measurement because nothing on a registry answers what wire version a binary speaks: an
+# index will say `linux/arm64` and nothing about the frames inside. A pin with no entry fails the
+# check instead of defaulting, so a release that moves the pin has to declare the new tag's wire in
+# the same wave — this map, `PINNED_IMAGE_VERSION` and the page's sentence about it move together,
+# and `check_wire_binding` is what holds the last of the three to the first two.
+WIRE = "selvage/2"
 IMAGE_WIRE_BY_TAG = {
-    "0.1.0": PLAINTEXT_WIRE,
-    "0.1.1": PLAINTEXT_WIRE,
-    "0.1.2": PLAINTEXT_WIRE,
-    "0.2.0": PLAINTEXT_WIRE,
-    "0.2.1": PLAINTEXT_WIRE,
+    "0.4.0": WIRE,
 }
 WIRE_VERSION = re.compile(r"\bselvage/\d+\b")
 
@@ -208,10 +205,89 @@ BROWSER_TRUST_DISCLOSURE = (
     ),
 )
 
-# The word the page uses to claim that frames cannot be read, and the two sentences that bind that
-# claim to the wire version it is true of: which wire the pinned image speaks, and which wire the
-# demo speaks. `check_wire_binding` reads all three.
-SEALING = re.compile(r"\bseals?\b|\bsealed\b|\bsealing\b", re.IGNORECASE)
+# The extension's published identity and the registries the release publishes that one `.vsix`
+# to. `selvage-protocol.selvage` is the `publisher` and `name` in `vscode_client/package.json`,
+# and the two registries are the two publish steps in that repository's `release.yml`; the page
+# hands a reader an install, so these are facts with artefacts behind them rather than wordings.
+#
+# The entry this replaces forbade the words "marketplace", "open vsx" and "gallery" outright,
+# because publishing the extension was a non-goal (`DESIGN.md` §11: "marketplace publication
+# until it works with a friend"). The owner retired that non-goal and the extension is published
+# on both registries, so the rule runs the other way now: naming the two is required, and what is
+# forbidden is a registry the project does not publish to — or "the extension gallery" without
+# naming one, which is a channel the page cannot point at.
+PUBLISHED_EXTENSION = "selvage-protocol.selvage"
+PUBLISHED_REGISTRIES = (
+    (
+        "the VS Code Marketplace",
+        re.compile(r"\b(?:VS ?Code|Visual Studio)\s+Marketplace\b", re.IGNORECASE),
+    ),
+    ("Open VSX", re.compile(r"\bOpen\s*VSX\b", re.IGNORECASE)),
+)
+# The two listings, and the identity is inside both. They are not *required* links: the page's
+# own link check reaches every URL it carries, and the Marketplace's listing URL answers 404
+# until the release that publishes the extension has run, so requiring one here would redden the
+# gate for a release that has not been dispatched. What is checked is the other direction — a
+# page that links a listing has to link one of these two, so a link to the retired
+# `selvage-protocol.selvage-client`, which still exists on the Marketplace, fails on the
+# destination rather than on the label.
+EXTENSION_LISTINGS = (
+    "https://marketplace.visualstudio.com/items?itemName=" + PUBLISHED_EXTENSION,
+    "https://open-vsx.org/extension/" + PUBLISHED_EXTENSION.replace(".", "/"),
+)
+REGISTRY_LISTING = re.compile(
+    r"marketplace\.visualstudio\.com/items\b|open-vsx\.org/extension/",
+    re.IGNORECASE,
+)
+# Registry-shaped words. Every one the page carries has to be part of one of the two names above,
+# so a page that also offers the extension from somewhere else — "the extension gallery", the
+# JetBrains or Eclipse marketplace, another editor's store — fails instead of passing on the two
+# names it carries as well. A bare "registry" is deliberately not here: `ghcr.io` is one, and the
+# image section may name it.
+REGISTRY_WORD = re.compile(
+    r"\bmarketplaces?\b|\bgaller(?:y|ies)\b|\bopen\s*vsx\b"
+    r"|\b(?:extension|plugin|add-?on)s?\s+stores?\b|\b(?:extension|plugin)s?\s+registr(?:y|ies)\b",
+    re.IGNORECASE,
+)
+# What the row has to state about the install itself, required the way the disclosures are: a
+# `clean` fixture only proves a pattern does not reject a sentence, so a page that keeps the two
+# registry names and drops what the install is would leave a reader thinking a gallery install is
+# a session. "on a server you run" is not the sentence to read — the hero carries that one — so
+# the limitation is phrased as what an install is and is not, and as the client's own binary.
+EXTENSION_INSTALL_LIMITATION = (
+    (
+        "that an install is the client and not a server",
+        re.compile(
+            r"\bclient\b[^.]{0,32}\bnot a server\b"
+            r"|\bnot a server\b"
+            r"|\bno server\b"
+            r"|\bclient only\b"
+            r"|\bserver is not part of\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "that a session needs a `selvaged` the reader runs",
+        re.compile(
+            r"\bselvaged\b[^.]{0,32}\byou run\b|\byou run\b[^.]{0,32}\bselvaged\b",
+            re.IGNORECASE,
+        ),
+    ),
+)
+EXTENSION_PUBLICATION = (
+    (
+        "the extension's published identity",
+        re.compile(rf"\b{re.escape(PUBLISHED_EXTENSION)}\b", re.IGNORECASE),
+    ),
+    *(
+        (f"{name} as a registry it is published on", pattern)
+        for name, pattern in PUBLISHED_REGISTRIES
+    ),
+    *EXTENSION_INSTALL_LIMITATION,
+)
+
+# The two sentences that bind the page's sealing claim to the wire version it is true of: which
+# wire the pinned image speaks, and which wire the demo speaks. `check_wire_binding` reads both.
 WIRE_OF_PINNED = re.compile(
     r"\bthe (?:published |pinned )?(?:image|container)\b"
     r"[^.]{0,80}?\bspeaks?\b[^.]{0,40}?\b(selvage/\d+)\b",
@@ -221,11 +297,11 @@ WIRE_OF_DEMO = re.compile(
     r"\b(?:the demo|the instance)\b[^.]{0,80}?\bspeaks?\b[^.]{0,40}?\b(selvage/\d+)\b",
     re.IGNORECASE,
 )
-# How the page says the sealing is not what a reader can obtain yet. Required exactly while the
-# demo does not offer the sealed wire, and forbidden once it does: a page still calling the sealed
-# wire unreleased after a release has put it on an instance tells a guest their room is plaintext
-# when it is not, which is the same defect with the sign the other way round.
-SEALING_UNRELEASED = re.compile(
+# How a page says the sealing is not what a reader can obtain yet. There is no version to say it of:
+# the protocol has one wire version and the pinned release speaks it, so the sentence is false — it
+# tells a guest their room is plaintext when it is not. `check_wire_binding` forbids it rather than
+# requiring it, which is the direction it had while a version was still unpublished.
+WIRE_UNRELEASED = re.compile(
     r"\bnot in a published release\b|\bno published release\b"
     r"|\bnot (?:yet )?(?:published|released|shipped)\b",
     re.IGNORECASE,
@@ -316,10 +392,11 @@ FORBIDDEN: list[Phrase] = [
         ("the S<!-- -->SP wire",),
     ),
     Phrase(
-        r"salvage/1",
+        r"salvage/1|salvage/2",
         "the wire version is salvage/1",
-        "the wire version is `selvage/1`; 'salvage' is the near-homophone the full protocol "
+        "the wire version is `selvage/2`; 'salvage' is the near-homophone the full protocol "
         "title exists to defend against",
+        ("the wire version is s<!-- -->alvage/2",),
     ),
     Phrase(
         # The overclaim family the project's E2EE plan refutes
@@ -443,16 +520,16 @@ FORBIDDEN: list[Phrase] = [
     Phrase(
         # The lookbehind is what keeps a version-inside-a-version out of a pattern about a 1.0
         # claim: a tag like `2.1.0` carries `1.0` as a substring, and naming a tag that happens
-        # to contain it is describing an artefact, not claiming a frozen release. The published
-        # image is `0.2.0` today, which carries no `1.0` substring at all, so the fixture below
-        # is synthetic rather than the live pin; the lookbehind still has to hold for whatever
-        # version a future pin carries. A 1.0 that stands on its own still matches.
+        # to contain it is describing an artefact, not claiming a frozen release. The pin is
+        # `0.4.0`, which carries no `1.0` substring at all, so the fixture below is synthetic
+        # rather than the live pin; the lookbehind still has to hold for whatever version a future
+        # pin carries. A 1.0 that stands on its own still matches.
         r"(?<![\d.])v?1\.0\b|production[- ]ready|production[- ]grade|battle[- ]tested|stable release",
         "the stable release, version 1.0",
-        "the wire version is `selvage/1`; no shape is frozen. "
-        "`0.2.0` is the version of the image that is published, not a 1.0",
+        "the wire version is `selvage/2`; no shape is frozen. "
+        "`0.4.0` is the version of the image the page hands a reader, not a 1.0",
         ("we are at v1.0", "the stable rele<!-- -->ase, version 1.0"),
-        ("ghcr.io/selvage-protocol/selvaged:0.2.0", "0.2.0", "version 0.2.0", "tool:2.1.0"),
+        ("ghcr.io/selvage-protocol/selvaged:0.4.0", "0.4.0", "version 0.4.0", "tool:2.1.0"),
     ),
     Phrase(
         r"second implementation|interoperab\w*",
@@ -462,10 +539,29 @@ FORBIDDEN: list[Phrase] = [
         "byte for byte with this one",
     ),
     Phrase(
-        r"marketplace|open ?vsx|\bgallery\b",
-        "install it from the extension gallery",
-        "the extension is unpublished, and publishing it is a non-goal until it works with a "
-        "friend; the path in is a checkout and `npm run package`",
+        # The direction that is false now. Publication used to be a non-goal and the page said as
+        # much (`DESIGN.md` §11); the owner retired that, and the extension is published under
+        # both registries, so the denial is what a rewrite would reach for and what this forbids.
+        # The registries themselves are the other half of the rule, in
+        # `check_published_extension`: this one only stops the page saying there are none.
+        r"\bunpublished\b|\bnot (?:yet )?published\b|\bnothing published\b"
+        r"|\bno published (?:extension|listin\w+|build)\b",
+        "the extension is unpublished",
+        "the extension is published as `selvage-protocol.selvage` on the VS Code Marketplace "
+        "and on Open VSX, so a page saying it is not is false about the whole distribution "
+        "channel; the retired wording — that publishing was a non-goal until it worked with a "
+        "friend — is the decision this wave replaces",
+        (
+            "the extension is un<!-- -->published",
+            "it is not yet published",
+            "the extension is not yet publ<span></span>ished",
+            "there is no published extension",
+        ),
+        (
+            "It is published as `selvage-protocol.selvage` on the VS Code Marketplace and on "
+            "Open VSX.",
+            "A checkout and `npm run package` is the other way in.",
+        ),
     ),
     Phrase(
         r"read[- ]only|view[- ]only",
@@ -697,31 +793,32 @@ FORBIDDEN: list[Phrase] = [
     Phrase(
         r"design[^.]{0,20}0\.x",
         "the design is at 0.x",
-        "`PROTOCOL.md` §10 states the rule in force for `selvage/1`: same major alone. No corpus "
+        "`PROTOCOL.md` §10 states the rule in force: `v` has one value, `selvage/2`, and a frame "
+        "naming another is `bad_message`. No corpus "
         "line puts the design at 0.x; the compatibility clause names 0.x only for a future major "
         "0, which is not this one",
     ),
     Phrase(
-        rf"\b(?!34858\b){VEHICLE}\s+frame[- ]checks?\b",
-        "34857 frame checks",
-        "the pinned number is 34858 frame checks (`specification/schema/validate.py`); a different "
+        rf"\b(?!33760\b){VEHICLE}\s+frame[- ]checks?\b",
+        "33759 frame checks",
+        "the pinned number is 33760 frame checks (`specification/schema/validate.py`); a different "
         "number is a claim the corpus disproves",
-        clean=("34858 frame checks",),
+        clean=("33760 frame checks",),
     ),
     Phrase(
-        rf"\b(?!31\b){VEHICLE}\s+(?:\w+\s+){{0,2}}vectors?\b",
-        "30 conformance vectors",
-        "the pinned number is 31 vectors (`specification/schema/validate.py`); a different number "
+        rf"\b(?!24\b){VEHICLE}\s+(?:\w+\s+){{0,2}}vectors?\b",
+        "23 conformance vectors",
+        "the pinned number is 24 vectors (`specification/schema/validate.py`); a different number "
         "is a claim the corpus disproves, and the count is pinned wherever the word sits — the "
         "page writes both 'conformance vectors' and 'wire vectors'",
-        clean=("31 conformance vectors", "the 31 wire vectors"),
+        clean=("24 conformance vectors", "the 24 wire vectors"),
     ),
     Phrase(
-        rf"\b(?!8642\b){VEHICLE}\s+assertions?\b",
-        "8641 assertions",
-        "the pinned number is 8642 assertions (`specification/schema/validate.py`); a different "
+        rf"\b(?!8387\b){VEHICLE}\s+assertions?\b",
+        "8386 assertions",
+        "the pinned number is 8387 assertions (`specification/schema/validate.py`); a different "
         "number is a claim the corpus disproves",
-        clean=("8642 assertions",),
+        clean=("8387 assertions",),
     ),
     Phrase(
         r"third[- ]part[^.]{0,24}sees?\b|no third[- ]part[^.]{0,24}saw\b",
@@ -1529,8 +1626,102 @@ def check_browser_trust(pages: list[Scanned]) -> int:
     return 1
 
 
+def check_published_extension(pages: list[Scanned]) -> int:
+    """The page's install row against the identity and the registries the release publishes to.
+
+    Required rather than permitted, for the reason the disclosures are: a `clean` fixture proves a
+    pattern does not reject a sentence, never that the page carries one, and this page could keep
+    every fixture green while saying nothing about where the extension is installed from. Three
+    things are asked of the scanned page:
+
+    - the identity the release publishes under and both registries it publishes to, in the
+      visible text — a reader installs from one of them, so a row that names neither is not an
+      install row;
+    - that every registry-shaped word on the page is part of one of those two names, so a page
+      offering the extension from somewhere else — "the extension gallery", the JetBrains or
+      Eclipse marketplace, another editor's store — fails rather than passing on the two names
+      it also carries;
+    - that any link the page does carry to a listing is one of the two, so a link to the retired
+      ID's listing fails on the destination rather than on the label.
+
+    What it does not do is ask the galleries. A listing is the release's fact — the two publish
+    steps in `vscode_client/.github/workflows/release.yml` are what produce it — and a query here
+    would redden the site's gate for a release that has not been dispatched yet, which is the
+    ordering the release plan is the place for. The residual is stated rather than hidden: this
+    proves the page agrees with the release workflow about the identity and the registries, not
+    that either registry answers.
+
+    Returns 0 when all of it holds and 1 when it does not; it asks no network.
+    """
+    root = root_of_this_checkout()
+    page, failures = first_page_stating(pages, EXTENSION_PUBLICATION)
+    if page is None:
+        for where, absent in failures:
+            print(
+                f"check-claims: {where} does not say where the extension is published: it is "
+                f"missing {', '.join(absent)}. The VS Code row is where a reader is handed an "
+                "install, and a row that names a registry without saying what an install is and "
+                "is not leaves it claiming more than the release delivers",
+                file=sys.stderr,
+            )
+        return 1
+
+    stray: list[str] = []
+    for scanned in pages:
+        allowed = [
+            match.span()
+            for _, pattern in PUBLISHED_REGISTRIES
+            for match in pattern.finditer(scanned.text)
+        ]
+        for match in REGISTRY_WORD.finditer(scanned.text):
+            covered = any(
+                start <= match.start() and match.end() <= end for start, end in allowed
+            )
+            if not covered:
+                stray.append(
+                    f"{os.path.relpath(scanned.path, root)}:"
+                    f"{scanned.line_of[match.start()]}: {match.group(0)!r}"
+                )
+    if stray:
+        for where in stray:
+            print(
+                f"check-claims: the page names a registry at {where}, and the release publishes "
+                f"to {' and '.join(name for name, _ in PUBLISHED_REGISTRIES)}. A registry the "
+                "project does not publish to is a distribution channel it does not have, and "
+                "\"the extension gallery\" names a channel without naming which",
+                file=sys.stderr,
+            )
+        return 1
+
+    missing = [
+        f"{os.path.relpath(scanned.path, root)}:{line}: {destination!r}"
+        for scanned in pages
+        for destination, line in scanned.destinations
+        if REGISTRY_LISTING.search(destination) and destination not in EXTENSION_LISTINGS
+    ]
+    if missing:
+        for where in missing:
+            print(
+                f"check-claims: the page links a listing at {where}, and the extension is "
+                f"published as `{PUBLISHED_EXTENSION}`; the listing on each registry is "
+                f"{' and '.join(EXTENSION_LISTINGS)}. A link to a listing is a claim about "
+                "which one, and the retired ID's listing is still there to be linked by "
+                "mistake",
+                file=sys.stderr,
+            )
+        return 1
+
+    print(
+        f"check-claims: the page hands a reader `{PUBLISHED_EXTENSION}` on "
+        f"{' and '.join(name for name, _ in PUBLISHED_REGISTRIES)}, names no registry the "
+        "project does not publish to, links no other listing, and says an install is the client "
+        "and not a server"
+    )
+    return 0
+
+
 def names_wire(text: str, version: str) -> bool:
-    """Whether this text names the wire version as a name of its own, not as `selvage/12`."""
+    """Whether this text names the wire version as a name of its own, not as `selvage/21`."""
     return re.search(rf"(?<![\w/]){re.escape(version)}(?![\w/])", text) is not None
 
 
@@ -1539,15 +1730,15 @@ def page_names(version: str, pages: list[Scanned]) -> bool:
 
     The needle comes from the instance, so a page that names none of what the instance offers is
     the failure this reports rather than a scan that quietly looked for nothing. The lookarounds
-    keep `selvage/1` from being satisfied by `selvage/12`.
+    keep `selvage/2` from being satisfied by `selvage/21`.
     """
     return any(names_wire(page.text, version) for page in pages)
 
 
 def wire_binding_problems(
-    page: Scanned, offered: tuple[str, ...], pinned_wire: str, released: bool
+    page: Scanned, offered: tuple[str, ...], pinned_wire: str
 ) -> list[str]:
-    """What this page says about wire versions that the artefacts behind it do not support."""
+    """What this page says about the wire that the artefacts behind it do not support."""
     problems: list[str] = []
     pinned = WIRE_OF_PINNED.search(page.text)
     if pinned is None:
@@ -1568,26 +1759,22 @@ def wire_binding_problems(
             f"it says the demo speaks {demo.group(1)!r}, and {DEMO_ORIGIN}/meta offers "
             f"{', '.join(offered)}"
         )
-    if not SEALING.search(page.text):
-        return problems
-    if not names_wire(page.text, SEALED_WIRE):
+    # One wire version, so every version the page names is the one this protocol has. A second
+    # name is a claim about a version that does not exist, and it is how the plaintext wire's own
+    # sentence would outlive it: a page that still tells a reader which wire to avoid is a reader
+    # who pastes the command under the paragraph and meets the version they were warned about.
+    strangers = sorted({match.group(0) for match in WIRE_VERSION.finditer(page.text)} - {WIRE})
+    if strangers:
         problems.append(
-            f"it describes sealing and never names {SEALED_WIRE}, the wire the sealing belongs to"
+            f"it names {', '.join(strangers)}, and this protocol has one wire version, {WIRE}"
         )
-    if not names_wire(page.text, PLAINTEXT_WIRE):
+    if not names_wire(page.text, WIRE):
+        problems.append(f"it never names {WIRE}, the one wire version this protocol has")
+    unreleased = WIRE_UNRELEASED.search(page.text)
+    if unreleased is not None:
         problems.append(
-            f"it describes sealing and never names {PLAINTEXT_WIRE}, the wire that does not seal"
-        )
-    unreleased = SEALING_UNRELEASED.search(page.text) is not None
-    if released and unreleased:
-        problems.append(
-            f"it still calls {SEALED_WIRE} unreleased, and a published release speaks it "
-            f"(`IMAGE_WIRE_BY_TAG`)"
-        )
-    if not released and not unreleased:
-        problems.append(
-            f"it claims sealing and never says {SEALED_WIRE} is not in a published release, "
-            f"while no release in `IMAGE_WIRE_BY_TAG` speaks it"
+            f"it calls the wire unreleased ({unreleased.group(0)!r}), and the pinned release "
+            f"{PINNED_IMAGE_VERSION} speaks it (`IMAGE_WIRE_BY_TAG`)"
         )
     return problems
 
@@ -1595,19 +1782,18 @@ def wire_binding_problems(
 def check_wire_binding(pages: list[Scanned]) -> int:
     """Which wire version the page says each artefact it hands a reader speaks.
 
-    The page hands a reader one `docker run` and one instance address, and sealing belongs to one
-    wire version and not the other. A page that describes sealing without saying which version is
+    The page hands a reader one `docker run` and one instance address, there is one wire version,
+    and it is the sealed one. A page that describes sealing without saying which version does
     which invites the failure a confidentiality feature cannot have: a reader pastes the command
     under the paragraph and gets a server that carries the room through it in the clear. So the
-    page has to say which wire the pinned image speaks and which wire the demo speaks. The demo's
-    half is measured, against what `/meta` offers, where no wording can forge it; the image's
-    half is read from `IMAGE_WIRE_BY_TAG`, which a release has to extend in the same wave as the
-    pin. A page that claims sealing must also name the wire that does not seal, and must say the
-    sealed one is not in a published release exactly while no release speaks it: that is the map's
-    fact and not one instance's, because a pin can move before the demo is redeployed and the demo
-    can be redeployed before the pin moves, and neither ordering may make the page say what is
-    false. Still calling it unreleased after a release tells a reader their room is plaintext when
-    it is not, which is the same defect with the sign the other way round.
+    page has to say which wire the pinned image speaks and which wire the demo speaks, and to
+    name no other version: with one version a second name is a claim about a version this protocol
+    does not have, and the plaintext one is what the reader of a sealing paragraph meets when the
+    pin is a release that cannot seal. The demo's half is measured, against what `/meta` offers,
+    where no wording can forge it; the image's half is read from `IMAGE_WIRE_BY_TAG`, because no
+    registry says what wire a binary speaks, and a release that moves the pin has to declare the
+    new tag's wire in the same wave. Both halves together are what make the page's own sentence
+    about the pin and the sentence about the instance agree with what a reader will actually get.
 
     Returns 0, 1 when the page says something the artefacts disprove, 2 when the instance cannot
     be asked or this file cannot say what the pin speaks.
@@ -1618,7 +1804,7 @@ def check_wire_binding(pages: list[Scanned]) -> int:
         print(
             f"check-claims: none of {len(pages)} scanned file(s) names a wire version, and the "
             "page hands a reader a server to run: a scan that reaches no version is not "
-            "checking the versions",
+            "checking the version",
             file=sys.stderr,
         )
         return 1
@@ -1631,9 +1817,6 @@ def check_wire_binding(pages: list[Scanned]) -> int:
         )
         return 2
     pinned_wire = IMAGE_WIRE_BY_TAG[PINNED_IMAGE_VERSION]
-    # The release state is the map's, not the demo's: an instance is one deployment of one tag,
-    # and a page held to whichever of the two moved last would be made to say what is false.
-    released = SEALED_WIRE in IMAGE_WIRE_BY_TAG.values()
     try:
         offered = demo_meta()[1]
     except (urllib.error.URLError, OSError, ValueError, KeyError) as error:
@@ -1647,31 +1830,22 @@ def check_wire_binding(pages: list[Scanned]) -> int:
 
     failed: list[tuple[str, list[str]]] = []
     for page in binding:
-        problems = wire_binding_problems(page, offered, pinned_wire, released)
+        problems = wire_binding_problems(page, offered, pinned_wire)
         if problems:
             failed.append((os.path.relpath(page.path, root), problems))
     if failed:
         for where, problems in failed:
             print(
-                f"check-claims: {where} does not bind what it says to a wire version: "
+                f"check-claims: {where} does not bind what it says to the one wire version: "
                 + "; ".join(problems),
                 file=sys.stderr,
             )
         return 1
-    sealed = SEALING.search(binding[0].text) is not None
-    note = (
-        "carries no sealing claim to bind"
-        if not sealed
-        else (
-            f"names {SEALED_WIRE} as not in a published release"
-            if not released
-            else f"does not call {SEALED_WIRE} unreleased"
-        )
-    )
     print(
-        f"check-claims: the page binds its sealing claim to the wire versions the artefacts "
+        f"check-claims: the page binds its sealing claim to the one wire version the artefacts "
         f"speak — the pin {PINNED_IMAGE_VERSION} as {pinned_wire}, the demo as "
-        f"{', '.join(offered)} from `/meta` — and {note}"
+        f"{', '.join(offered)} from `/meta` — names no other version, and does not call it "
+        "unreleased"
     )
     return 0
 
@@ -1756,6 +1930,7 @@ def main() -> int:
     for check in (
         check_relay_disclosure,
         check_browser_trust,
+        check_published_extension,
         check_pinned_image,
         check_demo_instance,
         check_wire_binding,
