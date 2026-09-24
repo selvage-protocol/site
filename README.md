@@ -169,8 +169,8 @@ The must-not-say table below still binds every line. Three rows moved with what 
   section makes easy: the instance is non-commercial and the software is not
   (`MIT OR Apache-2.0`, `FSL-1.1-MIT`, `CC-BY-4.0`), so a "non-commercial licence" sentence is a
   licence nobody granted.
-- **The corpus counts.** Still exactly the numbers `specification/schema/validate.py` pins (31
-  vectors, 34858 frame checks, 8642 assertions), and they now appear in one place, as the evidence
+- **The corpus counts.** Still exactly the numbers `specification/schema/validate.py` pins (36
+  vectors, 35022 frame checks, 8676 assertions), and they now appear in one place, as the evidence
   for the specification, instead of three. The vector count is pinned with up to two words between
   the number and the word, so the page's "conformance vectors" and "wire vectors" are both gated.
 
@@ -506,7 +506,7 @@ an edit that drops it fails. It asks no network either.
 | invented proof: screenshots, testimonials, user counts, a production deployment, a demo dressed as a service | There is no recording, no user count, and no commercial deployment behind the demo: it is one small box with in-memory rooms, gated to personal and evaluation use, and the site's own origin is a deploy of this page rather than of the protocol. The demo is named as what it is, which the entry on it enforces: no "free demo", no room that persists, no team-sized instance. The one image the page carries is the project's own site mark (see above), not proof of anything |
 | a claim of priority ("the first protocol to specify …") | The design record surveys prior art (Eclipse Open Collaboration Tools and others). The project's claim is that the session layer is unspecified, not that this is first |
 | a non-commercial licence, or software described as non-commercial | The instance's terms are non-commercial; the software's licences are not. The workspace and the clients are `MIT OR Apache-2.0`, `crates/selvaged` is `FSL-1.1-MIT` (which reserves commercial hosting for its licensor), and the specification's prose, schema and vectors are `CC-BY-4.0`, so the demo section says what it may not: that the two are different statements about different things |
-| a corpus number other than the pinned one | The counts (31 vectors, 34858 frame checks, 8642 assertions) are constants in `specification/schema/validate.py`; any other number is a claim the corpus disproves |
+| a corpus number other than the pinned one | The counts (36 vectors, 35022 frame checks, 8676 assertions) are constants in `specification/schema/validate.py`; any other number is a claim the corpus disproves |
 | a third party seeing the room | The relay is sealed, so the operator and the network path can see the room's existence and shape, and not its text, its file names or its roles. Only the page's own weak reading (no third party's cloud holding the room) is backed. In `selvage/1` the same operator reads everything, which is what the page's version sentence is for |
 | a bare "no cloud", qualified or not ("no cloud in between" included) | A self-hosted server can itself run on a cloud VM, so only the weak reading is backed: no third party's cloud holding the room. The backed storage sentence is "nothing written to disk" |
 | a proven cross-editor pairing | The first cross-editor session has run. The design notes' hand-run proof (2026-09-17) passes grant, cursors and follow in both directions, but its concurrent-edit step falls short by one trailing-newline byte, so byte-identical replicas across the two editors are not demonstrated. State what the clients are built to do rather than that it is proven |
@@ -518,7 +518,7 @@ an edit that drops it fails. It asks no network either.
 
 Three things the check cannot make mechanical, and which a reader of a change has to hold:
 
-- **A number on the page has a home.** The corpus counts (31 vectors, 34858 frame checks, 8642
+- **A number on the page has a home.** The corpus counts (36 vectors, 35022 frame checks, 8676
   assertions) are the constants `specification/schema/validate.py` pins; when the corpus moves,
   the page moves with it. The commands are the ones the repositories' own READMEs document.
 - **No adjective does the work of a fact.** If a sentence could be true of any project, it does

@@ -636,7 +636,7 @@ FORBIDDEN: list[Phrase] = [
         r"|subscribers)\b",
         "used in production by 40 engineering teams",
         "no user count exists. The only numbers this project can show are the corpus counts its "
-        "own validator pins (31 vectors, 34858 frame checks, 8642 assertions)",
+        "own validator pins (36 vectors, 35022 frame checks, 8676 assertions)",
     ),
     Phrase(
         r"\bfirst\b",
@@ -702,26 +702,26 @@ FORBIDDEN: list[Phrase] = [
         "0, which is not this one",
     ),
     Phrase(
-        rf"\b(?!34858\b){VEHICLE}\s+frame[- ]checks?\b",
-        "34857 frame checks",
-        "the pinned number is 34858 frame checks (`specification/schema/validate.py`); a different "
+        rf"\b(?!35022\b){VEHICLE}\s+frame[- ]checks?\b",
+        "35021 frame checks",
+        "the pinned number is 35022 frame checks (`specification/schema/validate.py`); a different "
         "number is a claim the corpus disproves",
-        clean=("34858 frame checks",),
+        clean=("35022 frame checks",),
     ),
     Phrase(
-        rf"\b(?!31\b){VEHICLE}\s+(?:\w+\s+){{0,2}}vectors?\b",
-        "30 conformance vectors",
-        "the pinned number is 31 vectors (`specification/schema/validate.py`); a different number "
+        rf"\b(?!36\b){VEHICLE}\s+(?:\w+\s+){{0,2}}vectors?\b",
+        "35 conformance vectors",
+        "the pinned number is 36 vectors (`specification/schema/validate.py`); a different number "
         "is a claim the corpus disproves, and the count is pinned wherever the word sits — the "
         "page writes both 'conformance vectors' and 'wire vectors'",
-        clean=("31 conformance vectors", "the 31 wire vectors"),
+        clean=("36 conformance vectors", "the 36 wire vectors"),
     ),
     Phrase(
-        rf"\b(?!8642\b){VEHICLE}\s+assertions?\b",
-        "8641 assertions",
-        "the pinned number is 8642 assertions (`specification/schema/validate.py`); a different "
+        rf"\b(?!8676\b){VEHICLE}\s+assertions?\b",
+        "8675 assertions",
+        "the pinned number is 8676 assertions (`specification/schema/validate.py`); a different "
         "number is a claim the corpus disproves",
-        clean=("8642 assertions",),
+        clean=("8676 assertions",),
     ),
     Phrase(
         r"third[- ]part[^.]{0,24}sees?\b|no third[- ]part[^.]{0,24}saw\b",

@@ -227,9 +227,13 @@ export default function Home() {
               <code>http://127.0.0.1:8080/meta</code>, one port for the room and
               the page that joins it. Rooms live in memory, so a restart ends
               them. The <code>127.0.0.1</code> binding keeps the room on your
-              own machine; serving guests on other machines means rebinding
-              (for example <code>-p 8080:8080</code>) and an invite URL that
-              names a reachable address.{" "}
+              own machine. The server speaks plain <code>ws://</code>, so
+              serving guests on other machines means a TLS terminator in front
+              of it that caps connections, sets an idle deadline and limits the
+              rate, and that keeps request URLs out of its logs, because the
+              invite token travels in the URL; the specification requires all
+              of that of a server anyone else can reach, and the invite URL
+              then names the terminator&apos;s <code>wss://</code> address.{" "}
               <a href="https://github.com/selvage-protocol/reference_server">
                 selvage-protocol/reference_server
               </a>{" "}
@@ -442,8 +446,10 @@ export default function Home() {
             <p>
               The specification is Selvage&apos;s flagship artifact: that layer,
               written out as prose, a canonical byte form for a frame, JSON Schema
-              documents, and 31 conformance vectors (34858 frame checks and 8642
-              assertions) replayed byte for byte against a real server. The numbers
+              documents, and 36 conformance vectors (35022 frame checks and 8676
+              assertions) replayed byte for byte against a real server, beside a
+              peer layer that holds a client to the rules a server cannot
+              enforce. The numbers
               are constants in <code>schema/validate.py</code>, so deleting an
               assertion fails the run instead of shrinking a total in a line of
               output.
@@ -475,7 +481,7 @@ export default function Home() {
                 <pre>
                   <code>
                     {
-                      "git clone https://github.com/selvage-protocol/specification\ncd specification\npip install jsonschema referencing\npython3 schema/validate.py"
+                      "git clone https://github.com/selvage-protocol/specification\ncd specification\npip install jsonschema referencing cryptography\npython3 schema/validate.py"
                     }
                   </code>
                 </pre>
@@ -491,7 +497,7 @@ export default function Home() {
                 <pre>
                   <code>
                     {
-                      "git clone https://github.com/selvage-protocol/reference_server\ngit clone https://github.com/selvage-protocol/specification\ncd reference_server\nnix develop . -c cargo build -p selvaged\nexport SELVAGE_SELVAGED=$PWD/target/debug/selvaged\ncd ../specification\npip install websockets jsonschema referencing\npython3 runner/run_vectors.py"
+                      "git clone https://github.com/selvage-protocol/reference_server\ngit clone https://github.com/selvage-protocol/specification\ncd reference_server\nnix develop . -c cargo build -p selvaged\nexport SELVAGE_SELVAGED=$PWD/target/debug/selvaged\ncd ../specification\npip install websockets jsonschema referencing cryptography\npython3 runner/run_vectors.py"
                     }
                   </code>
                 </pre>
