@@ -86,35 +86,29 @@ DASHES = re.compile("[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]")
 # The registry half is the one that reaches the artefact, and it holds the distinction that
 # matters: a platform entry in an image index proves only that a slot is *labelled* arm64.
 # `selvaged:0.1.1` published one, and both its legs carried the amd64 binary — every layer
-# digest identical across the two per-platform manifests. `0.1.0` and `0.1.1` are the two
-# versions a page must never name; `0.1.2` was correct and is simply superseded. The check
+# digest identical across the two per-platform manifests, the same defect `0.1.0` carries. The check
 # compares those digests and fails when they are the same set, which is what a mislabelled leg
 # looks like, and it pulls them with no credential in the request, because no account is the
 # point of the command the page hands over.
 PUBLISHED_IMAGE = "ghcr.io/selvage-protocol/selvaged"
-PINNED_IMAGE_VERSION = "0.2.0"
+PINNED_IMAGE_VERSION = "0.4.0"
 IMAGE_REFERENCE = re.compile(r"ghcr\.io/selvage-protocol/selvaged(?::([\w][\w.+-]*))?")
 REGISTRY_HOST = "ghcr.io"
 REGISTRY_REPOSITORY = PUBLISHED_IMAGE.split("/", 1)[1]
 REQUEST_TIMEOUT_SECONDS = 20
 
-# Which wire version each published `selvaged` release speaks, and which one is the pin. The page
-# hands a reader an artefact whose wire is a fact about the artefact, not a wording: the plaintext
-# wire carries the room through the server in the clear, the sealed one does not, and a page that
-# describes sealing under a command that cannot seal is a silent downgrade. The map is a constant
-# rather than a measurement because nothing on a registry answers what wire version a binary
-# speaks: an index will say `linux/arm64` and nothing about the frames inside. A tag with no entry
-# fails the check instead of defaulting, so a release that changes the pin has to declare the new
-# tag's wire in the same wave — this map, `PINNED_IMAGE_VERSION` and the page's sentence about it
-# move together, and `check_wire_binding` is what holds the last of the three to the first two.
-PLAINTEXT_WIRE = "selvage/1"
-SEALED_WIRE = "selvage/2"
+# The wire version this protocol has, and which wire the pinned `selvaged` release speaks. The
+# page hands a reader an artefact whose wire is a fact about the artefact, not a wording: under this
+# version the room's bytes reach the server sealed, so a page that puts the sealing claim over a
+# command yielding a relay that cannot seal is a silent downgrade. The map is a constant rather
+# than a measurement because nothing on a registry answers what wire version a binary speaks: an
+# index will say `linux/arm64` and nothing about the frames inside. A pin with no entry fails the
+# check instead of defaulting, so a release that moves the pin has to declare the new tag's wire in
+# the same wave — this map, `PINNED_IMAGE_VERSION` and the page's sentence about it move together,
+# and `check_wire_binding` is what holds the last of the three to the first two.
+WIRE = "selvage/2"
 IMAGE_WIRE_BY_TAG = {
-    "0.1.0": PLAINTEXT_WIRE,
-    "0.1.1": PLAINTEXT_WIRE,
-    "0.1.2": PLAINTEXT_WIRE,
-    "0.2.0": PLAINTEXT_WIRE,
-    "0.2.1": PLAINTEXT_WIRE,
+    "0.4.0": WIRE,
 }
 WIRE_VERSION = re.compile(r"\bselvage/\d+\b")
 
@@ -292,10 +286,8 @@ EXTENSION_PUBLICATION = (
     *EXTENSION_INSTALL_LIMITATION,
 )
 
-# The word the page uses to claim that frames cannot be read, and the two sentences that bind that
-# claim to the wire version it is true of: which wire the pinned image speaks, and which wire the
-# demo speaks. `check_wire_binding` reads all three.
-SEALING = re.compile(r"\bseals?\b|\bsealed\b|\bsealing\b", re.IGNORECASE)
+# The two sentences that bind the page's sealing claim to the wire version it is true of: which
+# wire the pinned image speaks, and which wire the demo speaks. `check_wire_binding` reads both.
 WIRE_OF_PINNED = re.compile(
     r"\bthe (?:published |pinned )?(?:image|container)\b"
     r"[^.]{0,80}?\bspeaks?\b[^.]{0,40}?\b(selvage/\d+)\b",
@@ -305,11 +297,11 @@ WIRE_OF_DEMO = re.compile(
     r"\b(?:the demo|the instance)\b[^.]{0,80}?\bspeaks?\b[^.]{0,40}?\b(selvage/\d+)\b",
     re.IGNORECASE,
 )
-# How the page says the sealing is not what a reader can obtain yet. Required exactly while the
-# demo does not offer the sealed wire, and forbidden once it does: a page still calling the sealed
-# wire unreleased after a release has put it on an instance tells a guest their room is plaintext
-# when it is not, which is the same defect with the sign the other way round.
-SEALING_UNRELEASED = re.compile(
+# How a page says the sealing is not what a reader can obtain yet. There is no version to say it of:
+# the protocol has one wire version and the pinned release speaks it, so the sentence is false — it
+# tells a guest their room is plaintext when it is not. `check_wire_binding` forbids it rather than
+# requiring it, which is the direction it had while a version was still unpublished.
+WIRE_UNRELEASED = re.compile(
     r"\bnot in a published release\b|\bno published release\b"
     r"|\bnot (?:yet )?(?:published|released|shipped)\b",
     re.IGNORECASE,
@@ -400,10 +392,11 @@ FORBIDDEN: list[Phrase] = [
         ("the S<!-- -->SP wire",),
     ),
     Phrase(
-        r"salvage/1",
+        r"salvage/1|salvage/2",
         "the wire version is salvage/1",
-        "the wire version is `selvage/1`; 'salvage' is the near-homophone the full protocol "
+        "the wire version is `selvage/2`; 'salvage' is the near-homophone the full protocol "
         "title exists to defend against",
+        ("the wire version is s<!-- -->alvage/2",),
     ),
     Phrase(
         # The overclaim family the project's E2EE plan refutes
@@ -527,16 +520,16 @@ FORBIDDEN: list[Phrase] = [
     Phrase(
         # The lookbehind is what keeps a version-inside-a-version out of a pattern about a 1.0
         # claim: a tag like `2.1.0` carries `1.0` as a substring, and naming a tag that happens
-        # to contain it is describing an artefact, not claiming a frozen release. The published
-        # image is `0.2.0` today, which carries no `1.0` substring at all, so the fixture below
-        # is synthetic rather than the live pin; the lookbehind still has to hold for whatever
-        # version a future pin carries. A 1.0 that stands on its own still matches.
+        # to contain it is describing an artefact, not claiming a frozen release. The pin is
+        # `0.4.0`, which carries no `1.0` substring at all, so the fixture below is synthetic
+        # rather than the live pin; the lookbehind still has to hold for whatever version a future
+        # pin carries. A 1.0 that stands on its own still matches.
         r"(?<![\d.])v?1\.0\b|production[- ]ready|production[- ]grade|battle[- ]tested|stable release",
         "the stable release, version 1.0",
-        "the wire version is `selvage/1`; no shape is frozen. "
-        "`0.2.0` is the version of the image that is published, not a 1.0",
+        "the wire version is `selvage/2`; no shape is frozen. "
+        "`0.4.0` is the version of the image the page hands a reader, not a 1.0",
         ("we are at v1.0", "the stable rele<!-- -->ase, version 1.0"),
-        ("ghcr.io/selvage-protocol/selvaged:0.2.0", "0.2.0", "version 0.2.0", "tool:2.1.0"),
+        ("ghcr.io/selvage-protocol/selvaged:0.4.0", "0.4.0", "version 0.4.0", "tool:2.1.0"),
     ),
     Phrase(
         r"second implementation|interoperab\w*",
@@ -800,31 +793,32 @@ FORBIDDEN: list[Phrase] = [
     Phrase(
         r"design[^.]{0,20}0\.x",
         "the design is at 0.x",
-        "`PROTOCOL.md` §10 states the rule in force for `selvage/1`: same major alone. No corpus "
+        "`PROTOCOL.md` §10 states the rule in force: `v` has one value, `selvage/2`, and a frame "
+        "naming another is `bad_message`. No corpus "
         "line puts the design at 0.x; the compatibility clause names 0.x only for a future major "
         "0, which is not this one",
     ),
     Phrase(
-        rf"\b(?!34858\b){VEHICLE}\s+frame[- ]checks?\b",
-        "34857 frame checks",
-        "the pinned number is 34858 frame checks (`specification/schema/validate.py`); a different "
+        rf"\b(?!33760\b){VEHICLE}\s+frame[- ]checks?\b",
+        "33759 frame checks",
+        "the pinned number is 33760 frame checks (`specification/schema/validate.py`); a different "
         "number is a claim the corpus disproves",
-        clean=("34858 frame checks",),
+        clean=("33760 frame checks",),
     ),
     Phrase(
-        rf"\b(?!31\b){VEHICLE}\s+(?:\w+\s+){{0,2}}vectors?\b",
-        "30 conformance vectors",
-        "the pinned number is 31 vectors (`specification/schema/validate.py`); a different number "
+        rf"\b(?!24\b){VEHICLE}\s+(?:\w+\s+){{0,2}}vectors?\b",
+        "23 conformance vectors",
+        "the pinned number is 24 vectors (`specification/schema/validate.py`); a different number "
         "is a claim the corpus disproves, and the count is pinned wherever the word sits — the "
         "page writes both 'conformance vectors' and 'wire vectors'",
-        clean=("31 conformance vectors", "the 31 wire vectors"),
+        clean=("24 conformance vectors", "the 24 wire vectors"),
     ),
     Phrase(
-        rf"\b(?!8642\b){VEHICLE}\s+assertions?\b",
-        "8641 assertions",
-        "the pinned number is 8642 assertions (`specification/schema/validate.py`); a different "
+        rf"\b(?!8387\b){VEHICLE}\s+assertions?\b",
+        "8386 assertions",
+        "the pinned number is 8387 assertions (`specification/schema/validate.py`); a different "
         "number is a claim the corpus disproves",
-        clean=("8642 assertions",),
+        clean=("8387 assertions",),
     ),
     Phrase(
         r"third[- ]part[^.]{0,24}sees?\b|no third[- ]part[^.]{0,24}saw\b",
@@ -1742,9 +1736,9 @@ def page_names(version: str, pages: list[Scanned]) -> bool:
 
 
 def wire_binding_problems(
-    page: Scanned, offered: tuple[str, ...], pinned_wire: str, released: bool
+    page: Scanned, offered: tuple[str, ...], pinned_wire: str
 ) -> list[str]:
-    """What this page says about wire versions that the artefacts behind it do not support."""
+    """What this page says about the wire that the artefacts behind it do not support."""
     problems: list[str] = []
     pinned = WIRE_OF_PINNED.search(page.text)
     if pinned is None:
@@ -1765,26 +1759,22 @@ def wire_binding_problems(
             f"it says the demo speaks {demo.group(1)!r}, and {DEMO_ORIGIN}/meta offers "
             f"{', '.join(offered)}"
         )
-    if not SEALING.search(page.text):
-        return problems
-    if not names_wire(page.text, SEALED_WIRE):
+    # One wire version, so every version the page names is the one this protocol has. A second
+    # name is a claim about a version that does not exist, and it is how the plaintext wire's own
+    # sentence would outlive it: a page that still tells a reader which wire to avoid is a reader
+    # who pastes the command under the paragraph and meets the version they were warned about.
+    strangers = sorted({match.group(0) for match in WIRE_VERSION.finditer(page.text)} - {WIRE})
+    if strangers:
         problems.append(
-            f"it describes sealing and never names {SEALED_WIRE}, the wire the sealing belongs to"
+            f"it names {', '.join(strangers)}, and this protocol has one wire version, {WIRE}"
         )
-    if not names_wire(page.text, PLAINTEXT_WIRE):
+    if not names_wire(page.text, WIRE):
+        problems.append(f"it never names {WIRE}, the one wire version this protocol has")
+    unreleased = WIRE_UNRELEASED.search(page.text)
+    if unreleased is not None:
         problems.append(
-            f"it describes sealing and never names {PLAINTEXT_WIRE}, the wire that does not seal"
-        )
-    unreleased = SEALING_UNRELEASED.search(page.text) is not None
-    if released and unreleased:
-        problems.append(
-            f"it still calls {SEALED_WIRE} unreleased, and a published release speaks it "
-            f"(`IMAGE_WIRE_BY_TAG`)"
-        )
-    if not released and not unreleased:
-        problems.append(
-            f"it claims sealing and never says {SEALED_WIRE} is not in a published release, "
-            f"while no release in `IMAGE_WIRE_BY_TAG` speaks it"
+            f"it calls the wire unreleased ({unreleased.group(0)!r}), and the pinned release "
+            f"{PINNED_IMAGE_VERSION} speaks it (`IMAGE_WIRE_BY_TAG`)"
         )
     return problems
 
@@ -1792,19 +1782,18 @@ def wire_binding_problems(
 def check_wire_binding(pages: list[Scanned]) -> int:
     """Which wire version the page says each artefact it hands a reader speaks.
 
-    The page hands a reader one `docker run` and one instance address, and sealing belongs to one
-    wire version and not the other. A page that describes sealing without saying which version is
+    The page hands a reader one `docker run` and one instance address, there is one wire version,
+    and it is the sealed one. A page that describes sealing without saying which version does
     which invites the failure a confidentiality feature cannot have: a reader pastes the command
     under the paragraph and gets a server that carries the room through it in the clear. So the
-    page has to say which wire the pinned image speaks and which wire the demo speaks. The demo's
-    half is measured, against what `/meta` offers, where no wording can forge it; the image's
-    half is read from `IMAGE_WIRE_BY_TAG`, which a release has to extend in the same wave as the
-    pin. A page that claims sealing must also name the wire that does not seal, and must say the
-    sealed one is not in a published release exactly while no release speaks it: that is the map's
-    fact and not one instance's, because a pin can move before the demo is redeployed and the demo
-    can be redeployed before the pin moves, and neither ordering may make the page say what is
-    false. Still calling it unreleased after a release tells a reader their room is plaintext when
-    it is not, which is the same defect with the sign the other way round.
+    page has to say which wire the pinned image speaks and which wire the demo speaks, and to
+    name no other version: with one version a second name is a claim about a version this protocol
+    does not have, and the plaintext one is what the reader of a sealing paragraph meets when the
+    pin is a release that cannot seal. The demo's half is measured, against what `/meta` offers,
+    where no wording can forge it; the image's half is read from `IMAGE_WIRE_BY_TAG`, because no
+    registry says what wire a binary speaks, and a release that moves the pin has to declare the
+    new tag's wire in the same wave. Both halves together are what make the page's own sentence
+    about the pin and the sentence about the instance agree with what a reader will actually get.
 
     Returns 0, 1 when the page says something the artefacts disprove, 2 when the instance cannot
     be asked or this file cannot say what the pin speaks.
@@ -1815,7 +1804,7 @@ def check_wire_binding(pages: list[Scanned]) -> int:
         print(
             f"check-claims: none of {len(pages)} scanned file(s) names a wire version, and the "
             "page hands a reader a server to run: a scan that reaches no version is not "
-            "checking the versions",
+            "checking the version",
             file=sys.stderr,
         )
         return 1
@@ -1828,9 +1817,6 @@ def check_wire_binding(pages: list[Scanned]) -> int:
         )
         return 2
     pinned_wire = IMAGE_WIRE_BY_TAG[PINNED_IMAGE_VERSION]
-    # The release state is the map's, not the demo's: an instance is one deployment of one tag,
-    # and a page held to whichever of the two moved last would be made to say what is false.
-    released = SEALED_WIRE in IMAGE_WIRE_BY_TAG.values()
     try:
         offered = demo_meta()[1]
     except (urllib.error.URLError, OSError, ValueError, KeyError) as error:
@@ -1844,31 +1830,22 @@ def check_wire_binding(pages: list[Scanned]) -> int:
 
     failed: list[tuple[str, list[str]]] = []
     for page in binding:
-        problems = wire_binding_problems(page, offered, pinned_wire, released)
+        problems = wire_binding_problems(page, offered, pinned_wire)
         if problems:
             failed.append((os.path.relpath(page.path, root), problems))
     if failed:
         for where, problems in failed:
             print(
-                f"check-claims: {where} does not bind what it says to a wire version: "
+                f"check-claims: {where} does not bind what it says to the one wire version: "
                 + "; ".join(problems),
                 file=sys.stderr,
             )
         return 1
-    sealed = SEALING.search(binding[0].text) is not None
-    note = (
-        "carries no sealing claim to bind"
-        if not sealed
-        else (
-            f"names {SEALED_WIRE} as not in a published release"
-            if not released
-            else f"does not call {SEALED_WIRE} unreleased"
-        )
-    )
     print(
-        f"check-claims: the page binds its sealing claim to the wire versions the artefacts "
+        f"check-claims: the page binds its sealing claim to the one wire version the artefacts "
         f"speak — the pin {PINNED_IMAGE_VERSION} as {pinned_wire}, the demo as "
-        f"{', '.join(offered)} from `/meta` — and {note}"
+        f"{', '.join(offered)} from `/meta` — names no other version, and does not call it "
+        "unreleased"
     )
     return 0
 

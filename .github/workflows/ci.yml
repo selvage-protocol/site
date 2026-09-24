@@ -15,11 +15,10 @@ name: ci
 # three the page may carry, the address the demo section hands an editor to reach the server
 # (its path answers the server's own JSON, not the proxy's page), that address's origin to report a
 # `selvaged` server offering a wire version the page names, and the origin's `/` to serve the guest
-# page the browser row points at. The wire versions are then bound to the artefacts: the page has
+# page the browser row points at. The wire version is then bound to the artefacts: the page has
 # to say which wire the pinned image speaks and which the demo speaks, the demo's half against
-# what `/meta` offers and the image's half against `IMAGE_WIRE_BY_TAG`, and a page that claims
-# sealing has to name the wire that does not seal and to say the sealed one is not in a published
-# release exactly while no instance offers it — the paragraph and the command under it are read
+# what `/meta` offers and the image's half against `IMAGE_WIRE_BY_TAG`, and the page may name no
+# other version, because this protocol has one — the paragraph and the command under it are read
 # together, so the landing page cannot deliver a downgrade quietly. Two disclosures are required
 # besides: the relay-visibility facts, one pattern per fact, so deleting the paragraph fails where
 # the clean fixtures alone would not, and the browser guest's trust in the room's own server for

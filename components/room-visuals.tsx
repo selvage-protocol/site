@@ -181,7 +181,7 @@ export function ClientChips() {
         <span className="client">Neovim</span>{" "}
         <span className="client">a browser page</span>
       </p>
-      <p className="client-rail">one engine &middot; selvage/1</p>
+      <p className="client-rail">one engine &middot; selvage/2</p>
     </div>
   );
 }
