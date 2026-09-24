@@ -349,6 +349,8 @@ body {
 }
 
 .invite-label {
+  flex: none;
+  white-space: nowrap;
   font-size: 0.625rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -357,7 +359,11 @@ body {
 
 .invite-url {
   color: var(--fg);
-  white-space: nowrap;
+  /* The link the figure draws carries the fragment, which the hero's own column
+     has no width for on one line: the `<wbr>` before it is the chip's only break
+     opportunity, so the fragment wraps under the query instead of being clipped
+     by the panel. */
+  min-width: 0;
 }
 
 /* The guest's tree. A column beside the editor from `sm`, a wrapped row of paths

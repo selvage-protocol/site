@@ -15,12 +15,17 @@ const heroFacts = [
     conformance vectors.
   </>,
   <>
+    The server relays the room as ciphertext: it sees that a room exists, who is
+    in it, their names and the sizes and timing of what moves, and never the file
+    text, the cursors or the file names.
+  </>,
+  <>
     Guests see the paths you grant and edit the room&apos;s text. Only your own
     client writes to your folder.
   </>,
   <>
     There is no account on either side. Rooms live in memory on the server you host,
-    and nothing is written to disk.
+    and the server writes nothing to disk.
   </>,
 ];
 
@@ -117,10 +122,13 @@ const steps = [
     lead: "Close the window",
     body: (
       <>
-        A room follows its host&apos;s connection, with a short grace period, so a
-        dropped one does not end it. The timer moves to the room&apos;s last connection,
-        and the room outlives its host. Rooms live in
-        memory: nothing survives a restart of the server.
+        Closing or reloading the host&apos;s window ends the room: whoever is in it
+        keeps editing while a short countdown runs, and then each client&apos;s
+        session ends and the room closes. A room lives while it has connections and
+        for a short grace period after its last one ends, which is why a dropped
+        connection does not end it, and why the server reaps a room only once its
+        last connection goes. Rooms live in memory: nothing survives a restart of
+        the server.
       </>
     ),
   },
@@ -133,7 +141,11 @@ function InviteCard() {
     <div className="fig fig-invite">
       <span className="invite">
         <span className="invite-label">invite link</span>
-        <span className="invite-url">?room=k7m2&amp;token=4f9c&hellip;</span>
+        <span className="invite-url">
+          ?room=k7m2&amp;token=4f9c
+          <wbr />
+          #k=&hellip;&amp;h=&hellip;
+        </span>
       </span>
     </div>
   );
@@ -180,12 +192,15 @@ export default function Home() {
                 ))}
               </ul>
               <div className="mt-9 flex flex-wrap items-center gap-3">
-                <Button href="#get-it-working" size="lg">
+                <Button href="https://selvage-demo.dontblameme.dev" size="lg">
+                  Try the demo in your browser
+                </Button>
+                <Button href="#get-it-working" variant="secondary" size="lg">
                   Run it in your editor
                 </Button>
                 <Button
                   href="https://github.com/selvage-protocol/specification"
-                  variant="secondary"
+                  variant="ghost"
                   size="lg"
                 >
                   Read the specification
@@ -236,8 +251,8 @@ export default function Home() {
               holds the compose file and the source build.
             </p>
             <p>
-              The image above and the demo speak <code>selvage/2</code>, the one
-              wire version this protocol has, and it is the sealed one: the
+              The container image above and the demo speak <code>selvage/2</code>, the
+              one wire version this protocol has, and it is the sealed one: the
               room&apos;s bytes reach that server as ciphertext.
             </p>
             <p>
@@ -248,9 +263,12 @@ export default function Home() {
               to make are signed by the peers instead. The box — and whoever holds it
               — carries bytes it cannot read, and the host is a peer&apos;s signed
               claim rather than a server fact: it cannot seat a host, prove one or
-              take the role. It still sees that a room exists, who is in it, their
-              names, and the sizes and timing of what moves, and it can still drop,
-              delay, reorder or refuse frames and end any room.
+              take the role. The peer layer has its own corpus for that: 26 peer
+              vectors, 221 peer checks and 74 peer assertions, replayed in one
+              process with no socket and no client. The relay still sees that a room
+              exists, who is in it, their names, and the sizes and timing of what
+              moves, and it can still drop, delay, reorder or refuse frames and end
+              any room.
             </p>
             <p>
               Whoever holds the invite holds the keys to it: a leaked link is a leaked
@@ -343,11 +361,13 @@ export default function Home() {
                   <a href="https://selvage-demo.dontblameme.dev">the demo</a>{" "}
                   serves it too. A guest opens the invite link the host copied
                   and edits in the page, which takes the room and token in its
-                  query string:
+                  query string and the room&apos;s keys in its fragment:
                 </p>
                 <pre>
                   <code>
-                    {"http://127.0.0.1:8080/?room=<room>&token=<token>"}
+                    {
+                      "http://127.0.0.1:8080/?room=<room>&token=<token>#k=<room key>&h=<host public key>"
+                    }
                   </code>
                 </pre>
                 <p>
@@ -448,13 +468,12 @@ export default function Home() {
               tools can talk to each other.
             </p>
             <p>
-              The specification is Selvage&apos;s flagship artifact: that layer,
-              written out as prose, a canonical byte form for a frame, JSON Schema
-              documents, and 24 conformance vectors (33760 frame checks and 8387
-              assertions) replayed byte for byte against a real server. The numbers
-              are constants in <code>schema/validate.py</code>, so deleting an
-              assertion fails the run instead of shrinking a total in a line of
-              output.
+              Selvage writes that layer down: prose, a canonical byte form for a
+              frame, JSON Schema documents, and 24 conformance vectors (33760 frame
+              checks and 8387 assertions) replayed byte for byte against a real
+              server. The numbers are constants in <code>schema/validate.py</code>,
+              so deleting an assertion fails the run instead of shrinking a total in
+              a line of output.
             </p>
             <p>
               The vectors are also the honest test: nothing yet shows that code
@@ -543,10 +562,10 @@ export default function Home() {
               hosted Selvage would be.
             </p>
             <p>
-              This page prerenders to static HTML with one stylesheet and a
-              favicon, and the served document includes the framework&apos;s
-              runtime scripts. It sets no cookie, makes no third-party request
-              and collects no personal data of its own; the{" "}
+              This page prerenders to static HTML: one stylesheet, the mark in its
+              header, the favicon set and the framework&apos;s runtime scripts, every
+              one of them from this origin. It sets no cookie, makes no third-party
+              request and collects no personal data of its own; the{" "}
               <a href="https://github.com/selvage-protocol">selvage-protocol</a>{" "}
               GitHub organisation is its controller.
             </p>
@@ -557,10 +576,9 @@ export default function Home() {
               </a>{" "}
               about the project or a security problem in it is the one thing here
               that carries your own address back: the controller receives it and keeps
-              it only to answer. The page is MIT OR Apache-2.0. Its framing follows
-              the project&apos;s own design record, which is private and carries no
-              licence; the workflow sentence is adapted from the Neovim client&apos;s
-              README, which is MIT OR Apache-2.0.
+              it only to answer. The page is MIT OR Apache-2.0, and its workflow
+              sentence is adapted from the Neovim client&apos;s README, which is MIT
+              OR Apache-2.0.
             </p>
           </div>
       </footer>
