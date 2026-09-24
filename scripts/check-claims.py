@@ -1721,7 +1721,7 @@ def check_published_extension(pages: list[Scanned]) -> int:
 
 
 def names_wire(text: str, version: str) -> bool:
-    """Whether this text names the wire version as a name of its own, not as `selvage/12`."""
+    """Whether this text names the wire version as a name of its own, not as `selvage/21`."""
     return re.search(rf"(?<![\w/]){re.escape(version)}(?![\w/])", text) is not None
 
 
@@ -1730,7 +1730,7 @@ def page_names(version: str, pages: list[Scanned]) -> bool:
 
     The needle comes from the instance, so a page that names none of what the instance offers is
     the failure this reports rather than a scan that quietly looked for nothing. The lookarounds
-    keep `selvage/1` from being satisfied by `selvage/12`.
+    keep `selvage/2` from being satisfied by `selvage/21`.
     """
     return any(names_wire(page.text, version) for page in pages)
 
