@@ -232,8 +232,9 @@ export default function Home() {
               of it that caps connections, sets an idle deadline and limits the
               rate, and that keeps request URLs out of its logs, because the
               invite token travels in the URL; the specification requires all
-              of that of a server anyone else can reach, and the invite URL
-              then names the terminator&apos;s <code>wss://</code> address.{" "}
+              of that of a server anyone else can reach. The editors then
+              connect to the terminator&apos;s <code>wss://</code> address, and
+              the browser invite link names its <code>https://</code> page.{" "}
               <a href="https://github.com/selvage-protocol/reference_server">
                 selvage-protocol/reference_server
               </a>{" "}
