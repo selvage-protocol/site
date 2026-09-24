@@ -232,7 +232,7 @@ export default function Home() {
             <pre>
               <code>
                 {
-                  "docker run --rm -p 127.0.0.1:8080:8080 ghcr.io/selvage-protocol/selvaged:0.4.1"
+                  "docker run --rm -p 127.0.0.1:8080:8080 ghcr.io/selvage-protocol/selvaged:0.4.2"
                 }
               </code>
             </pre>
