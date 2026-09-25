@@ -333,8 +333,8 @@ export default function Home() {
             the clients are MIT OR Apache-2.0, with one exception: the server binary{" "}
             <code>selvaged</code> is <strong>FSL-1.1-MIT</strong>, which is
             source-available and not OSI-approved. It is free for any non-competing
-            purpose, converts to MIT two years after each release, and carries a
-            non-compete clause that reserves commercial hosting for its licensor.
+            purpose, converts to MIT two years after each release, and forbids
+            offering it to others as a competing commercial product or service.
           </p>
           <p>
             This page prerenders to static HTML: one stylesheet, the mark in its
