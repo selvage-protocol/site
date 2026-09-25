@@ -94,7 +94,7 @@ DASHES = re.compile("[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]")
 # looks like, and it pulls them with no credential in the request, because no account is the
 # point of the command the page hands over.
 PUBLISHED_IMAGE = "ghcr.io/selvage-protocol/selvaged"
-PINNED_IMAGE_VERSION = "0.4.3"
+PINNED_IMAGE_VERSION = "0.4.4"
 IMAGE_REFERENCE = re.compile(r"ghcr\.io/selvage-protocol/selvaged(?::([\w][\w.+-]*))?")
 REGISTRY_HOST = "ghcr.io"
 REGISTRY_REPOSITORY = PUBLISHED_IMAGE.split("/", 1)[1]
@@ -111,7 +111,7 @@ REQUEST_TIMEOUT_SECONDS = 20
 # and `check_wire_binding` is what holds the last of the three to the first two.
 WIRE = "selvage/2"
 IMAGE_WIRE_BY_TAG = {
-    "0.4.3": WIRE,
+    "0.4.4": WIRE,
 }
 WIRE_VERSION = re.compile(r"\bselvage/\d+\b")
 
@@ -554,15 +554,15 @@ FORBIDDEN: list[Phrase] = [
         # The lookbehind is what keeps a version-inside-a-version out of a pattern about a 1.0
         # claim: a tag like `2.1.0` carries `1.0` as a substring, and naming a tag that happens
         # to contain it is describing an artefact, not claiming a frozen release. The pin is
-        # `0.4.3`, which carries no `1.0` substring at all, so the fixture below is synthetic
+        # `0.4.4`, which carries no `1.0` substring at all, so the fixture below is synthetic
         # rather than the live pin; the lookbehind still has to hold for whatever version a future
         # pin carries. A 1.0 that stands on its own still matches.
         r"(?<![\d.])v?1\.0\b|production[- ]ready|production[- ]grade|battle[- ]tested|stable release",
         "the stable release, version 1.0",
         "the wire version is `selvage/2`; no shape is frozen. "
-        "`0.4.3` is the version of the image the page hands a reader, not a 1.0",
+        "`0.4.4` is the version of the image the page hands a reader, not a 1.0",
         ("we are at v1.0", "the stable rele<!-- -->ase, version 1.0"),
-        ("ghcr.io/selvage-protocol/selvaged:0.4.3", "0.4.3", "version 0.4.3", "tool:2.1.0"),
+        ("ghcr.io/selvage-protocol/selvaged:0.4.4", "0.4.4", "version 0.4.4", "tool:2.1.0"),
     ),
     Phrase(
         r"second implementation|interoperab\w*",
