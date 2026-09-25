@@ -20,7 +20,7 @@ The canonical material lives in the other repositories:
 protocol, prose and vectors, [`selvage-protocol/reference_server`](https://github.com/selvage-protocol/reference_server)
 for the server and client library, and [`selvage-protocol/vscode_client`](https://github.com/selvage-protocol/vscode_client)
 and [`selvage-protocol/nvim_client`](https://github.com/selvage-protocol/nvim_client) for the two
-editor clients. This repository holds the page, the five check scripts that gate it, the one
+editor clients. This repository holds the page, the six check scripts that gate it, the one
 browser proof the runner cannot run, and nothing else.
 
 | Path | What it is |
@@ -31,7 +31,7 @@ browser proof the runner cannot run, and nothing else.
 | `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, and a system font stack, so no font is fetched from a third party. Two widths are named there and the page keeps to them: `--measure` for running prose and `--column` for everything that is not prose (section rules, code blocks, the repo grid), so a wide figure is deliberate inside a narrow measure |
 | `app/icon.png` / `app/icon1.png` / `app/icon2.png` / `app/apple-icon.png` | the favicon set: the owner's opaque export resized to the four sizes a browser asks for (32, 16 and 48 px, and the 180 px home-screen icon), named for Next's file convention so the framework writes their `<link>` tags and `sizes`. Nothing here is redrawn; there is no vector favicon (see "The site mark") |
 | `app/opengraph-image.png` | the social card image (Next file convention, served as `/opengraph-image.png`): the owner's opaque export at full size, so cards crop owner's pixels |
-| `public/mark-header.png` | the mark as the page body fetches it: the owner's transparent export resized to 128×128 and levelled for the one surface that paints it, 32 CSS px on the dark nav bar (see "The site mark") |
+| `public/mark-header.png` | the mark as the page body fetches it: `scripts/make-mark.py`'s derivative of the owner's transparent export, the master area-averaged to 128×128, premultiplied by alpha and levelled for the one surface that paints it, 32 CSS px on the dark nav bar (see "The site mark") |
 | `public/mark-transparent.png` | the owner's transparent 800×800 export, vendored byte-identical (its checksum matches the owner's file) and never hotlinked. The page body no longer fetches it: it is the source the header derivative is made from, and `web_client/test/identity.test.ts` pins its bytes against that repository's own copy. The opaque export was vendored beside it while the hero panel was light; it is no longer fetched either; `app/opengraph-image.png` is the same file |
 | `postcss.config.mjs` | the one PostCSS plugin (`@tailwindcss/postcss`), so `style.css` compiles on build |
 | `next.config.ts` | the one build setting that is not a default: `poweredByHeader: false`, so the framework's `X-Powered-By: Next.js` banner is not on the page's HTML response |
@@ -47,6 +47,7 @@ browser proof the runner cannot run, and nothing else.
 | `scripts/check-contrast.py` | the contrast check: parses the theme tokens out of `style.css` — including the sample's `selvage-mocha` token colours, the ground the code figure draws them on, and the alpha a peer's selection fill is drawn at — reads the token a selection fill sits under out of `components/room-visuals.tsx` and the fills and labels of the button variants out of `components/ui/button.tsx`, reads the nav mark's own pixels out of `public/mark-header.png`, and asserts the rendered pairs sit at or above WCAG AA, with measured ratios (run by `scripts/ci-local.sh contrast` inside the gate) |
 | `scripts/check-csp.py` | the policy check: reads the Content-Security-Policy out of `vercel.json` and the served HTML, and fails when the policy would refuse a script, stylesheet or image the page carries (run by `scripts/ci-local.sh csp` inside the gate; see "The Content-Security-Policy") |
 | `scripts/check-weight.py` | the weight check: reads the served HTML and the bytes on disk, and fails when an image the page body fetches out of `public/` is over its budget or declares a pixel size the file does not have (run by `scripts/ci-local.sh weight` inside the gate; see "The site mark") |
+| `scripts/make-mark.py` | the mark producer: derives `public/mark-header.png` from `public/mark-transparent.png` — the master area-averaged to 128×128, premultiplied by alpha, then levelled through one 256-entry gamma table — and its `--check` mode re-derives the file and fails when the committed pixels are not that derivation (see "The site mark") |
 | `scripts/check-csp-browser.mjs` | the browser proof: serves the built page with the headers out of `vercel.json`, drives headless Chromium over CDP, and asserts zero `securitypolicyviolation` events, `window.__next_f` an object, the header's concealment on scroll and no `X-Powered-By`. Not in the gate (the runner has no browser), and it needs `npm run build` first |
 | `scripts/ci-local.sh` | the gate, running the same commands as the workflow |
 | `lychee.toml` | what the link check does not check, and why |
@@ -101,26 +102,39 @@ export's field, a re-framing of the owner's composition, so it is not done here.
 
 The header mark is sized the same way the favicons are, and it is the one surface where the
 owner's tones had to be lifted. The nav bar paints it at 32 CSS px, so `public/mark-header.png`
-is the transparent export resized to 128 and levelled —
-`magick public/mark-transparent.png -resize 128x128 -channel RGB -gamma 2.4 +channel
-public/mark-header.png` — which covers a device pixel ratio to 4 and carries none of the
-master's transparent field. The master is 60,595 bytes; served there it was 26% of everything
-the page transferred, and a browser resampled it to a 20×9 px monogram without saying so.
-Resizing alone was not enough: the export is a shaded wordmark whose glyph tones sit between
-`#2d111e` and `#7cc9c0`, so on `#1e1e2e` the median ink pixel measured **1.70:1** and the mark
-read as a smudge beside the wordmark. The derivative therefore applies a gamma curve to the
-colour channels and nothing else — no redraw, no recolour, the owner's own pixels on a lighter
-tone curve — which puts the median ink pixel at **4.57:1** on the bar. It is 6,801 bytes.
-`scripts/check-contrast.py` composites the file's own pixels over `--bg` and asserts that
-median at the non-text 3.0:1 floor, so a derivative that goes dark again fails the gate; the
-old resize measures 1.70:1 there and fails it.
+is the 128×128 derivative `scripts/make-mark.py` builds: the master area-averaged down to 128,
+premultiplied by alpha so the transparent field's white cannot bleed into the glyph edges, and
+then levelled through one 256-entry gamma table on the colour channels alone. 128 covers a device
+pixel ratio to 4 and carries none of the master's transparent field. The master is 60,595 bytes;
+served there it was 26% of everything the page transferred, and a browser resampled it to a
+20×9 px monogram without saying so. Resizing alone was not enough: the export is a shaded wordmark
+whose glyph tones sit between `#2d111e` and `#7cc9c0`, so on `#1e1e2e` the unlevelled derivative's
+median ink pixel measures **1.72:1** and the mark reads as a smudge beside the wordmark. The
+derivative therefore applies a gamma curve to the colour channels and nothing else — no redraw, no
+recolour, the owner's own pixels on a lighter tone curve — which puts the median ink pixel at
+**4.70:1** on the bar. It is 4,616 bytes. `scripts/check-contrast.py` composites the file's own
+pixels over `--bg` and asserts that median at the non-text 3.0:1 floor, so a derivative that goes
+dark again fails the gate; the unlevelled derivative measures 1.72:1 there and fails it.
 
-Two details of that derivation matter for keeping it honest. The gamma is applied after the
-resize, which is the order the file is built in, and a fresh run of the two commands reproduces
-the file pixel for pixel (RMSE 0). And the claim the earlier derivative could make — that
-resampling it to the painted size matched resampling the master to within RMSE 0.15% — is
-deliberately false now: at 32 px, flattened on the bar, the two differ by RMSE 4.7%. That
-figure is the tone curve, and it is the whole of the change.
+The derivative had no producer until now: it was built once by hand
+(`magick public/mark-transparent.png -resize 128x128 -channel RGB -gamma 2.4 +channel
+public/mark-header.png`), so nothing in the tree could reproduce, retune or verify it. That script
+is the producer, and its `--check` mode re-derives the file from the master and fails when the
+committed pixels are not what the master and the curve produce. Two details of the derivation
+matter for keeping it honest. The gamma is applied after the resize, which is the
+order the producer builds the file in. And the pin compares pixels rather than bytes: a zlib
+release may compress the same raster differently, and the raster is the claim. The claim the
+earlier derivative could make — that resampling it to the painted size matched resampling the
+master to within RMSE 0.15% — is deliberately false now: at 32 px, flattened on the bar, the two
+differ by RMSE 5.0%. That figure is the tone curve, and it is the whole of the change.
+
+What the producer does not reproduce is the resample. ImageMagick's `-resize` defaults to a
+Mitchell window, which reaches past the box each destination pixel covers and rings a little; the
+producer averages exactly that box, which is the one definition of a downscale that needs no knobs
+of its own. So the file is not byte-identical to the hand-built one: on visible pixels the two
+rasters differ by at most 26 levels in a colour channel and 34 in alpha (mean 1.3 and 0.4, over
+1,017 ink pixels). Those are edge tones, not the artwork — the master's colours and the curve are
+otherwise the same.
 
 The alternative the review offered — dropping the mark and keeping the wordmark alone — was not
 taken because the mark is the page's only image-body surface and `scripts/check-weight.py` is
@@ -719,7 +733,7 @@ so a regression fails the build instead of waiting for a look. Measured today:
 | glass-card text, worst of the five panel stops | 11.71:1 (muted 7.61:1) | 4.5:1 |
 | panel text, worst stop (the tree, the file bar and the figure's caption sit on the panel, not on the card) | 9.08:1 (muted 5.90:1) | 4.5:1 |
 | the open file's dot on the panel, worst stop (the figure's one mark that is not a peer's) | 9.08:1 | 3.0:1 |
-| the nav mark's median ink pixel on the header's ground (the artwork's own pixels, read out of `public/mark-header.png` and composited over `--bg`) | 4.57:1 | 3.0:1 |
+| the nav mark's median ink pixel on the header's ground (the artwork's own pixels, read out of `public/mark-header.png` and composited over `--bg`) | 4.70:1 | 3.0:1 |
 
 WCAG 1.4.1 is the one criterion measured the other way round, because both of its floors cannot
 hold at once here. It asks for 3.0:1 between a link and the text beside it when colour is the only
