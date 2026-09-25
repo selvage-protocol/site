@@ -765,7 +765,7 @@ FORBIDDEN: list[Phrase] = [
         r"|subscribers)\b",
         "used in production by 40 engineering teams",
         "no user count exists. The only numbers this project can show are the corpus counts its "
-        "own validator pins (31 vectors, 34858 frame checks, 8642 assertions)",
+        "own validator pins (24 vectors, 33760 frame checks, 8387 assertions)",
     ),
     Phrase(
         r"\bfirst\b",
@@ -1909,6 +1909,179 @@ def check_published_extension(pages: list[Scanned]) -> int:
     return 0
 
 
+# The card the page offers and does not have: a hosted tier the project would run for the reader.
+# Its parts are one claim — the card, the status on it, the sentence saying who would run it, and
+# the row that is a plan rather than a control — and each is a pattern of its own, so a rewrite
+# that keeps the fact passes and one that drops it fails.
+HOSTED_TIER = (
+    ("the card that offers it", re.compile(r"Rent a server", re.IGNORECASE)),
+    ("that it is not available yet", re.compile(r"\bNot available yet\b", re.IGNORECASE)),
+    ("who would run it", re.compile(r"\bWe run the server\b", re.IGNORECASE)),
+    (
+        "and that its row is a plan rather than a control",
+        re.compile(r"Hosted servers\s*planned", re.IGNORECASE),
+    ),
+)
+
+# The repository grid's rows: the repository each one names and the word the page puts beside it.
+# The window is the row's own description — longer than any of them, and shorter than the distance
+# to the next row's word, so a dropped word cannot be paid for by the row below it (`nvim_client`
+# with none of its own is 40 characters from `web_client`'s).
+GRID_ROWS = (
+    (
+        "specification",
+        "source of truth",
+        re.compile(r"\bspecification[^.]{0,32}source of truth\b", re.IGNORECASE),
+    ),
+    ("vscode_client", "published", re.compile(r"\bvscode_client[^.]{0,32}published\b", re.IGNORECASE)),
+    ("reference_server", "available", re.compile(r"\breference_server[^.]{0,32}available\b", re.IGNORECASE)),
+    ("nvim_client", "available", re.compile(r"\bnvim_client[^.]{0,32}available\b", re.IGNORECASE)),
+    ("web_client", "available", re.compile(r"\bweb_client[^.]{0,32}available\b", re.IGNORECASE)),
+)
+
+# The row that is a plan rather than a repository: the page links it to nothing, which is the
+# claim — a client nobody has written cannot be offered. The design's sixth row was
+# `jetbrains_client`, and `github.com/selvage-protocol/jetbrains_client` answers 404 while the
+# organisation carries no such public repository, so it is dropped rather than linked; the
+# destination rule below is what keeps a row for it, or for any other repository the project does
+# not have, off the page.
+GRID_PLANNED = re.compile(r"\bMore clients[^.]{0,32}Planned\b", re.IGNORECASE)
+
+# The URL shape of a repository link. The grid's own rows are the list of names the page may
+# carry, so a row's word and its destination cannot name two different repositories.
+GRID_LINK = re.compile(r"https?://github\.com/selvage-protocol/([\w.-]+)")
+
+
+def check_hosted_tier(pages: list[Scanned]) -> int:
+    """The hosted tier the page offers and does not run yet.
+
+    The card is the one place a reader can ask for something the project cannot give them, so
+    what it says is read as a whole: it offers a server the project would run, it says that is
+    not available yet, and the row under it is a plan rather than a control. Required rather than
+    permitted, for the reason the disclosures are: a `clean` fixture proves a pattern does not
+    reject a sentence, never that the page carries one. The phrase list's `now available` entry
+    can only catch the opposite direction — a page that dropped the status would read as an offer
+    with nothing saying it cannot be taken, and nothing else here would notice.
+
+    Returns 0 when a scanned page carries every part of the card and 1 when none does; it asks no
+    network.
+    """
+    page, failures = first_page_stating(pages, HOSTED_TIER)
+    if page is not None:
+        print(
+            "check-claims: the page offers a hosted tier and says it is not available yet — the "
+            "card, its status, who would run it, and the row that is a plan rather than a control"
+        )
+        return 0
+    for where, absent in failures:
+        print(
+            f"check-claims: {where} does not say what the hosted tier's card offers: it is "
+            f"missing {', '.join(absent)}. The page offers a server the project does not run "
+            "yet, and a card without that status reads as something a reader can ask for",
+            file=sys.stderr,
+        )
+    return 1
+
+
+def check_repository_grid(pages: list[Scanned]) -> int:
+    """The repository grid: what each row links, and what each row says of it.
+
+    The grid is the page's own account of what exists. A row names a repository, says one word
+    about it and links it, and a reader who follows the row lands on the code the word is about.
+    Three things hold that together, and all three are required rather than permitted, for the
+    reason the disclosures are:
+
+    - every row carries the word the project uses for that repository: the specification is the
+      source of truth, the reference server and the two clients the project publishes itself are
+      available, and the extension is published;
+    - every repository the grid names is linked, so a word about a repository hands the reader
+      something to check;
+    - every repository the page links is one the grid names, so no row and no source link beside
+      the terminal points at a repository the project does not have. `jetbrains_client` is the
+      one the design carried and the organisation does not, so it is dropped rather than linked.
+
+    The `published` word is the one here that is a claim about a registry rather than a
+    repository, and another function owns that claim: `check_published_extension` holds the
+    identity and the two registries the release publishes to. So the page that carries the word
+    has to carry the identity too, and the two cannot disagree — this function reads the word
+    beside the repository, that one reads what the extension is published as and where.
+
+    What it does not do is ask GitHub whether any of them answers. A repository's existence is
+    the organisation's fact; what is read here is the page's own consistency about it.
+
+    Returns 0 when all of it holds and 1 when it does not; it asks no network.
+    """
+    root = root_of_this_checkout()
+    facts = [(f"the {name} row", pattern) for name, _, pattern in GRID_ROWS]
+    facts.append(("the row that is a plan", GRID_PLANNED))
+    page, failures = first_page_stating(pages, facts)
+    if page is None:
+        for where, absent in failures:
+            print(
+                f"check-claims: {where} does not carry the repository grid: it is missing "
+                f"{', '.join(absent)}. The grid is the page's own account of what exists, and "
+                "a row that loses its word is a claim about a repository that nothing beside "
+                "it supports",
+                file=sys.stderr,
+            )
+        return 1
+
+    if not any(PUBLISHED_EXTENSION in scanned.text for scanned in pages):
+        published = next(status for name, status, _ in GRID_ROWS if name == "vscode_client")
+        print(
+            f"check-claims: the grid says the extension's repository is {published}, and no "
+            f"scanned file names `{PUBLISHED_EXTENSION}`, so the row claims a publication the "
+            "page does not otherwise state. The word beside the row and the identity the "
+            "release publishes under are one claim",
+            file=sys.stderr,
+        )
+        return 1
+
+    linked = {
+        match.group(1)
+        for scanned in pages
+        for destination, _ in scanned.destinations
+        for match in [GRID_LINK.match(destination)]
+        if match
+    }
+    unlinked = [(name, status) for name, status, _ in GRID_ROWS if name not in linked]
+    if unlinked:
+        for name, status in unlinked:
+            print(
+                f"check-claims: the grid says {name} is {status} and links nothing for it. A "
+                "word about a repository is a claim a reader checks by following the row, so a "
+                "row that says one and links nowhere hands the reader nothing",
+                file=sys.stderr,
+            )
+        return 1
+
+    known = {name for name, _, _ in GRID_ROWS}
+    stray = [
+        f"{os.path.relpath(scanned.path, root)}:{line}: {destination!r}"
+        for scanned in pages
+        for destination, line in scanned.destinations
+        for match in [GRID_LINK.match(destination)]
+        if match and match.group(1) not in known
+    ]
+    if stray:
+        for where in stray:
+            print(
+                f"check-claims: the page links a repository at {where}, and the grid names "
+                f"{', '.join(name for name, _, _ in GRID_ROWS)}. A link is a claim that a "
+                "repository is there to read, and the design's own sixth row is the one that is "
+                "not",
+                file=sys.stderr,
+            )
+        return 1
+
+    print(
+        f"check-claims: the grid names its {len(GRID_ROWS)} repositories and the row that is a "
+        "plan, says what each one is, links every repository it names and no other, and names "
+        f"`{PUBLISHED_EXTENSION}` where its own row says the extension is published"
+    )
+    return 0
+
+
 def names_wire(text: str, version: str) -> bool:
     """Whether this text names the wire version as a name of its own, not as `selvage/21`."""
     return re.search(rf"(?<![\w/]){re.escape(version)}(?![\w/])", text) is not None
@@ -2121,6 +2294,8 @@ def main() -> int:
         check_browser_trust,
         check_corpus_citation,
         check_published_extension,
+        check_hosted_tier,
+        check_repository_grid,
         check_pinned_image,
         check_demo_instance,
         check_wire_binding,

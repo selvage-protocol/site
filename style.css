@@ -483,7 +483,9 @@ section[id],
   flex: none;
   width: 22px;
   margin-right: 14px;
-  color: var(--color-overlay0);
+  /* The numbers stay dimmer than the code beside them, but no dimmer than 4.5:1 on the
+     window's ground allows: the palette's next tone down measures 3.56:1 there. */
+  color: var(--color-overlay1);
   text-align: right;
 }
 
@@ -634,7 +636,9 @@ section[id],
 }
 
 .try-card-planned .try-num {
-  color: var(--color-overlay0);
+  /* The card has no fill of its own, so the band behind it is the ground this has to clear
+     4.5:1 against. */
+  color: var(--color-overlay1);
 }
 
 .try-title {
@@ -765,7 +769,9 @@ section[id],
   padding: 0 12px;
   border: 1px solid var(--rule);
   border-radius: 8px;
-  color: var(--color-overlay0);
+  /* A row the page shows and does not offer, on the band's own fill rather than on a card: it
+     reads dimmer than the controls around it without falling below 4.5:1 there. */
+  color: var(--color-overlay1);
   font-size: 14px;
 }
 
@@ -1350,7 +1356,9 @@ section[id],
 }
 
 .repo-desc {
-  color: var(--color-overlay1);
+  /* Read on three grounds — the card's fill, the page colour the card lightens to on hover, and
+     the planned card on the page — so it wears the tone that clears 4.5:1 on all three. */
+  color: var(--color-overlay2);
   font-size: 12px;
 }
 

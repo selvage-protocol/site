@@ -11,8 +11,9 @@ So: the CSP is read from `vercel.json` (the file Vercel applies, not a copy of i
 read from the served HTML, and every subresource the page carries is decided against the
 directive that would govern it, following the fallback chains a browser follows
 (`script-src-elem` → `script-src` → `default-src`, and so on). Scripts, stylesheets, inline
-style and handler attributes, images, `<base>` and the element kinds `default-src 'none'`
-blocks structurally (`iframe`, `object`, `embed`, media) are all in scope. The inventory it
+style and handler attributes, images, the fonts the page preloads, `<base>` and the element
+kinds `default-src 'none'` blocks structurally (`iframe`, `object`, `embed`, media) are all in
+scope. The inventory it
 prints on success is what makes the pass legible: how many external and inline scripts, which
 directive permitted them, and why.
 
@@ -23,6 +24,14 @@ not understand; and the Chromium run that proves the real thing — zero `securi
 events on a page served with these exact headers — is not in this file, because the runner has
 no browser. What is here is the part that can run on every push. Neither this nor that run can
 see the deployed headers: if Vercel stops applying the `headers` block, nothing local notices.
+
+Fonts are in scope the way images are, and on the same kind of evidence. The glyph files are
+served from this origin, a font fetch falls back to `default-src` like any other, and the
+`<link rel="preload" as="font">` the page carries names a fetch that is coming: with no
+`font-src` every one of them is refused, and the page paints its fallback stack while reading as
+if it were typeset. What this does not do is read the `@font-face` rules out of the linked
+stylesheet — a browser starts those from CSS it has already been permitted to load — so a page
+that announced no font this way would leave no font item here to decide.
 
 Exit 0 prints what the policy permits. Exit 1 names each subresource it would block, with the
 directive and the reason. Exit 2 means the check itself cannot run — an unmodelled source
@@ -62,6 +71,7 @@ CHAINS = {
     "style": ("style-src-elem", "style-src", "default-src"),
     "style-attr": ("style-src-attr", "style-src", "default-src"),
     "image": ("img-src", "default-src"),
+    "font": ("font-src", "default-src"),
     "frame": ("frame-src", "child-src", "default-src"),
     "object": ("object-src", "default-src"),
     "media": ("media-src", "default-src"),
@@ -81,7 +91,8 @@ ELEMENT_KIND = {
     "source": "media",
 }
 
-# Link relations whose href is a stylesheet, an image, or neither.
+# Link relations whose href is a stylesheet, an image or a font. `preload` names none of them
+# itself: the fetch it starts is the one its `as` names, and that is the kind below.
 LINK_REL = {
     "stylesheet": ("style", "href"),
     "icon": ("image", "href"),
@@ -90,6 +101,11 @@ LINK_REL = {
     "mask-icon": ("image", "href"),
     "preload": ("preload", "href"),
 }
+
+# The kinds a `preload` may name here. An `as` this does not carry (a video, a fetch, a
+# document) starts a fetch no element on this page is written with, and deciding it would be a
+# verdict about something the page does not serve; it is left alone rather than guessed at.
+PRELOAD_AS = {"image": "image", "font": "font"}
 
 @dataclass
 class Item:
@@ -197,9 +213,9 @@ class PageParser(HTMLParser):
             return
         if tag == "link":
             kind, attr = LINK_REL.get((attrs.get("rel") or "").lower(), ("ignore", ""))
-            if kind == "preload" and (attrs.get("as") or "").lower() != "image":
-                kind = "ignore"
-            if kind in ("style", "image") and attrs.get(attr):
+            if kind == "preload":
+                kind = PRELOAD_AS.get((attrs.get("as") or "").lower(), "ignore")
+            if kind in ("style", "image", "font") and attrs.get(attr):
                 self.items.append(Item(kind, f'<link rel="{attrs.get("rel")}">', url=attrs[attr]))
             return
         if tag == "img":
@@ -392,10 +408,20 @@ SUITE_HTML = (
 )
 SHIPPED = (
     "default-src 'none'; script-src 'self' 'unsafe-inline'; script-src-attr 'none'; "
+    "img-src 'self' data:; style-src 'self'; font-src 'self'; form-action 'none'; "
+    "base-uri 'none'; frame-ancestors 'none'"
+)
+REGRESSED = "default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; frame-ancestors 'none'"
+
+# The policy as it read before the page self-hosted its fonts: the shipped directives without
+# the one a font fetch needs, so every glyph file falls back to `default-src 'none'` and is
+# refused. The page still carries the preloads, which is what makes the absence legible here.
+WITHOUT_FONT_SRC = (
+    "default-src 'none'; script-src 'self' 'unsafe-inline'; script-src-attr 'none'; "
     "img-src 'self' data:; style-src 'self'; form-action 'none'; base-uri 'none'; "
     "frame-ancestors 'none'"
 )
-REGRESSED = "default-src 'none'; img-src 'self' data:; style-src 'self'; base-uri 'none'; frame-ancestors 'none'"
+FONT_PRELOAD = '<link rel="preload" as="font" href="/_next/static/media/a.woff2" crossorigin="">'
 
 
 def self_test() -> str | None:
@@ -454,6 +480,15 @@ def self_test() -> str | None:
         ("a data: image under img-src data:", "default-src 'none'; img-src 'self' data:", '<img src="data:image/png;base64,AA">', "clean"),
         ("a source expression this check does not model", "default-src 'none'; script-src 'strict-dynamic'", SUITE_HTML, "unsupported"),
         ("a document that carries nothing judgeable", SHIPPED, "<p>prose</p>", "clean"),
+        ("a same-origin font the policy permits", SHIPPED, FONT_PRELOAD, "clean"),
+        ("the policy with no font-src (the defect)", WITHOUT_FONT_SRC, FONT_PRELOAD, "blocked"),
+        ("a font off-origin", SHIPPED, '<link rel="preload" as="font" href="https://fonts.example/a.woff2">', "blocked"),
+        (
+            "a preloaded kind this check does not carry",
+            WITHOUT_FONT_SRC,
+            '<link rel="preload" as="video" href="/a.mp4">',
+            "clean",
+        ),
     ]
     for name, policy, html, expected in cases:
         report = analyse(policy, html)
@@ -464,6 +499,7 @@ def self_test() -> str | None:
     floors = [
         (SHIPPED, None),
         (REGRESSED, None),
+        (WITHOUT_FONT_SRC, None),
         ("script-src 'self'", "no default-src"),
         ("default-src 'self'; script-src 'self'", "default-src is"),
     ]
