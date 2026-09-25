@@ -296,6 +296,25 @@ body {
   background: rgba(24, 24, 37, 0.75);
 }
 
+/* At two columns the four drawings stand in one grid, so their boxes have to be one
+   height: a `card-lead` sits under its figure, and four figures of four heights put
+   the four leads at four heights in cards the grid has already made equal. The height
+   is the tallest drawing there is — the code sample's nine lines at 11 px on a 1.65
+   line-height, 189 px, plus the room a font's own rounding wants — and the shorter
+   drawings centre in it. One column keeps each card its own height: nothing has to
+   line up across a single column, and four 200 px boxes would make four tall cards. */
+@media (min-width: 44rem) {
+  .prose-body ul.cards > li {
+    display: grid;
+    grid-template-rows: minmax(12.5rem, auto) auto auto;
+    align-content: start;
+  }
+
+  .prose-body ul.cards > li > .fig {
+    align-self: center;
+  }
+}
+
 .fig {
   display: flex;
   align-items: center;
@@ -320,7 +339,11 @@ body {
   font-size: 0.6875rem;
 }
 
-/* The invite: the one control whose whole job is to look shareable. */
+/* The invite: one control whose whole job is to look shareable. Its sample is one line
+   and stays one: the query the page takes, then the fragment the keys travel in
+   (`PROTOCOL.md` §5.1). The `invite link` label it used to lead with is gone — with it the
+   chip is 315 px on one row, which the card's figure does not hold — and the lead beside
+   the card's chip names the link. */
 .invite {
   display: inline-flex;
   align-items: center;
@@ -341,22 +364,10 @@ body {
   color: var(--link);
 }
 
-.invite-label {
-  flex: none;
-  white-space: nowrap;
-  font-size: 0.625rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
 .invite-url {
-  color: var(--fg);
-  /* The link the figure draws carries the fragment, which the hero's own column
-     has no width for on one line: the `<wbr>` before it is the chip's only break
-     opportunity, so the fragment wraps under the query instead of being clipped
-     by the panel. */
   min-width: 0;
+  white-space: nowrap;
+  color: var(--fg);
 }
 
 /* The guest's tree. A column beside the editor from `sm`, a wrapped row of paths
@@ -614,10 +625,6 @@ body {
   .invite {
     padding: 0.35rem 0.5rem;
     font-size: 0.6875rem;
-  }
-
-  .invite-label {
-    display: none;
   }
 }
 
