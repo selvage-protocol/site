@@ -48,20 +48,39 @@ Exit 0 lists every asserted pair with its measured ratio. Exit 1 names the
 pairs below threshold. Exit 2 means the check itself cannot run (a token it
 needs is missing or unparsable): that is a failure, not a pass.
 
+The nav mark is the one mark on the page that is not a token: it is the owner's artwork,
+served as pixels, and a dark wordmark on a dark bar is a mark a reader cannot see while every
+colour in the stylesheet measures fine. So the check reads `public/mark-header.png` itself,
+composites its own pixels over the ground the bar shows them on, and asserts the typical ink
+pixel at the non-text floor. A derivative that goes dark again fails here.
+
 `STYLE_CSS` overrides the stylesheet under test, `BUTTON_TSX` the button
-component and `ROOM_TSX` the figure component, so a probe can run the check
-against deliberately broken copies: a gate that only ever sees passing tokens
-proves nothing.
+component, `ROOM_TSX` the figure component and `MARK_PNG` the nav mark, so a probe
+can run the check against deliberately broken copies: a gate that only ever sees
+passing tokens proves nothing.
 """
 
 from __future__ import annotations
 
 import os
 import re
+import struct
 import sys
+import zlib
 
 TEXT_MIN = 4.5
 NON_TEXT_MIN = 3.0
+
+# Half coverage: a pixel less opaque than this is the antialiased fringe of a glyph rather
+# than ink a reader reads as the mark. It is the threshold the nav mark's rule below uses to
+# decide which pixels are the mark at all.
+MARK_INK_ALPHA = 50
+
+# A PNG the check cannot read is exit 2 rather than a skipped pair, the same way an unparsable
+# token is: a mark nobody measured is not a mark that passed.
+PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+# Channel count by PNG colour type, for the two an 8-bit opaque or alpha image may use.
+PNG_CHANNELS = {2: 3, 6: 4}
 
 # A peer's selection is a background and not a mark, and it wears the alpha the client
 # itself builds for one (`translucent(colour, 0.25)`, web_client/src/bridge/cursors.ts).
@@ -86,6 +105,126 @@ def lum(hexcode: str) -> float:
 def ratio(a: str, b: str) -> float:
     hi, lo = sorted((lum(a), lum(b)), reverse=True)
     return (hi + 0.05) / (lo + 0.05)
+
+
+class PngError(ValueError):
+    """A PNG this check cannot read (not a PNG, interlaced, or another bit depth)."""
+
+
+def png_pixels(path: str) -> tuple[int, int, int, bytes]:
+    """An 8-bit RGB or RGBA PNG as (width, height, channels, raster), unfiltered.
+
+    The pages carries the mark as pixels, so the only way to measure the tone it paints is to
+    read them; the standard library has no decoder, and reaching for ImageMagick would put a
+    second toolchain in the gate for one file. The two shapes ImageMagick writes for this asset
+    are the ones accepted, and anything else (16-bit, a palette, Adam7) is `PngError` rather
+    than a guess.
+    """
+    try:
+        with open(path, "rb") as handle:
+            data = handle.read()
+    except OSError as exc:
+        raise PngError(str(exc)) from exc
+    if not data.startswith(PNG_MAGIC):
+        raise PngError("not a PNG")
+    header = None
+    compressed = bytearray()
+    at = len(PNG_MAGIC)
+    while at + 12 <= len(data):
+        length = int.from_bytes(data[at : at + 4], "big")
+        kind = data[at + 4 : at + 8]
+        body = data[at + 8 : at + 8 + length]
+        if kind == b"IHDR":
+            header = body
+        elif kind == b"IDAT":
+            compressed += body
+        elif kind == b"IEND":
+            break
+        at += 12 + length
+    if header is None or len(header) < 13:
+        raise PngError("no IHDR")
+    width, height, depth, colour, _, _, interlace = struct.unpack(">IIBBBBB", header[:13])
+    if depth != 8:
+        raise PngError(f"bit depth {depth}, not 8")
+    if colour not in PNG_CHANNELS:
+        raise PngError(f"colour type {colour}, not RGB or RGBA")
+    if interlace != 0:
+        raise PngError("interlaced")
+    channels = PNG_CHANNELS[colour]
+    stride = width * channels
+    try:
+        raw = zlib.decompress(bytes(compressed))
+    except zlib.error as exc:
+        raise PngError(f"its IDAT does not decompress: {exc}") from exc
+    if len(raw) != height * (stride + 1):
+        raise PngError("the raster is not the size its header declares")
+    raster = bytearray(height * stride)
+    previous = bytearray(stride)
+    at = 0
+    for row in range(height):
+        kind = raw[at]
+        at += 1
+        line = bytearray(raw[at : at + stride])
+        at += stride
+        if kind == 1:
+            for i in range(channels, stride):
+                line[i] = (line[i] + line[i - channels]) & 0xFF
+        elif kind == 2:
+            for i in range(stride):
+                line[i] = (line[i] + previous[i]) & 0xFF
+        elif kind == 3:
+            for i in range(stride):
+                left = line[i - channels] if i >= channels else 0
+                line[i] = (line[i] + ((left + previous[i]) >> 1)) & 0xFF
+        elif kind == 4:
+            for i in range(stride):
+                left = line[i - channels] if i >= channels else 0
+                up = previous[i]
+                corner = previous[i - channels] if i >= channels else 0
+                estimate = left + up - corner
+                to_left, to_up, to_corner = (
+                    abs(estimate - left),
+                    abs(estimate - up),
+                    abs(estimate - corner),
+                )
+                if to_left <= to_up and to_left <= to_corner:
+                    predictor = left
+                elif to_up <= to_corner:
+                    predictor = up
+                else:
+                    predictor = corner
+                line[i] = (line[i] + predictor) & 0xFF
+        elif kind != 0:
+            raise PngError(f"filter {kind} on row {row}")
+        raster[row * stride : (row + 1) * stride] = line
+        previous = line
+    return width, height, channels, bytes(raster)
+
+
+def mark_ink(path: str, ground: str) -> tuple[str, int, int]:
+    """The mark's ink as the page paints it, over `ground`: (colour, ink pixels, alpha floor).
+
+    The colour is the composited pixel of median luminance among the mark's own pixels, which
+    is what "the mark" looks like to a reader rather than the file's average over its empty
+    field: the artwork is a shaded wordmark, its dark stroke is invisible on a dark bar, and
+    the mean of every pixel counts that stroke and the transparent field beside it. A mark
+    whose typical pixel is dark is the defect this measures.
+    """
+    width, height, channels, raster = png_pixels(path)
+    base = [int(ground[i : i + 2], 16) for i in (1, 3, 5)]
+    ink: list[tuple[float, str]] = []
+    for at in range(0, len(raster), channels):
+        alpha = raster[at + 3] if channels == 4 else 255
+        if alpha <= MARK_INK_ALPHA:
+            continue
+        pixel = [
+            round(raster[at + i] * alpha / 255 + base[i] * (1 - alpha / 255)) for i in range(3)
+        ]
+        ink.append((lum("#%02x%02x%02x" % tuple(pixel)), "#%02x%02x%02x" % tuple(pixel)))
+    if not ink:
+        raise PngError(f"{width}×{height} with no pixel above alpha {MARK_INK_ALPHA}")
+    ink.sort()
+    return ink[len(ink) // 2][1], len(ink), MARK_INK_ALPHA
 
 
 def composite(fg: str, bg: str, alpha: float) -> str:
@@ -541,6 +680,33 @@ def main() -> int:
                         TEXT_MIN,
                     )
                 )
+    # The nav mark is the one surface that paints the owner's artwork as pixels rather than
+    # as a token, so it is measured from the file the page fetches. Two things make this pair
+    # the bar's own: the bar is `bg-base/85` over a page whose ground is the same `bg-base`,
+    # so a translucent bar over it composites to that colour exactly; and the mark in the
+    # HTML is `h-8 w-auto`, 32 CSS px of a 128 px file, which resampling does not change the
+    # tone of. The median is the typical ink pixel rather than the brightest one, so a mark
+    # that is dark except for a highlight does not pass.
+    mark_path = os.environ.get(
+        "MARK_PNG", os.path.join(here, "..", "public", "mark-header.png")
+    )
+    try:
+        mark_ink_colour, mark_pixels, ink_alpha = mark_ink(mark_path, bg)
+    except PngError as exc:
+        print(
+            f"check-contrast: cannot read the nav mark {mark_path}: {exc}; "
+            "a mark that cannot be read is a failure, not a pass",
+            file=sys.stderr,
+        )
+        return 2
+    checks.append(
+        (
+            f"nav header mark, the median of {mark_pixels} ink pixels above alpha {ink_alpha}",
+            mark_ink_colour,
+            bg,
+            NON_TEXT_MIN,
+        )
+    )
     dot_fill = solid_fill(css, ".open-dot")
     if dot_fill is None:
         print(
