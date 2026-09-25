@@ -187,7 +187,7 @@ export default function Home() {
                   <Button
                     href={DEMO_ORIGIN}
                     size="hero"
-                    className="cta cta-glow flex-auto rounded-[10px] font-medium [&_svg]:size-[17px]"
+                    className="cta cta-glow flex-auto rounded-[10px] font-medium text-crust motion-safe:hover:-translate-y-px [&_svg]:size-[17px]"
                   >
                     <Play aria-hidden="true" />
                     Try the demo in your browser

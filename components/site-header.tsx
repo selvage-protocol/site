@@ -82,12 +82,12 @@ export function SiteHeader() {
             Selvage
           </span>
         </a>
-        <div className="hidden items-center gap-[22px] text-sm min-[720px]:flex">
+        <div className="hidden items-center gap-[22px] text-[14px] min-[720px]:flex">
           {navLinks.map((link) => (
             <a
               key={link.href}
               href={link.href}
-              className="py-1 text-subtext transition-colors hover:text-text"
+              className="text-subtext transition-colors hover:text-text"
             >
               {link.label}
             </a>
@@ -96,7 +96,7 @@ export function SiteHeader() {
         <div className="ml-auto flex items-center gap-3.5">
           <a
             href="https://github.com/selvage-protocol"
-            className="inline-flex items-center gap-1.5 py-1 text-sm text-subtext transition-colors hover:text-text"
+            className="inline-flex items-center gap-1.5 text-[14px] text-subtext transition-colors hover:text-text"
           >
             <GithubMark className="icon-18" />
             <span className="hidden min-[720px]:inline">GitHub</span>

@@ -38,7 +38,7 @@ browser proof the runner cannot run, and nothing else.
 | `next.config.ts` | the one build setting that is not a default: `poweredByHeader: false`, so the framework's `X-Powered-By: Next.js` banner is not on the page's HTML response |
 | `tsconfig.json` | the TypeScript project: `strict`, the `@/*` alias the components import each other through, the Next plugin, and the `.next/types` glob so a generated route type is checked. `npm run typecheck` runs `tsc --noEmit` over it |
 | `AGENTS.md` | a note `next dev` writes and re-adds: this framework version's documentation is in `node_modules/next/dist/docs/`, and it differs from what an older Next.js suggests. It is committed with the work rather than ignored, because removing it from a diff only re-creates it |
-| `components/ui/button.tsx` | the button primitive (shadcn-style `cva` variants: filled default, tinted secondary, outlined, ghost; three sizes plus the hero's; renders an anchor when given `href`): the bar's CTA and the two hero CTAs, nothing else. The page carries no ghost button, and the specification is a link drawn as a control rather than a third CTA; the ghost variant stays in the file because `scripts/check-contrast.py` measures it there |
+| `components/ui/button.tsx` | the button primitive (shadcn-style `cva` variants: filled default, tinted secondary, outlined, ghost; three sizes plus the hero's; renders an anchor when given `href`): the bar's CTA and the two hero CTAs, nothing else. The specification is a link drawn as a control rather than a third CTA, and the page renders the `outline` variant for its second hero CTA, so the tinted `secondary` and the `ghost` variants stay in the file only because `scripts/check-contrast.py` measures them there |
 | `components/ui/badge.tsx` | the pill primitive: a status beside a card's own name, and a mono caps chip |
 | `components/ui/card.tsx` | the card primitive: the two panels under the terminal |
 | `components/site-header.tsx` | the bar: the mark, the four in-page routes, the GitHub link and the demo CTA, with the conceal-on-scroll effect and the second scrollable row a phone gets |
@@ -630,7 +630,10 @@ taken is the page this is for. It asks no network.
 The repository grid is required the same way, and it is the page's own account of what exists. Each
 row's word is pinned where the row is: the specification is the source of truth, the reference
 server and the two clients the project publishes itself are available, and the extension is
-published. That last word is the one claim here about a registry rather than a repository, so it
+published. A row's name, description, pill and destination are one claim, read together from the
+row's own anchor rather than from the page's text, so a row that links a different repository fails
+even though the page still carries every name and every word. That last word is the one claim here
+about a registry rather than a repository, so it
 cannot be read apart from the identity and the two registries above it: the page that carries the
 word has to carry `selvage-protocol.selvage` too, and a grid that changed one without the other
 fails. Every repository the grid names has to be linked, so a word about a repository hands a reader
@@ -803,13 +806,13 @@ so a regression fails the build instead of waiting for a look. Measured today:
 | peer badge label on its mauve fill (the first peer's name in the window; the label is read from the badge's own rule rather than taken to be the page's colour) | 9.23:1 | 4.5:1 |
 | peer badge label on its teal fill (the second peer's name in the window) | 12.59:1 | 4.5:1 |
 | peer badge label on its peach fill (the third peer's name in the sample) | 10.59:1 | 4.5:1 |
-| code comment on the sample's ground (the editor theme's `comment`) | 5.61:1 | 4.5:1 |
+| code comment on the sample's ground (the editor theme's `comment`) | 6.64:1 | 4.5:1 |
 | code keyword on the sample's ground (`keyword`, the mauve the page already uses) | 9.23:1 | 4.5:1 |
 | code string on the sample's ground (`string`) | 12.61:1 | 4.5:1 |
 | code number on the sample's ground (`number`) | 10.59:1 | 4.5:1 |
 | code type on the sample's ground (`type`) | 14.76:1 | 4.5:1 |
 | code function on the sample's ground (`fn`, the browser client's own function colour) | 8.91:1 | 4.5:1 |
-| the room window's line numbers, over the ground the hero figure is drawn on (the colour the window's own rule paints, read from the stylesheet rather than taken from a token the window does not use there) | 4.70:1 | 4.5:1 |
+| the room window's line numbers, over the ground the hero figure actually paints, the glow included (the window's fill and the radial wash's centre, the lighter of the two; the colour the window's own rule paints, read from the stylesheet rather than taken from a token the window does not use there) | 4.58:1 | 4.5:1 |
 | the not-yet-available card's number and its planned row, on the band the card is transparent over (the band's own fill, read from its rule) | 4.75:1 | 4.5:1 |
 | the repository description on the repository card, on the card's hover fill, and in the planned card on the page | 6.22:1 / 5.81:1 / 5.81:1 | 4.5:1 |
 | the peers' caret bars and badge fills on the sample's ground (the figure's fill over the card's over the page) | 9.23:1 / 12.59:1 / 10.59:1 | 3.0:1 |
@@ -820,9 +823,10 @@ so a regression fails the build instead of waiting for a look. Measured today:
 | code text on code background | 12.14:1 | 4.5:1 |
 | muted text on code background | 7.89:1 | 4.5:1 |
 | badge text on its fill (the primitive's default chip, computed as the palette's mauve over its own 10% wash; the page's own badges are the pills the cards carry, measured in the groups below) | 6.63:1 | 4.5:1 |
-| secondary-button text on its fill (hover state, the worst of rest `15` at 5.98:1) | 5.32:1 | 4.5:1 |
+| secondary-button text on its fill, the primitive's own (the page renders the `outline` variant, so this pair is the component's; hover state, the worst of rest `15` at 5.98:1) | 5.32:1 | 4.5:1 |
 | ghost-button text on its hover fill (`bg-surface0/60`; the variant is parsed from the component, and the page carries no ghost button) | 9.75:1 | 4.5:1 |
-| secondary button boundary (`border-mauve/60`, parsed from the component) | 3.82:1 | 3.0:1 |
+| secondary button boundary, the primitive's own (`border-mauve/60`, parsed from the component) | 3.82:1 | 3.0:1 |
+| outline button boundary on the page (`border-surface1`, parsed from the component; below the 3.0:1 a boundary that *identifies* a control would need and above the floor a reader loses it at — the button's own label and focus ring identify it) | 1.80:1 | 1.5:1 |
 | focus outline against the page | 8.07:1 | 3.0:1 |
 | window text on the window, over the ground the hero figure is drawn on | 12.02:1 (muted 7.81:1) | 4.5:1 |
 | hero figure text on the figure's own ground (the figure sits on the page, so its ground is `--bg`) | 11.34:1 (muted 7.37:1) | 4.5:1 |
@@ -862,7 +866,9 @@ highlighted row of the comparison card at 10.70:1, and the open file's row in th
 separators, they
 carry no state, and nothing is identified by them. The panel and card borders the design draws in
 `--color-surface1` are 1.80:1, which is below the 3.0:1 a boundary that *identifies* something
-would need, and the page does not use one to identify anything.
+would need, and the page does not use one to identify anything; the one such boundary on a control
+is the outline hero button, which the check measures and holds to that same visibility floor rather
+than to a floor the design's own tone cannot clear.
 
 The selection tint is the one colour on the page that cannot clear the floor it would be given
 as a mark, and the check says so rather than pretending. It wears the alpha the client itself

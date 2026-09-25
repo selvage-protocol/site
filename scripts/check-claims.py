@@ -360,6 +360,10 @@ class Scanned:
     text: str
     line_of: list[int]
     destinations: list[tuple[str, int]]
+    # The bytes the scan read, kept so a fact that has to be read out of an element's own
+    # markup — a grid row whose name, description, pill and destination are one claim — can be
+    # read from where it sits rather than from the page's flattened text.
+    raw: str
     # Prose carried in attributes rather than in the body: one normalised stream per `meta`
     # element, each with the source line of every character. Scanned beside `text`, never
     # instead of it, so a claim in a link unfurl fails the same way one in a paragraph does.
@@ -1887,20 +1891,42 @@ HOSTED_TIER = (
     ),
 )
 
-# The repository grid's rows: the repository each one names and the word the page puts beside it.
-# The window is the row's own description — longer than any of them, and shorter than the distance
-# to the next row's word, so a dropped word cannot be paid for by the row below it (`nvim_client`
-# with none of its own is 40 characters from `web_client`'s).
+# The repository grid's rows: the repository each one names, the description it shows, the word
+# the page puts beside it, and the pattern that word is matched by. A row's name, description,
+# pill and destination are one claim about one repository, so all four are asserted together:
+# the pattern alone is not enough, because a swap of two rows' links leaves every name and every
+# word still on the page.
 GRID_ROWS = (
     (
         "specification",
+        "Prose, schema, vectors",
         "source of truth",
         re.compile(r"\bspecification[^.]{0,32}source of truth\b", re.IGNORECASE),
     ),
-    ("vscode_client", "published", re.compile(r"\bvscode_client[^.]{0,32}published\b", re.IGNORECASE)),
-    ("reference_server", "available", re.compile(r"\breference_server[^.]{0,32}available\b", re.IGNORECASE)),
-    ("nvim_client", "available", re.compile(r"\bnvim_client[^.]{0,32}available\b", re.IGNORECASE)),
-    ("web_client", "available", re.compile(r"\bweb_client[^.]{0,32}available\b", re.IGNORECASE)),
+    (
+        "vscode_client",
+        "VS Code extension",
+        "published",
+        re.compile(r"\bvscode_client[^.]{0,32}published\b", re.IGNORECASE),
+    ),
+    (
+        "reference_server",
+        "selvaged",
+        "available",
+        re.compile(r"\breference_server[^.]{0,32}available\b", re.IGNORECASE),
+    ),
+    (
+        "nvim_client",
+        "Neovim plugin",
+        "available",
+        re.compile(r"\bnvim_client[^.]{0,32}available\b", re.IGNORECASE),
+    ),
+    (
+        "web_client",
+        "The browser page",
+        "available",
+        re.compile(r"\bweb_client[^.]{0,32}available\b", re.IGNORECASE),
+    ),
 )
 
 # The row that is a plan rather than a repository: the page links it to nothing, which is the
@@ -1914,6 +1940,31 @@ GRID_PLANNED = re.compile(r"\bMore clients[^.]{0,32}Planned\b", re.IGNORECASE)
 # The URL shape of a repository link. The grid's own rows are the list of names the page may
 # carry, so a row's word and its destination cannot name two different repositories.
 GRID_LINK = re.compile(r"https?://github\.com/selvage-protocol/([\w.-]+)")
+
+# One anchor's opening tag through its own closer. A grid row is one `<a>`, so its name,
+# description and pill are the visible text inside that element and nowhere else.
+GRID_ANCHOR = re.compile(r"<a\b[^>]*>.*?</a>", re.DOTALL | re.IGNORECASE)
+GRID_HREF = re.compile(r'''href\s*=\s*"([^"]*)"''', re.IGNORECASE)
+
+
+def grid_row_text(raw: str) -> list[tuple[str, str]]:
+    """Every anchor that points at a repository, as (repository name, the anchor's visible text).
+
+    The repository comes from the `href` and the text from the anchor's own markup, so the two
+    can be compared. A grid whose links have been swapped still carries every name, description
+    and pill on the page; only the pairing shows the row that points a reader at the wrong code.
+    """
+    rows: list[tuple[str, str]] = []
+    for match in GRID_ANCHOR.finditer(raw):
+        anchor = match.group(0)
+        href = GRID_HREF.search(anchor)
+        if href is None:
+            continue
+        named = GRID_LINK.match(html.unescape(href.group(1)))
+        if named is None:
+            continue
+        rows.append((named.group(1), normalise(anchor)[0]))
+    return rows
 
 
 def check_hosted_tier(pages: list[Scanned]) -> int:
@@ -1950,14 +2001,17 @@ def check_hosted_tier(pages: list[Scanned]) -> int:
 def check_repository_grid(pages: list[Scanned]) -> int:
     """The repository grid: what each row links, and what each row says of it.
 
-    The grid is the page's own account of what exists. A row names a repository, says one word
-    about it and links it, and a reader who follows the row lands on the code the word is about.
-    Three things hold that together, and all three are required rather than permitted, for the
-    reason the disclosure is:
+    The grid is the page's own account of what exists. A row names a repository, describes it in
+    a word or two, says one word about it and links it, and a reader who follows the row lands on
+    the code the word is about. Four things hold that together, and all four are required rather
+    than permitted, for the reason the disclosure is:
 
     - every row carries the word the project uses for that repository: the specification is the
       source of truth, the reference server and the two clients the project publishes itself are
       available, and the extension is published;
+    - a row's name, description, pill and destination are one claim, and all four are read from
+      inside the row's own anchor, so a row that links a different repository fails even though
+      the page still carries every name and every word;
     - every repository the grid names is linked, so a word about a repository hands the reader
       something to check;
     - every repository the page links is one the grid names, so no row and no source link beside
@@ -1976,7 +2030,7 @@ def check_repository_grid(pages: list[Scanned]) -> int:
     Returns 0 when all of it holds and 1 when it does not; it asks no network.
     """
     root = root_of_this_checkout()
-    facts = [(f"the {name} row", pattern) for name, _, pattern in GRID_ROWS]
+    facts = [(f"the {name} row", pattern) for name, _desc, _status, pattern in GRID_ROWS]
     facts.append(("the row that is a plan", GRID_PLANNED))
     page, failures = first_page_stating(pages, facts)
     if page is None:
@@ -1991,7 +2045,7 @@ def check_repository_grid(pages: list[Scanned]) -> int:
         return 1
 
     if not any(PUBLISHED_EXTENSION in scanned.text for scanned in pages):
-        published = next(status for name, status, _ in GRID_ROWS if name == "vscode_client")
+        published = next(status for name, _desc, status, _ in GRID_ROWS if name == "vscode_client")
         print(
             f"check-claims: the grid says the extension's repository is {published}, and no "
             f"scanned file names `{PUBLISHED_EXTENSION}`, so the row claims a publication the "
@@ -2008,7 +2062,7 @@ def check_repository_grid(pages: list[Scanned]) -> int:
         for match in [GRID_LINK.match(destination)]
         if match
     }
-    unlinked = [(name, status) for name, status, _ in GRID_ROWS if name not in linked]
+    unlinked = [(name, status) for name, _desc, status, _ in GRID_ROWS if name not in linked]
     if unlinked:
         for name, status in unlinked:
             print(
@@ -2019,7 +2073,7 @@ def check_repository_grid(pages: list[Scanned]) -> int:
             )
         return 1
 
-    known = {name for name, _, _ in GRID_ROWS}
+    known = {name for name, _desc, _status, _ in GRID_ROWS}
     stray = [
         f"{os.path.relpath(scanned.path, root)}:{line}: {destination!r}"
         for scanned in pages
@@ -2031,16 +2085,47 @@ def check_repository_grid(pages: list[Scanned]) -> int:
         for where in stray:
             print(
                 f"check-claims: the page links a repository at {where}, and the grid names "
-                f"{', '.join(name for name, _, _ in GRID_ROWS)}. A link is a claim that a "
-                "repository is there to read, and the design's own sixth row is the one that is "
-                "not",
+                f"{', '.join(name for name, _desc, _status, _ in GRID_ROWS)}. A link is a "
+                "claim that a repository is there to read, and the design's own sixth row is the "
+                "one that is not",
                 file=sys.stderr,
             )
         return 1
 
+    # A row's name, description, pill and destination are one claim about one repository. The
+    # patterns above prove each word is somewhere on the page, not that it is beside its own
+    # link; this reads each row's own anchor and holds all four inside it.
+    rows = grid_row_text(page.raw)
+    for name, desc, status, _pattern in GRID_ROWS:
+        owner = next(
+            (
+                text
+                for repo, text in rows
+                if repo == name and name in text and desc in text and status in text
+            ),
+            None,
+        )
+        if owner is not None:
+            continue
+        beside = next((text for repo, text in rows if repo == name), None)
+        detail = (
+            f"The anchor whose destination names {name} reads {beside!r}"
+            if beside is not None
+            else f"The page links nothing whose destination names {name}"
+        )
+        print(
+            f"check-claims: the {name} row does not join its name, its description ({desc!r}), "
+            f"its pill ({status!r}) and its own link. {detail}. A row is a claim about one "
+            "repository, and a reader who follows it has to land on the code the word beside it "
+            "is about",
+            file=sys.stderr,
+        )
+        return 1
+
     print(
         f"check-claims: the grid names its {len(GRID_ROWS)} repositories and the row that is a "
-        "plan, says what each one is, links every repository it names and no other, and names "
+        "plan, says what each one is, links every repository it names and no other, keeps each "
+        "name, description and pill inside its own row's link, and names "
         f"`{PUBLISHED_EXTENSION}` where its own row says the extension is published"
     )
     return 0
@@ -2237,6 +2322,7 @@ def main() -> int:
                 text=text,
                 line_of=line_of,
                 destinations=destinations(raw),
+                raw=raw,
                 prose=prose,
             )
         )

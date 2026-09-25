@@ -49,7 +49,7 @@
      web_client/src/browser/main.ts), so the samples the page draws are the colours the
      real editor paints: comment, keyword, function, string, number, type. Punctuation has
      no rule in that theme either, so it stays the sample's body colour. */
-  --code-comment: #868ca2;
+  --code-comment: #9399b2;
   --code-keyword: #cba6f7;
   --code-fn: #89b4fa;
   --code-string: #a6e3a1;
@@ -58,6 +58,7 @@
   /* One colour in every state, a followed link included: the underline carries the affordance,
      so a visited link needs no colour of its own to read as a link. */
   --link: #cba6f7;
+  --link-hover: #f5c2e7;
   --measure: 40rem;
   /* The bar's own height, its bottom rule, and the second row a phone gets. An
      anchor target clears all three: `scroll-margin-top` is the height of the bar
@@ -70,6 +71,26 @@
   --sans: var(--font-geist-sans, ui-sans-serif), system-ui, -apple-system,
     "Segoe UI", sans-serif;
   color-scheme: dark;
+}
+
+@layer base {
+  /* The page's own column is content-box: a `max-width` is the reading column and
+     the section's padding sits outside it. Tailwind's preflight makes every box
+     border-box, which pulls the padding inside and narrows the column by 48px.
+     Form controls are the exception: their box is the control's own size, which is
+     what the UA stylesheet and the preflight already agree on. */
+  *,
+  ::before,
+  ::after {
+    box-sizing: content-box;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    box-sizing: border-box;
+  }
 }
 
 @layer components {
@@ -85,7 +106,7 @@ body {
   color: var(--fg);
   font-family: var(--sans);
   font-size: 1rem;
-  line-height: 1.6;
+  line-height: normal;
 }
 
 /* A reader's own selection is the page's accent, so the room's colour is the one
@@ -150,8 +171,9 @@ summary:focus-visible {
 }
 
 .prose-body :is(p, li, dd, dt, h3) a:hover,
-.source-link:hover {
-  color: var(--color-mauve-hi);
+.source-link:hover,
+.try-link:hover {
+  color: var(--link-hover);
 }
 
 .prose-body :is(a, code, strong, em) {
@@ -233,8 +255,8 @@ section[id],
 
 /* The hairline between the bar and the second row a phone gets. The height is
    fixed, so the bar's own height is a number the scroll margin can name. The row
-   is the bar's own rule rather than a utility: this stylesheet is unlayered and a
-   class here would beat the utility that hides it at 720 px. */
+   is the bar's own rule rather than a pair of utilities, so its height and the
+   hairline stay one declaration the scroll margin can name. */
 .header-row {
   display: flex;
   align-items: center;
@@ -257,7 +279,6 @@ section[id],
   border-bottom: var(--rule-h) solid rgba(69, 71, 90, 0.6);
   background: rgba(30, 30, 46, 0.86);
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 /* The hero: the promise beside the room it describes. */
@@ -1492,15 +1513,8 @@ section[id],
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .prose-body ul.cards > li,
-  .prose-body .repo {
-    transition:
-      transform 160ms ease-out,
-      border-color 160ms ease-out;
-  }
-
-  .prose-body ul.cards > li:hover {
-    transform: translateY(-2px);
+  .prose-body ul.cards > li {
+    transition: border-color 160ms ease-out;
   }
 }
 

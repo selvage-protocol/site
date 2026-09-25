@@ -4,16 +4,22 @@
 Parses the theme tokens out of `style.css` and asserts the pairs the page
 actually renders: body and muted prose, links, the button
 label on its mauve fill, code blocks, the sample's own token colours, the
-tinted badge and secondary button (computed as alpha composites over the page
-background, the way the browser composes them), and the worst case of the
+badge primitive and the button variants the component still carries (computed as
+alpha composites over the page background, the way the browser composes them), the
+boundary of the outline button the page renders, and the worst case of the
 translucent glass card over every stop of the hero figure's own ground. The text
 that is not a theme token — the window's line numbers, the card the page offers
 but cannot sell yet, the repository descriptions — is read out of the rule that
 paints it, so a pair cannot go on measuring a token the page stopped using there
-(which is what the line-number pair did). The secondary
-button's boundary is parsed out of `components/ui/button.tsx` (`border-mauve/*`)
-and asserted at the non-text 3.0:1 floor too, so weakening the class fails the
-build, and the ground a code sample is drawn on is parsed the same way: the
+(which is what the line-number pair did). The button
+component's own variants are parsed out of `components/ui/button.tsx`: the `secondary`
+and `ghost` pairs are the primitive's, because the page renders neither, and the
+`outline` variant the page's second hero CTA does render is read for its boundary
+(`border-surface1`). That boundary is drawn at the design's
+own 1.80:1, below the 3.0:1 a boundary that *identifies* a control would need and above
+the floor at which a reader loses it; it is held to the latter and named, the same way
+the README argues the decorative `--color-surface1` borders. The ground a code sample
+is drawn on is parsed the same way: the
 figure's own fill over the card's, rather than a constant that would measure a
 surface nobody renders. Thresholds are WCAG 2.2 AA: 4.5:1 for normal text,
 3.0:1 for non-text UI.
@@ -95,6 +101,14 @@ PNG_CHANNELS = {2: 3, 6: 4}
 # this one only fails a tint nobody can see at all. The mark that carries a peer at the
 # non-text floor is their caret bar, opaque, asserted at 3.0:1 below.
 TINT_MIN = 1.5
+
+# A boundary drawn in `--color-surface1` is the page's decorative hairline, the same case the
+# README argues for its panel and card borders: it measures 1.80:1 on the page, below the 3.0:1
+# a boundary that *identifies* a control would need, and the control it belongs to — the outline
+# hero button — is identified by its label. It is held to the floor below which a reader cannot
+# see it at all rather than to the non-text floor it does not meet, so a border dimmed into the
+# page fails here while the design's own tone does not.
+DECORATIVE_MIN = 1.5
 
 # The nav mark is a logotype, and WCAG 1.4.11 (Non-text Contrast) exempts logotypes from its
 # 3.0:1 requirement for graphical objects, so this check does not hold the owner's monogram to
@@ -348,10 +362,40 @@ def selection_fill(css: str, tone: str) -> tuple[str, float] | None:
 
 
 def hero_stops(css: str) -> list[str]:
+    """Every ground the hero figure's glass card is composited over, as hex colours.
+
+    The window's own fill is one ground, and the radial wash the glow paints under the glass is
+    the other. The wash is translucent, so the ground it makes is its own colour at its own alpha
+    over the window's fill, and its centre is where that alpha is at full strength: the lightest
+    stop, and therefore the one the glass card's worst case is read over. A glow the check cannot
+    read is an empty list rather than a silent fallback to the bare fill.
+    """
     block = re.search(r"\.hero-visual\s*\{(.*?)\}", css, re.DOTALL)
     if block is None:
         return []
-    return [h.lower() for h in re.findall(r"#[0-9a-fA-F]{6}", block.group(1))]
+    fill = re.findall(r"#[0-9a-fA-F]{6}", block.group(1))
+    if not fill:
+        return []
+    glow = re.search(r"\.hero-glow\s*\{(.*?)\}", css, re.DOTALL)
+    if glow is None:
+        return []
+    wash = re.search(
+        r"radial-gradient\(\s*[^,]*,\s*rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([0-9.]+)\s*\)",
+        glow.group(1),
+    )
+    if wash is None:
+        return []
+    stops = [fill[0].lower()]
+    alpha = float(wash.group(4))
+    if 0 < alpha <= 1:
+        stops.append(
+            composite(
+                "#%02x%02x%02x" % (int(wash.group(1)), int(wash.group(2)), int(wash.group(3))),
+                stops[0],
+                alpha,
+            )
+        )
+    return stops
 
 
 class FillError(ValueError):
@@ -551,7 +595,7 @@ def main() -> int:
     weakest = min(alphas)
     checks.append(
         (
-            f"secondary button boundary (border-mauve/{weakest})",
+            f"secondary button boundary, the primitive's own (border-mauve/{weakest})",
             composite(link, bg, weakest / 100),
             bg,
             NON_TEXT_MIN,
@@ -577,7 +621,7 @@ def main() -> int:
     strongest = max(fills)
     checks.append(
         (
-            f"secondary button text on its fill (bg-mauve/{strongest})",
+            f"secondary button text on its fill, the primitive's own (bg-mauve/{strongest})",
             link,
             composite(link, bg, strongest / 100),
             TEXT_MIN,
@@ -782,8 +826,8 @@ def main() -> int:
     # floor every token-drawn mark gets; the measured ratio is printed with the pair. Two things
     # make this pair the bar's own: the bar is `bg-base/85` over a page whose ground is the same
     # `bg-base`, so a translucent bar over it composites to that colour exactly; and the mark in
-    # the HTML is `h-8 w-auto`, 32 CSS px of a 128 px file, which resampling does not change the
-    # tone of. The median is the typical ink pixel rather than the brightest one, so a mark that
+    # the HTML is `h-[30px] w-auto`, 30 CSS px of a 128 px file, which resampling does not change
+    # the tone of. The median is the typical ink pixel rather than the brightest one, so a mark that
     # is dark except for a highlight does not pass.
     mark_path = os.environ.get(
         "MARK_PNG", os.path.join(here, "..", "public", "mark-header.png")
@@ -838,6 +882,38 @@ def main() -> int:
     # this palette (see the module docstring), so the pair is asserted where colour is the
     # lone affordance, read out of the stylesheet rather than assumed.
     notes: list[str] = []
+    # The outline variant is the second hero CTA, and it is the only button boundary the page
+    # draws from the palette. The component names it, so a weakened or dimmed boundary fails
+    # here rather than going unnoticed.
+    try:
+        outline = variant_classes(tsx, "outline")
+    except FillError as exc:
+        print(
+            f"check-contrast: {exc}; the boundary of the button the page renders cannot be "
+            "measured",
+            file=sys.stderr,
+        )
+        return 2
+    outline_border = re.search(r"(?<![\w-])border-([\w]+)", outline)
+    outline_hex = tok.get(outline_border.group(1)) if outline_border else None
+    if outline_hex is None:
+        print(
+            "check-contrast: the outline variant names no `border-<token>` the palette carries, "
+            "so the boundary of the button the page renders has nothing to measure it from",
+            file=sys.stderr,
+        )
+        return 2
+    checks.append(("outline button boundary on the page", outline_hex, bg, DECORATIVE_MIN))
+    notes.append(
+        f"the outline button's boundary ({outline_hex} on {bg}) is {ratio(outline_hex, bg):.2f}:1, "
+        "below the 3.0:1 a boundary that identifies a control would need and above the "
+        f"{DECORATIVE_MIN:.1f}:1 a reader loses it at; the label and the focus ring identify the "
+        "button, and the design draws the boundary at this tone"
+    )
+    notes.append(
+        "the page carries no `secondary` button: its two pairs above are the primitive's own, "
+        "measured from the component because the variant is still in the file"
+    )
     if underlines(css, ".prose-body a"):
         notes.append(
             f"prose links are underlined, the non-colour affordance WCAG 1.4.1 allows "
@@ -859,13 +935,18 @@ def main() -> int:
     if failures:
         print(
             f"check-contrast: {failures} pair(s) below their floor; the lines above name each "
-            f"pair's own floor — WCAG AA, or the logotype nav mark's visibility floor"
+            f"pair's own floor — WCAG AA, the selection tint's and the outline button boundary's "
+            f"visibility floors, or the logotype nav mark's"
         )
         return 1
+    text_pairs = sum(1 for _, _, _, minimum in checks if minimum == TEXT_MIN)
+    non_text_pairs = sum(1 for _, _, _, minimum in checks if minimum == NON_TEXT_MIN)
+    visibility_pairs = len(checks) - text_pairs - non_text_pairs
     print(
-        f"check-contrast: {len(checks)} pairs at or above their floors — WCAG AA for the "
-        f"{len(checks) - 1} pairs drawn from the palette and the rules that paint it, a "
-        f"visibility floor for the logotype nav mark "
+        f"check-contrast: {len(checks)} pairs at or above their floors — {text_pairs} at the "
+        f"4.5:1 text floor, {non_text_pairs} at the 3.0:1 non-text floor, and {visibility_pairs} "
+        f"at the 1.5:1 visibility floor the selection tint, the decorative outline button "
+        f"boundary and the logotype nav mark are held to "
         f"(glass {glass_rgb} at alpha {glass_alpha} parsed from .hero-glass, "
         f"sample ground {figure_ground} parsed from the code figure)"
     )
