@@ -269,7 +269,10 @@ export default function Home() {
               claim rather than a server fact: it cannot seat a host, prove one or
               take the role. The peer layer has its own corpus for that: 26 peer
               vectors, 221 peer checks and 74 peer assertions, replayed in one
-              process with no socket and no client. The relay still sees that a room
+              process with no socket and no client. Those numbers are constants in{" "}
+              <code>specification/schema/validate.py</code>, so a deleted assertion
+              fails the run instead of shrinking a total in a line of output. The
+              relay still sees that a room
               exists, who is in it, their names, and the sizes and timing of what
               moves, and it can still drop, delay, reorder or refuse frames and end
               any room.
