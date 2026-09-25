@@ -112,7 +112,9 @@ whose glyph tones sit between `#2d111e` and `#7cc9c0`, so on `#1e1e2e` the unlev
 median ink pixel measures **1.72:1** and the mark reads as a smudge beside the wordmark. The
 derivative therefore applies a gamma curve to the colour channels and nothing else — no redraw, no
 recolour, the owner's own pixels on a lighter tone curve — which puts the median ink pixel at
-**4.70:1** on the bar. It is 4,616 bytes. `scripts/check-contrast.py` composites the file's own
+**3.25:1** on the bar. That curve is the shallowest one that clears the floor: the file carried
+gamma 2.4 before, which measures 4.70:1 and spends 1.7:1 of headroom lifting the artwork's own
+tones towards pale. It is 4,616 bytes. `scripts/check-contrast.py` composites the file's own
 pixels over `--bg` and asserts that median at the non-text 3.0:1 floor, so a derivative that goes
 dark again fails the gate; the unlevelled derivative measures 1.72:1 there and fails it.
 
@@ -126,7 +128,7 @@ order the producer builds the file in. And the pin compares pixels rather than b
 release may compress the same raster differently, and the raster is the claim. The claim the
 earlier derivative could make — that resampling it to the painted size matched resampling the
 master to within RMSE 0.15% — is deliberately false now: at 32 px, flattened on the bar, the two
-differ by RMSE 5.0%. That figure is the tone curve, and it is the whole of the change.
+differ by RMSE 3.1%. That figure is the tone curve, and it is the whole of the change.
 
 What the producer does not reproduce is the resample. ImageMagick's `-resize` defaults to a
 Mitchell window, which reaches past the box each destination pixel covers and rings a little; the
@@ -734,7 +736,7 @@ so a regression fails the build instead of waiting for a look. Measured today:
 | glass-card text, worst of the five panel stops | 11.71:1 (muted 7.61:1) | 4.5:1 |
 | panel text, worst stop (the tree, the file bar and the figure's caption sit on the panel, not on the card) | 9.08:1 (muted 5.90:1) | 4.5:1 |
 | the open file's dot on the panel, worst stop (the figure's one mark that is not a peer's) | 9.08:1 | 3.0:1 |
-| the nav mark's median ink pixel on the header's ground (the artwork's own pixels, read out of `public/mark-header.png` and composited over `--bg`) | 4.70:1 | 3.0:1 |
+| the nav mark's median ink pixel on the header's ground (the artwork's own pixels, read out of `public/mark-header.png` and composited over `--bg`) | 3.25:1 | 3.0:1 |
 
 WCAG 1.4.1 is the one criterion measured the other way round, because both of its floors cannot
 hold at once here. It asks for 3.0:1 between a link and the text beside it when colour is the only

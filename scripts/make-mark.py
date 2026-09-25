@@ -44,11 +44,15 @@ SIZE = 128
 
 # The tone curve: `out = round(255 × (in/255)^(1/MARK_GAMMA))`, the same shape as ImageMagick's
 # `-gamma`, applied to the colour channels after the resize. The master is a shaded wordmark whose
-# dark stroke is invisible on the bar, so it needs lifting before it can be read at all; 2.4 is the
-# curve the hand-built derivative carried, kept here so that this change is the producer and not a
-# retune. Its median ink pixel measures 4.70:1 on `#1e1e2e`, against the 3.0:1 non-text floor
-# `scripts/check-contrast.py` asserts.
-MARK_GAMMA = 2.4
+# dark stroke is invisible on the bar, so it has to be lifted before it can be read at all, and
+# the lift goes no further than the non-text floor needs. Unlevelled (1.0) the derivative's median
+# ink pixel measures 1.72:1 on `#1e1e2e`, below the 3.0:1 floor `scripts/check-contrast.py`
+# asserts; at 2.4 — the curve the hand-built derivative carried — it measures 4.70:1, which spends
+# 1.7:1 of headroom lifting the owner's own tones towards pale. 1.7 measures 3.25:1: clear of the
+# floor with room for a later tweak, and the artwork's own colours kept as far as that floor
+# allows. Re-derive with this script after changing the number; check-contrast will say where the
+# new curve landed.
+MARK_GAMMA = 1.7
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 MASTER = os.path.join(HERE, "..", "public", "mark-transparent.png")
