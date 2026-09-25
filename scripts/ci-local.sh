@@ -5,7 +5,7 @@
 #   scripts/ci-local.sh typecheck  # tsc --noEmit
 #   scripts/ci-local.sh build      # next build
 #   scripts/ci-local.sh button     # render the button/anchor variants, assert props reach the DOM
-#   scripts/ci-local.sh contrast   # theme token pairs at or above WCAG AA
+#   scripts/ci-local.sh contrast   # theme token pairs at or above WCAG AA, and the nav mark at its visibility floor
 #   scripts/ci-local.sh mark       # re-derive public/mark-header.png from the master, compare
 #   scripts/ci-local.sh claims     # build, serve production, fetch / and scan the rendered HTML
 #   scripts/ci-local.sh csp        # the CSP in vercel.json over the served page and its not-found route: nothing either carries is refused
@@ -139,7 +139,7 @@ job_button() {
 }
 
 job_contrast() {
-  say "contrast: theme pairs at or above WCAG AA"
+  say "contrast: theme pairs at or above WCAG AA, and the nav mark at its visibility floor"
   ./scripts/check-contrast.py
 }
 
