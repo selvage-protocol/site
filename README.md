@@ -643,9 +643,14 @@ in the page's `meta` attributes beside the visible text, because a link unfurl p
 requires two disclosures in the scanned file: the relay-visibility facts, each as its own pattern,
 so the paragraph cannot be deleted while the fixtures stay green, and the browser guest's trust in
 the room's own server for the client code. The corpus counts are required the same way: every
-count the page shows has to name the file that pins it in the sentence the number sits in or the
-one after it, because a number with nowhere to check it is one a reader takes on trust, and the
-peer counts were the pair that named nothing. The extension's publication is required the same way —
+count the scanned pages show has to name the file that pins it in the sentence the number sits in
+or the one after it, because a number with nowhere to check it is one a reader takes on trust, and
+the peer counts were the pair that named nothing. The scan reads every count in every file it was
+given — a rule that returned on the first cited page, or the first cited number, would let a later
+one carry a number nobody can check — and it fails when it reaches no count at all, rather than
+reporting a page that states nothing as a page with nothing wrong. Both spellings the number rules
+accept are read: `24 conformance vectors` and `24 wire vectors` are one pin, and a citation rule
+that matched one of them would leave the other unguarded. The extension's publication is required the same way —
 the identity, both registries, and what an install is and is not — and it is the one rule here
 that also forbids: every registry-shaped word on the page has to belong to one of the two
 registries the release publishes to, and a link to a listing has to be one of the two the release

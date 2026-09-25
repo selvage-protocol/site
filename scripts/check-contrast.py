@@ -71,9 +71,9 @@ import zlib
 TEXT_MIN = 4.5
 NON_TEXT_MIN = 3.0
 
-# Half coverage: a pixel less opaque than this is the antialiased fringe of a glyph rather
-# than ink a reader reads as the mark. It is the threshold the nav mark's rule below uses to
-# decide which pixels are the mark at all.
+# A fifth of full coverage: a pixel less opaque than this is the antialiased fringe of a glyph
+# rather than ink a reader reads as the mark. It is the threshold the nav mark's rule below uses
+# to decide which pixels are the mark at all.
 MARK_INK_ALPHA = 50
 
 # A PNG the check cannot read is exit 2 rather than a skipped pair, the same way an unparsable
@@ -114,11 +114,12 @@ class PngError(ValueError):
 def png_pixels(path: str) -> tuple[int, int, int, bytes]:
     """An 8-bit RGB or RGBA PNG as (width, height, channels, raster), unfiltered.
 
-    The pages carries the mark as pixels, so the only way to measure the tone it paints is to
+    The page carries the mark as pixels, so the only way to measure the tone it paints is to
     read them; the standard library has no decoder, and reaching for ImageMagick would put a
     second toolchain in the gate for one file. The two shapes ImageMagick writes for this asset
-    are the ones accepted, and anything else (16-bit, a palette, Adam7) is `PngError` rather
-    than a guess.
+    are the ones accepted, and anything else (16-bit, a palette, Adam7, an RGB image whose
+    transparency is a `tRNS` chunk rather than a per-pixel alpha) is `PngError` rather than a
+    guess.
     """
     try:
         with open(path, "rb") as handle:
@@ -138,6 +139,13 @@ def png_pixels(path: str) -> tuple[int, int, int, bytes]:
             header = body
         elif kind == b"IDAT":
             compressed += body
+        elif kind == b"tRNS":
+            # An RGB image can carry one transparent colour in a `tRNS` chunk, and this decoder
+            # treats colour type 2 as opaque. Reading it as opaque would measure pixels the page
+            # never paints, so the image is refused instead of guessed at: a mark this check
+            # cannot decode is exit 2 rather than a pair it made up. (Colour type 6 carries its
+            # alpha per pixel and has no `tRNS`.)
+            raise PngError("it carries a tRNS chunk, which this decoder does not apply")
         elif kind == b"IEND":
             break
         at += 12 + length

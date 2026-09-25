@@ -200,7 +200,11 @@ RELAY_DISCLOSURE = (
 # citation out of the very sentence that carries it.
 SENTENCE_END = re.compile(r"\.(?=\s|$)")
 CORPUS_COUNTS = (
-    (re.compile(r"\b24 conformance vectors\b"), "24 conformance vectors"),
+    # Both spellings the forbidden-number rules accept: `24 conformance vectors` and `24 wire
+    # vectors` are the same pin, and a citation rule that matched only one of them would leave
+    # the other wording unguarded — the count would not be seen at all, so nothing would ask it
+    # for a file.
+    (re.compile(r"\b24 (?:conformance|wire) vectors\b"), "the 24 wire vectors"),
     (re.compile(r"\b33760 frame[- ]checks\b"), "33760 frame checks"),
     (re.compile(r"\b8387 assertions\b"), "8387 assertions"),
     (re.compile(r"\b26 peer vectors\b"), "26 peer vectors"),
@@ -1734,36 +1738,46 @@ def check_corpus_citation(pages: list[Scanned]) -> int:
     Required rather than permitted, for the reason the disclosures are: a page that shows the
     counts and names no file lets a reader take six numbers on trust. The window is the count's
     own sentence and the one after it (see `window_with_following_sentence`), so the citation
-    has to be where the number is. A page that carries no count at all does not pass this: the
-    counts are the page's evidence for its own corpus, and a rewrite that drops them silently
-    would otherwise leave this check with nothing to read.
+    has to be where the number is.
+
+    Every count in every scanned page is read, and the scan fails when it reaches none: a check
+    that returned on the first page whose counts were cited would let a later page carry an
+    uncited number, and one that returned on the first count would do the same within a page.
+    What is *not* required is a count on every scanned page — a scan may legitimately include a
+    page that shows none (the disclosures' own checks state the facts on one page for the same
+    reason) — so the pages that carry counts are the ones held to this.
     """
     root = root_of_this_checkout()
-    failures: list[tuple[str, list[str]]] = []
+    shown = 0
+    uncited: list[tuple[str, str]] = []
     for page in pages:
-        shown = 0
-        uncited: list[str] = []
+        where = os.path.relpath(page.path, root)
         for pattern, label in CORPUS_COUNTS:
             for match in pattern.finditer(page.text):
                 shown += 1
                 window = window_with_following_sentence(page.text, match.start(), match.end())
                 if not CORPUS_FILE.search(window):
-                    uncited.append(label)
-        if shown and not uncited:
-            print(
-                f"check-claims: all {shown} corpus count(s) the page shows name "
-                f"{CORPUS_FILE.pattern} beside them, so each number can be checked"
-            )
-            return 0
-        failures.append(
-            (os.path.relpath(page.path, root), uncited or ["no corpus count at all"])
-        )
-    for where, absent in failures:
+                    uncited.append((where, label))
+    if shown == 0:
         print(
-            f"check-claims: {where} shows the corpus counts {', '.join(absent)} with no file "
-            "named in the sentence the number sits in or the one after it. Every count comes "
-            "from a constant in `specification/schema/validate.py`, and a number with nowhere "
-            "to check it is one a reader has to take on trust",
+            f"check-claims: none of {len(pages)} scanned file(s) shows a corpus count, so this "
+            "check decided nothing. The counts are the page's evidence for its own corpus, and a "
+            "rewrite that drops them is not a page this passes",
+            file=sys.stderr,
+        )
+        return 1
+    if not uncited:
+        print(
+            f"check-claims: all {shown} corpus count(s) the scanned page(s) show name "
+            f"{CORPUS_FILE.pattern} beside them, so each number can be checked"
+        )
+        return 0
+    for where, label in uncited:
+        print(
+            f"check-claims: {where} shows {label} with no file named in the sentence the number "
+            "sits in or the one after it. Every count comes from a constant in "
+            "`specification/schema/validate.py`, and a number with nowhere to check it is one a "
+            "reader has to take on trust",
             file=sys.stderr,
         )
     return 1
