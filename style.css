@@ -46,12 +46,9 @@
   --code-string: #a6e3a1;
   --code-number: #fab387;
   --code-type: #f9e2af;
+  /* One colour in every state, a followed link included: the underline carries the affordance,
+     so a visited link needs no colour of its own to read as a link. */
   --link: #cba6f7;
-  /* Visited is a deeper mauve rather than the neutral grey it was: `#9399b2` sat 1.27:1 from
-     `--muted`, so a visited link was the colour of the prose around it, and every repository
-     link is on the org's own history the moment anyone has browsed it. The underline carries
-     the affordance; this colour keeps a visited link looking like a link. */
-  --link-visited: #a181d6;
   --measure: 40rem;
   --column: 44rem;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
@@ -157,10 +154,6 @@ body {
   text-decoration-line: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
-}
-
-.prose-body a:visited {
-  color: var(--link-visited);
 }
 
 .prose-body code {
