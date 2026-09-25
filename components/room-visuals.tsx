@@ -111,18 +111,14 @@ export function CaretLines() {
   );
 }
 
-/** The paths the host granted, as a guest sees them, with the one the room has open
-    carrying the figure's only mark: a dot in the panel's own text colour, so it
-    reads as the file rather than as somebody's caret. */
+/** The paths the host granted, as a guest sees them: the file the room has open is the
+    one line in the panel's own text colour. */
 export function TreeFigure() {
   return (
     <div className="tree" aria-hidden="true">
       <span>src/</span>
       <span className="tree-file">main.rs</span>
-      <span className="tree-here">
-        room.rs
-        <span className="open-dot" />
-      </span>
+      <span className="tree-here">room.rs</span>
     </div>
   );
 }

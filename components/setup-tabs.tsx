@@ -22,6 +22,7 @@ import { COMMAND, DEMO } from "@/lib/selvage";
    carries all four routes for a reader without scripting. */
 
 const NEOVIM_COMMAND = ":SelvageHost ws://127.0.0.1:8080";
+const NEOVIM_PLUGIN_LINE = "{ 'selvage-protocol/nvim_client', build = 'npm ci' }";
 
 type Line = { prompt?: string; text: string; comment?: boolean };
 
@@ -67,10 +68,10 @@ const TABS: Tab[] = [
     Icon: Terminal,
     lines: [
       { text: "-- add this line to your plugin manager", comment: true },
-      { text: "{ 'selvage-protocol/nvim_client', build = 'npm ci' }" },
-      { text: NEOVIM_COMMAND },
+      { text: NEOVIM_PLUGIN_LINE },
+      { prompt: ":", text: NEOVIM_COMMAND },
     ],
-    copy: NEOVIM_COMMAND,
+    copy: NEOVIM_PLUGIN_LINE,
     note: "Works with any plugin manager.",
     source: "https://github.com/selvage-protocol/nvim_client",
   },

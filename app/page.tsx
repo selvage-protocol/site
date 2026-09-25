@@ -356,11 +356,6 @@ export default function Home() {
                 </Card>
               </div>
             </div>
-            <p className="section-note">
-              The page the room&apos;s own server serves is that server&apos;s code: a
-              guest who opens it trusts that server for the client code as well as for
-              the relay. The installed clients are not in that position.
-            </p>
           </section>
 
           <section id="see-it" className="shell">
@@ -385,7 +380,6 @@ export default function Home() {
             <div className="head-block">
               <Eyebrow>How it works</Eyebrow>
               <h2 className="display">Share a link, come edit my code with me.</h2>
-              <p className="lede">Four steps.</p>
             </div>
             <ol className="steps">
               {steps.map((step) => (
@@ -475,7 +469,7 @@ export default function Home() {
                   <dd>CC-BY-4.0</dd>
                 </div>
                 <div className="licence-row">
-                  <dt>Spec tooling, clients, reference server</dt>
+                  <dt>Spec tooling, clients, server</dt>
                   <dd>MIT or Apache-2.0</dd>
                 </div>
                 <div className="licence-row">
@@ -494,13 +488,10 @@ export default function Home() {
             <div className="foot-col">
               <h3 className="foot-h">This page</h3>
               <p className="foot-note">
-                No cookies, no tracking, no personal data. Run by the{" "}
+                No cookies, no tracking, no personal data: it prerenders to static
+                HTML and makes no third-party request. Run by the{" "}
                 <a href="https://github.com/selvage-protocol">selvage-protocol</a>{" "}
-                GitHub organisation. It prerenders to static HTML: one stylesheet, the
-                Geist and JetBrains Mono files, the mark in its header, the favicon
-                set and the framework&apos;s runtime scripts, every one of them from
-                this origin. It sets no cookie and makes no third-party request, and
-                the page itself is MIT OR Apache-2.0.
+                GitHub organisation, and the page itself is MIT OR Apache-2.0.
               </p>
             </div>
             <div className="foot-col">

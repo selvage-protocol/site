@@ -27,10 +27,6 @@ out of `components/room-visuals.tsx`, so moving the fill over a dimmer token
 fails the build. A quarter-alpha tint cannot also clear the non-text floor (see
 `TINT_MIN`), and the pair below says so rather than pretending otherwise.
 
-The figures' one mark that is not a peer is the dot on the open file, in the text colour
-its own rule declares; it is floored where it is drawn, on the figure's ground, so a
-restyle that dims it below the non-text floor fails here rather than in a reader's eyes.
-
 This is a floor, not an audit. It cannot see layout: touch-target sizes,
 keyboard reachability, focus visibility and reduced-motion handling are read
 against the code by a person (see the README's accessibility notes), because
@@ -810,14 +806,6 @@ def main() -> int:
             MARK_MIN,
         )
     )
-    dot_fill = solid_fill(css, ".open-dot")
-    if dot_fill is None:
-        print(
-            "check-contrast: no usable solid background on .open-dot; "
-            "the open-file mark cannot be measured",
-            file=sys.stderr,
-        )
-        return 2
     for stop in stops:
         surface = composite(glass_rgb, stop, glass_alpha)
         checks.append((f"glass card text over {stop}", fg, surface, TEXT_MIN))
@@ -826,10 +814,6 @@ def main() -> int:
         # page paints text on too, so it carries the pair as well as the surface above it.
         checks.append((f"hero figure text over {stop}", fg, stop, TEXT_MIN))
         checks.append((f"hero figure muted text over {stop}", muted, stop, TEXT_MIN))
-    # The open file's dot is drawn in the card's own figure band, not on the hero figure, so
-    # it is floored on the ground it is painted on. Its fill is read rather than assumed, so a
-    # stylesheet change cannot silently bypass the non-text floor.
-    checks.append(("open-file dot on the code figure", dot_fill, figure_ground, NON_TEXT_MIN))
     # The repository descriptions are the page's other small text on a surface of its own. The
     # card's hover state lightens that surface to the page's own colour, which is the worst of
     # the two, and the planned card carries one on the page itself.

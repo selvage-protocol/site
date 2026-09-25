@@ -1,7 +1,8 @@
-/** The published image the page hands a reader, pinned to the release `package.json`
-    carries: a tag that does not exist is a command that fails rather than a sentence
-    that lies. It and the demo speak one wire version, `selvage/2`. */
-const IMAGE = "ghcr.io/selvage-protocol/selvaged:0.4.5";
+/** The published image the page hands a reader, on the tag the release publishes: a
+    command that names a version goes stale as soon as the page's copy of it does, and
+    the reader who pastes it is owed a tag that resolves. It and the demo speak one wire
+    version, `selvage/2`. */
+const IMAGE = "ghcr.io/selvage-protocol/selvaged:latest";
 
 /** The one command the page hands a reader, in both places it appears. */
 export const COMMAND = `docker run --rm -p 127.0.0.1:8080:8080 ${IMAGE}`;

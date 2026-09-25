@@ -3,11 +3,9 @@
    stylesheet. Geist and JetBrains Mono are served from this origin by
    `next/font`, so the page fetches no font from a third party.
 
-   Two widths, one column. --measure is the reading measure: a line of prose
-   stops at about 65 characters. --column is the document column, and everything
-   that is not running text — code blocks, the figure grid, the repo cards —
-   lines up on it, so a wide figure reads as deliberate inside a narrow measure
-   rather than as an overflow.
+   One reading width. --measure is the reading measure: a line of prose stops at
+   about 65 characters. Everything that is not running text is set on the section's
+   own column, so a wide figure reads as deliberate rather than as an overflow.
 
    A section opens on an eyebrow, a heading and a line of prose, and the
    surfaces under them wear the colours the clients paint: the code in a figure
@@ -61,7 +59,6 @@
      so a visited link needs no colour of its own to read as a link. */
   --link: #cba6f7;
   --measure: 40rem;
-  --column: 44rem;
   /* The bar's own height, its bottom rule, and the second row a phone gets. An
      anchor target clears all three: `scroll-margin-top` is the height of the bar
      that would otherwise sit over the section it was asked to show. */
@@ -320,12 +317,12 @@ section[id],
   align-self: stretch;
 }
 
-/* The primary action carries its own light: the page's accent under a blurred
-   shadow, so it reads as the one thing to press. */
+/* The primary action carries its own light: a 1 px border of its own, so its box is the
+   outlined button's box, and the accent under a blurred shadow, so it reads as the one
+   thing to press. */
 .cta-glow {
-  box-shadow:
-    0 0 0 1px rgba(203, 166, 247, 0.4),
-    0 8px 28px -8px rgba(203, 166, 247, 0.55);
+  border: 1px solid rgba(203, 166, 247, 0.4);
+  box-shadow: 0 8px 28px -8px rgba(203, 166, 247, 0.55);
 }
 
 .hero-facts {
@@ -572,6 +569,24 @@ section[id],
   animation: sv-blink 1.1s infinite;
 }
 
+/* A peer's name in the figure's badge: the peer's colour behind a dark label, on the
+   label's own line rather than in a box of its own. */
+.fig-code .peer-badge {
+  display: inline;
+  line-height: inherit;
+}
+
+/* A `code` element is a chip inside a sentence. In a code sample it would paint a fill
+   behind the sample and shrink its type below the line height the sample is set on. */
+.code code {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+  font-family: inherit;
+}
+
 /* The name in the lane: the badge the browser client paints in the glyph margin,
    the peer's colour behind a dark label. */
 .peer-badge {
@@ -787,15 +802,25 @@ section[id],
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
   gap: 20px;
-  align-items: start;
   margin-top: 32px;
 }
 
+/* The terminal is the column beside it: the strip and the note keep their own heights
+   and the output takes what is left, so the note sits on the card's bottom edge. */
 .terminal {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--color-surface1);
   border-radius: 12px;
   background: var(--color-crust);
+}
+
+.terminal > [role="tabpanel"] {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .tabs {
@@ -844,6 +869,7 @@ section[id],
 
 .term-output {
   position: relative;
+  flex: 1;
   min-height: 150px;
   padding: 18px 18px 20px;
   font-family: var(--mono);
@@ -987,16 +1013,6 @@ section[id],
   color: var(--color-peach);
 }
 
-/* What a guest who opens the room server's own page is trusting, and the one
-   version both artefacts speak: a footnote to the section, at the column. */
-.section-note {
-  max-width: var(--column);
-  margin: 24px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.6;
-}
-
 /* See it working: four drawings of one room. */
 .prose-body ul.cards {
   display: grid;
@@ -1096,14 +1112,6 @@ section[id],
   gap: 6px;
   padding-left: 16px;
   color: var(--fg);
-}
-
-.open-dot {
-  display: inline-block;
-  width: 5px;
-  height: 5px;
-  border-radius: 9999px;
-  background: var(--fg);
 }
 
 .clients {
@@ -1305,16 +1313,27 @@ section[id],
 
 .repos {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  /* Six cells and a track minimum that divides them: three columns at the column's own
+     width, two below it, one on a phone, so every row is full rather than trailing a
+     pair of cards and a gap. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: 10px;
   margin: 56px 0 0;
   padding: 0;
   list-style: none;
 }
 
+/* The card is the cell's full height, so a row a few pixels taller in one card does
+   not leave its neighbours short of it. */
 .repos > li {
+  display: flex;
   max-width: none;
   margin: 0;
+}
+
+.repos > li > * {
+  flex: 1;
+  min-width: 0;
 }
 
 .prose-body .repo {
@@ -1360,6 +1379,9 @@ section[id],
      the planned card on the page — so it wears the tone that clears 4.5:1 on all three. */
   color: var(--color-overlay2);
   font-size: 12px;
+  /* One line, like the name above it: a description that wraps makes its own card taller
+     than the row beside it. */
+  white-space: nowrap;
 }
 
 .repo-pill {
@@ -1417,6 +1439,8 @@ section[id],
 
 .licence-row dt {
   color: var(--color-subtext1);
+  /* A term and its licence are one line each: a wrapped row reads as two entries. */
+  white-space: nowrap;
 }
 
 .licence-row dd {
@@ -1425,6 +1449,7 @@ section[id],
   font-family: var(--mono);
   font-size: 12px;
   text-align: right;
+  white-space: nowrap;
 }
 
 .foot-note {

@@ -7,7 +7,7 @@
 #   scripts/ci-local.sh button     # render the button/anchor variants, assert props reach the DOM
 #   scripts/ci-local.sh contrast   # theme token pairs at or above WCAG AA, and the nav mark at its visibility floor
 #   scripts/ci-local.sh mark       # re-derive public/mark-header.png from the master, compare
-#   scripts/ci-local.sh claims     # build, serve production, fetch / and scan the rendered HTML
+#   scripts/ci-local.sh claims     # build, serve production, fetch / and scan the rendered HTML (forbidden wordings and the artefact-backed claims)
 #   scripts/ci-local.sh csp        # the CSP in vercel.json over the served page and its not-found route: no script, stylesheet, image or font either carries is refused
 #   scripts/ci-local.sh weight     # every image the page body fetches is within its byte budget
 #   scripts/ci-local.sh links      # serve production, lychee over the rendered page and the README
@@ -20,7 +20,11 @@
 # The claim step scans what the server renders, not the source: it builds, starts the
 # production server, fetches `/` over HTTP, saves that HTML and runs the phrase check over it.
 # A phrase wrapped across lines or encoded as entities in the served bytes is still one phrase
-# to the check. The check is a filter, not a proof: see scripts/check-claims.py.
+# to the check. The refused words are the filter half; the step also holds the page to the claims
+# that have an artefact behind them — the tag its `docker run` names against the registry, the
+# demo instance against the box, the relay disclosure, the corpus counts against the file that
+# pins them — and each of those fails rather than passes when it cannot be checked. A filter, not
+# a proof: see scripts/check-claims.py.
 #
 # The CSP step reads the same rendered HTML and the policy out of `vercel.json`, and fails when
 # the policy would refuse a script, stylesheet, image or font the page carries. That is the defect
