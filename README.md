@@ -777,7 +777,7 @@ fails a tint nobody can see. The opaque caret bar is what carries a peer at 3.0:
 
 What no ratio proves is read against the code by a person on every change:
 
-- **Visible focus.** Every link, button and `summary` carries a 2 px mauve `:focus-visible`
+- **Visible focus.** Every link and button carries a 2 px mauve `:focus-visible`
   outline at a 2 px offset; the `Button` primitive repeats it as a utility, so both spellings
   agree. Verified in the browser: the first three tabs land on the nav's own anchors with that
   ring.

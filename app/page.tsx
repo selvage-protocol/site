@@ -213,8 +213,8 @@ export default function Home() {
           >
             <h2>Get it working</h2>
             <p>
-              One server holds the room, and the invite link it copies is how somebody
-              joins you. The published image is one command:
+              One server holds the room, and the invite link your editor copies is
+              how somebody joins you. The published image is one command:
             </p>
             <pre>
               <code>
@@ -246,7 +246,7 @@ export default function Home() {
             <p>
               VS Code installs it with{" "}
               <code>code --install-extension selvage-protocol.selvage</code>: the
-              extension is published on the VS Code Marketplace and on Open VSX ({" "}
+              extension is published on the VS Code Marketplace and on Open VSX (
               <a href="https://github.com/selvage-protocol/vscode_client">source</a>
               ). An install is the client and not a server: a session pairs with the{" "}
               <code>selvaged</code> you run. Then <em>Selvage: Host a session</em>.
@@ -254,7 +254,7 @@ export default function Home() {
             <p>
               Neovim: add{" "}
               <code>{`{ 'selvage-protocol/nvim_client', build = 'npm ci' }`}</code> to
-              your plugin manager ({" "}
+              your plugin manager (
               <a href="https://github.com/selvage-protocol/nvim_client">source</a>
               ), then <code>:SelvageHost ws://127.0.0.1:8080</code> shares the current
               buffer and copies the invite.
