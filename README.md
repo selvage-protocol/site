@@ -25,7 +25,7 @@ browser proof the runner cannot run, and nothing else.
 
 | Path | What it is |
 |---|---|
-| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (promise, three CTAs, four landed facts, the room figure, and the version line under the facts), *Get it working* (the server commands, the sealed-relay paragraph under them with its wire-version binding and the peer corpus's counts and the file that pins them, one folded row per editor, the demo instance and the address an editor hosts on, and the long routes folded into one `details`), *See it working* (four cards), *How it works* (four steps), *The session layer is written down* (why the specification is the artifact), then the footer |
+| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (promise, two CTAs, four landed facts, the room figure, and the version line under the facts), *Get it working* (the published image as one `docker run`, the one wire version the image and the demo speak, the sealed-relay paragraph under that command, one short paragraph per editor — VS Code carrying the extension's published identity, the two registries it is on and what an install is, Neovim the plugin-manager line — and *Try the demo*: the one instance, the address an editor hosts on, the guest's trust in the server that serves its page, and the terms), *See it working* (four cards), *How it works* (four steps), *The session layer is written down* (why the specification is the artifact, with the wire corpus's counts and the file that pins them, then the link to read it), then the footer |
 | `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, the one origin the metadata resolves against (`metadataBase`, `alternates.canonical`, `openGraph.url`; see "The live origin"), and the global stylesheet. The favicons are deliberately absent: they are Next file conventions, so the framework writes their tags and `sizes` from the files themselves |
 | `app/not-found.tsx` | the not-found route: what a mistyped address renders. The framework's own 404 document is styled with a `<style>` element and four `style` attributes, every one of which the policy's `style-src 'self'` refuses; this one is styled from `style.css` and carries neither (see "The Content-Security-Policy") |
 | `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, and a system font stack, so no font is fetched from a third party. Two widths are named there and the page keeps to them: `--measure` for running prose and `--column` for everything that is not prose (section rules, code blocks, the repo grid), so a wide figure is deliberate inside a narrow measure |
@@ -35,7 +35,7 @@ browser proof the runner cannot run, and nothing else.
 | `public/mark-transparent.png` | the owner's transparent 800×800 export, vendored byte-identical (its checksum matches the owner's file) and never hotlinked. The page body no longer fetches it: it is the source the header derivative is made from, and `web_client/test/identity.test.ts` pins its bytes against that repository's own copy. The opaque export was vendored beside it while the hero panel was light; it is no longer fetched either; `app/opengraph-image.png` is the same file |
 | `postcss.config.mjs` | the one PostCSS plugin (`@tailwindcss/postcss`), so `style.css` compiles on build |
 | `next.config.ts` | the one build setting that is not a default: `poweredByHeader: false`, so the framework's `X-Powered-By: Next.js` banner is not on the page's HTML response |
-| `components/ui/button.tsx` | the button primitive (shadcn-style `cva` variants: filled default, tinted secondary, ghost; renders an anchor when given `href`): the nav CTA and the three hero CTAs, nothing else |
+| `components/ui/button.tsx` | the button primitive (shadcn-style `cva` variants: filled default, tinted secondary, ghost; renders an anchor when given `href`): the nav CTA and the two hero CTAs, nothing else. The page carries no ghost button, and the specification is a prose link rather than a third CTA; the ghost variant stays in the file because `scripts/check-contrast.py` measures it there |
 | `components/ui/badge.tsx` | the pill primitive: the hero status line, a mono caps chip |
 | `components/room-visuals.tsx` | the product figures: the hero's room window (the guest's mirrored tree, one open file, the two carets in it, the invite chip) and the three smaller drawings the cards carry. Inline markup and the page's own CSS, with no image, no dependency and nothing fetched (see "The product figures") |
 | `components/ui/card.tsx` | the card primitive: the hero panel's glass card |
@@ -156,11 +156,11 @@ the reader can name.
 
 | Part | Its job |
 |---|---|
-| Hero | the promise, three CTAs, four landed facts, the room figure, and one line under the facts naming the specification as a draft and the wire version, `selvage/2`. The CTAs come **above** the facts because of the fold: four facts, a CTA row and the version line of the order the page carried put the primary button at y≈823 on a 1280×633 screen and nothing but the header's small link in the first one, so a reader met evidence and no action. The CTAs lead with the demo — the fastest thing a stranger can do, with nothing installed — then running it in the editor, then the specification; the header's own CTA points at the demo for the same reason. The first fact is what the relay sees and does not: it relays the room as ciphertext, sees that a room exists, who is in it, their names and the sizes and timing of what moves, and never the file text, the cursors or the file names. It leads the list rather than the specification's, because the disclosure is the claim that has to be met first and it is the one a skimmer needs. The fourth says the server writes nothing to disk, which is whose disk the sentence is about — it used to read "nothing is written to disk", beside a fact about the host's own folder writing to it. The `h1`, *Edit the same file together, on a server you run.*, says what the product does and carries the self-hosted wedge from the design record's hook |
-| Get it working | the published image as one `docker run`, and a link to the compose file and the source build — then the sealed-relay paragraph, which sits under that command because a reader can take the two together: that the container image above and the demo speak the one wire version `selvage/2` and that it is the sealed one, then what that wire seals, what the relay still sees and still does, and the peer layer's own corpus counts (26 vectors, 221 checks, 74 assertions), which sit under the sentence they back — that the host is a peer's signed claim rather than a server fact. Then one folded row per editor: VS Code, Neovim and the browser page, each with its prerequisites, its exact commands and its repository — the VS Code row opening on the identity the extension is published under and the two registries it is on, and on what an install is and is not — the browser row linking the demo, whose page its own server serves, where Chrome or Edge can start a session, where the page link it hands a guest carries the room and token in its query and the keys in its fragment, and where it says that a guest who opens that page trusts the room's server for the client code too. The long routes (the corpus check, the vector replay) fold into one `details`. It closes on *Try the demo*, the one small instance the project runs, last in the section so the command and the editor rows keep the ground the hero points at; that section gives the address an editor hosts on and the setting each client takes it in, leaves the guest to the invite link, and names the page as a way to start a room with no editor running. It opens on the product's own shape: you run the server and the invite link is how somebody joins you, and the demo is a guest's way into a room somebody else hosts, or a host's way to start one |
+| Hero | the promise, two CTAs, four landed facts, the room figure, and one line under the facts naming the specification as a draft and the wire version, `selvage/2`. The CTAs come **above** the facts because of the fold: four facts, a CTA row and the version line of the order the page carried put the primary button at y≈823 on a 1280×633 screen and nothing but the header's small link in the first one, so a reader met evidence and no action. The CTAs lead with the demo — the fastest thing a stranger can do, with nothing installed — then running it in the editor, which is where the commands are; the header's own CTA points at the demo for the same reason. The specification is not a third button: it is the prose link that closes *The session layer is written down*, and nothing on the page presents a link as a disabled-looking control. The first fact is what the relay sees and does not: it relays the room as ciphertext, sees that a room exists, who is in it, their names and the sizes and timing of what moves, and never the file text, the cursors or the file names. It leads the list rather than the specification's, because the disclosure is the claim that has to be met first and it is the one a skimmer needs. The fourth says the server writes nothing to disk, which is whose disk the sentence is about — it used to read "nothing is written to disk", beside a fact about the host's own folder writing to it. The `h1`, *Edit the same file together, on a server you run.*, says what the product does and carries the self-hosted wedge from the design record's hook |
+| Get it working | the published image as one `docker run` and the port it answers on, then the sealed-relay paragraph, which sits under that command because a reader can take the two together: that the container image above and the demo speak the one wire version `selvage/2` and that it is the sealed one, then what that wire seals, what the relay still sees and still does, and that the host is a peer's signed claim rather than a server fact. Then one short paragraph per editor, each carrying the command from the editor's own README: VS Code opening on the extension's published identity (`selvage-protocol.selvage`), the two registries it is on, its repository, and what an install is and is not; Neovim on the plugin-manager line and `:SelvageHost`. It closes on *Try the demo*, the one small instance the project runs: that section gives the address an editor hosts on, leaves the guest to the invite link, says where Chrome or Edge can start a session from the page the instance serves, says that a guest who opens that page trusts the room's server for the client code as well as for the relay, and states that the instance's rooms are in memory and that its terms are non-commercial and for personal and evaluation use. The manual a reader wants next — the corpus check, the vector replay, each client's full command list — is the specification link and each repository's README, not a fold on this page; the per-client settings and the hosting routes were cut for the same reason |
 | See it working | four cards, each with a drawing of the thing it claims: anyone with the link is in, two carets in one text, the paths a guest sees, multiple clients on one engine |
 | How it works | the four moves in order (host a folder, send the invite, type in the same file, close the window), under the design record's one-sentence workflow. The fourth move states both clocks the protocol has: the room lives while it has connections and for a short grace period after its last one ends, and the host's own absence is a second clock on every guest's client, which keeps editing through a short countdown and then ends its own session |
-| The session layer is written down | the wedge: language tooling has the Language Server Protocol and debugging the Debug Adapter Protocol, document sync has `y-protocols`, and the session layer is unspecified, so every collaborative tool decides those for itself. The wire corpus's counts appear here once, as the evidence they are, with the file that pins them; the peer corpus's appear in *Get it working*, under the claim they back, with the same file named. The heading says what the page does rather than denying what the hero's fact states: it used to read *The session layer has no specification*, which contradicted that fact for anyone skimming the two |
+| The session layer is written down | the wedge: language tooling has the Language Server Protocol and debugging the Debug Adapter Protocol, document sync has `y-protocols`, and the session layer is unspecified, so every collaborative tool decides those for itself. The wire corpus's counts appear here once, as the evidence they are, with the file that pins them, and the section then hands the reader the specification itself. The peer corpus is no longer counted on the page: its counts backed the signed-host sentence, which the relay paragraph still makes, and one sentence of evidence under the specification is what the page's word budget buys. The heading says what the page does rather than denying what the hero's fact states: it used to read *The session layer has no specification*, which contradicted that fact for anyone skimming the two |
 | Footer | the licences, the page's own privacy line and the contact address, nothing more |
 
 The page used to end on a two-column ledger of what is built and what is not. On a product page
@@ -176,7 +176,7 @@ No section carries a number. The `01`…`07` counters in front of every section,
 and the licences included, were the clearest signal that the page was a document rather than a
 product. The headings step up to a display size instead (the `h1` 32/38/40 px, the `h2` 24/30 px),
 the standing lede-and-checklist hero is gone, and the install guide that was a third of the page is
-one foldable block.
+three short paragraphs of commands.
 
 The prose still descends from the static page's, and every sentence is a paraphrase of an
 already-audited true sentence or framed as direction. Two sentences differ on purpose: the static
@@ -213,9 +213,8 @@ The must-not-say table below still binds every line. Three rows moved with what 
 - **The corpus counts.** Still exactly the numbers `specification/schema/validate.py` pins, and the
   two layers are pinned apart because they are two corpora: the wire layer's 24 vectors, 33760
   frame checks and 8387 assertions, and the peer layer's 26 vectors, 221 checks and 74 assertions.
-  The wire layer's counts appear in one place, as the evidence for the specification; the peer
-  layer's sit under the sentence they back, that the host is a peer's signed claim, because a claim
-  with a countable backing carries it. A number before `vectors`, `frame checks` or `assertions` has
+  The wire layer's counts appear in one place, as the evidence for the specification, and the page
+  does not carry the peer layer's. A number before `vectors`, `frame checks` or `assertions` has
   to be that layer's pin, and the peer layer's count is written with the layer named — `26 peer
   vectors`, `221 peer checks`, `74 peer assertions` — because `26 vectors` alone is read as the wire
   layer's count and fails. The window between the number and the word is any two whitespace-separated
@@ -599,8 +598,9 @@ answers.
 
 Four things the check cannot make mechanical, and which a reader of a change has to hold:
 
-- **A number on the page has a home.** The corpus counts (the wire layer's 24 vectors, 33760
-  frame checks and 8387 assertions, the peer layer's 26 vectors, 221 checks and 74 assertions) are
+- **A number on the page has a home.** The counts the page shows (the wire layer's 24 vectors, 33760
+  frame checks and 8387 assertions; the peer layer's 26 vectors, 221 checks and 74 assertions are the
+  ones the check pins if they appear) are
   the constants `specification/schema/validate.py` pins; when the corpus moves,
   the page moves with it. The commands are the ones the repositories' own READMEs document.
 - **No adjective does the work of a fact.** If a sentence could be true of any project, it does
@@ -730,7 +730,7 @@ so a regression fails the build instead of waiting for a look. Measured today:
 | muted text on code background | 7.89:1 | 4.5:1 |
 | badge text on its fill | 6.63:1 | 4.5:1 |
 | secondary-button text on its fill (hover state, the worst of rest `15` at 5.98:1) | 5.32:1 | 4.5:1 |
-| ghost-button text on its hover fill (the hero's third CTA, `bg-surface0/60`, parsed from the component) | 9.75:1 | 4.5:1 |
+| ghost-button text on its hover fill (`bg-surface0/60`; the variant is parsed from the component, and the page carries no ghost button) | 9.75:1 | 4.5:1 |
 | secondary button boundary (`border-mauve/60`, parsed from the component) | 3.82:1 | 3.0:1 |
 | focus outline against the page | 8.07:1 | 3.0:1 |
 | glass-card text, worst of the five panel stops | 11.71:1 (muted 7.61:1) | 4.5:1 |
@@ -777,18 +777,19 @@ fails a tint nobody can see. The opaque caret bar is what carries a peer at 3.0:
 
 What no ratio proves is read against the code by a person on every change:
 
-- **Visible focus.** Every link, button and `summary` carries a 2 px mauve `:focus-visible`
+- **Visible focus.** Every link and button carries a 2 px mauve `:focus-visible`
   outline at a 2 px offset; the `Button` primitive repeats it as a utility, so both spellings
   agree. Verified in the browser: the first three tabs land on the nav's own anchors with that
   ring.
-- **Keyboard.** Every control is a native anchor, button or `details`/`summary`. The sticky header
+- **Keyboard.** Every control is a native anchor or button; the page carries no form, no scripted
+  widget and no fold. The sticky header
   slides away
   on scroll-down but carries `focus-within:translate-y-0`, so a tabbed-to link is never
   focused off-screen. That slide is the `SiteHeader` client boundary running, so it is only as
   true as the page's scripts being permitted. "The Content-Security-Policy" records the
   interval in which they were not, and the gate step that now fails if it happens again.
   No skip link: the page is one route, so there is no repeated block
-  to bypass. The folds in *Get it working* are native `details`, so they open without a script.
+  to bypass.
 - **Reduced motion.** Two things move, and both stand down under `prefers-reduced-motion`: the
   hero figure's 520 ms entrance (an `opacity`/`translateY` animation) and the 2 px hover lift on
   the figure cards, each inside a `prefers-reduced-motion:
@@ -797,15 +798,15 @@ What no ratio proves is read against the code by a person on every change:
   the browser: under emulated `reduce` the hero's `animation-name` is `none` and `scroll-behavior`
   is `auto`.
 - **Touch targets.** Nav links are `text-sm` (20 px line box) with `py-1`, for 28 px of
-  target height against the 24 px minimum; buttons are 32–44 px tall, and the `summary` is a
-  full-width 45 px row. In-prose links are inline and exempt.
+  target height against the 24 px minimum; buttons are 32–44 px tall. In-prose links are inline and
+  exempt.
 - **Decorative only.** The hero figure and the cards' drawings are `aria-hidden`: a matte field
   of fine rules, the mirrored tree, one open file, the carets and the invite chip. Their
   worst-case ratios still clear AA (above), and the figure carries a visible caption, so a screen
   reader hears the sentence describing the room rather than four lines of code.
 - **The figure grid is a list.** Each card's drawing is followed by a bold lead and a sentence, so
   the four claims are readable as a list before they are readable as a picture.
-- **Client links.** The per-editor rows keep the underline every other prose link carries, so a
+- **Client links.** The per-editor paragraphs keep the underline every other prose link carries, so a
   link is not told apart by its colour and monospace face alone; the focus outline is unchanged.
 
 ## Licence

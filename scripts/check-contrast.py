@@ -531,9 +531,11 @@ def main() -> int:
             TEXT_MIN,
         )
     )
-    # The hero's third CTA is the ghost variant, whose hover state is the one pair on the
-    # page the two checks above do not reach: a `text-text` label over a `bg-surface0`
-    # wash. Its resting label is `text-subtext`, which is the muted-prose pair already.
+    # The ghost variant's hover state is the one pair on the page the two checks above do not
+    # reach: a `text-text` label over a `bg-surface0` wash. Its resting label is
+    # `text-subtext`, which is the muted-prose pair already. The page carries no ghost button
+    # at present, and the variant's own pairs are measured from the component anyway, so a
+    # `ghost` button that comes back on the page is one whose worst state is already checked.
     # Both halves are read out of the component rather than named here, and anything this
     # cannot read is exit 2, as everywhere else in this file.
     try:
@@ -550,7 +552,7 @@ def main() -> int:
     if hover_fill is None or hover_label is None:
         print(
             "check-contrast: the ghost variant carries no `hover:bg-<token>/<n>` and "
-            "`hover:text-<token>` pair, so the state the hero's third CTA is drawn in has "
+            "`hover:text-<token>` pair, so the state the ghost variant is drawn in has "
             "nothing to measure it from",
             file=sys.stderr,
         )
