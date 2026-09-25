@@ -4,9 +4,9 @@
 The nav bar paints the monogram at 32 CSS px, so the page fetches a 128×128 derivative of
 the 800×800 master instead of the master itself (`scripts/check-weight.py` holds that). Until
 now nothing in the tree made that derivative: it was built once by hand with
-`magick -resize -gamma`, which left it impossible for anyone to reproduce, retune or verify.
+`magick -resize -gamma`, which left it impossible for anyone to reproduce or verify.
 This is the producer, and `--check` is the pin: the gate re-derives the file and fails when the
-committed bytes are not what the master and the curve below produce.
+committed pixels are not what the master produces.
 
 The arithmetic, in the order the file is built in:
 
@@ -18,11 +18,13 @@ The arithmetic, in the order the file is built in:
    bare bytes drags that white into the glyph edges and the mark comes out haloed.
 2. **Apply `MARK_GAMMA` to the colour channels**, through a 256-entry table built once. The
    result is a function of the byte rather than of a floating-point path, so the same input bytes
-   give the same output bytes on any machine. Alpha is untouched: this levels the tones, it does
-   not change the shapes.
+   give the same output bytes on any machine. Alpha is untouched. The number is 1.0, the
+   identity, so this step writes the averaged bytes back unchanged; it is kept because the curve
+   is the one knob a re-derivation would turn, and the comment on it records why it is not
+   turned.
 
-Nothing is cropped, redrawn or re-framed: the derivative is the master's own pixels on a lighter
-tone curve, at the size one surface paints.
+Nothing is cropped, redrawn, re-framed or recoloured: the derivative is the master's own pixels,
+at the size one surface paints.
 
     scripts/make-mark.py            # rewrite public/mark-header.png
     scripts/make-mark.py --check    # derive in memory; fail when the committed file differs
@@ -43,16 +45,19 @@ import zlib
 SIZE = 128
 
 # The tone curve: `out = round(255 × (in/255)^(1/MARK_GAMMA))`, the same shape as ImageMagick's
-# `-gamma`, applied to the colour channels after the resize. The master is a shaded wordmark whose
-# dark stroke is invisible on the bar, so it has to be lifted before it can be read at all, and
-# the lift goes no further than the non-text floor needs. Unlevelled (1.0) the derivative's median
-# ink pixel measures 1.72:1 on `#1e1e2e`, below the 3.0:1 floor `scripts/check-contrast.py`
-# asserts; at 2.4 — the curve the hand-built derivative carried — it measures 4.70:1, which spends
-# 1.7:1 of headroom lifting the owner's own tones towards pale. 1.7 measures 3.25:1: clear of the
-# floor with room for a later tweak, and the artwork's own colours kept as far as that floor
-# allows. Re-derive with this script after changing the number; check-contrast will say where the
-# new curve landed.
-MARK_GAMMA = 1.7
+# `-gamma`, applied to the colour channels after the resize. It is 1.0 — the identity — because
+# nothing about the owner's artwork is to be changed to pass a check.
+#
+# The derivative used to be lifted to clear the 3.0:1 non-text floor `scripts/check-contrast.py`
+# asserted on it, and that floor does not apply: WCAG 1.4.11 asks for 3.0:1 from graphical
+# objects a reader needs to understand the content, and it exempts logotypes, which is what this
+# monogram is. Unlevelled the derivative carries the owner's own tones: on the `#1e1e2e` bar its
+# median ink pixel measures 1.72:1 — the dark stroke of a shaded wordmark on a dark ground,
+# visible but faint. Levelling it brighter to reach 3.0:1 recolours the owner's work to satisfy a
+# requirement that exempts it. A light plate behind the mark would keep both the artwork's tones
+# and a 3.0:1 mark, and that is a change to the surface, not one this producer makes. Re-derive
+# with this script after changing the number.
+MARK_GAMMA = 1.0
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 MASTER = os.path.join(HERE, "..", "public", "mark-transparent.png")
@@ -136,7 +141,7 @@ def gamma_table(gamma: float) -> bytes:
 
 
 def derive(raster: bytes, width: int, height: int) -> bytes:
-    """The derivative's RGBA raster: the master area-averaged to `SIZE`, then levelled."""
+    """The derivative's RGBA raster: the master area-averaged to `SIZE`, then the `MARK_GAMMA` curve."""
     levelled = area_average(raster, width, height, SIZE)
     table = gamma_table(MARK_GAMMA)
     for at in range(0, len(levelled), 4):
@@ -237,8 +242,8 @@ def compare(derived: bytes, path: str) -> int:
     if differing:
         worst = max(differing, key=lambda i: abs(derived[i] - committed[i]))
         print(
-            f"make-mark: {path} is not the derivation of {os.path.relpath(MASTER, HERE)} at "
-            f"gamma {MARK_GAMMA}: {len(differing)} of {len(derived)} channels differ",
+            f"make-mark: {path} is not the derivation of {os.path.relpath(MASTER, HERE)}: "
+            f"{len(differing)} of {len(derived)} channels differ",
             file=sys.stderr,
         )
         print(
@@ -253,7 +258,7 @@ def compare(derived: bytes, path: str) -> int:
         return 1
     print(
         f"make-mark: {os.path.relpath(path)} is the master area-averaged to {SIZE}×{SIZE} and "
-        f"levelled at gamma {MARK_GAMMA}: {len(derived)} channels match, "
+        f"unchanged in colour: {len(derived)} channels match, "
         f"{os.path.getsize(path)} bytes"
     )
     return 0
@@ -283,7 +288,7 @@ def main(argv: list[str]) -> int:
         handle.write(encode_png(SIZE, derived))
     print(
         f"make-mark: wrote {os.path.relpath(DERIVATIVE)} from the {width}×{height} master: "
-        f"{SIZE}×{SIZE}, gamma {MARK_GAMMA}, {os.path.getsize(DERIVATIVE)} bytes"
+        f"{SIZE}×{SIZE}, no colour change, {os.path.getsize(DERIVATIVE)} bytes"
     )
     return 0
 

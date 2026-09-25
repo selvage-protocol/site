@@ -48,11 +48,15 @@ Exit 0 lists every asserted pair with its measured ratio. Exit 1 names the
 pairs below threshold. Exit 2 means the check itself cannot run (a token it
 needs is missing or unparsable): that is a failure, not a pass.
 
-The nav mark is the one mark on the page that is not a token: it is the owner's artwork,
-served as pixels, and a dark wordmark on a dark bar is a mark a reader cannot see while every
-colour in the stylesheet measures fine. So the check reads `public/mark-header.png` itself,
-composites its own pixels over the ground the bar shows them on, and asserts the typical ink
-pixel at the non-text floor. A derivative that goes dark again fails here.
+The nav mark is the one mark on the page that is not a token: it is the owner's artwork, served
+as pixels. It is a logotype, and WCAG 1.4.11 exempts logotypes from its 3.0:1 non-text
+requirement, so the check does not hold it there: that floor is what had the derivative levelled
+away from the owner's colours, and a mark the standard exempts should not have to change to clear
+it. What the check does hold is the property the exemption leaves — the mark is ink, so its
+typical pixel must be no darker than the ground the bar shows it on (`MARK_MIN`, the floor below
+which no reader can see it). It reads `public/mark-header.png` itself, composites its own pixels
+over that ground, and prints the measured ratio: 1.72:1 for the owner's own tones. A derivative
+recoloured darker until it is a smudge on the bar fails here.
 
 `STYLE_CSS` overrides the stylesheet under test, `BUTTON_TSX` the button
 component, `ROOM_TSX` the figure component and `MARK_PNG` the nav mark, so a probe
@@ -91,6 +95,14 @@ PNG_CHANNELS = {2: 3, 6: 4}
 # this one only fails a tint nobody can see at all. The mark that carries a peer at the
 # non-text floor is their caret bar, opaque, asserted at 3.0:1 below.
 TINT_MIN = 1.5
+
+# The nav mark is a logotype, and WCAG 1.4.11 (Non-text Contrast) exempts logotypes from its
+# 3.0:1 requirement for graphical objects, so this check does not hold the owner's monogram to
+# `NON_TEXT_MIN`. It holds it to the floor a reader can still see it at — the same one the
+# selection tint gets, and not a WCAG threshold — because the mark is ink drawn on a dark bar,
+# and a mark darkened into that bar is the defect worth failing. The owner's own tones measure
+# 1.72:1 there.
+MARK_MIN = 1.5
 
 
 def lum(hexcode: str) -> float:
@@ -687,13 +699,15 @@ def main() -> int:
                         TEXT_MIN,
                     )
                 )
-    # The nav mark is the one surface that paints the owner's artwork as pixels rather than
-    # as a token, so it is measured from the file the page fetches. Two things make this pair
-    # the bar's own: the bar is `bg-base/85` over a page whose ground is the same `bg-base`,
-    # so a translucent bar over it composites to that colour exactly; and the mark in the
-    # HTML is `h-8 w-auto`, 32 CSS px of a 128 px file, which resampling does not change the
-    # tone of. The median is the typical ink pixel rather than the brightest one, so a mark
-    # that is dark except for a highlight does not pass.
+    # The nav mark is the one surface that paints the owner's artwork as pixels rather than as a
+    # token, so it is measured from the file the page fetches. It is a logotype, which WCAG 1.4.11
+    # exempts, so it is held to `MARK_MIN` (a reader can see it at all) and not to the non-text
+    # floor every token-drawn mark gets; the measured ratio is printed with the pair. Two things
+    # make this pair the bar's own: the bar is `bg-base/85` over a page whose ground is the same
+    # `bg-base`, so a translucent bar over it composites to that colour exactly; and the mark in
+    # the HTML is `h-8 w-auto`, 32 CSS px of a 128 px file, which resampling does not change the
+    # tone of. The median is the typical ink pixel rather than the brightest one, so a mark that
+    # is dark except for a highlight does not pass.
     mark_path = os.environ.get(
         "MARK_PNG", os.path.join(here, "..", "public", "mark-header.png")
     )
@@ -708,10 +722,11 @@ def main() -> int:
         return 2
     checks.append(
         (
-            f"nav header mark, the median of {mark_pixels} ink pixels above alpha {ink_alpha}",
+            f"nav header mark (a logotype, exempt from the non-text floor), the median of "
+            f"{mark_pixels} ink pixels above alpha {ink_alpha}",
             mark_ink_colour,
             bg,
-            NON_TEXT_MIN,
+            MARK_MIN,
         )
     )
     dot_fill = solid_fill(css, ".open-dot")
@@ -758,11 +773,17 @@ def main() -> int:
     for note in notes:
         print(f"check-contrast: [ok] {note}")
     if failures:
-        print(f"check-contrast: {failures} pair(s) below WCAG AA")
+        print(
+            f"check-contrast: {failures} pair(s) below their floor; the lines above name each "
+            f"pair's own floor — WCAG AA, or the logotype nav mark's visibility floor"
+        )
         return 1
-    print(f"check-contrast: {len(checks)} pairs at or above WCAG AA "
-          f"(glass {glass_rgb} at alpha {glass_alpha} parsed from .hero-glass, "
-          f"sample ground {figure_ground} parsed from the code figure)")
+    print(
+        f"check-contrast: {len(checks)} pairs at or above their floors — WCAG AA for the "
+        f"{len(checks) - 1} token-drawn pairs, a visibility floor for the logotype nav mark "
+        f"(glass {glass_rgb} at alpha {glass_alpha} parsed from .hero-glass, "
+        f"sample ground {figure_ground} parsed from the code figure)"
+    )
     return 0
 
 

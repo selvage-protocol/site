@@ -1,7 +1,8 @@
 name: ci
 
 # The gate for the Next.js page: typecheck, build, the button prop check, the contrast
-# floor over the theme tokens and the nav mark's own pixels, the nav mark's derivation from the
+# floor over the theme tokens and the nav mark's own pixels (a logotype, exempt from the non-text
+# floor and held only to being visible on its ground), the nav mark's derivation from the
 # master,
 # the claim filter over the rendered page, the Content-Security-Policy
 # in vercel.json over the same rendered page and the site's own not-found route, the weight and
