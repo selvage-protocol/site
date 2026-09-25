@@ -6,12 +6,13 @@
 #   scripts/ci-local.sh build      # next build
 #   scripts/ci-local.sh button     # render the button/anchor variants, assert props reach the DOM
 #   scripts/ci-local.sh contrast   # theme token pairs at or above WCAG AA
+#   scripts/ci-local.sh mark       # re-derive public/mark-header.png from the master, compare
 #   scripts/ci-local.sh claims     # build, serve production, fetch / and scan the rendered HTML
 #   scripts/ci-local.sh csp        # the CSP in vercel.json over the served page and its not-found route: nothing either carries is refused
 #   scripts/ci-local.sh weight     # every image the page body fetches is within its byte budget
 #   scripts/ci-local.sh links      # serve production, lychee over the rendered page and the README
 #   scripts/ci-local.sh lint       # actionlint over the workflow files
-#   scripts/ci-local.sh all        # typecheck + build + button + contrast + claims + csp + weight + links + lint
+#   scripts/ci-local.sh all        # typecheck + build + button + contrast + mark + claims + csp + weight + links + lint
 #
 # Keep this in step with the workflow — it runs the same commands, so that a red job is found
 # here rather than on a runner.
@@ -32,6 +33,11 @@
 # fetches out of `public/` is within its budget and declares its own pixel size. The mark was
 # served as the 800×800 master — a quarter of everything the page transferred — to a surface it
 # paints at 32 px. See scripts/check-weight.py.
+#
+# The mark step re-derives the nav derivative from the master and compares it with the committed
+# file, so a derivative nobody can reproduce — the defect `scripts/make-mark.py` was written for —
+# fails here. It reads pixels rather than bytes: a zlib release may compress the same raster
+# differently, and the raster is the claim. See scripts/make-mark.py.
 set -euo pipefail
 
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
@@ -137,6 +143,11 @@ job_contrast() {
   ./scripts/check-contrast.py
 }
 
+job_mark() {
+  say "mark: public/mark-header.png reproduces from the master"
+  ./scripts/make-mark.py --check
+}
+
 job_claims() {
   say "claims: known forbidden wordings over the rendered page (a filter, not a proof)"
   # Always rebuilt, so the scan can never pass on a stale page.
@@ -222,14 +233,15 @@ case "${1:-all}" in
   build) job_build ;;
   button) job_button ;;
   contrast) job_contrast ;;
+  mark) job_mark ;;
   claims) job_claims ;;
   csp) job_csp ;;
   weight) job_weight ;;
   links) job_links ;;
   lint) job_lint ;;
-  all) job_typecheck && job_build && job_button && job_contrast && with_server all_served && job_lint ;;
+  all) job_typecheck && job_build && job_button && job_contrast && job_mark && with_server all_served && job_lint ;;
   *)
-    printf 'usage: %s [typecheck|build|button|contrast|claims|csp|weight|links|lint|all]\n' "$0" >&2
+    printf 'usage: %s [typecheck|build|button|contrast|mark|claims|csp|weight|links|lint|all]\n' "$0" >&2
     exit 2
     ;;
 esac
