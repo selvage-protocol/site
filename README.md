@@ -25,7 +25,7 @@ browser proof the runner cannot run, and nothing else.
 
 | Path | What it is |
 |---|---|
-| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (promise, two CTAs, four landed facts, the room figure, and the version line under the facts), *Get it working* (the published image as one `docker run`, the one wire version the image and the demo speak, the sealed-relay paragraph under that command, one short paragraph per editor — VS Code carrying the extension's published identity, the two registries it is on and what an install is, Neovim the plugin-manager line — and *Try the demo*: the one instance, the address an editor hosts on, the guest's trust in the server that serves its page, and the terms), *See it working* (four cards), *How it works* (four steps), *The session layer is written down* (why the specification is the artifact, with the wire corpus's counts and the file that pins them, then the link to read it), then the footer |
+| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (promise, two CTAs, four one-word facts, the room figure, and the version line under the facts), *Get it working* (the published image as one `docker run`, the one wire version the image and the demo speak, the sealed-relay paragraph under that command, one short paragraph per editor — VS Code carrying the extension's published identity, the two registries it is on and what an install is, Neovim the plugin-manager line — and *Try the demo*: the one instance, the address an editor hosts on, the guest's trust in the server that serves its page, and the terms), *See it working* (four cards), *How it works* (four steps), *The session layer is written down* (why the specification is the artifact, with the wire corpus's counts and the file that pins them, then the link to read it), then the footer |
 | `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, the one origin the metadata resolves against (`metadataBase`, `alternates.canonical`, `openGraph.url`; see "The live origin"), and the global stylesheet. The favicons are deliberately absent: they are Next file conventions, so the framework writes their tags and `sizes` from the files themselves |
 | `app/not-found.tsx` | the not-found route: what a mistyped address renders. The framework's own 404 document is styled with a `<style>` element and four `style` attributes, every one of which the policy's `style-src 'self'` refuses; this one is styled from `style.css` and carries neither (see "The Content-Security-Policy") |
 | `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, and a system font stack, so no font is fetched from a third party. Two widths are named there and the page keeps to them: `--measure` for running prose and `--column` for everything that is not prose (section rules, code blocks, the repo grid), so a wide figure is deliberate inside a narrow measure |
@@ -156,11 +156,11 @@ the reader can name.
 
 | Part | Its job |
 |---|---|
-| Hero | the promise, two CTAs, four landed facts, the room figure, and one line under the facts naming the specification as a draft and the wire version, `selvage/2`. The CTAs come **above** the facts because of the fold: four facts, a CTA row and the version line of the order the page carried put the primary button at y≈823 on a 1280×633 screen and nothing but the header's small link in the first one, so a reader met evidence and no action. The CTAs lead with the demo — the fastest thing a stranger can do, with nothing installed — then running it in the editor, which is where the commands are; the header's own CTA points at the demo for the same reason. The specification is not a third button: it is the prose link that closes *The session layer is written down*, and nothing on the page presents a link as a disabled-looking control. The first fact is what the relay sees and does not: it relays the room as ciphertext, sees that a room exists, who is in it, their names and the sizes and timing of what moves, and never the file text, the cursors or the file names. It leads the list rather than the specification's, because the disclosure is the claim that has to be met first and it is the one a skimmer needs. The fourth says the server writes nothing to disk, which is whose disk the sentence is about — it used to read "nothing is written to disk", beside a fact about the host's own folder writing to it. The `h1`, *Edit the same file together, on a server you run.*, says what the product does and carries the self-hosted wedge from the design record's hook |
+| Hero | the promise, two CTAs, four one-word facts, the room figure, and one line under the facts naming the specification as a draft and the wire version, `selvage/2`. The CTAs come **above** the facts because of the fold: four facts, a CTA row and the version line of the order the page carried put the primary button at y≈823 on a 1280×633 screen and nothing but the header's small link in the first one, so a reader met evidence and no action. The CTAs lead with the demo — the fastest thing a stranger can do, with nothing installed — then running it in the editor, which is where the commands are; the header's own CTA points at the demo for the same reason. The specification is not a third button: it is the prose link that closes *The session layer is written down*, and nothing on the page presents a link as a disabled-looking control. The four facts are one row of one-word chips — *Sealed*, *Specified*, *Path-scoped*, *No account* — and a check mark each. They were four sentences, and three of those arguments are made below in any case: the relay's disclosure is the paragraph under the `docker run`, the specification has its own section, the granted paths are the third card, and the rooms-in-memory and nothing-on-disk clauses are the sentence under that command. *No account* is the one the page carries nowhere else, and that is the reason the row is kept rather than deleted: the fact goes with it. The relay's chip leads because what the relay reads and does not read is the claim a reader has to be able to take before the others are worth anything, and it is read against the paragraph below, where the detail lives — the gate reads the paragraph, not the chip, for exactly that reason |
 | Get it working | the published image as one `docker run` and the port it answers on, then the sealed-relay paragraph, which sits under that command because a reader can take the two together: that the container image above and the demo speak the one wire version `selvage/2` and that it is the sealed one, then what that wire seals, what the relay still sees and still does, and that the host is a peer's signed claim rather than a server fact. Then one short paragraph per editor, each carrying the command from the editor's own README: VS Code opening on the extension's published identity (`selvage-protocol.selvage`), the two registries it is on, its repository, and what an install is and is not; Neovim on the plugin-manager line and `:SelvageHost`. It closes on *Try the demo*, the one small instance the project runs: that section gives the address an editor hosts on, leaves the guest to the invite link, says where Chrome or Edge can start a session from the page the instance serves, says that a guest who opens that page trusts the room's server for the client code as well as for the relay, and states that the instance's rooms are in memory and that its terms are non-commercial and for personal and evaluation use. The manual a reader wants next — the corpus check, the vector replay, each client's full command list — is the specification link and each repository's README, not a fold on this page; the per-client settings and the hosting routes were cut for the same reason |
 | See it working | four cards, each with a drawing of the thing it claims: anyone with the link is in, two carets in one text, the paths a guest sees, multiple clients on one engine |
 | How it works | the four moves in order (host a folder, send the invite, type in the same file, close the window), under the design record's one-sentence workflow. The fourth move states both clocks the protocol has: the room lives while it has connections and for a short grace period after its last one ends, and the host's own absence is a second clock on every guest's client, which keeps editing through a short countdown and then ends its own session |
-| The session layer is written down | the wedge: language tooling has the Language Server Protocol and debugging the Debug Adapter Protocol, document sync has `y-protocols`, and the session layer is unspecified, so every collaborative tool decides those for itself. The wire corpus's counts appear here once, as the evidence they are, with the file that pins them, and the section then hands the reader the specification itself. The peer corpus is no longer counted on the page: its counts backed the signed-host sentence, which the relay paragraph still makes, and one sentence of evidence under the specification is what the page's word budget buys. The heading says what the page does rather than denying what the hero's fact states: it used to read *The session layer has no specification*, which contradicted that fact for anyone skimming the two |
+| The session layer is written down | the wedge: language tooling has the Language Server Protocol and debugging the Debug Adapter Protocol, document sync has `y-protocols`, and the session layer is unspecified, so every collaborative tool decides those for itself. The wire corpus's counts appear here once, as the evidence they are, with the file that pins them, and the section then hands the reader the specification itself. The peer corpus is no longer counted on the page: its counts backed the signed-host sentence, which the relay paragraph still makes, and one sentence of evidence under the specification is what the page's word budget buys. The heading says what the page does rather than denying what the hero's chip states: it used to read *The session layer has no specification*, which contradicted that fact for anyone skimming the two |
 | Footer | the licences, the page's own privacy line and the contact address, nothing more |
 
 The page used to end on a two-column ledger of what is built and what is not. On a product page
@@ -231,14 +231,17 @@ a column between two characters of the line, the peer's name in the gutter lane 
 quarter-alpha fill behind what one of them has selected), and the invite chip that put them there.
 Each card in *See it working* carries one smaller drawing of the thing it claims.
 
-Six rules hold it together:
+Seven rules hold it together:
 
-- **The invite chip draws a link that works.** Both chips — the hero's and the one *See it
+- **The invite chip draws a link that works.** Both chips — the hero's and the one *See
   working* carries — read `?room=k7m2&token=4f9c#k=…&h=…`: the query the page takes and the fragment
   the keys travel in, the shape `PROTOCOL.md` §5.1 fixes. They used to stop at the query, which is
   the link shape that cannot seal a room; the chip teaches the shape the clients hand a guest. The
-  fragment goes on its own line where the column has no width for it (a `<wbr>` is the chip's only
-  break opportunity), and the label and the glyph keep their own lines either way.
+  chip is one row, and the sample is one line: the fragment used to break under the query at a
+  `<wbr>`, which made the chip a two-row block, and the `invite link` label is gone because with it
+  the chip holds the query or the fragment on one row, not both, in a card 345 px wide. Nothing is
+  lost either way: the lead above the card's chip names the link, and the hero's caption names it
+  too.
 - **It is an illustration, and it says so.** The caption under the hero figure names it. Each code
   sample is a short function against the client crate's own API, with the `use` line left out, and
   each peer's caret is drawn where the browser client draws it (`renderCursors` in
@@ -259,6 +262,15 @@ Six rules hold it together:
   ground and in the body colour `#cdd6f4` otherwise. Punctuation has no rule in that theme, so it
   keeps the body colour here too. The samples are fixed and short, so each token is a span written
   by hand in `components/room-visuals.tsx` — no highlighter, no dependency, no parser.
+- **The four figures are one height at two columns.** Each card's grid is three rows — the
+  drawing, the lead, the sentence — and at `min-width: 44rem` the first of them is
+  `minmax(12.5rem, auto)`. 12.5rem clears the tallest drawing there is, the code sample's nine
+  lines at 11 px on a 1.65 line-height (189 px, and the sample's height does not move with the
+  font, because both numbers are set), and every shorter drawing — the chip, the tree, the client
+  chips — centres in the row it gets. Without it the four leads sat at four heights inside cards
+  the grid had already made equal, which is what a reader sees as a broken row. One column keeps
+  each card its own height: nothing lines up across a single column, and four 200 px boxes would
+  make four tall cards.
 - **The drawings are `aria-hidden`; the captions are not.** A screen reader hears the sentence that
   describes the room, not the code in it.
 - **No inline `style`, no `<style>`, no webfont, no external image.** The policy in `vercel.json`
@@ -534,11 +546,12 @@ time in *The session layer is written down*: matched loosely, that earlier parag
 them for a page whose disclosure had been deleted, and a rewrite that dropped those two while
 keeping the other two passed with them gone. Deleting the paragraph now fails the check on all
 four. The facts are read from the page's own `docker run` onwards, and not over the whole page:
-the hero's second fact states the same four facts in the same wording, and it is above the command,
-so a page-wide scan let the hero satisfy a check written to require the paragraph — deleting the
-paragraph passed with the hero standing in for it, which is the mutation that added the bound. What
-is required is the paragraph's place, which is under the command a reader can take it together
-with. It asks no network.
+the hero's second fact used to state the same four facts in the same wording, and it is above the
+command, so a page-wide scan let the hero satisfy a check written to require the paragraph —
+deleting the paragraph passed with the hero standing in for it, which is the mutation that added
+the bound. The hero states them in a word each now (*Sealed* for the relay's half), and the bound
+stays: a hero line that states a fact in full still cannot stand in for the paragraph's place,
+which is under the command a reader can take it together with. It asks no network.
 
 The browser guest's own residual is required the same way. A guest who opens the page the room's
 own server serves trusts that server for the client code as well as for the relay, and the
@@ -571,8 +584,8 @@ answers.
 |---|---|
 | "open source" of the server or the project | The server binary is `FSL-1.1-MIT`: source-available, not OSI-approved, free for non-competing use and under MIT two years after each release. The specification and the clients are the open ones, and the page names their licences instead of reaching for the phrase |
 | "SSP" | The abbreviation is taken by stack-smashing protection and by supply-side platforms. The protocol is the Selvage Session Protocol, written out |
-| `salvage/1`, `salvage/2` | The wire version is `selvage/2`. "Selvage" is heard as "salvage", which is why the full protocol title appears at least once in the page's first paragraph |
-| "the session layer has no specification" | The page's own hero fact says the opposite — the session layer is written down as a specification, with JSON Schema and conformance vectors — and the section argues it. The layer every collaborative tool decides for itself is the subject, so a heading that reads as a denial of the fact a skimmer has just met is a contradiction rather than the argument |
+| `salvage/1`, `salvage/2` | The wire version is `selvage/2`. "Selvage" is heard as "salvage", which is why the name is written out in words rather than shortened: the `<title>` opens with *Selvage is a live-coding collaboration protocol*, the badge above the `h1` says the same, the nav carries the wordmark, and every wire version the page names is spelled `selvage/2` |
+| "the session layer has no specification" | The page's own hero chip says the opposite in one word — *Specified* — and the section argues it. The layer every collaborative tool decides for itself is the subject, so a heading that reads as a denial of the fact a skimmer has just met is a contradiction rather than the argument |
 | "nobody else can read it", "no one else can see it", "only the people in the room", "the server knows nothing", "fully encrypted", "zero-knowledge", a bare "end-to-end encrypted" or "e2ee", "the relay is blind" | The relay is sealed, not omniscient: it reads no text, no cursor, no file name and no role, and the keys are in the link a human pastes, but it still reads a room's existence, its membership, the display names and the sizes and timing of what moves, and it can drop, delay, reorder or end any room. Each of these wordings claims more than the wire's sealing buys, and the list alternates the subject and the verb because the paraphrase is how the sentence is written first: "no one else can see it" is the same claim as "nobody else can read it". The window between the subject and the verb is the sentence's and not a word's — 64 characters, the same unit `clause_around` reads a permit from — because "the server relays the room as ciphertext and learns nothing" puts the claim 35 characters after its subject, which a 24-character window passed: that evasion is a fixture now, and it fails the gate. No version of this protocol has less than that: `selvage/2` is the one wire version it has, and every release the page hands a reader speaks it. An "end-to-end encrypted" that names what stays visible in the same sentence is backed and stays legal; one that names it and denies it — "so the relay learns no membership and no names" — is the unqualified claim with a disclosure's noun in it, and the permit is cancelled for it |
 | "the server cannot read" (unqualified) / "the server cannot read the room" / "the text never reaches the server" / the host reading, and the membership one with it | The relay is sealed, not omniscient: it reads no text, no cursor, no file name and no role, and it cannot forge, mis-attribute or replay a frame, but it still reads a room's existence, its membership, the display names and the sizes and timing of what moves, and it can drop, delay, reorder or refuse frames and end any room. A claim about named, sealed material is specific and backed — the same sentence has to name it, which is what the pattern reads rather than the determiners in front of the verb — and unqualified it must not appear, nor may the room itself or the membership be the object. A sentence that names sealed material and claims *everything* is not specific either: "the server cannot see anything, not even your text" carries a permitted noun and the widest object there is, and the permit is cancelled for it. "It cannot tell who is host" is forbidden too, and the reason is a measurement rather than a reading: `CANONICAL.md` §6.1 puts `kind` in the clear and `PROTOCOL.md` §7.1 makes `kind = 1` the host's own frame, so a relay that routes a room reads one clear byte and knows. What the page may say is what the threat model supports — the host is a peer's signed claim, and the server cannot seat a host, prove one or take the role |
 | hosting from a page in any browser, a room with no invite, the project's own site as a client | The browser client is published and it hosts: on Chrome or Edge a page the room's own server serves starts a session from a folder the person picks, which is the demo's shape, so the page says so. What is not true: hosting in any browser (Firefox and Safari have no `showDirectoryPicker` and can join but cannot host), a page no Selvage server serves offering it (the client says why instead of offering a control that could only refuse), joining without the invite link a host copies, and the project's own site as a place to join a room (it is a landing page). The stale denial "nothing runs in a web page" stays caught too, and so does the unqualified "host a session in the browser", which is the shape that overclaim takes |
@@ -631,7 +644,13 @@ What that decides:
   so the document carries `<link rel="canonical" href="https://selvage.dontblameme.dev"/>` and
   the matching `og:url`, and a card unfurled from a branch preview names the same URL and image as
   production. Moving the page to another origin is one constant, and the two tags follow it.
-- **The title, description and `og:title`/`og:description` mirror the page's own heading and lede.**
+- **The title, description and `og:title`/`og:description` are the page's own words, in the longer
+  form a crawler and a card unfurl want.** The title is the badge's *live-coding collaboration
+  protocol* with the project's name in front; the description is the hero's lede as it read before
+  it was cut to one sentence — one Rust binary you host holds the room and an invite link is the
+  whole permission, three clients on the same file, no account and no third party's cloud holding
+  the room — with the specification clause after it. It has to agree with the lede, and it does:
+  the lede is the shorter statement of the same two claims.
 
 
 ## The gate
@@ -757,9 +776,8 @@ in whether they have been visited do not read as two different things.
 
 Four groups the check does not parse are computed the same way, from the colours the browser
 composites, and are re-measured whenever the fills around them move: inline code text on its
-chip fill (`rgba(205, 214, 244, 0.07)` over `--bg`) 9.62:1; the invite chip's label and its URL
-on the chip's own tint (`rgba(203, 166, 247, 0.08)` over the figure's fill over the card's) 6.77:1
-and 10.41:1; the card body text on the card fill (`rgba(24, 24, 37, 0.5)` over `--bg`) 7.63:1;
+chip fill (`rgba(205, 214, 244, 0.07)` over `--bg`) 9.62:1; the invite chip's URL
+on the chip's own tint (`rgba(203, 166, 247, 0.08)` over the figure's fill over the card's) 10.41:1; the card body text on the card fill (`rgba(24, 24, 37, 0.5)` over `--bg`) 7.63:1;
 the client chips and the rail label under them 10.56:1 and 8.55:1. The section
 hairlines and the card borders sit at 1.30:1 against the page on
 purpose: they are decorative separators, they carry no state, and nothing is identified by

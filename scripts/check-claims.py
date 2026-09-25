@@ -156,8 +156,8 @@ HOST_CARD = re.compile(r'id="host-wrap"')
 # that drops one fails. The sizes-and-timing fact is the one only this paragraph carries.
 #
 # Two of the four are phrased as the disclosure's own sentence rather than as a subject and a verb,
-# because the page states three of them twice: *The session layer has no specification* writes
-# "Which rooms exist, who is in one, ...", which is a sentence about what every collaborative tool
+# because the page states those two a second time in *The session layer is written down*: "Which
+# rooms exist, who is in one, ...", which is a sentence about what every collaborative tool
 # decides for itself and not a disclosure of relay visibility at all. Loosely matched, that
 # paragraph would supply existence and membership for a page whose disclosure had been deleted, and
 # a rewrite that dropped the two facts while keeping "their names" and "sizes and timing" would
@@ -824,7 +824,7 @@ FORBIDDEN: list[Phrase] = [
         ),
     ),
     Phrase(
-        # The hero's fact about the specification and this heading said opposite things to a
+        # The hero's chip about the specification and this heading said opposite things to a
         # skimmer. What the page means is that the session layer is the part nobody writes
         # down — every collaborative tool decides it for itself — and this project writes it
         # down; a heading that reads as a denial of the page's own first fact is the
@@ -1638,11 +1638,12 @@ def disclosure_region(page: Scanned) -> str:
     """The page from its own `docker run` on: the text the relay's disclosure is read from.
 
     The paragraph sits under the packed command because a reader can take the claim and the
-    command together, which is also what tells the paragraph apart from the hero. The hero's
-    second fact states the same four facts, and it is above the command: reading the whole page
-    let a hero line satisfy a check written to require the paragraph, and deleting the paragraph
-    then passed. What is read is the page from the pinned image's own reference onwards, so the
-    hero cannot stand in for it. Returns "" when the page carries no such reference, which the
+    command together, which is also what tells the paragraph apart from the hero. The hero used to
+    state the same four facts above the command: reading the whole page let a hero line satisfy a
+    check written to require the paragraph, and deleting the paragraph then passed. What is read is
+    the page from the pinned image's own reference onwards, so the hero cannot stand in for it —
+    its chips name the same properties in a word each, and a hero line that states a fact in full
+    would be the same defect again. Returns "" when the page carries no such reference, which the
     image half also fails on; this one names the absence rather than reporting four missing facts.
     """
     match = IMAGE_REFERENCE.search(page.text)
@@ -1683,9 +1684,9 @@ def check_relay_disclosure(pages: list[Scanned]) -> int:
     page whose disclosure had been deleted, and a rewrite that dropped those two while keeping
     "their names" and "sizes and timing" passed with them gone. The region is the page from the
     `docker run` that pulls the pinned image onwards: the paragraph's place under that command is
-    part of the claim, the hero states the same facts above it, and a page whose hero line is all
-    that is left has dropped the paragraph a reader is owed. Returns 0 when a scanned page carries
-    all four below its own command and 1 when none does; it asks no network.
+    part of the claim, the hero's chips state those facts in a word each above it, and a page whose
+    hero line is all that is left has dropped the paragraph a reader is owed. Returns 0 when a
+    scanned page carries all four below its own command and 1 when none does; it asks no network.
     """
     if not any(IMAGE_REFERENCE.search(page.text) for page in pages):
         print(
@@ -1708,7 +1709,7 @@ def check_relay_disclosure(pages: list[Scanned]) -> int:
             f"check-claims: {where} does not state what the sealed relay still sees: it is "
             f"missing {', '.join(absent)}. That disclosure is read from the page's own "
             "`docker run` onwards, which is where the paragraph sits and where the hero's own "
-            "fact does not reach, so a page with a fact dropped from the paragraph claims more "
+            "chips do not reach, so a page with a fact dropped from the paragraph claims more "
             "than the relay does",
             file=sys.stderr,
         )
