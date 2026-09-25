@@ -47,7 +47,7 @@ browser proof the runner cannot run, and nothing else.
 | `scripts/check-contrast.py` | the contrast check: parses the theme tokens out of `style.css` — including the sample's `selvage-mocha` token colours, the ground the code figure draws them on, and the alpha a peer's selection fill is drawn at — reads the token a selection fill sits under out of `components/room-visuals.tsx` and the fills and labels of the button variants out of `components/ui/button.tsx`, reads the nav mark's own pixels out of `public/mark-header.png`, and asserts the rendered pairs sit at or above WCAG AA, with measured ratios (run by `scripts/ci-local.sh contrast` inside the gate) |
 | `scripts/check-csp.py` | the policy check: reads the Content-Security-Policy out of `vercel.json` and the served HTML, and fails when the policy would refuse a script, stylesheet or image the page carries (run by `scripts/ci-local.sh csp` inside the gate; see "The Content-Security-Policy") |
 | `scripts/check-weight.py` | the weight check: reads the served HTML and the bytes on disk, and fails when an image the page body fetches out of `public/` is over its budget or declares a pixel size the file does not have (run by `scripts/ci-local.sh weight` inside the gate; see "The site mark") |
-| `scripts/make-mark.py` | the mark producer: derives `public/mark-header.png` from `public/mark-transparent.png` — the master area-averaged to 128×128, premultiplied by alpha, then levelled through one 256-entry gamma table — and its `--check` mode re-derives the file and fails when the committed pixels are not that derivation (see "The site mark") |
+| `scripts/make-mark.py` | the mark producer: derives `public/mark-header.png` from `public/mark-transparent.png` — the master area-averaged to 128×128, premultiplied by alpha, then levelled through one 256-entry gamma table — and its `--check` mode re-derives the file and fails when the committed pixels are not that derivation (run by `scripts/ci-local.sh mark` inside the gate; see "The site mark") |
 | `scripts/check-csp-browser.mjs` | the browser proof: serves the built page with the headers out of `vercel.json`, drives headless Chromium over CDP, and asserts zero `securitypolicyviolation` events, `window.__next_f` an object, the header's concealment on scroll and no `X-Powered-By`. Not in the gate (the runner has no browser), and it needs `npm run build` first |
 | `scripts/ci-local.sh` | the gate, running the same commands as the workflow |
 | `lychee.toml` | what the link check does not check, and why |
@@ -119,9 +119,9 @@ dark again fails the gate; the unlevelled derivative measures 1.72:1 there and f
 The derivative had no producer until now: it was built once by hand
 (`magick public/mark-transparent.png -resize 128x128 -channel RGB -gamma 2.4 +channel
 public/mark-header.png`), so nothing in the tree could reproduce, retune or verify it. That script
-is the producer, and its `--check` mode re-derives the file from the master and fails when the
-committed pixels are not what the master and the curve produce. Two details of the derivation
-matter for keeping it honest. The gamma is applied after the resize, which is the
+is the producer, and `scripts/ci-local.sh mark` re-derives the file from the master inside the gate
+and fails when the committed pixels are not what the master and the curve produce. Two details of
+the derivation matter for keeping it honest. The gamma is applied after the resize, which is the
 order the producer builds the file in. And the pin compares pixels rather than bytes: a zlib
 release may compress the same raster differently, and the raster is the claim. The claim the
 earlier derivative could make — that resampling it to the painted size matched resampling the
@@ -635,11 +635,12 @@ What that decides:
 ## The gate
 
 ```console
-$ scripts/ci-local.sh              # typecheck, build, button, contrast, claims, csp, weight, links, lint
+$ scripts/ci-local.sh              # typecheck, build, button, contrast, mark, claims, csp, weight, links, lint
 $ scripts/ci-local.sh typecheck    # tsc --noEmit
 $ scripts/ci-local.sh build        # next build
 $ scripts/ci-local.sh button       # render the button/anchor variants and assert their props reach the DOM
 $ scripts/ci-local.sh contrast     # the theme token pairs and the nav mark's own pixels, at or above WCAG AA
+$ scripts/ci-local.sh mark         # re-derive the nav mark from the master and compare it with the committed file
 $ scripts/ci-local.sh claims       # rebuild, serve production, fetch / and scan the rendered HTML
 $ scripts/ci-local.sh csp          # the policy in vercel.json over the served page and its not-found route, refusing nothing either carries
 $ scripts/ci-local.sh weight       # every image the page body fetches, against its byte budget
@@ -694,7 +695,7 @@ changes nothing a reader sees cannot redden it.
 
 `.github/workflows/ci.yml` runs the same commands on `ubuntu-24.04` on every pull request (and
 on demand, through `workflow_dispatch`): Node from `.nvmrc`, `npm ci`, then `typecheck`, `build`, `button`,
-`contrast`, `claims`, `csp`, `weight`, `links` and `lint`. It installs lychee and actionlint from pinned releases: the runner has no
+`contrast`, `mark`, `claims`, `csp`, `weight`, `links` and `lint`. It installs lychee and actionlint from pinned releases: the runner has no
 nix, so `scripts/ci-local.sh` takes both from `PATH` when they are there and from nixpkgs
 otherwise, and all three places run the same checkers.
 
