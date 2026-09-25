@@ -9,25 +9,11 @@ import {
   TreeFigure,
 } from "@/components/room-visuals";
 
-const heroFacts = [
-  <>
-    The server relays the room as ciphertext: it sees that a room exists, who is
-    in it, their names and the sizes and timing of what moves, and never the file
-    text, the cursors or the file names.
-  </>,
-  <>
-    The session layer is written down as a specification: prose, JSON Schema and
-    conformance vectors.
-  </>,
-  <>
-    Guests see the paths you grant and edit the room&apos;s text. Only your own
-    client writes to your folder.
-  </>,
-  <>
-    There is no account on either side. Rooms live in memory on the server you host,
-    and the server writes nothing to disk.
-  </>,
-];
+// One word each. The hero carried the four as full sentences, and three of them are argued
+// anyway below — the sealed relay in the paragraph under the `docker run`, the specification in
+// its own section, the granted paths in the third card — while `No account` is a fact the page
+// states nowhere else, which is why the row stays a row.
+const heroFacts = ["Sealed", "Specified", "Path-scoped", "No account"];
 
 const roomCards = [
   {
@@ -128,17 +114,14 @@ const steps = [
   },
 ];
 
-/** The invite, at card weight: the same chip the hero figure carries, with the copy glyph's
-    job done by the label alone. */
+/** The invite, at card weight: the same chip the hero figure carries, minus the copy glyph
+    (there is nothing to copy here) and the label (the lead under it names the link). */
 function InviteCard() {
   return (
     <div className="fig fig-invite">
       <span className="invite">
-        <span className="invite-label">invite link</span>
         <span className="invite-url">
-          ?room=k7m2&amp;token=4f9c
-          <wbr />
-          #k=&hellip;&amp;h=&hellip;
+          ?room=k7m2&amp;token=4f9c#k=&hellip;&amp;h=&hellip;
         </span>
       </span>
     </div>
@@ -163,11 +146,8 @@ export default function Home() {
                 <span className="block">on a server you run.</span>
               </h1>
               <p className="mt-6 max-w-[35rem] text-[1.0625rem] leading-[1.7] text-subtext md:text-[1.125rem]">
-                Selvage is a live-coding collaboration protocol: one Rust binary
-                you host holds the room, and an invite link is the whole
-                permission. VS Code, Neovim and a browser page join the same
-                file, with no account and no third party&apos;s cloud holding
-                the room.
+                VS Code, Neovim and the browser join the same file, with no
+                third party&apos;s cloud holding the room.
               </p>
               {/* Two actions, and both of them are actions: the demo needs nothing
                   installed and the editor is the other way in. The specification is a
@@ -180,17 +160,17 @@ export default function Home() {
                   Run it in your editor
                 </Button>
               </div>
-              <ul className="mt-8 max-w-[35rem] space-y-3">
-                {heroFacts.map((fact, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-mauve/15">
+              <ul className="mt-8 flex max-w-[35rem] flex-wrap items-center gap-x-5 gap-y-3">
+                {heroFacts.map((fact) => (
+                  <li key={fact} className="flex items-center gap-2.5">
+                    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-mauve/15">
                       <Check
                         className="h-3.5 w-3.5 text-mauve"
                         strokeWidth={3}
                         aria-hidden="true"
                       />
                     </span>
-                    <span className="text-[15px] leading-relaxed text-text">
+                    <span className="text-[15px] font-medium text-text">
                       {fact}
                     </span>
                   </li>

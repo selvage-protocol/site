@@ -88,15 +88,16 @@ function PeerBadge({ name }: { name: PeerName }) {
   return <span className={`peer-badge peer-${PEERS[name]}`}>{name}</span>;
 }
 
+/** The invite the hero figure carries: the glyph, because it is the control an editor copies,
+    and the link itself on one line. The `invite link` label went with the second row: with it the
+    chip is 315 px wide, which the hero's column holds by 8 px and the card's figure does not hold
+    at all, so the two chips could not read as the same chip. */
 export function InviteChip() {
   return (
     <span className="invite" aria-hidden="true">
       <Copy className="invite-glyph" aria-hidden="true" />
-      <span className="invite-label">invite link</span>
       <span className="invite-url">
-        ?room=k7m2&amp;token=4f9c
-        <wbr />
-        #k=&hellip;&amp;h=&hellip;
+        ?room=k7m2&amp;token=4f9c#k=&hellip;&amp;h=&hellip;
       </span>
     </span>
   );
