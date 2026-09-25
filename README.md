@@ -25,13 +25,13 @@ browser proof the runner cannot run, and nothing else.
 
 | Path | What it is |
 |---|---|
-| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (promise, four landed facts, three CTAs, the room figure, and the version line under them), *Get it working* (the server commands, the sealed-relay paragraph under them with its wire-version binding and the peer corpus's counts, one folded row per editor, the demo instance and the address an editor hosts on, and the long routes folded into one `details`), *See it working* (four cards), *How it works* (four steps), *The session layer has no specification* (why the specification is the artifact), then the footer |
+| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (promise, three CTAs, four landed facts, the room figure, and the version line under the facts), *Get it working* (the server commands, the sealed-relay paragraph under them with its wire-version binding and the peer corpus's counts and the file that pins them, one folded row per editor, the demo instance and the address an editor hosts on, and the long routes folded into one `details`), *See it working* (four cards), *How it works* (four steps), *The session layer is written down* (why the specification is the artifact), then the footer |
 | `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, the one origin the metadata resolves against (`metadataBase`, `alternates.canonical`, `openGraph.url`; see "The live origin"), and the global stylesheet. The favicons are deliberately absent: they are Next file conventions, so the framework writes their tags and `sizes` from the files themselves |
 | `app/not-found.tsx` | the not-found route: what a mistyped address renders. The framework's own 404 document is styled with a `<style>` element and four `style` attributes, every one of which the policy's `style-src 'self'` refuses; this one is styled from `style.css` and carries neither (see "The Content-Security-Policy") |
 | `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, and a system font stack, so no font is fetched from a third party. Two widths are named there and the page keeps to them: `--measure` for running prose and `--column` for everything that is not prose (section rules, code blocks, the repo grid), so a wide figure is deliberate inside a narrow measure |
 | `app/icon.png` / `app/icon1.png` / `app/icon2.png` / `app/apple-icon.png` | the favicon set: the owner's opaque export resized to the four sizes a browser asks for (32, 16 and 48 px, and the 180 px home-screen icon), named for Next's file convention so the framework writes their `<link>` tags and `sizes`. Nothing here is redrawn; there is no vector favicon (see "The site mark") |
 | `app/opengraph-image.png` | the social card image (Next file convention, served as `/opengraph-image.png`): the owner's opaque export at full size, so cards crop owner's pixels |
-| `public/mark-header.png` | the mark as the page body fetches it: the owner's transparent export resized to 128×128 for the one surface that paints it, 32 CSS px in the nav header (see "The site mark") |
+| `public/mark-header.png` | the mark as the page body fetches it: the owner's transparent export resized to 128×128 and levelled for the one surface that paints it, 32 CSS px on the dark nav bar (see "The site mark") |
 | `public/mark-transparent.png` | the owner's transparent 800×800 export, vendored byte-identical (its checksum matches the owner's file) and never hotlinked. The page body no longer fetches it: it is the source the header derivative is made from, and `web_client/test/identity.test.ts` pins its bytes against that repository's own copy. The opaque export was vendored beside it while the hero panel was light; it is no longer fetched either; `app/opengraph-image.png` is the same file |
 | `postcss.config.mjs` | the one PostCSS plugin (`@tailwindcss/postcss`), so `style.css` compiles on build |
 | `next.config.ts` | the one build setting that is not a default: `poweredByHeader: false`, so the framework's `X-Powered-By: Next.js` banner is not on the page's HTML response |
@@ -42,9 +42,9 @@ browser proof the runner cannot run, and nothing else.
 | `lib/utils.ts` | the one shared helper (`cn`: `clsx` + `tailwind-merge`) |
 | `package.json` / `package-lock.json` | the only dependencies: `next`, `react`, `react-dom`, `tailwindcss` (+ its PostCSS plugin), `clsx`, `tailwind-merge`, `class-variance-authority` and `lucide-react` for icons, `typescript` and `@types/*`. No Radix, no component library, nothing else without a written reason |
 | `.nvmrc` | the pinned Node version for local work and CI (`nvm use` reads it); `package.json` `engines` carries the major (`24.x`), because Vercel only deploys major versions |
-| `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason, and the facts it asserts in the positive — the image tag, the demo instance, the wire version the page says each of them speaks, the two disclosures a reader is owed, and the identity the extension is published under with the two registries it is on |
+| `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason, and the facts it asserts in the positive — the image tag, the demo instance, the wire version the page says each of them speaks, the two disclosures a reader is owed, the file the page's corpus counts are pinned in, and the identity the extension is published under with the two registries it is on |
 | `scripts/check-button-props.tsx` | the button check: renders the button and anchor variants and asserts their props reach the DOM (run by `npm run check:button` inside the gate) |
-| `scripts/check-contrast.py` | the contrast check: parses the theme tokens out of `style.css` — including the sample's `selvage-mocha` token colours, the ground the code figure draws them on, and the alpha a peer's selection fill is drawn at — reads the token a selection fill sits under out of `components/room-visuals.tsx` and the fills and labels of the button variants out of `components/ui/button.tsx`, and asserts the rendered pairs sit at or above WCAG AA, with measured ratios (run by `scripts/ci-local.sh contrast` inside the gate) |
+| `scripts/check-contrast.py` | the contrast check: parses the theme tokens out of `style.css` — including the sample's `selvage-mocha` token colours, the ground the code figure draws them on, and the alpha a peer's selection fill is drawn at — reads the token a selection fill sits under out of `components/room-visuals.tsx` and the fills and labels of the button variants out of `components/ui/button.tsx`, reads the nav mark's own pixels out of `public/mark-header.png`, and asserts the rendered pairs sit at or above WCAG AA, with measured ratios (run by `scripts/ci-local.sh contrast` inside the gate) |
 | `scripts/check-csp.py` | the policy check: reads the Content-Security-Policy out of `vercel.json` and the served HTML, and fails when the policy would refuse a script, stylesheet or image the page carries (run by `scripts/ci-local.sh csp` inside the gate; see "The Content-Security-Policy") |
 | `scripts/check-weight.py` | the weight check: reads the served HTML and the bytes on disk, and fails when an image the page body fetches out of `public/` is over its budget or declares a pixel size the file does not have (run by `scripts/ci-local.sh weight` inside the gate; see "The site mark") |
 | `scripts/check-csp-browser.mjs` | the browser proof: serves the built page with the headers out of `vercel.json`, drives headless Chromium over CDP, and asserts zero `securitypolicyviolation` events, `window.__next_f` an object, the header's concealment on scroll and no `X-Powered-By`. Not in the gate (the runner has no browser), and it needs `npm run build` first |
@@ -64,7 +64,7 @@ glyphs are the ones that sit on the surface:
 
 | Surface | File | Why |
 |---|---|---|
-| Nav header on dark Mocha | `public/mark-header.png` | the bar is translucent Mocha over the page; the opaque export's baked `#1e1e2e` base would draw a visible box against it, while the transparent glyphs sit straight on the bar. The bar paints it at 32 CSS px, which is what the file is sized for (see below) |
+| Nav header on dark Mocha | `public/mark-header.png` | the bar is translucent Mocha over the page; the opaque export's baked `#1e1e2e` base would draw a visible box against it, while the transparent glyphs sit straight on the bar. The bar paints it at 32 CSS px, which is what the file is sized for (see below). The export's glyphs are dark — a shaded wordmark whose dark stroke is invisible on a dark ground — so this derivative is levelled brighter for the bar it lands on, and `scripts/check-contrast.py` reads the file's pixels to hold it at the non-text floor |
 | Favicon and social card | `app/icon1.png` / `app/icon.png` / `app/icon2.png` / `app/apple-icon.png` / `app/opengraph-image.png` | tab bars and link unfurls crop unpredictably, so these stay opaque: the four favicon sizes are the opaque export resized, the social card the full-size opaque export |
 
 The hero panel used to be the second surface. It is now a figure of the product itself (see
@@ -99,14 +99,36 @@ leaves the monogram 10×4 px, the smallest this artwork gets and the reason the 
 the social card carry it best. Giving the tab more of the mark would mean cropping the
 export's field, a re-framing of the owner's composition, so it is not done here.
 
-The header mark is sized the same way the favicons are. The nav bar paints it at 32 CSS px, so
-`public/mark-header.png` is the transparent export resized to 128 —
-`magick public/mark-transparent.png -resize 128x128`, byte-identical to a fresh resize (RMSE 0)
-— which covers a device pixel ratio to 4 and carries none of the master's transparent field.
-The master is 60,595 bytes; served there it was 26% of everything the page transferred, and a
-browser resampled it to a 20×9 px monogram without saying so. The derivative is 6,573 bytes, and
-resampling it to the painted size differs from resampling the master by RMSE 0.15%, under the
-favicon set's own margins. `public/mark-transparent.png` stays in the tree at full size: another
+The header mark is sized the same way the favicons are, and it is the one surface where the
+owner's tones had to be lifted. The nav bar paints it at 32 CSS px, so `public/mark-header.png`
+is the transparent export resized to 128 and levelled —
+`magick public/mark-transparent.png -resize 128x128 -channel RGB -gamma 2.4 +channel
+public/mark-header.png` — which covers a device pixel ratio to 4 and carries none of the
+master's transparent field. The master is 60,595 bytes; served there it was 26% of everything
+the page transferred, and a browser resampled it to a 20×9 px monogram without saying so.
+Resizing alone was not enough: the export is a shaded wordmark whose glyph tones sit between
+`#2d111e` and `#7cc9c0`, so on `#1e1e2e` the median ink pixel measured **1.70:1** and the mark
+read as a smudge beside the wordmark. The derivative therefore applies a gamma curve to the
+colour channels and nothing else — no redraw, no recolour, the owner's own pixels on a lighter
+tone curve — which puts the median ink pixel at **4.57:1** on the bar. It is 6,801 bytes.
+`scripts/check-contrast.py` composites the file's own pixels over `--bg` and asserts that
+median at the non-text 3.0:1 floor, so a derivative that goes dark again fails the gate; the
+old resize measures 1.70:1 there and fails it.
+
+Two details of that derivation matter for keeping it honest. The gamma is applied after the
+resize, which is the order the file is built in, and a fresh run of the two commands reproduces
+the file pixel for pixel (RMSE 0). And the claim the earlier derivative could make — that
+resampling it to the painted size matched resampling the master to within RMSE 0.15% — is
+deliberately false now: at 32 px, flattened on the bar, the two differ by RMSE 4.7%. That
+figure is the tone curve, and it is the whole of the change.
+
+The alternative the review offered — dropping the mark and keeping the wordmark alone — was not
+taken because the mark is the page's only image-body surface and `scripts/check-weight.py` is
+written around it: a page that fetches no image at all is an exit 2 there rather than a pass, so
+removing the mark would have retired a check about image weight instead of answering a question
+about tone.
+
+`public/mark-transparent.png` stays in the tree at full size: another
 repository pins its bytes, so it is the source of truth rather than a fetched asset. Only the
 surfaces that paint the mark are listed above, and `scripts/check-weight.py` holds every image
 the page body fetches to a budget so a master cannot come back to one of them by accident.
@@ -118,11 +140,11 @@ the reader can name.
 
 | Part | Its job |
 |---|---|
-| Hero | the promise, four landed facts, three CTAs, the room figure, and one line under the CTAs naming the specification as a draft and the wire version, `selvage/2`. The CTAs lead with the demo — the fastest thing a stranger can do, with nothing installed — then running it in the editor, then the specification; the header's own CTA points at the demo for the same reason. The second fact is what the relay sees and does not: it relays the room as ciphertext, sees that a room exists, who is in it, their names and the sizes and timing of what moves, and never the file text, the cursors or the file names. The fourth says the server writes nothing to disk, which is whose disk the sentence is about — it used to read "nothing is written to disk", beside a fact about the host's own folder writing to it. The `h1`, *Edit the same file together, on a server you run.*, says what the product does and carries the self-hosted wedge from the design record's hook |
+| Hero | the promise, three CTAs, four landed facts, the room figure, and one line under the facts naming the specification as a draft and the wire version, `selvage/2`. The CTAs come **above** the facts because of the fold: four facts, a CTA row and the version line of the order the page carried put the primary button at y≈823 on a 1280×633 screen and nothing but the header's small link in the first one, so a reader met evidence and no action. The CTAs lead with the demo — the fastest thing a stranger can do, with nothing installed — then running it in the editor, then the specification; the header's own CTA points at the demo for the same reason. The first fact is what the relay sees and does not: it relays the room as ciphertext, sees that a room exists, who is in it, their names and the sizes and timing of what moves, and never the file text, the cursors or the file names. It leads the list rather than the specification's, because the disclosure is the claim that has to be met first and it is the one a skimmer needs. The fourth says the server writes nothing to disk, which is whose disk the sentence is about — it used to read "nothing is written to disk", beside a fact about the host's own folder writing to it. The `h1`, *Edit the same file together, on a server you run.*, says what the product does and carries the self-hosted wedge from the design record's hook |
 | Get it working | the published image as one `docker run`, and a link to the compose file and the source build — then the sealed-relay paragraph, which sits under that command because a reader can take the two together: that the container image above and the demo speak the one wire version `selvage/2` and that it is the sealed one, then what that wire seals, what the relay still sees and still does, and the peer layer's own corpus counts (26 vectors, 221 checks, 74 assertions), which sit under the sentence they back — that the host is a peer's signed claim rather than a server fact. Then one folded row per editor: VS Code, Neovim and the browser page, each with its prerequisites, its exact commands and its repository — the VS Code row opening on the identity the extension is published under and the two registries it is on, and on what an install is and is not — the browser row linking the demo, whose page its own server serves, where Chrome or Edge can start a session, where the page link it hands a guest carries the room and token in its query and the keys in its fragment, and where it says that a guest who opens that page trusts the room's server for the client code too. The long routes (the corpus check, the vector replay) fold into one `details`. It closes on *Try the demo*, the one small instance the project runs, last in the section so the command and the editor rows keep the ground the hero points at; that section gives the address an editor hosts on and the setting each client takes it in, leaves the guest to the invite link, and names the page as a way to start a room with no editor running. It opens on the product's own shape: you run the server and the invite link is how somebody joins you, and the demo is a guest's way into a room somebody else hosts, or a host's way to start one |
 | See it working | four cards, each with a drawing of the thing it claims: anyone with the link is in, two carets in one text, the paths a guest sees, multiple clients on one engine |
 | How it works | the four moves in order (host a folder, send the invite, type in the same file, close the window), under the design record's one-sentence workflow. The fourth move states both clocks the protocol has: the room lives while it has connections and for a short grace period after its last one ends, and the host's own absence is a second clock on every guest's client, which keeps editing through a short countdown and then ends its own session |
-| The session layer has no specification | the wedge: language tooling has the Language Server Protocol and debugging the Debug Adapter Protocol, document sync has `y-protocols`, and the session layer is unspecified, so every collaborative tool decides those for itself. The wire corpus's counts appear here once, as the evidence they are; the peer corpus's appear in *Get it working*, under the claim they back |
+| The session layer is written down | the wedge: language tooling has the Language Server Protocol and debugging the Debug Adapter Protocol, document sync has `y-protocols`, and the session layer is unspecified, so every collaborative tool decides those for itself. The wire corpus's counts appear here once, as the evidence they are, with the file that pins them; the peer corpus's appear in *Get it working*, under the claim they back, with the same file named. The heading says what the page does rather than denying what the hero's fact states: it used to read *The session layer has no specification*, which contradicted that fact for anyone skimming the two |
 | Footer | the licences, the page's own privacy line and the contact address, nothing more |
 
 The page used to end on a two-column ledger of what is built and what is not. On a product page
@@ -422,8 +444,8 @@ beside the visible text, because a link unfurl prints that prose verbatim and th
 are stripped from the body: five planted overclaims in `og:description` used to pass the scan
 unseen, on the surface a person deciding whether to paste a link meets first. It also
 asserts facts in the positive — the image tag, the demo instance, the wire version the page says
-each of them speaks, two disclosures, and the identity the extension is published under with the
-two registries it is on — described just below.
+each of them speaks, two disclosures, the file the corpus counts are pinned in, and the identity
+the extension is published under with the two registries it is on — described just below.
 **It is a filter, not a proof.** It cannot see meaning: a false claim in different words, a
 synonym outside the list, a superlative, an unbacked sentence or a wrong number the list does not
 pin all pass it. A green gate means the known wordings are absent, nothing more. The reasons are
@@ -493,7 +515,7 @@ the paragraph is there to state — the room's existence, its membership, the di
 sizes and timing of what moves — as a small pattern of its own rather than the sentence, so a
 rewritten paragraph that keeps the facts passes and one that drops a fact fails. Two of the four
 are phrased as the disclosure's own sentence, because the page states the same two nouns a second
-time in *The session layer has no specification*: matched loosely, that earlier paragraph supplied
+time in *The session layer is written down*: matched loosely, that earlier paragraph supplied
 them for a page whose disclosure had been deleted, and a rewrite that dropped those two while
 keeping the other two passed with them gone. Deleting the paragraph now fails the check on all
 four. The facts are read from the page's own `docker run` onwards, and not over the whole page:
@@ -535,6 +557,7 @@ answers.
 | "open source" of the server or the project | The server binary is `FSL-1.1-MIT`: source-available, not OSI-approved, free for non-competing use and under MIT two years after each release. The specification and the clients are the open ones, and the page names their licences instead of reaching for the phrase |
 | "SSP" | The abbreviation is taken by stack-smashing protection and by supply-side platforms. The protocol is the Selvage Session Protocol, written out |
 | `salvage/1`, `salvage/2` | The wire version is `selvage/2`. "Selvage" is heard as "salvage", which is why the full protocol title appears at least once in the page's first paragraph |
+| "the session layer has no specification" | The page's own hero fact says the opposite — the session layer is written down as a specification, with JSON Schema and conformance vectors — and the section argues it. The layer every collaborative tool decides for itself is the subject, so a heading that reads as a denial of the fact a skimmer has just met is a contradiction rather than the argument |
 | "nobody else can read it", "no one else can see it", "only the people in the room", "the server knows nothing", "fully encrypted", "zero-knowledge", a bare "end-to-end encrypted" or "e2ee", "the relay is blind" | The relay is sealed, not omniscient: it reads no text, no cursor, no file name and no role, and the keys are in the link a human pastes, but it still reads a room's existence, its membership, the display names and the sizes and timing of what moves, and it can drop, delay, reorder or end any room. Each of these wordings claims more than the wire's sealing buys, and the list alternates the subject and the verb because the paraphrase is how the sentence is written first: "no one else can see it" is the same claim as "nobody else can read it". The window between the subject and the verb is the sentence's and not a word's — 64 characters, the same unit `clause_around` reads a permit from — because "the server relays the room as ciphertext and learns nothing" puts the claim 35 characters after its subject, which a 24-character window passed: that evasion is a fixture now, and it fails the gate. No version of this protocol has less than that: `selvage/2` is the one wire version it has, and every release the page hands a reader speaks it. An "end-to-end encrypted" that names what stays visible in the same sentence is backed and stays legal; one that names it and denies it — "so the relay learns no membership and no names" — is the unqualified claim with a disclosure's noun in it, and the permit is cancelled for it |
 | "the server cannot read" (unqualified) / "the server cannot read the room" / "the text never reaches the server" / the host reading, and the membership one with it | The relay is sealed, not omniscient: it reads no text, no cursor, no file name and no role, and it cannot forge, mis-attribute or replay a frame, but it still reads a room's existence, its membership, the display names and the sizes and timing of what moves, and it can drop, delay, reorder or refuse frames and end any room. A claim about named, sealed material is specific and backed — the same sentence has to name it, which is what the pattern reads rather than the determiners in front of the verb — and unqualified it must not appear, nor may the room itself or the membership be the object. A sentence that names sealed material and claims *everything* is not specific either: "the server cannot see anything, not even your text" carries a permitted noun and the widest object there is, and the permit is cancelled for it. "It cannot tell who is host" is forbidden too, and the reason is a measurement rather than a reading: `CANONICAL.md` §6.1 puts `kind` in the clear and `PROTOCOL.md` §7.1 makes `kind = 1` the host's own frame, so a relay that routes a room reads one clear byte and knows. What the page may say is what the threat model supports — the host is a peer's signed claim, and the server cannot seat a host, prove one or take the role |
 | hosting from a page in any browser, a room with no invite, the project's own site as a client | The browser client is published and it hosts: on Chrome or Edge a page the room's own server serves starts a session from a folder the person picks, which is the demo's shape, so the page says so. What is not true: hosting in any browser (Firefox and Safari have no `showDirectoryPicker` and can join but cannot host), a page no Selvage server serves offering it (the client says why instead of offering a control that could only refuse), joining without the invite link a host copies, and the project's own site as a place to join a room (it is a landing page). The stale denial "nothing runs in a web page" stays caught too, and so does the unqualified "host a session in the browser", which is the shape that overclaim takes |
@@ -602,7 +625,7 @@ $ scripts/ci-local.sh              # typecheck, build, button, contrast, claims,
 $ scripts/ci-local.sh typecheck    # tsc --noEmit
 $ scripts/ci-local.sh build        # next build
 $ scripts/ci-local.sh button       # render the button/anchor variants and assert their props reach the DOM
-$ scripts/ci-local.sh contrast     # theme token pairs at or above WCAG AA, with measured ratios
+$ scripts/ci-local.sh contrast     # the theme token pairs and the nav mark's own pixels, at or above WCAG AA
 $ scripts/ci-local.sh claims       # rebuild, serve production, fetch / and scan the rendered HTML
 $ scripts/ci-local.sh csp          # the policy in vercel.json over the served page and its not-found route, refusing nothing either carries
 $ scripts/ci-local.sh weight       # every image the page body fetches, against its byte budget
@@ -619,7 +642,15 @@ readings the specification itself uses and the peer's signed host claim. The sca
 in the page's `meta` attributes beside the visible text, because a link unfurl prints it. It also
 requires two disclosures in the scanned file: the relay-visibility facts, each as its own pattern,
 so the paragraph cannot be deleted while the fixtures stay green, and the browser guest's trust in
-the room's own server for the client code. The extension's publication is required the same way —
+the room's own server for the client code. The corpus counts are required the same way: every
+count the scanned pages show has to name the file that pins it in the sentence the number sits in
+or the one after it, because a number with nowhere to check it is one a reader takes on trust, and
+the peer counts were the pair that named nothing. The scan reads every count in every file it was
+given — a rule that returned on the first cited page, or the first cited number, would let a later
+one carry a number nobody can check — and it fails when it reaches no count at all, rather than
+reporting a page that states nothing as a page with nothing wrong. Both spellings the number rules
+accept are read: `24 conformance vectors` and `24 wire vectors` are one pin, and a citation rule
+that matched one of them would leave the other unguarded. The extension's publication is required the same way —
 the identity, both registries, and what an install is and is not — and it is the one rule here
 that also forbids: every registry-shaped word on the page has to belong to one of the two
 registries the release publishes to, and a link to a listing has to be one of the two the release
@@ -656,8 +687,9 @@ otherwise, and all three places run the same checkers.
 ## Accessibility: the WCAG AA floor
 
 The page holds itself to WCAG 2.2 AA. Ratios are computed from the theme tokens in
-`style.css`, never eyeballed; `scripts/check-contrast.py` asserts them in the gate, so a
-regression fails the build instead of waiting for a look. Measured today:
+`style.css` — and, for the one mark that is artwork rather than a token, from the pixels of
+`public/mark-header.png` — never eyeballed; `scripts/check-contrast.py` asserts them in the gate,
+so a regression fails the build instead of waiting for a look. Measured today:
 
 | Pair | Ratio | Needs |
 |---|---|---|
@@ -688,6 +720,7 @@ regression fails the build instead of waiting for a look. Measured today:
 | glass-card text, worst of the five panel stops | 11.71:1 (muted 7.61:1) | 4.5:1 |
 | panel text, worst stop (the tree, the file bar and the figure's caption sit on the panel, not on the card) | 9.08:1 (muted 5.90:1) | 4.5:1 |
 | the open file's dot on the panel, worst stop (the figure's one mark that is not a peer's) | 9.08:1 | 3.0:1 |
+| the nav mark's median ink pixel on the header's ground (the artwork's own pixels, read out of `public/mark-header.png` and composited over `--bg`) | 4.57:1 | 3.0:1 |
 
 WCAG 1.4.1 is the one criterion measured the other way round, because both of its floors cannot
 hold at once here. It asks for 3.0:1 between a link and the text beside it when colour is the only

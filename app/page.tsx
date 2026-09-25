@@ -11,13 +11,13 @@ import {
 
 const heroFacts = [
   <>
-    The session layer is written down as a specification: prose, JSON Schema and
-    conformance vectors.
-  </>,
-  <>
     The server relays the room as ciphertext: it sees that a room exists, who is
     in it, their names and the sizes and timing of what moves, and never the file
     text, the cursors or the file names.
+  </>,
+  <>
+    The session layer is written down as a specification: prose, JSON Schema and
+    conformance vectors.
   </>,
   <>
     Guests see the paths you grant and edit the room&apos;s text. Only your own
@@ -175,6 +175,25 @@ export default function Home() {
                 file, with no account and no third party&apos;s cloud holding
                 the room.
               </p>
+              {/* The action comes before the evidence: on a 1280×633 screen the four
+                  facts used to push the primary button past the fold, and a reader met
+                  the header's small link and nothing to do. The first fact is the
+                  relay's, so what a skimmer meets there is the disclosure. */}
+              <div className="mt-9 flex flex-wrap items-center gap-3">
+                <Button href="https://selvage-demo.dontblameme.dev" size="lg">
+                  Try the demo in your browser
+                </Button>
+                <Button href="#get-it-working" variant="secondary" size="lg">
+                  Run it in your editor
+                </Button>
+                <Button
+                  href="https://github.com/selvage-protocol/specification"
+                  variant="ghost"
+                  size="lg"
+                >
+                  Read the specification
+                </Button>
+              </div>
               <ul className="mt-8 max-w-[35rem] space-y-3">
                 {heroFacts.map((fact, index) => (
                   <li key={index} className="flex items-start gap-3">
@@ -191,22 +210,7 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-9 flex flex-wrap items-center gap-3">
-                <Button href="https://selvage-demo.dontblameme.dev" size="lg">
-                  Try the demo in your browser
-                </Button>
-                <Button href="#get-it-working" variant="secondary" size="lg">
-                  Run it in your editor
-                </Button>
-                <Button
-                  href="https://github.com/selvage-protocol/specification"
-                  variant="ghost"
-                  size="lg"
-                >
-                  Read the specification
-                </Button>
-              </div>
-              <p className="mt-4 font-mono text-[12px] text-subtext">
+              <p className="mt-6 font-mono text-[12px] text-subtext">
                 The specification is a draft, and the wire version is{" "}
                 <code>selvage/2</code>.
               </p>
@@ -265,7 +269,10 @@ export default function Home() {
               claim rather than a server fact: it cannot seat a host, prove one or
               take the role. The peer layer has its own corpus for that: 26 peer
               vectors, 221 peer checks and 74 peer assertions, replayed in one
-              process with no socket and no client. The relay still sees that a room
+              process with no socket and no client. Those numbers are constants in{" "}
+              <code>specification/schema/validate.py</code>, so a deleted assertion
+              fails the run instead of shrinking a total in a line of output. The
+              relay still sees that a room
               exists, who is in it, their names, and the sizes and timing of what
               moves, and it can still drop, delay, reorder or refuse frames and end
               any room.
@@ -457,7 +464,7 @@ export default function Home() {
           </section>
 
           <section id="why-a-spec" className="scroll-mt-28 md:scroll-mt-24">
-            <h2>The session layer has no specification</h2>
+            <h2>The session layer is written down</h2>
             <p>
               Language tooling has the Language Server Protocol and debugging has
               the Debug Adapter Protocol. Document sync has{" "}

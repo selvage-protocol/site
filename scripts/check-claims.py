@@ -190,6 +190,28 @@ RELAY_DISCLOSURE = (
         re.compile(r"\bsizes?\b[^.]{0,32}\btiming\b", re.IGNORECASE),
     ),
 )
+# Every count the page shows for the corpus, and the file that pins each of them: the wire
+# layer's 24 vectors, 33760 frame checks and 8387 assertions, and the peer layer's 26 vectors,
+# 221 checks and 74 assertions are all constants in `specification/schema/validate.py`. A number
+# the page hands a reader with no file beside it is one the reader cannot check, which is the
+# defect this pair exists for: the frame counts named the file and the peer counts did not.
+# Where a sentence ends in the visible text. A bare `.` is not one: the file this check reads
+# for is `schema/validate.py`, and cutting a window at the period before its `py` truncated the
+# citation out of the very sentence that carries it.
+SENTENCE_END = re.compile(r"\.(?=\s|$)")
+CORPUS_COUNTS = (
+    # Both spellings the forbidden-number rules accept: `24 conformance vectors` and `24 wire
+    # vectors` are the same pin, and a citation rule that matched only one of them would leave
+    # the other wording unguarded — the count would not be seen at all, so nothing would ask it
+    # for a file.
+    (re.compile(r"\b24 (?:conformance|wire) vectors\b"), "the 24 wire vectors"),
+    (re.compile(r"\b33760 frame[- ]checks\b"), "33760 frame checks"),
+    (re.compile(r"\b8387 assertions\b"), "8387 assertions"),
+    (re.compile(r"\b26 peer vectors\b"), "26 peer vectors"),
+    (re.compile(r"\b221 peer checks\b"), "221 peer checks"),
+    (re.compile(r"\b74 peer assertions\b"), "74 peer assertions"),
+)
+CORPUS_FILE = re.compile(r"\b(?:specification/)?schema/validate\.py\b")
 USER_AGENT = "selvage-site-check/1.0"
 
 # The second disclosure the page owes a reader, and the one the plan forbids leaving implied: the
@@ -800,6 +822,22 @@ FORBIDDEN: list[Phrase] = [
             "The demo instance is non-commercial and for personal and evaluation use.",
             "Those terms cover the demo's one box, not the software.",
         ),
+    ),
+    Phrase(
+        # The hero's fact about the specification and this heading said opposite things to a
+        # skimmer. What the page means is that the session layer is the part nobody writes
+        # down — every collaborative tool decides it for itself — and this project writes it
+        # down; a heading that reads as a denial of the page's own first fact is the
+        # contradiction, whatever the section argues below it.
+        r"\bsession layer\b[^.]{0,24}\b(?:has|with) no specification\b"
+        r"|\bno specification\b[^.]{0,24}\bsession layer\b",
+        "the session layer has no specification",
+        "the page's own fact says the opposite: the session layer is written down as a "
+        "specification, with JSON Schema and conformance vectors, and the section carries it. "
+        "The layer every collaborative tool decides for itself is the subject; a heading that "
+        "denies the specification contradicts what a skimmer has just read",
+        ("the sess<!-- -->ion layer has no specification",),
+        ("The session layer is written down", "The session layer has a specification"),
     ),
     Phrase(
         r"design[^.]{0,20}0\.x",
@@ -1640,8 +1678,8 @@ def check_relay_disclosure(pages: list[Scanned]) -> int:
     a link unfurl is not on the page a reader reads. Each fact has a pattern of its own, so a
     rewritten paragraph that keeps them passes and one that drops a fact fails. Two of the four
     have to be phrased as the disclosure's own sentence, because the page states the same two
-    nouns a second time in *The session layer has no specification*, about what every
-    collaborative tool decides for itself; matched loosely that paragraph supplied them for a
+    nouns a second time in *The session layer is written down*, about what every collaborative
+    tool decides for itself; matched loosely that paragraph supplied them for a
     page whose disclosure had been deleted, and a rewrite that dropped those two while keeping
     "their names" and "sizes and timing" passed with them gone. The region is the page from the
     `docker run` that pulls the pinned image onwards: the paragraph's place under that command is
@@ -1672,6 +1710,74 @@ def check_relay_disclosure(pages: list[Scanned]) -> int:
             "`docker run` onwards, which is where the paragraph sits and where the hero's own "
             "fact does not reach, so a page with a fact dropped from the paragraph claims more "
             "than the relay does",
+            file=sys.stderr,
+        )
+    return 1
+
+
+def window_with_following_sentence(text: str, start: int, end: int) -> str:
+    """The sentence a hit sits in and the one after it, from the visible text.
+
+    A citation is read from where the number is: the page's own frame-count paragraph puts the
+    count in one sentence and "the numbers are constants in `schema/validate.py`" in the next,
+    which is the pair a reader reads together. A file named a section away is not what the
+    number is checked against, so the window stops at the end of the following sentence — and
+    a sentence ends at a period followed by whitespace, not at any period (see `SENTENCE_END`).
+    """
+    left = 0
+    for stop in SENTENCE_END.finditer(text, 0, start):
+        left = stop.end()
+    ends = list(SENTENCE_END.finditer(text, end))
+    right = len(text) if len(ends) < 2 else ends[1].end()
+    return text[left:right]
+
+
+def check_corpus_citation(pages: list[Scanned]) -> int:
+    """Every corpus count the page shows names the file that pins it, beside the number.
+
+    Required rather than permitted, for the reason the disclosures are: a page that shows the
+    counts and names no file lets a reader take six numbers on trust. The window is the count's
+    own sentence and the one after it (see `window_with_following_sentence`), so the citation
+    has to be where the number is.
+
+    Every count in every scanned page is read, and the scan fails when it reaches none: a check
+    that returned on the first page whose counts were cited would let a later page carry an
+    uncited number, and one that returned on the first count would do the same within a page.
+    What is *not* required is a count on every scanned page — a scan may legitimately include a
+    page that shows none (the disclosures' own checks state the facts on one page for the same
+    reason) — so the pages that carry counts are the ones held to this.
+    """
+    root = root_of_this_checkout()
+    shown = 0
+    uncited: list[tuple[str, str]] = []
+    for page in pages:
+        where = os.path.relpath(page.path, root)
+        for pattern, label in CORPUS_COUNTS:
+            for match in pattern.finditer(page.text):
+                shown += 1
+                window = window_with_following_sentence(page.text, match.start(), match.end())
+                if not CORPUS_FILE.search(window):
+                    uncited.append((where, label))
+    if shown == 0:
+        print(
+            f"check-claims: none of {len(pages)} scanned file(s) shows a corpus count, so this "
+            "check decided nothing. The counts are the page's evidence for its own corpus, and a "
+            "rewrite that drops them is not a page this passes",
+            file=sys.stderr,
+        )
+        return 1
+    if not uncited:
+        print(
+            f"check-claims: all {shown} corpus count(s) the scanned page(s) show name "
+            f"{CORPUS_FILE.pattern} beside them, so each number can be checked"
+        )
+        return 0
+    for where, label in uncited:
+        print(
+            f"check-claims: {where} shows {label} with no file named in the sentence the number "
+            "sits in or the one after it. Every count comes from a constant in "
+            "`specification/schema/validate.py`, and a number with nowhere to check it is one a "
+            "reader has to take on trust",
             file=sys.stderr,
         )
     return 1
@@ -2012,6 +2118,7 @@ def main() -> int:
     for check in (
         check_relay_disclosure,
         check_browser_trust,
+        check_corpus_citation,
         check_published_extension,
         check_pinned_image,
         check_demo_instance,
