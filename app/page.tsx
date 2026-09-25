@@ -106,9 +106,9 @@ const steps = [
       <>
         Closing the host&apos;s window ends the room: whoever is in it keeps editing
         while a short countdown runs, and then each client&apos;s session ends. A
-        dropped connection does not end a room, which lives while it has
-        connections and for a short grace period after its last one, and rooms
-        live in memory, so nothing survives a restart of the server.
+        dropped connection does not end a room: it lives while it has connections
+        and for a short grace period after its last one. Rooms live in memory, so
+        nothing survives a restart of the server.
       </>
     ),
   },
@@ -317,7 +317,8 @@ export default function Home() {
               <a href="https://github.com/selvage-protocol/specification">
                 Read the specification
               </a>
-              . It is written to be implemented on its own, without reading the Rust.
+              . It is written to be implemented on its own, without reading the
+              server&apos;s code.
             </p>
           </section>
         </div>
@@ -333,8 +334,7 @@ export default function Home() {
             <code>selvaged</code> is <strong>FSL-1.1-MIT</strong>, which is
             source-available and not OSI-approved. It is free for any non-competing
             purpose, converts to MIT two years after each release, and carries a
-            non-compete clause that reserves exactly the thing a hosted Selvage would
-            be.
+            non-compete clause that reserves commercial hosting for its licensor.
           </p>
           <p>
             This page prerenders to static HTML: one stylesheet, the mark in its
@@ -345,15 +345,13 @@ export default function Home() {
             organisation is its controller.
           </p>
           <p>
-            Mail you send to{" "}
+            Write to{" "}
             <a href="mailto:selvage@dontblameme.dev">
               selvage@dontblameme.dev
             </a>{" "}
-            about the project or a security problem in it is the one thing here that
-            carries your own address back: the controller receives it and keeps it
-            only to answer. The page is MIT OR Apache-2.0, and its workflow sentence
-            is adapted from the Neovim client&apos;s README, which is MIT OR
-            Apache-2.0.
+            about the project or a security problem in it. A message is the only thing
+            here that carries your own address back; the controller receives it and
+            keeps it only to answer. This page is MIT OR Apache-2.0.
           </p>
         </div>
       </footer>

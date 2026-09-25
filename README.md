@@ -832,4 +832,5 @@ What no ratio proves is read against the code by a person on every change:
 `MIT OR Apache-2.0`, the pair the clients carry; see `LICENSE-MIT` and `LICENSE-APACHE`. The
 page's framing follows the project's own design record, which is private and carries no licence;
 the workflow sentence is adapted from the Neovim client's README, which is `MIT OR Apache-2.0`.
-The page footer says the same thing.
+Where the wording came from is recorded here and not in the footer: the page states the licence a
+visitor is bound by, and provenance is a note for whoever maintains the page.
