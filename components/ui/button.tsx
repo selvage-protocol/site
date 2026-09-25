@@ -7,15 +7,18 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-mauve text-[color:var(--color-base)] hover:bg-text",
+        default: "bg-mauve text-[color:var(--color-base)] hover:bg-mauve-hi",
         secondary:
           "bg-mauve/15 text-mauve hover:bg-mauve/20 border border-mauve/60 hover:border-mauve",
+        outline:
+          "border border-surface1 bg-mantle text-text hover:border-overlay1",
         ghost: "text-subtext hover:text-text hover:bg-surface0/60",
       },
       size: {
         default: "h-10 px-5",
-        sm: "h-8 px-3 text-[13px]",
+        sm: "h-[34px] px-3.5 text-sm",
         lg: "h-11 px-6 text-[15px]",
+        hero: "h-12 px-5 text-[16px]",
       },
     },
     defaultVariants: {

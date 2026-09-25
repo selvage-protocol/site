@@ -1,8 +1,7 @@
 /* Selvage — landing page.
    Dark-only Catppuccin Mocha, mauve accent, teal for the second peer, one
-   stylesheet, no web font: the page fetches nothing from a third party. The
-   hexes live in the theme below and in the variables beneath it — a handful of
-   codes needs no dependency.
+   stylesheet. Geist and JetBrains Mono are served from this origin by
+   `next/font`, so the page fetches no font from a third party.
 
    Two widths, one column. --measure is the reading measure: a line of prose
    stops at about 65 characters. --column is the document column, and everything
@@ -10,39 +9,51 @@
    lines up on it, so a wide figure reads as deliberate inside a narrow measure
    rather than as an overflow.
 
-   The page reads as a product page rather than a numbered document: a section
-   opens on space and one hairline and carries no number, headings step up to a
-   display size, and the only counters left are the ones in a procedure a reader
-   follows in order (`.steps`). */
+   A section opens on an eyebrow, a heading and a line of prose, and the
+   surfaces under them wear the colours the clients paint: the code in a figure
+   is the browser client's own `selvage-mocha` rules, and a peer is a bar, a
+   fill and a name in the glyph margin. */
 
 @import "tailwindcss";
 
 @theme {
   --color-base: #1e1e2e;
   --color-mantle: #181825;
+  --color-crust: #11111b;
   --color-surface0: #313244;
-  --color-text: #cdd6f4;
+  --color-surface1: #45475a;
+  --color-surface2: #585b70;
+  --color-overlay0: #6c7086;
+  --color-overlay1: #7f849c;
+  --color-overlay2: #9399b2;
   --color-subtext: #a6adc8;
+  --color-subtext1: #bac2de;
+  --color-text: #cdd6f4;
   --color-mauve: #cba6f7;
+  --color-mauve-hi: #dcc2fa;
   --color-teal: #94e2d5;
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-    "Liberation Mono", monospace;
+  --color-green: #a6e3a1;
+  --color-yellow: #f9e2af;
+  --color-peach: #fab387;
+  --color-blue: #89b4fa;
+  --font-sans: var(--font-geist-sans, ui-sans-serif), system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+  --font-mono: var(--font-jetbrains-mono, ui-monospace), "SF Mono",
+    SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 :root {
-  --bg: #1e1e2e;
-  --fg: #cdd6f4;
+  --bg: #1e1e2e;  --fg: #cdd6f4;
   --muted: #a6adc8;
   --rule: #313244;
   --code-bg: #181825;
   /* The browser client's own `selvage-mocha` token rules (`defineTheme` in
      web_client/src/browser/main.ts), so the samples the page draws are the colours the
-     real editor paints: comment, keyword, string, number, type. Punctuation has no rule
-     in that theme either, so it stays the sample's body colour. */
+     real editor paints: comment, keyword, function, string, number, type. Punctuation has
+     no rule in that theme either, so it stays the sample's body colour. */
   --code-comment: #868ca2;
   --code-keyword: #cba6f7;
+  --code-fn: #89b4fa;
   --code-string: #a6e3a1;
   --code-number: #fab387;
   --code-type: #f9e2af;
@@ -51,13 +62,23 @@
   --link: #cba6f7;
   --measure: 40rem;
   --column: 44rem;
-  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-    "Liberation Mono", monospace;
+  /* The bar's own height, its bottom rule, and the second row a phone gets. An
+     anchor target clears all three: `scroll-margin-top` is the height of the bar
+     that would otherwise sit over the section it was asked to show. */
+  --bar: 60px;
+  --rule-h: 1px;
+  --bar-row: 44px;
+  --mono: var(--font-jetbrains-mono, ui-monospace), "SF Mono", SFMono-Regular,
+    Menlo, Consolas, monospace;
+  --sans: var(--font-geist-sans, ui-sans-serif), system-ui, -apple-system,
+    "Segoe UI", sans-serif;
   color-scheme: dark;
 }
 
+@layer components {
 html {
   color-scheme: dark;
+  background: var(--bg);
   scroll-behavior: smooth;
 }
 
@@ -65,10 +86,9 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, sans-serif;
-  font-size: 1.0625rem;
-  line-height: 1.65;
+  font-family: var(--sans);
+  font-size: 1rem;
+  line-height: 1.6;
 }
 
 /* A reader's own selection is the page's accent, so the room's colour is the one
@@ -77,182 +97,909 @@ body {
   background: rgba(203, 166, 247, 0.3);
 }
 
-/* The document column. The shell spans the page — the hero and the header line up
-   on its edges — and its single grid track is the column, so the hairline, the code
-   block and the prose share a left edge and the space to the right of them is
-   margin rather than overflow. The gap is the rhythm between sections, so no
-   section carries its own margins. */
-.prose-body {
-  display: grid;
-  grid-template-columns: minmax(0, var(--column));
-  gap: 4.5rem;
+a {
+  color: var(--link);
+  text-decoration: none;
 }
 
-/* One hairline per section and nothing in front of it: a product page separates
-   its parts, it does not number them. */
-.prose-body section {
-  padding-top: 2.25rem;
-  border-top: 1px solid var(--rule);
+/* A path, a flag or a version inside a sentence is a chip rather than prose: the
+   page is dense with them and the fill keeps them from reading as words. */
+code {
+  padding: 0.1em 0.36em;
+  border-radius: 0.25rem;
+  background: var(--color-surface0);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 0.88em;
 }
 
-.prose-body h2 {
-  margin: 0 0 1.1rem;
-  font-size: 1.5rem;
-  font-weight: 650;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-  text-wrap: balance;
+a:focus-visible,
+input:focus-visible,
+button:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+  border-radius: 0.375rem;
 }
 
-@media (min-width: 48rem) {
-  .prose-body h2 {
-    font-size: 1.875rem;
+@keyframes sv-blink {
+  0%,
+  55% {
+    opacity: 1;
+  }
+  56%,
+  100% {
+    opacity: 0.25;
   }
 }
 
-.prose-body h3 {
-  margin: 2.25rem 0 0.75rem;
-  font-size: 1.0625rem;
-  font-weight: 650;
-  line-height: 1.4;
-  letter-spacing: -0.005em;
-  text-wrap: pretty;
-}
-
-/* A short accent rule in front of a sub-route, so a step inside a section reads
-   as nested rather than as another section. */
-.prose-body h3::before {
-  display: inline-block;
-  width: 0.75rem;
-  height: 2px;
-  margin-right: 0.6rem;
-  vertical-align: 0.28em;
-  border-radius: 1px;
-  background: var(--link);
-  content: "";
-}
-
-.prose-body p {
-  margin: 0 0 1.15rem;
-  text-wrap: pretty;
-}
-
-/* Prose stops at the measure; lists, code and rules run to the column. */
+/* Running prose. A line of it stops at the measure; the underline is the
+   affordance WCAG 1.4.1 allows instead of a colour difference, because on this
+   palette the two floors cannot both hold (see scripts/check-contrast.py). */
 .prose-body :is(p, li) {
   max-width: var(--measure);
+}
+
+.prose-body a {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* Only a link in running text wears the page's accent: a link drawn as a control
+   keeps the colour its own rule or its own utility gave it. */
+.prose-body :is(p, li, dd, dt, h3) a {
+  color: var(--link);
+}
+
+.prose-body :is(p, li, dd, dt, h3) a:hover,
+.source-link:hover {
+  color: var(--color-mauve-hi);
 }
 
 .prose-body :is(a, code, strong, em) {
   overflow-wrap: break-word;
 }
 
-.prose-body a {
-  color: var(--link);
-  /* Preflight sets `text-decoration: inherit`, which resolves to the parent's `none`, so the
-     thickness and offset below draw nothing without this line: every link on the page was
-     distinguished by colour alone. */
-  text-decoration-line: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
+/* The page is a document of sections, each one a shell of its own: the shell is
+   the 1160 px column, its padding is the rhythm between sections, and the band
+   is the one full-bleed surface on the page. */
+.shell {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 48px 16px 24px;
 }
 
-.prose-body code {
-  font-family: var(--mono);
-  font-size: 0.89em;
+.shell-end {
+  padding-bottom: 56px;
 }
 
-/* Inline code is a chip: the page is dense with paths and flags, and a chip
-   keeps them from reading as prose. */
-.prose-body :not(pre) > code {
-  padding: 0.1em 0.36em;
-  border-radius: 0.3rem;
-  background: rgba(205, 214, 244, 0.07);
-}
+@media (min-width: 720px) {
+  .shell {
+    padding: 72px 24px 40px;
+  }
 
-.prose-body pre {
-  max-width: var(--column);
-  margin: 0 0 1.4rem;
-  padding: 1rem 1.15rem;
-  overflow-x: auto;
-  background: var(--code-bg);
-  border: 1px solid var(--rule);
-  border-radius: 0.625rem;
-  box-shadow: inset 0 1px 0 rgba(205, 214, 244, 0.05);
-  tab-size: 4;
-}
-
-.prose-body pre code {
-  font-size: 0.8375rem;
-  line-height: 1.65;
-}
-
-/* Tailwind's preflight removes list markers, so every list on the page puts its
-   own back: a numbered procedure and the figure grid. */
-
-.prose-body ol.steps {
-  margin: 0.4rem 0 0;
-  padding: 0;
-  list-style: none;
-  counter-reset: step;
-}
-
-.prose-body ol.steps > li {
-  position: relative;
-  margin-bottom: 1.15rem;
-  padding-left: 2.6rem;
-  counter-increment: step;
-}
-
-.prose-body ol.steps > li::before {
-  position: absolute;
-  top: 0.06em;
-  left: 0;
-  display: grid;
-  place-items: center;
-  width: 1.6rem;
-  height: 1.6rem;
-  border: 1px solid rgba(203, 166, 247, 0.45);
-  border-radius: 0.5rem;
-  background: rgba(203, 166, 247, 0.1);
-  content: counter(step);
-  font-family: var(--mono);
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--link);
-}
-
-.prose-body ol.steps > li > strong {
-  color: var(--fg);
-  font-weight: 650;
-}
-
-/* The figure grid: one card per thing a room gives you, each carrying a drawing
-   of the thing and a sentence about it. Two columns from `md`, so a card keeps a
-   comfortable measure rather than a column of stubs. */
-.prose-body ul.cards {
-  display: grid;
-  gap: 0.9rem;
-  max-width: 52rem;
-  margin: 1.75rem 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-@media (min-width: 44rem) {
-  .prose-body ul.cards {
-    grid-template-columns: 1fr 1fr;
+  .shell-end {
+    padding-bottom: 88px;
   }
 }
 
-/* Each editor's steps live in a folded row, so long commands never widen
-   the card grid; the code inside keeps the figure grid's own frame. */
-.prose-body .quickstart-body pre {
-  max-width: none;
-  margin: 0.75rem 0 0;
+.band {
+  border-top: 1px solid var(--rule);
+  background: var(--code-bg);
 }
 
-.prose-body .quickstart-body pre code {
-  font-size: 0.78rem;
+/* An anchor target lands below the bar rather than under it: the margin is the
+   height of the bar that would otherwise cover it, the second row a phone gets
+   included. */
+section[id],
+.band[id] {
+  scroll-margin-top: calc(var(--bar) + var(--bar-row) + var(--rule-h));
+}
+
+@media (min-width: 720px) {
+  section[id],
+  .band[id] {
+    scroll-margin-top: calc(var(--bar) + var(--rule-h));
+  }
+}
+
+.head-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: var(--measure);
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--link);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.display {
+  margin: 0;
+  font-size: clamp(26px, 6vw, 32px);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.lede {
+  margin: 0;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* The hairline between the bar and the second row a phone gets. The height is
+   fixed, so the bar's own height is a number the scroll margin can name. The row
+   is the bar's own rule rather than a utility: this stylesheet is unlayered and a
+   class here would beat the utility that hides it at 720 px. */
+.header-row {
+  display: flex;
+  align-items: center;
+  height: var(--bar-row);
+  border-top: var(--rule-h) solid rgba(69, 71, 90, 0.6);
+}
+
+@media (min-width: 720px) {
+  .header-row {
+    display: none;
+  }
+}
+
+/* The bar hides itself on the way down and comes back on the way up; the
+   background is translucent so the page reads through it. */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: var(--rule-h) solid rgba(69, 71, 90, 0.6);
+  background: rgba(30, 30, 46, 0.86);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* The hero: the promise beside the room it describes. */
+.hero {
+  padding: 36px 16px 56px;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+  align-items: center;
+  gap: 36px;
+  max-width: 1160px;
+  margin: 0 auto;
+}
+
+@media (min-width: 720px) {
+  .hero {
+    padding: 72px 24px 88px;
+  }
+
+  .hero-grid {
+    gap: 56px;
+  }
+}
+
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.hero-title {
+  margin: 0;
+  color: var(--fg);
+  font-size: clamp(36px, 4.6vw, 54px);
+  font-weight: 600;
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.hero-lede {
+  margin: 22px 0 0;
+  max-width: 34rem;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 34px;
+  align-self: stretch;
+}
+
+/* The primary action carries its own light: the page's accent under a blurred
+   shadow, so it reads as the one thing to press. */
+.cta-glow {
+  box-shadow:
+    0 0 0 1px rgba(203, 166, 247, 0.4),
+    0 8px 28px -8px rgba(203, 166, 247, 0.55);
+}
+
+.hero-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  margin: 30px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hero-facts > li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.hero-fact-icon {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  color: var(--link);
+}
+
+/* The room window: the guest's window onto the host's folder. Its ground is the
+   page's own, which is what the panel's text is measured against. */
+.hero-visual {
+  position: relative;
+  min-width: 0;
+  margin: 0;
+  background: #1e1e2e;
+}
+
+.hero-glow {
+  position: absolute;
+  /* The glow bleeds above and below the window. Horizontally it stays inside the
+     figure under 720 px, where the page's gutter is narrower than the bleed: an
+     absolutely positioned box that reaches past the viewport is a page that
+     scrolls sideways. */
+  inset: -40px 0;
+  background: radial-gradient(
+    50% 50% at 55% 45%,
+    rgba(203, 166, 247, 0.13),
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+@media (min-width: 720px) {
+  .hero-glow {
+    inset: -40px -20px;
+  }
+}
+
+.hero-glass {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--color-surface1);
+  border-radius: 14px;
+  background: rgba(24, 24, 37, 0.86);
+  box-shadow:
+    0 30px 60px -30px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(17, 17, 27, 0.6);
+}
+
+.room-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 720px) {
+  .room-grid {
+    grid-template-columns: 132px minmax(0, 1fr);
+  }
+}
+
+.room-side {
+  display: none;
+  padding: 14px 0;
+  border-right: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+@media (min-width: 720px) {
+  .room-side {
+    display: block;
+  }
+}
+
+.room-dir,
+.room-file,
+.room-open {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+}
+
+.room-file,
+.room-open {
+  padding-left: 32px;
+}
+
+.room-dir,
+.room-file {
+  color: var(--muted);
+}
+
+.room-open {
+  color: var(--fg);
+  background: rgba(203, 166, 247, 0.08);
+  box-shadow: inset 2px 0 0 var(--link);
+}
+
+.room-dir-icon {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  color: var(--color-blue);
+}
+
+.room-code {
+  min-height: 218px;
+  padding: 14px 0;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 12.5px;
+}
+
+.room-line {
+  display: flex;
+  align-items: center;
+  height: 22px;
+  white-space: pre;
+}
+
+.room-badges {
+  display: flex;
+  justify-content: flex-end;
+  flex: none;
+  width: 46px;
+  padding-right: 6px;
+}
+
+@media (min-width: 720px) {
+  .room-badges {
+    width: 54px;
+  }
+}
+
+.room-num {
+  flex: none;
+  width: 22px;
+  margin-right: 14px;
+  color: var(--color-overlay0);
+  text-align: right;
+}
+
+.room-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--rule);
+  background: var(--color-crust);
+}
+
+.invite-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--color-surface1);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--color-subtext1);
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.invite-button:hover {
+  border-color: var(--link);
+}
+
+.invite-glyph {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--link);
+}
+
+.invite-url {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.invite-label {
+  flex: none;
+  color: var(--muted);
+}
+
+/* Two tones, one per peer, and a third for the guest who joins late. */
+.peer-mauve {
+  --peer: var(--link);
+}
+
+.peer-teal {
+  --peer: var(--color-teal);
+}
+
+.peer-peach {
+  --peer: var(--color-peach);
+}
+
+/* The caret: a 2 px bar at a column between two characters, so the line it is on
+   keeps its own width and height. */
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 15px;
+  vertical-align: -3px;
+  background: var(--peer);
+}
+
+.caret-room {
+  height: 16px;
+  margin: 0 -1px;
+}
+
+.blink {
+  animation: sv-blink 1.1s infinite;
+}
+
+/* The name in the lane: the badge the browser client paints in the glyph margin,
+   the peer's colour behind a dark label. */
+.peer-badge {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0 5px;
+  border-radius: 3px;
+  background: var(--peer);
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 15px;
+  color: var(--color-crust);
+}
+
+/* Try → Run → Rent: the three ways in, on one band. */
+.try-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
+  margin-top: 36px;
+}
+
+.try-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.try-card-live {
+  border-color: rgba(203, 166, 247, 0.45);
+  box-shadow: 0 0 0 4px rgba(203, 166, 247, 0.05);
+}
+
+.try-card-planned {
+  border-style: dashed;
+  border-color: var(--color-surface1);
+  background: transparent;
+}
+
+.try-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.try-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.try-num {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.try-card-planned .try-num {
+  color: var(--color-overlay0);
+}
+
+.try-title {
+  color: var(--fg);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.try-card-planned .try-title {
+  color: var(--color-subtext1);
+}
+
+.try-body {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.try-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.demo-link,
+.copy-host {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.demo-link {
+  background: var(--link);
+  color: var(--color-crust);
+  font-weight: 500;
+}
+
+.demo-link:hover {
+  background: var(--color-mauve-hi);
+  color: var(--color-crust);
+}
+
+.copy-host {
+  border: 1px solid var(--color-surface1);
+  background: var(--code-bg);
+  color: var(--color-subtext1);
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.copy-host:hover {
+  border-color: var(--color-overlay1);
+}
+
+.copy-host-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  color: var(--color-overlay1);
+}
+
+.icon-17 {
+  flex: none;
+  width: 17px;
+  height: 17px;
+}
+
+.icon-14 {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+.icon-18 {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.command {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--color-crust);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.command-prompt {
+  color: var(--link);
+}
+
+.try-foot {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.try-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* A control the page shows but does not offer: no border hover, no pointer, no
+   focus, and nothing a reader can press. */
+.planned-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 38px;
+  margin: auto 0 0;
+  padding: 0 12px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  color: var(--color-overlay0);
+  font-size: 14px;
+}
+
+.planned-note {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+/* Get it working: the terminal a reader copies from, beside what the server
+   carries and what it still sees. */
+.run-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 20px;
+  align-items: start;
+  margin-top: 32px;
+}
+
+.terminal {
+  overflow: hidden;
+  border: 1px solid var(--color-surface1);
+  border-radius: 12px;
+  background: var(--color-crust);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--rule);
+  background: var(--code-bg);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.tab:hover {
+  color: var(--fg);
+}
+
+.tab[aria-selected="true"] {
+  border-color: var(--color-surface1);
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.tab-icon {
+  flex: none;
+  width: 15px;
+  height: 15px;
+}
+
+.term-output {
+  position: relative;
+  min-height: 150px;
+  padding: 18px 18px 20px;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.term-copy {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--color-surface1);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.term-copy:hover {
+  border-color: var(--link);
+  color: var(--fg);
+}
+
+.term-line {
+  display: flex;
+  gap: 10px;
+  padding-right: 80px;
+}
+
+.term-prompt {
+  flex: none;
+  width: 12px;
+  color: var(--link);
+}
+
+.term-text {
+  overflow-wrap: anywhere;
+}
+
+.term-comment {
+  color: var(--color-overlay2);
+}
+
+.term-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--rule);
+  background: var(--code-bg);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.term-info {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  color: var(--color-blue);
+}
+
+.term-note-text {
+  flex: 1;
+}
+
+.source-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.panels {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.panel-icon-green {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--color-green);
+}
+
+.panel-icon-peach {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--color-peach);
+}
+
+.panel-body {
+  margin: 8px 0 14px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chips > li {
+  max-width: none;
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.chips-green > li {
+  background: rgba(166, 227, 161, 0.1);
+  color: var(--color-green);
+}
+
+.chips-peach > li {
+  background: rgba(250, 179, 135, 0.1);
+  color: var(--color-peach);
+}
+
+/* What a guest who opens the room server's own page is trusting, and the one
+   version both artefacts speak: a footnote to the section, at the column. */
+.section-note {
+  max-width: var(--column);
+  margin: 24px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* See it working: four drawings of one room. */
+.prose-body ul.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  gap: 16px;
+  max-width: none;
+  margin: 32px 0 0;
+  padding: 0;
+  list-style: none;
 }
 
 .prose-body ul.cards > li {
@@ -260,193 +1007,125 @@ body {
   flex-direction: column;
   max-width: none;
   margin: 0;
-  padding: 1.1rem 1.15rem 1.25rem;
+  padding: 0;
+  overflow: hidden;
   border: 1px solid var(--rule);
-  border-radius: 0.75rem;
-  background: rgba(24, 24, 37, 0.5);
+  border-radius: 12px;
+  background: rgba(24, 24, 37, 1);
+}
+
+.prose-body ul.cards > li:hover {
+  border-color: var(--color-surface1);
+}
+
+.fig,
+.prose-body pre.fig-code {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  height: 8rem;
+  margin: 0;
+  padding: 1rem 1.125rem;
+  border-bottom: 1px solid var(--rule);
+  background: rgba(17, 17, 27, 1);
+}
+
+.fig-center {
+  align-items: center;
+}
+
+.card-text {
+  padding: 1.125rem;
 }
 
 .prose-body .card-lead {
-  margin: 1rem 0 0.4rem;
-  font-size: 1rem;
-  font-weight: 650;
-  line-height: 1.35;
+  margin: 0;
   color: var(--fg);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
 }
 
 .prose-body .card-body {
-  margin: 0;
-  font-size: 0.9375rem;
-  line-height: 1.6;
+  margin: 8px 0 0;
   color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
 }
 
-/* A figure is one framed drawing. The code figure is the same frame on a `pre`,
-   so the four cards agree. Its sample is set at the size of the figure's own mono
-   text (the tree, the bar, the chips), and its frame and gutter are set no wider
-   than they need to be: the lane a peer's name is drawn in, plus the sample's
-   longest line, is what decides the width of its card, so at 390 px the four cards
-   only stay the width of the column — 350 px inside the page's own padding — while
-   every line fits in it. */
-.fig,
-.prose-body pre.fig-code {
-  min-height: 6.25rem;
-  border: 1px solid var(--rule);
-  border-radius: 0.625rem;
-  background: rgba(24, 24, 37, 0.75);
-}
-
-/* At two columns the four drawings stand in one grid, so their boxes have to be one
-   height: a `card-lead` sits under its figure, and four figures of four heights put
-   the four leads at four heights in cards the grid has already made equal. The height
-   is the tallest drawing there is — the code sample's nine lines at 11 px on a 1.65
-   line-height, 189 px, plus the room a font's own rounding wants — and the shorter
-   drawings centre in it. One column keeps each card its own height: nothing has to
-   line up across a single column, and four 200 px boxes would make four tall cards. */
-@media (min-width: 44rem) {
-  .prose-body ul.cards > li {
-    display: grid;
-    grid-template-rows: minmax(12.5rem, auto) auto auto;
-    align-content: start;
-  }
-
-  .prose-body ul.cards > li > .fig {
-    align-self: center;
-  }
-}
-
-.fig {
-  display: flex;
-  align-items: center;
-  padding: 0.9rem 1rem;
-  overflow: hidden;
-}
-
-.fig-invite {
-  justify-content: center;
-}
-
-.prose-body pre.fig-code {
-  display: flex;
-  align-items: center;
-  max-width: none;
-  margin: 0;
-  padding: 0.75rem 0.5rem;
-  box-shadow: none;
-}
-
-.prose-body pre.fig-code code {
-  font-size: 0.6875rem;
-}
-
-/* The invite: one control whose whole job is to look shareable. Its sample is one line
-   and stays one: the query the page takes, then the fragment the keys travel in
-   (`PROTOCOL.md` §5.1). The `invite link` label it used to lead with is gone — with it the
-   chip is 315 px on one row, which the card's figure does not hold — and the lead beside
-   the card's chip names the link. */
+/* The invite, at figure weight: the link a host copies, on one line. */
 .invite {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
   max-width: 100%;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid rgba(203, 166, 247, 0.35);
-  border-radius: 0.5rem;
-  background: rgba(203, 166, 247, 0.08);
+  padding: 8px 12px;
+  border: 1px solid var(--color-surface1);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--color-subtext1);
   font-family: var(--mono);
-  font-size: 0.75rem;
-}
-
-.invite-glyph {
-  flex: none;
-  width: 0.9rem;
-  height: 0.9rem;
-  color: var(--link);
-}
-
-.invite-url {
-  min-width: 0;
+  font-size: 11.5px;
   white-space: nowrap;
-  color: var(--fg);
 }
 
-/* The guest's tree. A column beside the editor from `sm`, a wrapped row of paths
-   below it under that, so the drawing survives a 390 px screen. */
-.room-tree > .room-tree-label {
-  margin: 0 0 0.4rem;
-  font-family: var(--mono);
-  font-size: 0.625rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.room-tree ul {
+/* The guest's tree: the paths the host granted, and the one the room has open. */
+.tree {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.1rem 0.55rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  flex-direction: column;
   font-family: var(--mono);
-  font-size: 0.6875rem;
+  font-size: 12px;
+  line-height: 21px;
   color: var(--muted);
 }
 
-.room-tree .room-tree-dir,
-.room-tree .room-tree-here {
+.tree-file {
+  padding-left: 16px;
+}
+
+.tree-here {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 16px;
   color: var(--fg);
 }
 
-/* The file the room has open, marked once: the dot beside it in the guest's tree. It
-   wears the panel's own text colour, the colour the open file's name already carries in
-   the tree and in the room bar, so it cannot be read as either peer's caret. */
 .open-dot {
   display: inline-block;
-  width: 0.375rem;
-  height: 0.375rem;
-  margin-left: 0.35rem;
+  width: 5px;
+  height: 5px;
   border-radius: 9999px;
   background: var(--fg);
-  vertical-align: 0.08em;
 }
 
-/* The three clients and the one wire version they speak. */
-.clients > .client-row {
+.clients {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-  margin: 0;
+  gap: 6px;
 }
 
-.clients .client {
-  padding: 0.2rem 0.5rem;
-  border: 1px solid var(--rule);
-  border-radius: 9999px;
-  background: rgba(205, 214, 244, 0.06);
-  font-family: var(--mono);
-  font-size: 0.6875rem;
+.client {
+  padding: 5px 9px;
+  border: 1px solid var(--color-surface1);
+  border-radius: 6px;
   color: var(--fg);
+  font-size: 12px;
 }
 
-.clients > .client-rail {
-  margin: 0.7rem 0 0;
-  padding-top: 0.55rem;
-  border-top: 1px solid var(--rule);
-  text-align: center;
-  font-family: var(--mono);
-  font-size: 0.625rem;
-  letter-spacing: 0.08em;
-  color: var(--link);
+.client-more {
+  border-style: dashed;
+  color: var(--color-overlay1);
 }
 
-/* One code sample per figure: block-per-line spans, so no line break is a text
-   node and the sample never reflows its indent. */
+/* One code sample per figure: a block per line, so no line break is a text node
+   and the sample never reflows its indent. */
 .code {
   margin: 0;
   font-family: var(--mono);
-  font-size: 0.75rem;
-  line-height: 1.7;
+  font-size: 12px;
+  line-height: 22px;
   color: var(--fg);
 }
 
@@ -455,28 +1134,17 @@ body {
   white-space: pre;
 }
 
-/* The left lane: where the client puts a peer's badge — the glyph margin, left of the
-   line numbers — then the number itself. It is a lane on every line and not a chip on
-   the lines that happen to have a caret, so the code keeps one left edge. */
-.code-gutter {
-  display: inline-block;
-  width: 2.6rem;
-}
-
-.code-num {
-  display: inline-block;
-  width: 0.9rem;
-  margin-right: 0.4rem;
-  color: var(--muted);
-}
-
-/* The sample's tokens, one class per rule in the editor's theme. */
 .tok-comment {
   color: var(--code-comment);
+  font-style: italic;
 }
 
 .tok-keyword {
   color: var(--code-keyword);
+}
+
+.tok-fn {
+  color: var(--code-fn);
 }
 
 .tok-string {
@@ -491,47 +1159,12 @@ body {
   color: var(--code-type);
 }
 
-/* A peer in the open file, drawn as the browser client draws one: a bar at the column
-   the caret is at, a fill behind what they hold, and their name in the gutter on that
-   line. The name is the one thing that cannot go into the text — read as a word inside a
-   line of Rust it would pass for syntax — so it wears the glyph-margin badge's pair
-   instead: the peer's colour behind a dark label, which the contrast check measures. */
-.peer-mauve {
-  --peer: var(--link);
-}
-
-.peer-teal {
-  --peer: var(--color-teal);
-}
-
-/* The caret: a 2 px overlay at a zero-width anchor between two characters, so the
-   following text stays in its editor columns. The height and the offset keep it inside
-   the font's own box, so a caret never changes the height of the line it is on. */
-.caret {
-  display: inline-block;
-  position: relative;
-  width: 0;
-  height: 1.15em;
-  vertical-align: -0.16em;
-}
-
-.caret::after {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 2px;
-  height: 100%;
-  background: var(--peer);
-  content: "";
-}
-
-/* The peer's selection: their colour at 25%, the alpha the client's own `translucent()`
-   builds, behind the characters covered and nothing else — no padding, so the line the
-   fill is on does not move. */
 .selected {
   border-radius: 0.1rem;
 }
 
+/* The peer's selection: their colour at the quarter alpha the client builds for
+   one, behind the characters it covers and nothing else. */
 .selected-mauve {
   background: rgba(203, 166, 247, 0.25);
 }
@@ -540,254 +1173,294 @@ body {
   background: rgba(148, 226, 213, 0.25);
 }
 
-/* The name in the lane: the badge `badgeCss` paints in the glyph margin, at the size the
-   panel is drawn at. */
-.peer-badge {
-  display: inline-block;
-  max-width: 100%;
-  padding: 0 0.2em;
-  border: 1px solid rgba(0, 0, 0, 0.45);
-  border-radius: 0.2rem;
-  background: var(--peer);
-  font-family: var(--mono);
-  font-size: 0.625rem;
-  font-weight: 700;
-  line-height: 1.35;
-  color: var(--bg);
-  vertical-align: 0.08em;
+.badge-gap {
+  margin-left: 10px;
 }
 
-/* The run-it fold: the three commands a reader needs stay in the open, the long
-   version of each route is one click away rather than a third of the page. */
-.prose-body details.quickstart {
-  max-width: var(--column);
-  margin: 1.25rem 0 0;
-  border: 1px solid var(--rule);
-  border-radius: 0.625rem;
-  background: rgba(24, 24, 37, 0.5);
-}
-
-.prose-body details.quickstart > summary {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.85rem 1rem;
-  cursor: pointer;
-  font-size: 0.9375rem;
-  font-weight: 650;
-  line-height: 1.45;
+/* How it works: four moves in order. */
+.prose-body ol.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 28px 24px;
+  margin: 36px 0 0;
+  padding: 0;
   list-style: none;
 }
 
-.prose-body details.quickstart > summary::-webkit-details-marker {
-  display: none;
-}
-
-.prose-body details.quickstart > summary::before {
-  flex: none;
-  width: 1rem;
-  font-family: var(--mono);
-  color: var(--link);
-  content: "+";
-}
-
-.prose-body details.quickstart[open] > summary::before {
-  content: "\2212";
-}
-
-.prose-body details.quickstart > summary:hover {
-  color: var(--link);
-}
-
-.prose-body .quickstart-body {
-  padding: 0 1rem 0.25rem;
-  border-top: 1px solid var(--rule);
-}
-
-.prose-body .quickstart-body > p:first-child,
-.prose-body .quickstart-body > h3:first-child {
-  margin-top: 1.15rem;
-}
-
-/* The footer is the licences in one flow, nothing more: a newcomer at the
-   bottom of the page needs the terms and the privacy line, not a second
-   navigation. Each client section above already links its own repository. */
-.prose-body.page-foot {
-  grid-template-columns: minmax(0, 60rem);
-}
-
-@media (max-width: 30rem) {
-  .prose-body pre code {
-    font-size: 0.78rem;
-    line-height: 1.6;
-  }
-
-  .invite {
-    padding: 0.35rem 0.5rem;
-    font-size: 0.6875rem;
-  }
-}
-
-a:focus-visible,
-input:focus-visible,
-button:focus-visible,
-summary:focus-visible {
-  outline: 2px solid var(--link);
-  outline-offset: 2px;
-}
-
-/* The footer is the licences in one flow. It was a two-column grid beside a
-   repository list; the prose is the widest thing down here and reads better
-   at its own measure, and the client sections above already link their own
-   repositories. */
-.prose-body.page-foot {
-  grid-template-columns: minmax(0, 60rem);
-  padding-top: 3rem;
-  border-top: 1px solid var(--rule);
-  font-size: 0.9375rem;
-}
-
-.prose-body.page-foot h2 {
-  margin: 0 0 1rem;
-  font-size: 1.125rem;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-}
-
-/* Hero visual: a matte panel carrying the product surface — the guest's tree, one
-   open file with two carets in it, and the invite link that put them there — over
-   a fine rule texture faded out from the top-right. Deliberately dark and low-key:
-   the panel is a surface beside the headline, not a light wash competing with it.
-   The literal stops below are what scripts/check-contrast.py measures the panel's
-   text and the glass card against, so a new colour here has to clear 4.5:1. */
-.hero-visual {
-  position: relative;
-  max-width: 36rem;
+.prose-body ol.steps > li {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: none;
   margin: 0;
-  padding: 1.1rem;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-surface1);
+}
+
+.step-num {
+  margin: 0;
+  color: var(--link);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.step-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.step-body {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Why a spec: what the layer is, against the layers that already have one. */
+.spec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 40px;
+  align-items: start;
+}
+
+.spec-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.spec-line {
+  margin: 0;
+  max-width: var(--measure);
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.spec-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  height: 40px;
+  margin-top: 6px;
+  padding: 0 16px;
+  border: 1px solid rgba(203, 166, 247, 0.5);
+  border-radius: 9px;
+  color: var(--link);
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.spec-link:hover {
+  background: rgba(203, 166, 247, 0.1);
+  color: var(--link);
+}
+
+.compare {
   overflow: hidden;
   border: 1px solid var(--rule);
-  border-radius: 0.875rem;
-  background:
-    radial-gradient(130% 105% at 84% -12%, #332c4a 0%, transparent 58%),
-    radial-gradient(85% 75% at 6% 108%, #232a3d 0%, transparent 62%),
-    linear-gradient(168deg, #232134 0%, #1b1a28 58%, #16161f 100%);
-  box-shadow: inset 0 1px 0 rgba(205, 214, 244, 0.07);
+  border-radius: 12px;
+  background: var(--code-bg);
 }
 
-@media (min-width: 48rem) {
-  .hero-visual {
-    padding: 1.35rem;
-  }
-}
-
-.hero-visual-rules {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(to right, rgba(205, 214, 244, 0.07) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(205, 214, 244, 0.07) 1px, transparent 1px);
-  background-size: 34px 34px;
-  -webkit-mask-image: radial-gradient(
-    120% 95% at 74% -4%,
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 0) 74%
-  );
-  mask-image: radial-gradient(
-    120% 95% at 74% -4%,
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 0) 74%
-  );
-}
-
-.hero-visual > figcaption {
-  position: relative;
-  margin-top: 0.9rem;
-  font-size: 0.75rem;
-  line-height: 1.5;
+.compare-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--rule);
   color: var(--muted);
-  text-wrap: pretty;
+  font-size: 14px;
 }
 
-.room {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
+.compare-row:last-child {
+  border-bottom: none;
 }
 
-@media (min-width: 40rem) {
-  .room {
-    flex-direction: row;
-    align-items: stretch;
-    gap: 0.85rem;
-  }
-
-  .room-tree {
-    flex: none;
-    width: 7.5rem;
-  }
-
-  .room-tree ul {
-    flex-direction: column;
-    gap: 0.2rem;
-  }
+.compare-value {
+  color: var(--color-subtext1);
+  font-family: var(--mono);
+  font-size: 13px;
 }
 
-/* The open file. The card's own fill is the `rgba()` the contrast check reads, so
-   a restyle that changes the alpha without touching the check measures a surface
-   nobody renders. */
-.hero-glass {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  min-width: 0;
-  background: rgba(24, 24, 37, 0.86);
-  border: 1px solid rgba(203, 166, 247, 0.28);
-  box-shadow: 0 20px 45px -32px rgba(0, 0, 0, 0.95);
-  backdrop-filter: blur(6px);
+.compare-here {
+  color: var(--fg);
+  font-weight: 500;
+  background: rgba(203, 166, 247, 0.07);
+  box-shadow: inset 2px 0 0 var(--link);
 }
 
-.room-bar {
+.compare-here .compare-value {
+  color: var(--link);
+}
+
+.repos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  gap: 10px;
+  margin: 56px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.repos > li {
+  max-width: none;
+  margin: 0;
+}
+
+.prose-body .repo {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.55rem 0.8rem;
-  border-bottom: 1px solid rgba(49, 50, 68, 0.6);
-  font-family: var(--mono);
-  font-size: 0.6875rem;
-  color: var(--muted);
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--code-bg);
+  color: var(--fg);
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 
-.room-file {
+.prose-body .repo:hover {
+  border-color: var(--color-surface2);
+  background: var(--bg);
   color: var(--fg);
 }
 
-.room-count {
-  margin-left: auto;
+.repo-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--color-overlay2);
 }
 
-.hero-glass .code {
-  padding: 0.7rem;
-  overflow-x: auto;
-  font-size: 0.6875rem;
-}
-
-.room-invite {
+.repo-text {
   display: flex;
-  margin-top: auto;
-  padding: 0 0.85rem 0.8rem;
+  flex-direction: column;
+  min-width: 0;
 }
 
-/* The sticky bar slides away on scroll-down through a transform class; without
-   motion it still hides and returns, just without the slide. Everything else that
-   moves is CSS-only and stands down under the same preference. */
-@media (prefers-reduced-motion: no-preference) {
-  .hero-visual {
-    animation: rise 520ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
-  }
+.repo-name {
+  font-family: var(--mono);
+  font-size: 13px;
+}
 
-  .prose-body ul.cards > li {
+.repo-desc {
+  color: var(--color-overlay1);
+  font-size: 12px;
+}
+
+.repo-pill {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.repo-more {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px dashed var(--color-surface1);
+  border-radius: 10px;
+  color: var(--color-overlay1);
+}
+
+.repo-more-name {
+  color: var(--color-subtext1);
+  font-size: 13px;
+}
+
+/* The footer: the terms, the page's own promise and the address to write to. */
+.foot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 32px;
+}
+
+.foot-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.foot-h {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.licences {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.licence-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.licence-row dt {
+  color: var(--color-subtext1);
+}
+
+.licence-row dd {
+  margin: 0;
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: right;
+}
+
+.foot-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+/* A link drawn as a control carries its affordance in the border, the fill or
+   the label, so the prose underline comes off. */
+.prose-body :is(.repo, .demo-link, .spec-link, .source-link, .try-link, .cta) {
+  text-decoration-line: none;
+}
+
+/* Nothing at this address: the one page a mistyped path reaches. */
+.not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.not-found h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.not-found p {
+  margin: 1rem 0 0;
+  max-width: 35rem;
+  color: var(--muted);
+  font-size: 1.0625rem;
+  line-height: 1.7;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .prose-body ul.cards > li,
+  .prose-body .repo {
     transition:
       transform 160ms ease-out,
       border-color 160ms ease-out;
@@ -795,14 +1468,6 @@ summary:focus-visible {
 
   .prose-body ul.cards > li:hover {
     transform: translateY(-2px);
-    border-color: rgba(203, 166, 247, 0.45);
-  }
-}
-
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
   }
 }
 
@@ -811,7 +1476,8 @@ summary:focus-visible {
     scroll-behavior: auto;
   }
 
-  .site-header {
-    transition: none;
+  .blink {
+    animation: none;
   }
+}
 }

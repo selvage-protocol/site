@@ -10,10 +10,11 @@ route beside it (`app/not-found.tsx`, styled from the same stylesheet): the page
 the prose, the product figures live in one component of their own, the global stylesheet carries
 the
 styling, and the browser downloads nothing beyond
-the prerendered page, the stylesheet, the images, and the framework runtime with the
-`SiteHeader` client boundary and its dependencies (header, buttons, and the arrow
-icon). The page fetches no web font, runs no
-analytics and makes no third-party request.
+the prerendered page, the stylesheet, the two fonts, the images, and the framework
+runtime with the four client components (the bar, the hero's room window, the terminal,
+and the demo's copy control) and their dependencies. The page runs no
+analytics and makes no third-party request: the two fonts it loads are served from this
+origin, and the glyph files are one of the things it holds to its budget here.
 
 The canonical material lives in the other repositories:
 [`selvage-protocol/specification`](https://github.com/selvage-protocol/specification) for the
@@ -25,20 +26,26 @@ browser proof the runner cannot run, and nothing else.
 
 | Path | What it is |
 |---|---|
-| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (promise, two CTAs, four one-word facts, the room figure, and the version line under the facts), *Get it working* (the published image as one `docker run`, the one wire version the image and the demo speak, the sealed-relay paragraph under that command, one short paragraph per editor — VS Code carrying the extension's published identity, the two registries it is on and what an install is, Neovim the plugin-manager line — and *Try the demo*: the one instance, the address an editor hosts on, the guest's trust in the server that serves its page, and the terms), *See it working* (four cards), *How it works* (four steps), *The session layer is written down* (why the specification is the artifact, with the wire corpus's counts and the file that pins them, then the link to read it), then the footer |
-| `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, the one origin the metadata resolves against (`metadataBase`, `alternates.canonical`, `openGraph.url`; see "The live origin"), and the global stylesheet. The favicons are deliberately absent: they are Next file conventions, so the framework writes their tags and `sizes` from the files themselves |
+| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (the promise, two CTAs, four one-word facts, and the room window), *Try → Run → Rent* (the demo and its terms, the pinned image as one Docker command and the one wire version both artefacts speak, and the hosted tier that does not exist yet), *Get it working* (the pinned command and each client in the tabbed terminal, what the server carries and what it still sees in the two panels beside it, the guest's trust in the server that serves its page, and the specification as a draft), *See it working* (four cards), *How it works* (four steps), *Why a spec* (why the specification is the artifact, with the wire corpus's counts and the file that pins them, the comparison against the layers that already exist, and the repositories), then the footer |
+| `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, the one origin the metadata resolves against (`metadataBase`, `alternates.canonical`, `openGraph.url`; see "The live origin"), the global stylesheet, and the two fonts. `next/font/google` fetches Geist (400, 500, 600) and JetBrains Mono (400, 500) at build time and exposes them as `--font-geist-sans` and `--font-jetbrains-mono` on the document element, which the theme and the page's own rules both read, so the glyphs are served from `/_next/static/media` and no request leaves for a font host. The favicons are deliberately absent: they are Next file conventions, so the framework writes their tags and `sizes` from the files themselves |
 | `app/not-found.tsx` | the not-found route: what a mistyped address renders. The framework's own 404 document is styled with a `<style>` element and four `style` attributes, every one of which the policy's `style-src 'self'` refuses; this one is styled from `style.css` and carries neither (see "The Content-Security-Policy") |
-| `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, and a system font stack, so no font is fetched from a third party. Two widths are named there and the page keeps to them: `--measure` for running prose and `--column` for everything that is not prose (section rules, code blocks, the repo grid), so a wide figure is deliberate inside a narrow measure |
+| `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, which sit in Tailwind's `components` layer so that a utility on an element wins over the class the page gives it. Two widths are named there and the page keeps to them: `--measure` for running prose and `--column` for everything that is not prose (section rules, code blocks, the repo grid), so a wide figure is deliberate inside a narrow measure |
 | `app/icon.png` / `app/icon1.png` / `app/icon2.png` / `app/apple-icon.png` | the favicon set: the owner's opaque export resized to the four sizes a browser asks for (32, 16 and 48 px, and the 180 px home-screen icon), named for Next's file convention so the framework writes their `<link>` tags and `sizes`. Nothing here is redrawn; there is no vector favicon (see "The site mark") |
 | `app/opengraph-image.png` | the social card image (Next file convention, served as `/opengraph-image.png`): the owner's opaque export at full size, so cards crop owner's pixels |
-| `public/mark-header.png` | the mark as the page body fetches it: `scripts/make-mark.py`'s derivative of the owner's transparent export, the master area-averaged to 128×128, premultiplied by alpha and otherwise untouched, for the one surface that paints it, 32 CSS px on the dark nav bar (see "The site mark") |
+| `public/mark-header.png` | the mark as the page body fetches it: `scripts/make-mark.py`'s derivative of the owner's transparent export, the master area-averaged to 128×128, premultiplied by alpha and otherwise untouched, for the one surface that paints it, 30 CSS px on the dark nav bar (see "The site mark") |
 | `public/mark-transparent.png` | the owner's transparent 800×800 export, vendored byte-identical (its checksum matches the owner's file) and never hotlinked. The page body no longer fetches it: it is the source the header derivative is made from, and `web_client/test/identity.test.ts` pins its bytes against that repository's own copy. The opaque export was vendored beside it while the hero panel was light; it is no longer fetched either; `app/opengraph-image.png` is the same file |
 | `postcss.config.mjs` | the one PostCSS plugin (`@tailwindcss/postcss`), so `style.css` compiles on build |
 | `next.config.ts` | the one build setting that is not a default: `poweredByHeader: false`, so the framework's `X-Powered-By: Next.js` banner is not on the page's HTML response |
-| `components/ui/button.tsx` | the button primitive (shadcn-style `cva` variants: filled default, tinted secondary, ghost; renders an anchor when given `href`): the nav CTA and the two hero CTAs, nothing else. The page carries no ghost button, and the specification is a prose link rather than a third CTA; the ghost variant stays in the file because `scripts/check-contrast.py` measures it there |
-| `components/ui/badge.tsx` | the pill primitive: the hero status line, a mono caps chip |
-| `components/room-visuals.tsx` | the product figures: the hero's room window (the guest's mirrored tree, one open file, the two carets in it, the invite chip) and the three smaller drawings the cards carry. Inline markup and the page's own CSS, with no image, no dependency and nothing fetched (see "The product figures") |
-| `components/ui/card.tsx` | the card primitive: the hero panel's glass card |
+| `components/ui/button.tsx` | the button primitive (shadcn-style `cva` variants: filled default, tinted secondary, outlined, ghost; three sizes plus the hero's; renders an anchor when given `href`): the bar's CTA and the two hero CTAs, nothing else. The page carries no ghost button, and the specification is a link drawn as a control rather than a third CTA; the ghost variant stays in the file because `scripts/check-contrast.py` measures it there |
+| `components/ui/badge.tsx` | the pill primitive: a status beside a card's own name, and a mono caps chip |
+| `components/ui/card.tsx` | the card primitive: the two panels under the terminal |
+| `components/site-header.tsx` | the bar: the mark, the four in-page routes, the GitHub link and the demo CTA, with the conceal-on-scroll effect and the second scrollable row a phone gets |
+| `components/room-visuals.tsx` | the four smaller figures the cards carry — the invite chip, the sample with three carets in it, the guest's tree, the clients — as inline markup and the page's own CSS, with no image, no dependency and nothing fetched (see "The product figures") |
+| `components/room-window.tsx` | the hero's room window, and the only place the page types: the line under the carets is written a character at a time, held, and started over, and the invite button copies the link it draws. `animatePlayground` types the line or writes it whole, and a reader who asked for less motion gets the whole line and a still caret |
+| `components/setup-tabs.tsx` | the terminal in *Get it working*: the four install routes as an ARIA tab strip with arrow-key movement, one panel each (the inactive ones `hidden`, so the page still carries all four routes without scripting), the note beside each route and the command it copies |
+| `components/demo-endpoint.tsx` | the demo's host, with the one control the card needs: the address an editor is pointed at, on the clipboard |
+| `lib/use-copy.ts` | the copy state one or more controls share, and the clipboard write with the textarea fallback an origin without the async clipboard needs |
+| `lib/selvage.ts` | the pinned image and the one command built from it, so the two places the page hands a reader a command cannot drift, and the demo's host |
 | `lib/utils.ts` | the one shared helper (`cn`: `clsx` + `tailwind-merge`) |
 | `package.json` / `package-lock.json` | the only dependencies: `next`, `react`, `react-dom`, `tailwindcss` (+ its PostCSS plugin), `clsx`, `tailwind-merge`, `class-variance-authority` and `lucide-react` for icons, `typescript` and `@types/*`. No Radix, no component library, nothing else without a written reason |
 | `.nvmrc` | the pinned Node version for local work and CI (`nvm use` reads it); `package.json` `engines` carries the major (`24.x`), because Vercel only deploys major versions |
@@ -65,7 +72,7 @@ glyphs are the ones that sit on the surface:
 
 | Surface | File | Why |
 |---|---|---|
-| Nav header on dark Mocha | `public/mark-header.png` | the bar is translucent Mocha over the page; the opaque export's baked `#1e1e2e` base would draw a visible box against it, while the transparent glyphs sit straight on the bar. The bar paints it at 32 CSS px, which is what the file is sized for (see below). The export's glyphs are dark — a shaded wordmark whose dark stroke is faint on a dark ground — and the mark is a logotype, which WCAG 1.4.11 exempts from the non-text floor, so this derivative carries the owner's own tones unchanged; `scripts/check-contrast.py` reads the file's pixels and holds its median to a visibility floor instead |
+| Nav header on dark Mocha | `public/mark-header.png` | the bar is translucent Mocha over the page; the opaque export's baked `#1e1e2e` base would draw a visible box against it, while the transparent glyphs sit straight on the bar. The bar paints it at 30 CSS px, which is what the file is sized for (see below). The export's glyphs are dark — a shaded wordmark whose dark stroke is faint on a dark ground — and the mark is a logotype, which WCAG 1.4.11 exempts from the non-text floor, so this derivative carries the owner's own tones unchanged; `scripts/check-contrast.py` reads the file's pixels and holds its median to a visibility floor instead |
 | Favicon and social card | `app/icon1.png` / `app/icon.png` / `app/icon2.png` / `app/apple-icon.png` / `app/opengraph-image.png` | tab bars and link unfurls crop unpredictably, so these stay opaque: the four favicon sizes are the opaque export resized, the social card the full-size opaque export |
 
 The hero panel used to be the second surface. It is now a figure of the product itself (see
@@ -101,7 +108,7 @@ the social card carry it best. Giving the tab more of the mark would mean croppi
 export's field, a re-framing of the owner's composition, so it is not done here.
 
 The header mark is sized the same way the favicons are, and it is the one surface that carries the
-owner's own tones with nothing applied to them. The nav bar paints it at 32 CSS px, so
+owner's own tones with nothing applied to them. The nav bar paints it at 30 CSS px, so
 `public/mark-header.png` is the 128×128 derivative `scripts/make-mark.py` builds: the master
 area-averaged down to 128, premultiplied by alpha so the transparent field's white cannot bleed
 into the glyph edges, and no colour change after that. 128 covers a device pixel ratio to 4 and
@@ -124,7 +131,7 @@ in the tree could reproduce or verify it. `scripts/make-mark.py` is the producer
 `scripts/ci-local.sh mark` re-derives the file from the master inside the gate and fails when the
 committed pixels are not what the master produces. The pin compares pixels rather than bytes: a
 zlib release may compress the same raster differently, and the raster is the claim. With no curve
-between them the two resamples agree: at 32 px, resampling the derivative and resampling the
+between them the two resamples agree: at 30 px, resampling the derivative and resampling the
 master differ on 30 of 1,024 pixels by one level in a channel, which is the rounding of a second
 averaging step and nothing else.
 
@@ -219,18 +226,19 @@ The must-not-say table below still binds every line. Three rows moved with what 
 
 ## The product figures
 
-The page shows the product instead of describing it, without an image, a font, a dependency or a
-third-party request: `components/room-visuals.tsx` draws the room window from inline markup styled
-by `style.css`. The hero figure is the whole surface at once: the guest's mirrored tree with the
-open file marked by the figure's only dot, the two carets in it (a 2 px bar in the peer's colour at
-a column between two characters of the line, the peer's name in the gutter lane on that line, and a
-quarter-alpha fill behind what one of them has selected), and the invite chip that put them there.
-Each card in *See it working* carries one smaller drawing of the thing it claims.
+The page shows the product instead of describing it, without an image, a dependency or a
+third-party request: `components/room-visuals.tsx` draws the four figures from inline markup styled
+by `style.css`. The hero figure is the whole window at once: the host's folder down the side, the
+file the room has open, the line one of them is typing, and the invite link that put them there.
+Two carets travel inside that text — a 2 px bar in the peer's colour at a column between two
+characters of the line, the peer's name in the gutter lane on that line, and a quarter-alpha fill
+behind what one of them holds — and each card in *See it working* carries one smaller drawing of
+the thing it claims.
 
 Seven rules hold it together:
 
-- **The invite chip draws a link that works.** Both chips — the hero's and the one *See
-  working* carries — read `?room=k7m2&token=4f9c#k=…&h=…`: the query the page takes and the fragment
+- **The invite draws a link that works.** The strip in the window's footer and the chip *See
+  working* carries both read `?room=k7m2&token=4f9c#k=…`: the query the page takes and the fragment
   the keys travel in, the shape `PROTOCOL.md` §5.1 fixes. They used to stop at the query, which is
   the link shape that cannot seal a room; the chip teaches the shape the clients hand a guest. The
   chip is one row, and the sample is one line: the fragment used to break under the query at a
@@ -238,8 +246,10 @@ Seven rules hold it together:
   the chip holds the query or the fragment on one row, not both, in a card 345 px wide. Nothing is
   lost either way: the lead above the card's chip names the link, and the hero's caption names it
   too.
-- **It is an illustration, and it says so.** The caption under the hero figure names it. Each code
-  sample is a short function against the client crate's own API, with the `use` line left out, and
+- **It is an illustration, and it says so.** The drawings are `aria-hidden` and the card beside each
+  one is the sentence it illustrates; the window's side and its code pane are hidden the same way,
+  and the one control in it is the button that copies the invite, labelled for a screen reader. Each
+  code sample is a short function against the client crate's own API, with the `use` line left out, and
   each peer's caret is drawn where the browser client draws it (`renderCursors` in
   `web_client/src/browser/editor.ts`): a 2 px bar at the caret's own range, a badge in the left
   gutter on the line the caret is on, and a fill behind the characters the peer holds. A name is
@@ -258,19 +268,18 @@ Seven rules hold it together:
   ground and in the body colour `#cdd6f4` otherwise. Punctuation has no rule in that theme, so it
   keeps the body colour here too. The samples are fixed and short, so each token is a span written
   by hand in `components/room-visuals.tsx` — no highlighter, no dependency, no parser.
-- **The four figures are one height at two columns.** Each card's grid is three rows — the
-  drawing, the lead, the sentence — and at `min-width: 44rem` the first of them is
-  `minmax(12.5rem, auto)`. 12.5rem clears the tallest drawing there is, the code sample's nine
-  lines at 11 px on a 1.65 line-height (189 px, and the sample's height does not move with the
-  font, because both numbers are set), and every shorter drawing — the chip, the tree, the client
-  chips — centres in the row it gets. Without it the four leads sat at four heights inside cards
-  the grid had already made equal, which is what a reader sees as a broken row. One column keeps
-  each card its own height: nothing lines up across a single column, and four 200 px boxes would
-  make four tall cards.
+- **Every figure is one band.** The grid is `repeat(auto-fit, minmax(min(100%, 250px), 1fr))`, so
+  the four cards are four columns at the shell's width, two or three in between, and one under
+  390 px; each card is a column of the drawing's band and the sentence, and the band is a fixed
+  `8rem` high — enough for the tallest drawing — so the four leads sit at one height in cards the
+  grid has already made equal. A band wider than its drawing centres it, and the code sample's own
+  four lines at 12 px on a 22 px line-height do not move with the font, because both numbers are
+  set.
 - **The drawings are `aria-hidden`; the captions are not.** A screen reader hears the sentence that
   describes the room, not the code in it.
-- **No inline `style`, no `<style>`, no webfont, no external image.** The policy in `vercel.json`
-  refuses all four (see "The Content-Security-Policy"). Every colour in a figure is a class in
+- **No inline `style`, no `<style>`, no font from a third party, no external image.** The policy
+  in `vercel.json` refuses the first two outright and admits this origin's fonts alone through
+  `font-src 'self'` (see "The Content-Security-Policy"). Every colour in a figure is a class in
   `style.css` or a theme token, which is also what lets `scripts/check-contrast.py` measure the
   panel and the glass card it draws on.
 
@@ -356,7 +365,7 @@ what they build and attach it to the release; this one has nothing to attach.
 The header is `vercel.json`'s, applied by Vercel:
 
 ```
-default-src 'none'; script-src 'self' 'unsafe-inline'; script-src-attr 'none'; img-src 'self' data:; style-src 'self'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'
+default-src 'none'; script-src 'self' 'unsafe-inline'; script-src-attr 'none'; img-src 'self' data:; style-src 'self'; font-src 'self'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'
 ```
 
 It read without `script-src` until this was found, and that absence is the whole reason this
@@ -384,9 +393,16 @@ Action has no fallback to `default-src`, so without the directive any `<form>` t
 could submit to any origin. The page renders no form and no user input into itself, so the
 directive cannot break anything.
 
+`font-src 'self'` is the one directive that does not exist for a script or an image: a font fetch
+falls back to `default-src` like any other, so without it `default-src 'none'` refuses the two
+families `next/font` self-hosts and a browser silently paints the fallback stack instead. `'self'`
+is enough because the glyph files arrive from `/_next/static/media` on this origin, and no request
+is ever made to a font host.
+
 What the policy still refuses: every origin that is not this one, `eval`, an inline `on*`
 attribute, a form submission, a `<base>` that would retarget the page's relative URLs, framing,
-and every resource kind the page does not name. `data:` is allowed for `img-src` alone.
+every resource kind the page does not name, and every font but this origin's. `data:` is allowed
+for `img-src` alone.
 
 Two pieces of evidence, with their limits:
 
@@ -704,7 +720,7 @@ policy without `script-src` and a policy that drops `default-src 'none'` both ha
 the check cannot have gone blind.
 
 The weight step reads the same rendered file again and the bytes of every image it fetches out of
-`public/`, and holds each to a budget: a surface this page paints at 32 px may not be handed the
+`public/`, and holds each to a budget: a surface this page paints at 30 px may not be handed the
 owner's 800×800 master. It also asserts the `width`/`height` an `<img>` declares are the file's own
 pixels, because a `src` swap that leaves them behind distorts the mark and no failed request says
 so. It is a ceiling per image rather than a total for the page, so a framework upgrade that
@@ -729,18 +745,19 @@ so a regression fails the build instead of waiting for a look. Measured today:
 | muted prose on page | 7.37:1 | 4.5:1 |
 | link on page | 8.07:1 | 4.5:1 |
 | button label on its mauve fill | 8.07:1 | 4.5:1 |
-| peer badge label on its mauve fill (the first caret in the hero figure) | 8.07:1 | 4.5:1 |
-| peer badge label on its teal fill (the second caret in the hero figure) | 11.01:1 | 4.5:1 |
-| code comment on the sample's ground (the editor theme's `comment`) | 5.07:1 | 4.5:1 |
-| code keyword on the sample's ground (`keyword`, the mauve the page already uses) | 8.34:1 | 4.5:1 |
-| code string on the sample's ground (`string`) | 11.39:1 | 4.5:1 |
-| code number on the sample's ground (`number`) | 9.57:1 | 4.5:1 |
-| code type on the sample's ground (`type`) | 13.33:1 | 4.5:1 |
-| the peers' caret bars and badge fills on the code figure's ground | 8.55:1 / 11.67:1 | 3.0:1 |
-| the peers' caret bars and badge fills on the glass card, worst stop | 8.34:1 / 11.37:1 | 3.0:1 |
-| code type under a peer's selection fill (the fill's own ground) | 6.97:1 | 4.5:1 |
-| code string under a peer's selection fill (the fill's own ground) | 5.95:1 | 4.5:1 |
-| the selection tint itself, at the client's quarter alpha | 1.71:1 / 1.91:1 | 1.5:1 |
+| peer badge label on its mauve fill (the first peer's name in the window) | 8.07:1 | 4.5:1 |
+| peer badge label on its teal fill (the second peer's name in the window) | 11.01:1 | 4.5:1 |
+| code comment on the sample's ground (the editor theme's `comment`) | 5.61:1 | 4.5:1 |
+| code keyword on the sample's ground (`keyword`, the mauve the page already uses) | 9.23:1 | 4.5:1 |
+| code string on the sample's ground (`string`) | 12.61:1 | 4.5:1 |
+| code number on the sample's ground (`number`) | 10.59:1 | 4.5:1 |
+| code type on the sample's ground (`type`) | 14.76:1 | 4.5:1 |
+| code line numbers on the sample's ground | 8.42:1 | 4.5:1 |
+| the peers' caret bars and badge fills on the sample's ground (the figure's fill over the card's over the page) | 9.23:1 / 12.59:1 | 3.0:1 |
+| the peers' caret bars and badge fills on the room window, over the ground the hero panel is drawn on | 8.55:1 / 11.67:1 | 3.0:1 |
+| code type under a peer's selection fill, on the sample's ground | 7.92:1 | 4.5:1 |
+| code type under a peer's selection fill, on the window | 7.20:1 | 4.5:1 |
+| the selection tint itself, at the client's quarter alpha (mauve / teal, on the window: 1.70:1 / 1.90:1) | 1.67:1 / 1.86:1 | 1.5:1 |
 | code text on code background | 12.14:1 | 4.5:1 |
 | muted text on code background | 7.89:1 | 4.5:1 |
 | badge text on its fill | 6.63:1 | 4.5:1 |
@@ -748,9 +765,9 @@ so a regression fails the build instead of waiting for a look. Measured today:
 | ghost-button text on its hover fill (`bg-surface0/60`; the variant is parsed from the component, and the page carries no ghost button) | 9.75:1 | 4.5:1 |
 | secondary button boundary (`border-mauve/60`, parsed from the component) | 3.82:1 | 3.0:1 |
 | focus outline against the page | 8.07:1 | 3.0:1 |
-| glass-card text, worst of the five panel stops | 11.71:1 (muted 7.61:1) | 4.5:1 |
-| panel text, worst stop (the tree, the file bar and the figure's caption sit on the panel, not on the card) | 9.08:1 (muted 5.90:1) | 4.5:1 |
-| the open file's dot on the panel, worst stop (the figure's one mark that is not a peer's) | 9.08:1 | 3.0:1 |
+| window text on the window, over the ground the hero panel is drawn on | 12.02:1 (muted 7.81:1) | 4.5:1 |
+| panel text on the hero's own ground (the figure sits on the page, so its ground is `--bg`) | 11.34:1 (muted 7.37:1) | 4.5:1 |
+| the open file's dot on that ground (the figure's one mark that is not a peer's) | 11.34:1 | 3.0:1 |
 | the nav mark's median ink pixel on the header's ground (the owner's artwork, a logotype and so exempt from WCAG 1.4.11's non-text floor; its own pixels read out of `public/mark-header.png` and composited over `--bg`) | 1.72:1 | 1.5:1 |
 
 WCAG 1.4.1 is the one criterion measured the other way round, because both of its floors cannot
@@ -771,18 +788,22 @@ affordance, so nothing about a link's state is carried by colour, and two links 
 in whether they have been visited do not read as two different things.
 
 Four groups the check does not parse are computed the same way, from the colours the browser
-composites, and are re-measured whenever the fills around them move: inline code text on its
-chip fill (`rgba(205, 214, 244, 0.07)` over `--bg`) 9.62:1; the invite chip's URL
-on the chip's own tint (`rgba(203, 166, 247, 0.08)` over the figure's fill over the card's) 10.41:1; the card body text on the card fill (`rgba(24, 24, 37, 0.5)` over `--bg`) 7.63:1;
-the client chips and the rail label under them 10.56:1 and 8.55:1. The section
-hairlines and the card borders sit at 1.30:1 against the page on
-purpose: they are decorative separators, they carry no state, and nothing is identified by
-them.
+composites, and are re-measured whenever the fills around them move: inline code text on its chip
+fill (`--color-surface0`) 8.69:1; the small text on the page's own ground — the try cards' numbers,
+their footnote and the invite strip's label — 7.37:1, and the same kind of text on the band's
+darker grounds in the design's `--color-overlay1`, 4.75:1 there and 5.07:1 on the code band, which
+is why that token is only used where it clears the floor; the card body text on the card fill
+(`#181825`) 7.89:1; the client chips 12.97:1 on the band they are drawn on. The
+section hairlines sit at 1.30:1 against the page on purpose: they are decorative separators, they
+carry no state, and nothing is identified by them. The panel and card borders the design draws in
+`--color-surface1` are 1.80:1, which is below the 3.0:1 a boundary that *identifies* something
+would need, and the page does not use one to identify anything.
 
 The selection tint is the one colour on the page that cannot clear the floor it would be given
 as a mark, and the check says so rather than pretending. It wears the alpha the client itself
 builds for a selection (`translucent(colour, 0.25)`, `web_client/src/bridge/cursors.ts`), which
-measures 1.70:1 mauve and 1.90:1 teal against the code ground; the alpha that would reach the
+measures 1.67:1 mauve and 1.86:1 teal against the sample's ground and 1.70:1 / 1.90:1 against the
+window's; the alpha that would reach the
 non-text 3.0:1 is about a half, and at that alpha the sample's own text on it falls below
 4.5:1. The two floors cannot both hold for a translucent fill, so the fill is asserted where it
 matters — the token it sits under, read out of `components/room-visuals.tsx` so that moving it
@@ -804,13 +825,15 @@ What no ratio proves is read against the code by a person on every change:
   interval in which they were not, and the gate step that now fails if it happens again.
   No skip link: the page is one route, so there is no repeated block
   to bypass.
-- **Reduced motion.** Two things move, and both stand down under `prefers-reduced-motion`: the
-  hero figure's 520 ms entrance (an `opacity`/`translateY` animation) and the 2 px hover lift on
-  the figure cards, each inside a `prefers-reduced-motion:
-  no-preference` query, with `scroll-behavior: smooth` and the header slide switched off in a
-  `reduce` block. The buttons' lift is a `motion-safe:` utility for the same reason. Verified in
-  the browser: under emulated `reduce` the hero's `animation-name` is `none` and `scroll-behavior`
-  is `auto`.
+- **Reduced motion.** Four things move and all four stand down under `prefers-reduced-motion`: the
+  line the hero's window types (under `reduce` it is written whole and never restarts), the caret's
+  blink (an `animation: none` in the `reduce` block), the 2 px hover lift on the figure cards, and
+  the header's slide (a `motion-reduce:transition-none` utility, so `transition-property` is `none`
+  and the bar still hides and returns, without the slide). `scroll-behavior: smooth` goes to `auto`
+  in the same block, and the buttons' own lift is a `motion-safe:` utility. Verified in the browser:
+  under emulated `reduce` the typed line is 27 characters on the first frame and still 27 a second
+  later, the caret's `animation-name` is `none`, the header's `transition-property` is `none`, and
+  `scroll-behavior` is `auto`.
 - **Touch targets.** Nav links are `text-sm` (20 px line box) with `py-1`, for 28 px of
   target height against the 24 px minimum; buttons are 32–44 px tall. In-prose links are inline and
   exempt.
