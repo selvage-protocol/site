@@ -2,7 +2,7 @@
 """Fails the tree when the page's text contrast drops below WCAG AA.
 
 Parses the theme tokens out of `style.css` and asserts the pairs the page
-actually renders: body and muted prose, links (visited included), the button
+actually renders: body and muted prose, links, the button
 label on its mauve fill, code blocks, the sample's own token colours, the
 tinted badge and secondary button (computed as alpha composites over the page
 background, the way the browser composes them), and the worst case of the
@@ -423,7 +423,6 @@ def main() -> int:
         "fg",
         "muted",
         "link",
-        "link-visited",
         "code-bg",
         "mantle",
         "teal",
@@ -461,9 +460,8 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 2
-    link, visited, code_bg, mantle = (
+    link, code_bg, mantle = (
         tok["link"],
-        tok["link-visited"],
         tok["code-bg"],
         tok["mantle"],
     )
@@ -471,7 +469,6 @@ def main() -> int:
         ("body text", fg, bg, TEXT_MIN),
         ("muted prose", muted, bg, TEXT_MIN),
         ("link", link, bg, TEXT_MIN),
-        ("visited link", visited, bg, TEXT_MIN),
         ("button label on mauve fill", bg, link, TEXT_MIN),
         ("code text", fg, code_bg, TEXT_MIN),
         ("muted text on code background", muted, code_bg, TEXT_MIN),
@@ -748,7 +745,6 @@ def main() -> int:
         )
     else:
         checks.append(("link vs body text, colour alone", link, fg, NON_TEXT_MIN))
-        checks.append(("visited link vs body text, colour alone", visited, fg, NON_TEXT_MIN))
 
     failures = 0
     for name, a, b, minimum in checks:

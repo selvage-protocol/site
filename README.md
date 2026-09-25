@@ -696,7 +696,6 @@ so a regression fails the build instead of waiting for a look. Measured today:
 | body text on page | 11.34:1 | 4.5:1 |
 | muted prose on page | 7.37:1 | 4.5:1 |
 | link on page | 8.07:1 | 4.5:1 |
-| visited link on page | 5.18:1 | 4.5:1 |
 | button label on its mauve fill | 8.07:1 | 4.5:1 |
 | peer badge label on its mauve fill (the first caret in the hero figure) | 8.07:1 | 4.5:1 |
 | peer badge label on its teal fill (the second caret in the hero figure) | 11.01:1 | 4.5:1 |
@@ -732,14 +731,12 @@ link is underlined (`text-decoration-line` named in `style.css`, because preflig
 `text-decoration: inherit` had left every link colour-only, which is why the thickness and offset
 already there drew nothing). `scripts/check-contrast.py` reads that declaration out of the
 stylesheet and asserts the 3.0:1 pair whenever it is missing, so a colour-only link scheme fails
-the gate: the stylesheet as it stood before the underline went in measures 1.40:1 unvisited and
-1.95:1 visited and fails the check.
+the gate: the stylesheet as it stood before the underline went in measures 1.40:1 against the
+prose beside it and fails the check.
 
-`--link-visited` is a deeper mauve, `#a181d6`, rather than the neutral `#9399b2` it was: that grey
-sat 1.27:1 from `--muted`, so a visited link was the colour of the prose around it, and every
-repository link is on the org's own history the moment anyone has browsed it. The underline
-carries the affordance now; the colour keeps a visited link looking like a link, at 5.18:1 on the
-page.
+A link wears one colour, `--link`, in every state, a followed link included: the underline is the
+affordance, so nothing about a link's state is carried by colour, and two links that differ only
+in whether they have been visited do not read as two different things.
 
 Four groups the check does not parse are computed the same way, from the colours the browser
 composites, and are re-measured whenever the fills around them move: inline code text on its
