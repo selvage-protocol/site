@@ -773,7 +773,10 @@ def main() -> int:
     for note in notes:
         print(f"check-contrast: [ok] {note}")
     if failures:
-        print(f"check-contrast: {failures} pair(s) below WCAG AA")
+        print(
+            f"check-contrast: {failures} pair(s) below their floor; the lines above name each "
+            f"pair's own floor — WCAG AA, or the logotype nav mark's visibility floor"
+        )
         return 1
     print(
         f"check-contrast: {len(checks)} pairs at or above their floors — WCAG AA for the "
