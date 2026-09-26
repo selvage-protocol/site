@@ -577,22 +577,25 @@ protocol does not have, and a page that says the wire is unreleased — or that 
 plaintext wire's command — tells a guest their room is in the clear when it is not, which is the
 same defect with the sign the other way round.
 
-The relay-visibility disclosure is required rather than permitted, and it exists because the
-`clean` fixtures can only prove the phrase pattern does not reject the paragraph, not that the page
+The relay-visibility statement is required rather than permitted, and it exists because the
+`clean` fixtures can only prove the phrase pattern does not reject a sentence, not that the page
 carries one. The check requires the rendered page's visible text to state each of the four facts
-the paragraph is there to state — the room's existence, its membership, the display names, and the
-sizes and timing of what moves — as a small pattern of its own rather than the sentence, so a
-rewritten paragraph that keeps the facts passes and one that drops a fact fails. Two of the four
-are phrased as the disclosure's own sentence, because the page states the same two nouns a second
+the relay's half of the panel is there to state — the room's existence, its membership, the display
+names, and the sizes and timing of what moves — as a small pattern of its own rather than the
+sentence, so a rewritten panel that keeps the facts passes and one that drops a fact fails. Three
+of the four are the panel's chips, a line each; the fourth is the heading over them, *What the
+server can still see*, read together with the chip under it that completes it, *that a room
+exists*. Two of the four are read that closely, because the page states the same two nouns a second
 time in *The session layer is written down*: matched loosely, that earlier paragraph supplied
-them for a page whose disclosure had been deleted, and a rewrite that dropped those two while
-keeping the other two passed with them gone. Deleting the paragraph now fails the check on all
-four. The facts are read from the page's own `docker run` onwards, and not over the whole page:
+them for a page whose statement had been deleted, and a rewrite that dropped those two while
+keeping the other two passed with them gone. Deleting a chip fails the check on its fact, and
+deleting the heading fails it on the room's existence, which is the one the two halves state
+together. The facts are read from the page's own `docker run` onwards, and not over the whole page:
 the hero's second fact used to state the same four facts in the same wording, and it is above the
-command, so a page-wide scan let the hero satisfy a check written to require the paragraph —
-deleting the paragraph passed with the hero standing in for it, which is the mutation that added
+command, so a page-wide scan let the hero satisfy a check written to require the panel —
+deleting the statement passed with the hero standing in for it, which is the mutation that added
 the bound. The hero states them in a word each now (*Sealed* for the relay's half), and the bound
-stays: a hero line that states a fact in full still cannot stand in for the paragraph's place,
+stays: a hero line that states a fact in full still cannot stand in for the panel's place,
 which is under the command a reader can take it together with. It asks no network.
 
 The browser guest's own residual is the one disclosure the page carried and no longer does: a
@@ -633,15 +636,17 @@ only catch the other direction: a page that reads as an offer with nothing sayin
 taken is the page this is for. It asks no network.
 
 The repository grid is required the same way, and it is the page's own account of what exists. Each
-row's word is pinned where the row is: the specification is the source of truth, the reference
-server and the two clients the project publishes itself are available, and the extension is
-published. A row's name, description, pill and destination are one claim, read together from the
-row's own anchor rather than from the page's text, so a row that links a different repository fails
-even though the page still carries every name and every word. That last word is the one claim here
-about a registry rather than a repository, so it
-cannot be read apart from the identity and the two registries above it: the page that carries the
-word has to carry `selvage-protocol.selvage` too, and a grid that changed one without the other
-fails. Every repository the grid names has to be linked, so a word about a repository hands a reader
+row's word is pinned where the row is: the specification is the source of truth, and the reference
+server and the three clients the project publishes itself are available. A row's name, description,
+pill and destination are one claim, read together from the row's own anchor rather than from the
+page's text, so a row that links a different repository fails
+even though the page still carries every name and every word. The extension's row is the one whose
+repository a reader is also handed an install for, and the install is where the claim about a
+registry rather than a repository lives: the VS Code route in the terminal has to carry
+`selvage-protocol.selvage` and both registries it is published to, read from that route's own panel,
+so the row that says the client is available and the install a reader follows cannot be read apart —
+a route that lost the identity or a registry fails even though the page names them somewhere else.
+Every repository the grid names has to be linked, so a word about a repository hands a reader
 something to check, and every repository the page links has to be one the grid names, so no row and
 no source link beside the terminal points at a repository the project does not have. The row that is
 a plan runs the first of those the other way: it carries the word `planned`, and it must *not* link,
@@ -748,7 +753,7 @@ that reintroduces a false positive fails it too, and those fixtures include the 
 readings the specification itself uses and the peer's signed host claim. The scan reads the prose
 in the page's `meta` attributes beside the visible text, because a link unfurl prints it. It also
 requires one disclosure in the scanned file: the relay-visibility facts, each as its own pattern,
-so the paragraph cannot be deleted while the fixtures stay green. The corpus counts are required
+so the panel's statement cannot be deleted while the fixtures stay green. The corpus counts are required
 the same way: every
 count the scanned pages show has to name the file that pins it in the sentence the number sits in
 or the one after it, because a number with nowhere to check it is one a reader takes on trust, and
@@ -766,8 +771,9 @@ marketplace fails rather than passing on the two names it also carries. It asks 
 why is in the section above. The hosted tier the page offers and does not run yet is required the
 same way — the card, the pill on it, the sentence saying who would run it, and the row that is a
 plan rather than a control — and so is the repository grid, where each row's word is pinned beside
-the row, the `published` one against the identity the release publishes under, every repository
-the grid names against a link to it, the row that is a plan against carrying none, and every
+the row, the extension's row against the VS Code install route that names the identity the release
+publishes under and both registries, every repository the grid names against a link to it, the row
+that is a plan against carrying none, and every
 repository the page links against the grid, so `jetbrains_client` cannot come back as a link to a
 repository that is not there. It then reads the page's image reference, holds it to
 the one tag `scripts/check-claims.py` carries, and asks `ghcr.io` for that tag; reads the page's

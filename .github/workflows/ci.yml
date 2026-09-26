@@ -24,12 +24,13 @@ name: ci
 # protocol has one — the paragraph and the command under it are read together, so the landing page
 # cannot deliver a downgrade quietly. A page that does name a version is held to those same two, so
 # the sentence cannot come back unchecked. One disclosure is required besides: the
-# relay-visibility facts, one pattern per fact, so deleting the paragraph fails where
+# relay-visibility facts, one pattern per fact, so deleting the panel's statement fails where
 # the clean fixtures alone would not. The hosted tier the page offers and does not run yet is
 # required the same way — the card, its status, who would run it, and the row that is a plan — and
-# so is the repository grid, where each row's word is pinned beside the row, the `published` one
-# against the identity the release publishes under, every repository the grid names against a link
-# to it, the row that is a plan against carrying none, and every repository the page links against
+# so is the repository grid, where each row's word is pinned beside the row, the extension's row
+# against the VS Code install route that names the identity the release publishes under and both
+# registries it publishes to, every repository the grid names against a link to it, the row that
+# is a plan against carrying none, and every repository the page links against
 # the grid. The registry and the instance halves need egress and fail rather than pass when they
 # cannot reach it.
 # No `push: branches: [main]`: a pull request already runs the whole gate, and the

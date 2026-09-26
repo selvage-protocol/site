@@ -335,7 +335,6 @@ section[id],
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 34px;
-  align-self: stretch;
 }
 
 /* The primary action carries its own light: a 1 px border of its own, so its box is the

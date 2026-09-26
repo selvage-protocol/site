@@ -157,25 +157,30 @@ SERVER_NAME = re.compile(r"selvaged/\S+")
 # than the one that added the card carries no such element, and the sentence would be about a page
 # that cannot start one.
 HOST_CARD = re.compile(r'id="host-wrap"')
-# The page's paragraph about the sealed relay is a claim the gate has to *require*, not just
-# permit: the `clean` fixtures above only prove the pattern does not reject those sentences, and
-# an editor who deletes the paragraph would leave every one of them green. What is required is
-# the paragraph's facts, one pattern each, so a rewrite that keeps the facts passes and a page
-# that drops one fails. The sizes-and-timing fact is the one only this paragraph carries.
+# The page's statement of what the sealed relay still sees is a claim the gate has to *require*,
+# not just permit: the `clean` fixtures above only prove the pattern does not reject those
+# sentences, and an editor who deleted the statement would leave every one of them green. What is
+# required is the facts, one pattern each, so a rewrite that keeps them passes and a page that
+# drops one fails. The panel carries them in two shapes: the chips name three of them a line at a
+# time, and the fourth is the heading's "What the server can still see" read with the chip under it
+# that completes it.
 #
-# Two of the four are phrased as the disclosure's own sentence rather than as a subject and a verb,
+# Two of the four are phrased as the panel's own statement rather than as a bare subject and verb,
 # because the page states those two a second time in *The session layer is written down*: "Which
 # rooms exist, who is in one, ...", which is a sentence about what every collaborative tool
-# decides for itself and not a disclosure of relay visibility at all. Loosely matched, that
-# paragraph would supply existence and membership for a page whose disclosure had been deleted, and
+# decides for itself and not a statement of relay visibility at all. Loosely matched, that
+# paragraph would supply existence and membership for a page whose statement had been deleted, and
 # a rewrite that dropped the two facts while keeping "their names" and "sizes and timing" would
-# pass with them gone. `who is in it` is the disclosure's wording; `who is in one` is the donor's.
+# pass with them gone. `who is in it` is the panel's wording and `who is in one` is the donor's;
+# the existence fact is the heading's "still see" with the chip's clause after it, not the bare
+# "rooms exist" the donor paragraph writes.
 RELAY_DISCLOSURE = (
     (
         "the room's existence",
         re.compile(
             r"\bsees that an? (?:room|session)s? exists?\b"
-            r"|\bstill (?:sees|reads)\b[^.]{0,40}\b(?:room|session)s?\b[^.]{0,24}\bexists?\b",
+            r"|\bstill (?:sees|reads)\b[^.]{0,40}\b(?:room|session)s?\b[^.]{0,24}\bexists?\b"
+            r"|\bstill see\b[^.]{0,120}\bthat an? (?:room|session)s? exists?\b",
             re.IGNORECASE,
         ),
     ),
@@ -1666,24 +1671,24 @@ def first_page_stating(
 def check_relay_disclosure(pages: list[Scanned]) -> int:
     """The page's statement of what the sealed relay still sees, required rather than permitted.
 
-    The facts are the paragraph's, and they are read from the visible text: a fact stated only in
+    The facts are the panel's, and they are read from the visible text: a fact stated only in
     a link unfurl is not on the page a reader reads. Each fact has a pattern of its own, so a
-    rewritten paragraph that keeps them passes and one that drops a fact fails. Two of the four
-    have to be phrased as the disclosure's own sentence, because the page states the same two
-    nouns a second time in *The session layer is written down*, about what every collaborative
-    tool decides for itself; matched loosely that paragraph supplied them for a
-    page whose disclosure had been deleted, and a rewrite that dropped those two while keeping
+    rewritten panel that keeps them passes and one that drops a fact fails. Two of the four
+    are read as the panel's own wording rather than as a bare subject and verb, because the page
+    states the same two nouns a second time in *The session layer is written down*, about what
+    every collaborative tool decides for itself; matched loosely that paragraph supplied them for
+    a page whose statement had been deleted, and a rewrite that dropped those two while keeping
     "their names" and "sizes and timing" passed with them gone. The region is the page from the
-    `docker run` that pulls the page's image onwards: the paragraph's place under that command is
-    part of the claim, the hero's chips state those facts in a word each above it, and a page whose
-    hero line is all that is left has dropped the paragraph a reader is owed. Returns 0 when a
+    `docker run` that pulls the page's image onwards: the panel's place under that command is
+    part of the claim, the chips and the heading over them state the facts a line at a time, and a
+    hero line above the command is not where a reader is owed them. Returns 0 when a
     scanned page carries all four below its own command and 1 when none does; it asks no network.
     """
     if not any(IMAGE_REFERENCE.search(page.text) for page in pages):
         print(
             f"check-claims: none of {len(pages)} scanned file(s) carries a {PUBLISHED_IMAGE} "
             "reference, and what the relay still sees is read from the page's own `docker run` "
-            "onwards: without that command the paragraph has nowhere its place puts it",
+            "onwards: without that command the panel has nowhere its place puts it",
             file=sys.stderr,
         )
         return 1
@@ -1698,9 +1703,9 @@ def check_relay_disclosure(pages: list[Scanned]) -> int:
     for where, absent in failures:
         print(
             f"check-claims: {where} does not state what the sealed relay still sees: it is "
-            f"missing {', '.join(absent)}. That disclosure is read from the page's own "
-            "`docker run` onwards, which is where the paragraph sits and where the hero's own "
-            "chips do not reach, so a page with a fact dropped from the paragraph claims more "
+            f"missing {', '.join(absent)}. That statement is read from the page's own "
+            "`docker run` onwards, which is where the panel sits and where a hero line above "
+            "the command does not reach, so a page that drops a fact from the panel claims more "
             "than the relay does",
             file=sys.stderr,
         )
@@ -1898,8 +1903,8 @@ GRID_ROWS = (
     (
         "vscode_client",
         "VS Code extension",
-        "published",
-        re.compile(r"\bvscode_client[^.]{0,32}published\b", re.IGNORECASE),
+        "available",
+        re.compile(r"\bvscode_client[^.]{0,32}available\b", re.IGNORECASE),
     ),
     (
         "reference_server",
@@ -1956,6 +1961,12 @@ GRID_HREF = re.compile(r'''href\s*=\s*"([^"]*)"''', re.IGNORECASE)
 GRID_LIST = re.compile(r"<ul\b[^>]*\brepos\b[^>]*>(.*?)</ul>", re.DOTALL | re.IGNORECASE)
 GRID_ITEM = re.compile(r"<li\b[^>]*>(.*?)</li>", re.DOTALL | re.IGNORECASE)
 
+# One install route in the terminal: the strip's panels are siblings, each with an id of its own,
+# so a panel is read from its id to the next panel's. The route that installs the extension is
+# where the identity the release publishes under and the two registries it publishes to have to
+# sit, and reading the panel rather than the page is what keeps them in that route.
+INSTALL_PANEL_ID = re.compile(r'\bid="install-panel-([\w-]+)"')
+
 
 def grid_row_text(raw: str) -> list[tuple[str, str]]:
     """Every anchor that points at a repository, as (repository name, the anchor's visible text).
@@ -1990,6 +2001,23 @@ def grid_unlinked_items(raw: str) -> list[str]:
             if GRID_HREF.search(item.group(0)) is None:
                 items.append(normalise(item.group(0))[0])
     return items
+
+
+def install_panel_text(raw: str, panel: str) -> str | None:
+    """One install route's own visible text, from its panel's id to the next panel's.
+
+    The panels are siblings and each nests boxes of its own, so the next panel's id is where
+    this one ends: slicing there reads the route whole without counting tags. A page that no
+    longer draws the terminal answers with None, which fails where a route is required rather
+    than passing quietly.
+    """
+    panels = [(match.start(), match.group(1)) for match in INSTALL_PANEL_ID.finditer(raw)]
+    for at, (start, name) in enumerate(panels):
+        if name != panel:
+            continue
+        end = panels[at + 1][0] if at + 1 < len(panels) else len(raw)
+        return normalise(raw[start:end])[0]
+    return None
 
 
 def check_hosted_tier(pages: list[Scanned]) -> int:
@@ -2032,8 +2060,8 @@ def check_repository_grid(pages: list[Scanned]) -> int:
     than permitted, for the reason the disclosure is:
 
     - every row carries the word the project uses for that repository: the specification is the
-      source of truth, the reference server and the two clients the project publishes itself are
-      available, and the extension is published;
+      source of truth, and the reference server and the three clients the project publishes
+      itself are available;
     - a row's name, description, pill and destination are one claim, and all four are read from
       inside the row's own anchor, so a row that links a different repository fails even though
       the page still carries every name and every word;
@@ -2050,11 +2078,14 @@ def check_repository_grid(pages: list[Scanned]) -> int:
     the ones required to link, and they are a list in this file, so a repository that moves into
     the plan list moves in the diff.
 
-    The `published` word is the one here that is a claim about a registry rather than a
-    repository, and another function owns that claim: `check_published_extension` holds the
-    identity and the two registries the release publishes to. So the page that carries the word
-    has to carry the identity too, and the two cannot disagree — this function reads the word
-    beside the repository, that one reads what the extension is published as and where.
+    The extension's row is the one whose repository a reader is also handed an install for, and
+    the install is where the identity the release publishes under and the two registries it
+    publishes to live: the VS Code route in the terminal. So the row and that route are read as
+    one claim — this function reads the word beside the repository from the grid and the install
+    from the route's own panel, and `check_published_extension` reads the same identity and
+    registries from the page as a whole. A route that lost the identity or a registry fails here
+    even though the page still carries the row, which is what keeps the word `available` about
+    the extension from standing alone.
 
     What it does not do is ask GitHub whether any of them answers. A repository's existence is
     the organisation's fact; what is read here is the page's own consistency about it.
@@ -2076,13 +2107,31 @@ def check_repository_grid(pages: list[Scanned]) -> int:
             )
         return 1
 
-    if not any(PUBLISHED_EXTENSION in scanned.text for scanned in pages):
-        published = next(status for name, _desc, status, _ in GRID_ROWS if name == "vscode_client")
+    # The extension's row is the one row here whose repository a reader is handed an install for,
+    # so the word beside the row is backed by that install: the identity the release publishes
+    # under and both registries it publishes to, read from the route that hands the extension
+    # over rather than from anywhere on the page. The row and the install are one claim, so a
+    # route that lost the identity or a registry fails even though the row still says the client
+    # is available.
+    install = install_panel_text(page.raw, "vscode")
+    missing = [
+        label
+        for label, pattern in PUBLISHED_REGISTRIES
+        if install is None or not pattern.search(install)
+    ]
+    identity = install is not None and PUBLISHED_EXTENSION in install
+    if install is None or not identity or missing:
+        status = next(status for name, _desc, status, _ in GRID_ROWS if name == "vscode_client")
+        absent = (
+            ["the install route itself"]
+            if install is None
+            else ([f"the identity `{PUBLISHED_EXTENSION}`"] if not identity else []) + missing
+        )
         print(
-            f"check-claims: the grid says the extension's repository is {published}, and no "
-            f"scanned file names `{PUBLISHED_EXTENSION}`, so the row claims a publication the "
-            "page does not otherwise state. The word beside the row and the identity the "
-            "release publishes under are one claim",
+            f"check-claims: the grid says the extension's repository is {status}, and the VS "
+            f"Code route in the terminal is missing {', '.join(absent)}, so the row offers a "
+            "client the page does not say where to install. The word beside the row and the "
+            "install a reader follows are one claim",
             file=sys.stderr,
         )
         return 1
@@ -2190,8 +2239,9 @@ def check_repository_grid(pages: list[Scanned]) -> int:
         f"check-claims: the grid names its {len(GRID_ROWS)} repositories and its "
         f"{len(GRID_PLANNED_ROWS)} planned row, says what each one is, links every "
         "repository it names and no other, leaves the plan unlinked, keeps each name, "
-        "description and pill inside its own row, and names "
-        f"`{PUBLISHED_EXTENSION}` where its own row says the extension is published"
+        "description and pill inside its own row, and hands the extension over in a VS "
+        f"Code install route that names `{PUBLISHED_EXTENSION}` on both registries it is "
+        "published to"
     )
     return 0
 

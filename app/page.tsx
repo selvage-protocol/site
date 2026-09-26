@@ -143,7 +143,7 @@ const repos: Repo[] = [
     name: "vscode_client",
     desc: "VS Code extension",
     Icon: Code,
-    tag: "published",
+    tag: "available",
     pill: "bg-green/10 text-green",
   },
   {
@@ -350,10 +350,8 @@ export default function Home() {
                     <li>sizes and timing of what moves</li>
                   </ul>
                   <p className="panel-body">
-                    It still sees that a room exists, who is in it, their names, and
-                    the sizes and timing of what moves. It can drop, delay or end a
-                    room. The host is a peer&apos;s signed claim: the server cannot
-                    seat a host, prove one, or take the role.
+                    It can drop, delay or end a room. The host is a peer&apos;s signed
+                    claim: the server cannot seat a host, prove one, or take the role.
                   </p>
                 </Card>
               </div>
@@ -466,7 +464,7 @@ export default function Home() {
         </main>
 
         <footer className="band">
-          <div className="shell shell-end foot-grid">
+          <div className="shell foot-grid">
             <div className="foot-col">
               <h3 className="foot-h">Licences</h3>
               <dl className="licences">
