@@ -7,22 +7,30 @@
 // exists for was exactly that: `default-src 'none'` with no `script-src` refused all seven
 // chunks and all fifteen inline scripts, `window.__next_f` stayed undefined, the page never
 // hydrated, and SiteHeader's hide-on-scroll did nothing while the README described it working.
-// Nothing in the gate noticed, because nothing ran a browser.
+// Nothing in the gate noticed, because nothing ran a browser. A refused font is the same defect
+// with a quieter failure: the model decides `font-src` against the preloads the page carries, and
+// only a run like this one can say the glyph files came back rather than the fallback stack.
 //
 // So this runs one. It serves the built page through a proxy that applies the `headers` block
 // out of `vercel.json` (`next start` does not apply it — only the host does), drives headless
 // Chromium over CDP, and asserts:
 //
 //   1. the document response carries the policy from vercel.json, verbatim;
-//   2. zero `securitypolicyviolation` events, collected as they happen rather than inferred;
+//   2. zero `securitypolicyviolation` events, collected as they happen rather than inferred,
+//      with a font named in one of them reported as what it is: `font-display: swap` paints the
+//      fallback stack, so refused glyphs read as a typographic choice rather than as a break;
 //   3. `window.__next_f` is an object, so the inline bootstrap ran, and the page's scripts
 //      therefore executed;
-//   4. the header conceals itself when the page is scrolled down and comes back when it is
+//   4. the page's own fonts arrived: both families resolve, and the body's computed family is
+//      Geist rather than the fallback the stack falls back to. `scripts/check-csp.py` decides
+//      `font-src` against the preloads, which is a model of the policy; only a browser can say
+//      the glyph files were fetched and used;
+//   5. the header conceals itself when the page is scrolled down and comes back when it is
 //      scrolled up — the React effect, which only runs once the page hydrates. The concealed
 //      class is asserted absent from the served bytes first, so what is observed is the
 //      effect, not the prerender;
-//   5. the document response carries no `X-Powered-By` (next.config.ts's `poweredByHeader`);
-//   6. a request for a path no route claims, which is the other page this policy covers, carries
+//   6. the document response carries no `X-Powered-By` (next.config.ts's `poweredByHeader`);
+//   7. a request for a path no route claims, which is the other page this policy covers, carries
 //      zero violations too. The framework's own 404 document carries a `<style>` element and four
 //      `style` attributes and `style-src 'self'` refuses all five, so this route is where the
 //      policy was refusing the site: `app/not-found.tsx` is styled from `style.css` instead.
@@ -284,6 +292,23 @@ if (served !== declared) fail(`the document response carries ${served ?? "no CSP
 // 2. zero violations, as the browser recorded them
 const seen = JSON.parse(await evaluate("JSON.stringify(window.__violations ?? null)"));
 if (!Array.isArray(seen)) fail("the violation listener never ran, so this check saw nothing");
+// A refused font is named before the generic assertion below, because it is the one refusal a
+// page can carry without looking broken: `font-display: swap` draws the fallback stack in the
+// same layout, so the reader sees a font choice rather than a page that failed to load.
+const fontRefusals = seen.filter(
+  (violation) =>
+    /font/i.test(violation.directive ?? "") || /\.woff2?(\?|$)/i.test(violation.blockedURI ?? ""),
+);
+if (fontRefusals.length > 0) {
+  for (const violation of fontRefusals) {
+    console.error(`  refused: ${violation.directive} ${violation.blockedURI}`);
+  }
+  fail(
+    `the policy refuses the page's own fonts: ${fontRefusals.length} securitypolicyviolation ` +
+      `event(s) naming a font, on ${where}. The glyph files are served from this origin, which ` +
+      "is what `font-src 'self'` permits",
+  );
+}
 if (seen.length > 0 || refusals.length > 0) {
   // The console lines repeat the structured events one for one, so they are printed only when
   // the listener recorded nothing — a refusal raised before it was installed, or on a page that
@@ -299,7 +324,38 @@ if (seen.length > 0 || refusals.length > 0) {
 // 3. the inline bootstrap ran, so the page's scripts executed
 if (page.nextF !== "object") fail(`window.__next_f is ${page.nextF}, not an object: the bootstrap never ran`);
 
-// 4. the header's hide-on-scroll, which is the React effect. The served bytes are checked
+// 4. the page's own fonts arrived. A family that fell back to the system stack paints in the
+// same layout, so the glyph files are only observable by asking for them: `check` reports false
+// while a face the family name needs is unloaded, and true only once it is loaded. The poll is
+// bounded, so a face that never settles fails here rather than passing slowly.
+const fontsSettled = await waitFor("[...document.fonts].every((face) => face.status !== 'loading')", 10);
+if (!fontsSettled) fail("the page's font faces never finished loading");
+const fonts = JSON.parse(
+  await evaluate(`JSON.stringify({
+    geist: document.fonts.check('16px Geist', 'Selvage'),
+    mono: document.fonts.check('16px "JetBrains Mono"', 'selvage/2'),
+    loaded: [...document.fonts]
+      .filter((face) => face.status === 'loaded')
+      .map((face) => face.family.replace(/["']/g, '')),
+    body: getComputedStyle(document.body).fontFamily,
+  })`),
+);
+for (const family of ["Geist", "JetBrains Mono"]) {
+  if (!fonts.loaded.includes(family)) {
+    fail(`${family} never loaded: the stylesheet's face for it was refused or has no glyph file`);
+  }
+}
+if (!fonts.geist) {
+  fail("Geist does not resolve on the page: the glyph file was refused or never loaded");
+}
+if (!fonts.mono) {
+  fail('JetBrains Mono does not resolve on the page: the glyph file was refused or never loaded');
+}
+if (!/^["']?Geist["']?(\s*,|$)/.test(fonts.body)) {
+  fail(`the body's computed font family is ${fonts.body}, not Geist: the theme's font variable did not resolve`);
+}
+
+// 5. the header's hide-on-scroll, which is the React effect. The served bytes are checked
 // first, so what is observed afterwards is the effect and not the prerender.
 const servedHtml = await (await fetch(where)).text();
 if (servedHtml.includes("-translate-y-full")) {
@@ -325,11 +381,11 @@ if (!concealed) fail("the header never concealed itself when scrolled down: the 
 if (!moved) fail(`the header's translate settled at ${concealedTranslate}, not 0px -100%`);
 if (!returned) fail("the header stayed concealed when scrolled back up");
 
-// 5. no framework banner on the document response
+// 6. no framework banner on the document response
 const banner = Object.keys(document_?.headers ?? {}).some((key) => key.toLowerCase() === "x-powered-by");
 if (banner) fail("the document response carries X-Powered-By: next.config.ts should have stopped it");
 
-// 6. the site's own not-found route, served with the same policy. Asserted separately from the
+// 7. the site's own not-found route, served with the same policy. Asserted separately from the
 // page above because it is a different document with different markup: the framework's default
 // 404 is styled with a `<style>` element and four `style` attributes, every one of which
 // `style-src 'self'` refuses, and nothing looked at this route before.
@@ -369,12 +425,13 @@ console.log(`check-csp-browser: ${version.Browser}, headless, ${where} served fr
   the headers out of ${policyLabel} (a proxy; next start does not apply them)
   policy     : ${served}
   scripts    : ${page.scripts} (${page.external} external, ${page.inline} inline), window.__next_f is an object
-  violations : 0 securitypolicyviolation events, 0 console refusals
+  fonts      : Geist and JetBrains Mono loaded and resolve, the body's family is ${fonts.body}
+  violations : 0 securitypolicyviolation events, 0 console refusals, none naming a font
   not-found  : /no-such-path answered 404, 0 violations, no inline style or style attribute in its served bytes
   header     : concealed at scrollY 900 (translate: ${concealedTranslate}), back at scrollY 300
   banner     : no X-Powered-By on the document response
 This is a browser, not a model: what it cannot see is the deployed response headers, because
-only the host applies them.`);
+only the host applies them, and what it sees that the model cannot is the fonts themselves.`);
 
 cleanup();
 process.exit(0);

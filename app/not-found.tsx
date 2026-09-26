@@ -4,13 +4,11 @@
     `style.css` alone, so the policy refuses nothing the site serves. */
 export default function NotFound() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-5 text-center">
-      <h1 className="text-[1.5rem] font-semibold tracking-[-0.02em] text-text">
-        Nothing at this address
-      </h1>
-      <p className="mt-4 max-w-[35rem] text-[1.0625rem] leading-[1.7] text-subtext">
+    <main className="not-found">
+      <h1>Nothing at this address</h1>
+      <p>
         This site has one page:{" "}
-        <a href="/" className="text-mauve underline underline-offset-4">
+        <a href="/" className="underline underline-offset-4">
           the landing page
         </a>
         .

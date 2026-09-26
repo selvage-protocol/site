@@ -7,8 +7,8 @@
 #   scripts/ci-local.sh button     # render the button/anchor variants, assert props reach the DOM
 #   scripts/ci-local.sh contrast   # theme token pairs at or above WCAG AA, and the nav mark at its visibility floor
 #   scripts/ci-local.sh mark       # re-derive public/mark-header.png from the master, compare
-#   scripts/ci-local.sh claims     # build, serve production, fetch / and scan the rendered HTML
-#   scripts/ci-local.sh csp        # the CSP in vercel.json over the served page and its not-found route: nothing either carries is refused
+#   scripts/ci-local.sh claims     # build, serve production, fetch / and scan the rendered HTML (forbidden wordings and the artefact-backed claims)
+#   scripts/ci-local.sh csp        # the CSP in vercel.json over the served page and its not-found route: no script, stylesheet, image or font either carries is refused
 #   scripts/ci-local.sh weight     # every image the page body fetches is within its byte budget
 #   scripts/ci-local.sh links      # serve production, lychee over the rendered page and the README
 #   scripts/ci-local.sh lint       # actionlint over the workflow files
@@ -20,14 +20,19 @@
 # The claim step scans what the server renders, not the source: it builds, starts the
 # production server, fetches `/` over HTTP, saves that HTML and runs the phrase check over it.
 # A phrase wrapped across lines or encoded as entities in the served bytes is still one phrase
-# to the check. The check is a filter, not a proof: see scripts/check-claims.py.
+# to the check. The refused words are the filter half; the step also holds the page to the claims
+# that have an artefact behind them — the tag its `docker run` names against the registry, the
+# demo instance against the box, the relay disclosure, the corpus counts against the file that
+# pins them — and each of those fails rather than passes when it cannot be checked. A filter, not
+# a proof: see scripts/check-claims.py.
 #
 # The CSP step reads the same rendered HTML and the policy out of `vercel.json`, and fails when
-# the policy would refuse a script, stylesheet or image the page carries. That is the defect it
-# was written for: `default-src 'none'` with no `script-src` blocked the page's own chunks and
-# its inline bootstrap, so it never hydrated. See scripts/check-csp.py. It reads the not-found
-# route too: the framework's own 404 markup carries a `<style>` element and four style
-# attributes, which this policy refuses, and a scan that only ever saw `/` did not know.
+# the policy would refuse a script, stylesheet, image or font the page carries. That is the defect
+# it was written for: `default-src 'none'` with no `script-src` blocked the page's own chunks and
+# its inline bootstrap, so it never hydrated. A font fetch falls back to `default-src` the same way,
+# and the page serves its own glyph files, so `font-src` is modelled too. See scripts/check-csp.py.
+# It reads the not-found route too: the framework's own 404 markup carries a `<style>` element and
+# four style attributes, which this policy refuses, and a scan that only ever saw `/` did not know.
 #
 # The weight step reads the same rendered HTML and the bytes on disk: every image the page body
 # fetches out of `public/` is within its budget and declares its own pixel size. The mark was
@@ -111,7 +116,10 @@ with_server() {
   }
   trap cleanup_server EXIT
   # `"$@"` runs under `if`, so a red scan still reaches the cleanup below instead of
-  # exiting the script with the server orphaned (`set -e` does not fire in a condition).
+  # exiting the script with the server orphaned (`set -e` does not fire in a condition). That is
+  # also why the helpers below chain their commands with `&&`: this function returns the status
+  # of `"$@"`, and a `;` inside a helper would return the last command's, so a page the check
+  # refuses would be reported clean whenever the command after it passed.
   local status=0
   if "$@"; then
     status=0
@@ -163,16 +171,16 @@ job_csp() {
 }
 
 fetch_and_scan() {
-  curl -sSf "$BASE/" -o "$RENDERED"
   # Named rather than globbed: a scan that reaches no file reports a clean page, so reaching
   # nothing is an error (exit 2) rather than a pass.
-  ./scripts/check-claims.py "$RENDERED"
+  curl -sSf "$BASE/" -o "$RENDERED" &&
+    ./scripts/check-claims.py "$RENDERED"
 }
 
 fetch_and_csp() {
-  curl -sSf "$BASE/" -o "$RENDERED"
-  fetch_not_found
-  scan_csp
+  curl -sSf "$BASE/" -o "$RENDERED" &&
+    fetch_not_found &&
+    scan_csp
 }
 
 # The not-found route is a page the site serves, so the policy has to permit what it carries
@@ -189,9 +197,10 @@ fetch_not_found() {
 
 scan_csp() {
   # The policy comes from vercel.json, which the local server does not apply: this compares the
-  # two, it does not verify the host applies the header.
-  ./scripts/check-csp.py "$RENDERED"
-  ./scripts/check-csp.py "$RENDERED_404"
+  # two, it does not verify the host applies the header. Both pages are a surface the policy has
+  # to permit, so each is decided rather than one standing in for the other.
+  ./scripts/check-csp.py "$RENDERED" &&
+    ./scripts/check-csp.py "$RENDERED_404"
 }
 
 all_served() {
@@ -217,8 +226,8 @@ scan_weight() {
 }
 
 fetch_and_weight() {
-  curl -sSf "$BASE/" -o "$RENDERED"
-  scan_weight
+  curl -sSf "$BASE/" -o "$RENDERED" &&
+    scan_weight
 }
 
 job_lint() {

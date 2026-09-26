@@ -10,10 +10,9 @@ encodes the characters as HTML entities.
 Facts are asserted in the positive instead, because a phrase list cannot reach them: the image tag
 in the `docker run` the page hands a reader, the instance the demo section points at — the address
 it gives an editor, the wire version that address speaks, and the page a guest is sent to — the
-wire version the page says each artefact it hands a reader speaks, the two disclosures the page
-owes a reader: what the sealed relay still sees, and that a guest who opens the room server's own
-page trusts that server for the client code as well as for the relay, and the identity the
-extension is published under with the two registries the release publishes it to and what an
+wire version the page says each artefact it hands a reader speaks, the disclosure the page owes a
+reader of what the sealed relay still sees, and the identity the extension is published under with
+the two registries the release publishes it to and what an
 install is and is not. The address half asks the
 path a plain `GET` can reach, not the upgrade: see `demo_session_route`. Each is a fact with an
 artefact behind it, and a wrong tag is a command that fails rather than a wording that lies. See
@@ -84,7 +83,12 @@ DASHES = re.compile("[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]")
 # The page's happy path is a `docker run` a reader pastes, so the tag in it is a claim with an
 # artefact behind it: a wrong tag is `manifest unknown`, not a wording a phrase list can
 # enumerate. It is therefore a *required* claim, pinned once here and asserted twice: every
-# reference the rendered page carries must name this version, and the registry must serve it.
+# reference the rendered page carries must name this tag, and the registry must serve it.
+#
+# The tag is one the release publishes rather than a version, because a version written into a
+# reader's command goes stale the moment the page's copy of it does. `latest` resolves to a built
+# artefact all the same, which is what the registry half reaches, and any other tag on the page
+# fails the first half rather than passing as a live command.
 #
 # The registry half is the one that reaches the artefact, and it holds the distinction that
 # matters: a platform entry in an image index proves only that a slot is *labelled* arm64.
@@ -94,24 +98,28 @@ DASHES = re.compile("[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]")
 # looks like, and it pulls them with no credential in the request, because no account is the
 # point of the command the page hands over.
 PUBLISHED_IMAGE = "ghcr.io/selvage-protocol/selvaged"
-PINNED_IMAGE_VERSION = "0.4.5"
+PUBLISHED_IMAGE_TAG = "latest"
 IMAGE_REFERENCE = re.compile(r"ghcr\.io/selvage-protocol/selvaged(?::([\w][\w.+-]*))?")
 REGISTRY_HOST = "ghcr.io"
 REGISTRY_REPOSITORY = PUBLISHED_IMAGE.split("/", 1)[1]
 REQUEST_TIMEOUT_SECONDS = 20
 
-# The wire version this protocol has, and which wire the pinned `selvaged` release speaks. The
+# The wire version this protocol has, and which wire the tag the page hands a reader speaks. The
 # page hands a reader an artefact whose wire is a fact about the artefact, not a wording: under this
 # version the room's bytes reach the server sealed, so a page that puts the sealing claim over a
 # command yielding a relay that cannot seal is a silent downgrade. The map is a constant rather
 # than a measurement because nothing on a registry answers what wire version a binary speaks: an
-# index will say `linux/arm64` and nothing about the frames inside. A pin with no entry fails the
-# check instead of defaulting, so a release that moves the pin has to declare the new tag's wire in
-# the same wave — this map, `PINNED_IMAGE_VERSION` and the page's sentence about it move together,
-# and `check_wire_binding` is what holds the last of the three to the first two.
+# index will say `linux/arm64` and nothing about the frames inside. A tag with no entry fails the
+# check instead of defaulting, so a release that points a tag at a different wire has to declare it
+# in the same wave — this map, `PUBLISHED_IMAGE_TAG` and the page's sentence about it move
+# together, and `check_wire_binding` is what holds the last of the three to the first two.
+#
+# The entry is keyed by the tag, not by a version, and the tag is a moving name: the protocol has
+# one wire version, so every release that tag can resolve to speaks it, and what the entry refuses
+# is a tag whose wire nobody has declared rather than a tag that has moved.
 WIRE = "selvage/2"
 IMAGE_WIRE_BY_TAG = {
-    "0.4.5": WIRE,
+    "latest": WIRE,
 }
 WIRE_VERSION = re.compile(r"\bselvage/\d+\b")
 
@@ -124,7 +132,7 @@ WIRE_VERSION = re.compile(r"\bselvage/\d+\b")
 #
 # What is deliberately no longer asserted is which release the box runs. The page named one and
 # the check compared it; the page stopped naming it, because a visitor has no use for the version
-# of an endpoint they will never call. `PINNED_IMAGE_VERSION` is still asserted, against the
+# of an endpoint they will never call. `PUBLISHED_IMAGE_TAG` is still asserted, against the
 # registry, as the tag the `docker run` hands a reader.
 DEMO_HOST = "selvage-demo.dontblameme.dev"
 DEMO_ORIGIN = "https://" + DEMO_HOST
@@ -214,22 +222,6 @@ CORPUS_COUNTS = (
 CORPUS_FILE = re.compile(r"\b(?:specification/)?schema/validate\.py\b")
 USER_AGENT = "selvage-site-check/1.0"
 
-# The second disclosure the page owes a reader, and the one the plan forbids leaving implied: the
-# browser guest is served the client by the room's own server, so that server supplies the program
-# that reads the fragment as well as the relay that carries the frames, and a page that says the
-# server cannot read must say so out loud (the desktop clients are installed artefacts and are not
-# in that position). Required the way `RELAY_DISCLOSURE` is, so one edit cannot quietly drop it.
-BROWSER_TRUST_DISCLOSURE = (
-    (
-        "the guest's trust in the server that serves it the page",
-        re.compile(r"\btrusts?\b[^.]{0,64}\bfor the client code\b", re.IGNORECASE),
-    ),
-    (
-        "the clients that are not in that position",
-        re.compile(r"\bnot in that position\b", re.IGNORECASE),
-    ),
-)
-
 # The extension's published identity and the registries the release publishes that one `.vsix`
 # to. `selvage-protocol.selvage` is the `publisher` and `name` in `vscode_client/package.json`,
 # and the two registries are the two publish steps in that repository's `release.yml`; the page
@@ -274,7 +266,7 @@ REGISTRY_WORD = re.compile(
     r"|\b(?:extension|plugin|add-?on)s?\s+stores?\b|\b(?:extension|plugin)s?\s+registr(?:y|ies)\b",
     re.IGNORECASE,
 )
-# What the row has to state about the install itself, required the way the disclosures are: a
+# What the row has to state about the install itself, required the way the disclosure is: a
 # `clean` fixture only proves a pattern does not reject a sentence, so a page that keeps the two
 # registry names and drops what the install is would leave a reader thinking a gallery install is
 # a session. "on a server you run" is not the sentence to read — the hero carries that one — so
@@ -312,8 +304,9 @@ EXTENSION_PUBLICATION = (
 )
 
 # The two sentences that bind the page's sealing claim to the wire version it is true of: which
-# wire the pinned image speaks, and which wire the demo speaks. `check_wire_binding` reads both.
-WIRE_OF_PINNED = re.compile(
+# wire the image under the `docker run` speaks, and which wire the demo speaks.
+# `check_wire_binding` reads both.
+WIRE_OF_IMAGE = re.compile(
     r"\bthe (?:published |pinned )?(?:image|container)\b"
     r"[^.]{0,80}?\bspeaks?\b[^.]{0,40}?\b(selvage/\d+)\b",
     re.IGNORECASE,
@@ -323,7 +316,7 @@ WIRE_OF_DEMO = re.compile(
     re.IGNORECASE,
 )
 # How a page says the sealing is not what a reader can obtain yet. There is no version to say it of:
-# the protocol has one wire version and the pinned release speaks it, so the sentence is false — it
+# the protocol has one wire version and the published tag speaks it, so the sentence is false — it
 # tells a guest their room is plaintext when it is not. `check_wire_binding` forbids it rather than
 # requiring it, which is the direction it had while a version was still unpublished.
 WIRE_UNRELEASED = re.compile(
@@ -367,6 +360,10 @@ class Scanned:
     text: str
     line_of: list[int]
     destinations: list[tuple[str, int]]
+    # The bytes the scan read, kept so a fact that has to be read out of an element's own
+    # markup — a grid row whose name, description, pill and destination are one claim — can be
+    # read from where it sits rather than from the page's flattened text.
+    raw: str
     # Prose carried in attributes rather than in the body: one normalised stream per `meta`
     # element, each with the source line of every character. Scanned beside `text`, never
     # instead of it, so a claim in a link unfurl fails the same way one in a paragraph does.
@@ -553,14 +550,14 @@ FORBIDDEN: list[Phrase] = [
     Phrase(
         # The lookbehind is what keeps a version-inside-a-version out of a pattern about a 1.0
         # claim: a tag like `2.1.0` carries `1.0` as a substring, and naming a tag that happens
-        # to contain it is describing an artefact, not claiming a frozen release. The pin is
-        # `0.4.5`, which carries no `1.0` substring at all, so the fixture below is synthetic
-        # rather than the live pin; the lookbehind still has to hold for whatever version a future
-        # pin carries. A 1.0 that stands on its own still matches.
+        # to contain it is describing an artefact, not claiming a frozen release. The tag the
+        # page carries is `latest`, which carries no `1.0` substring at all, so the fixture below
+        # is synthetic rather than the live tag; the lookbehind still has to hold for whatever
+        # tag a future release publishes under. A 1.0 that stands on its own still matches.
         r"(?<![\d.])v?1\.0\b|production[- ]ready|production[- ]grade|battle[- ]tested|stable release",
         "the stable release, version 1.0",
-        "the wire version is `selvage/2`; no shape is frozen. "
-        "`0.4.5` is the version of the image the page hands a reader, not a 1.0",
+        "the wire version is `selvage/2`; no shape is frozen, and a release tag is a version of "
+        "an artefact rather than a claim that 1.0 exists",
         ("we are at v1.0", "the stable rele<!-- -->ase, version 1.0"),
         ("ghcr.io/selvage-protocol/selvaged:0.4.5", "0.4.5", "version 0.4.5", "tool:2.1.0"),
     ),
@@ -765,7 +762,7 @@ FORBIDDEN: list[Phrase] = [
         r"|subscribers)\b",
         "used in production by 40 engineering teams",
         "no user count exists. The only numbers this project can show are the corpus counts its "
-        "own validator pins (31 vectors, 34858 frame checks, 8642 assertions)",
+        "own validator pins (24 vectors, 33760 frame checks, 8387 assertions)",
     ),
     Phrase(
         r"\bfirst\b",
@@ -1293,15 +1290,16 @@ def anonymous_pull_token() -> str:
         return json.loads(response.read())["token"]
 
 
-def pinned_tag_legs() -> dict[str, tuple[str, ...]]:
-    """{platform: layer digests} for the pinned tag, read from the per-platform manifests.
+def published_tag_legs() -> dict[str, tuple[str, ...]]:
+    """{platform: layer digests} for the tag the page hands a reader, from the per-platform
+    manifests.
 
     The tag's own document is an index that points at those; the layers live in the manifests
     it names, which is why the index alone cannot answer what this asks. Attestation entries
     carry `platform: unknown/unknown` and are skipped by the `os` filter.
     """
     token = anonymous_pull_token()
-    index = _registry_json(f"{REGISTRY_REPOSITORY}/manifests/{PINNED_IMAGE_VERSION}", token)
+    index = _registry_json(f"{REGISTRY_REPOSITORY}/manifests/{PUBLISHED_IMAGE_TAG}", token)
     legs: dict[str, tuple[str, ...]] = {}
     for entry in index.get("manifests", []):
         platform = entry.get("platform", {})
@@ -1314,13 +1312,13 @@ def pinned_tag_legs() -> dict[str, tuple[str, ...]]:
     return legs
 
 
-def check_pinned_image(pages: list[Scanned]) -> int:
-    """The page's version against the pin, and the pin against the registry.
+def check_published_image(pages: list[Scanned]) -> int:
+    """The page's tag against the tag it may hand a reader, and that tag against the registry.
 
     Returns 0 when both hold, 1 when either does not, 2 when the registry cannot be asked.
     """
     root = root_of_this_checkout()
-    reference = f"{PUBLISHED_IMAGE}:{PINNED_IMAGE_VERSION}"
+    reference = f"{PUBLISHED_IMAGE}:{PUBLISHED_IMAGE_TAG}"
     named = 0
     wrong: list[str] = []
     for page in pages:
@@ -1332,25 +1330,26 @@ def check_pinned_image(pages: list[Scanned]) -> int:
     if not named:
         print(
             f"check-claims: none of {len(pages)} scanned file(s) carries a {PUBLISHED_IMAGE} "
-            f"reference, and the pin is {reference!r}: the page's happy path is where it is "
-            "handed to a reader, so a scan that never reaches it is not checking the pin",
+            f"reference, and the tag the page may hand a reader is {reference!r}: the page's "
+            "happy path is where it is handed over, so a scan that never reaches it is not "
+            "checking the tag",
             file=sys.stderr,
         )
         return 1
     if wrong:
         for where in wrong:
             print(
-                f"check-claims: the page hands a reader {where}, and the pinned image is "
+                f"check-claims: the page hands a reader {where}, and the image it may name is "
                 f"{reference!r}",
                 file=sys.stderr,
             )
         return 1
 
     try:
-        legs = pinned_tag_legs()
+        legs = published_tag_legs()
     except (urllib.error.URLError, OSError, ValueError, KeyError) as error:
         print(
-            f"check-claims: cannot ask {REGISTRY_HOST} for {reference} ({error}); the pin "
+            f"check-claims: cannot ask {REGISTRY_HOST} for {reference} ({error}); the tag "
             "cannot be checked against the artefact it names, so this is a failure rather "
             "than a pass",
             file=sys.stderr,
@@ -1375,7 +1374,7 @@ def check_pinned_image(pages: list[Scanned]) -> int:
         )
         return 1
     print(
-        f"check-claims: the pinned image {reference} pulls anonymously and is not one "
+        f"check-claims: the published image {reference} pulls anonymously and is not one "
         f"binary twice — amd64 {' '.join(amd64)}, arm64 {' '.join(arm64)}"
     )
     return 0
@@ -1641,7 +1640,7 @@ def disclosure_region(page: Scanned) -> str:
     command together, which is also what tells the paragraph apart from the hero. The hero used to
     state the same four facts above the command: reading the whole page let a hero line satisfy a
     check written to require the paragraph, and deleting the paragraph then passed. What is read is
-    the page from the pinned image's own reference onwards, so the hero cannot stand in for it —
+    the page from its image's own reference onwards, so the hero cannot stand in for it —
     its chips name the same properties in a word each, and a hero line that states a fact in full
     would be the same defect again. Returns "" when the page carries no such reference, which the
     image half also fails on; this one names the absence rather than reporting four missing facts.
@@ -1683,7 +1682,7 @@ def check_relay_disclosure(pages: list[Scanned]) -> int:
     tool decides for itself; matched loosely that paragraph supplied them for a
     page whose disclosure had been deleted, and a rewrite that dropped those two while keeping
     "their names" and "sizes and timing" passed with them gone. The region is the page from the
-    `docker run` that pulls the pinned image onwards: the paragraph's place under that command is
+    `docker run` that pulls the page's image onwards: the paragraph's place under that command is
     part of the claim, the hero's chips state those facts in a word each above it, and a page whose
     hero line is all that is left has dropped the paragraph a reader is owed. Returns 0 when a
     scanned page carries all four below its own command and 1 when none does; it asks no network.
@@ -1736,7 +1735,7 @@ def window_with_following_sentence(text: str, start: int, end: int) -> str:
 def check_corpus_citation(pages: list[Scanned]) -> int:
     """Every corpus count the page shows names the file that pins it, beside the number.
 
-    Required rather than permitted, for the reason the disclosures are: a page that shows the
+    Required rather than permitted, for the reason the disclosure is: a page that shows the
     counts and names no file lets a reader take six numbers on trust. The window is the count's
     own sentence and the one after it (see `window_with_following_sentence`), so the citation
     has to be where the number is.
@@ -1784,41 +1783,10 @@ def check_corpus_citation(pages: list[Scanned]) -> int:
     return 1
 
 
-def check_browser_trust(pages: list[Scanned]) -> int:
-    """The page's statement that a browser guest trusts the room's own server for the client code.
-
-    The E2EE plan's §2 closing paragraph (`selvage-protocol/ai_notes`,
-    `docs/studies/e2ee-plan.md`) forbids leaving this implied by a page that claims the
-    server cannot read: the fragment is never sent, but the program that reads it is, and it is
-    served by the same server as the relay, so a pwned one can hand the guest a client that uses
-    its own key. The mitigation the plan names first — an origin the room's server does not
-    control — is not the shape the page describes, so the second half has to be said out loud,
-    including which clients are installed artefacts rather than fetched ones. Required the way the
-    visibility facts are, so an edit that keeps every phrase pattern green cannot drop it.
-    """
-    page, failures = first_page_stating(pages, BROWSER_TRUST_DISCLOSURE)
-    if page is not None:
-        print(
-            "check-claims: the page states that a guest who opens the page the room's own "
-            "server serves trusts that server for the client code as well as for the relay, and "
-            "that the installed clients are not in that position"
-        )
-        return 0
-    for where, absent in failures:
-        print(
-            f"check-claims: {where} does not state what the browser guest trusts: it is "
-            f"missing {', '.join(absent)}. The page hands a guest the page its own server "
-            "serves and says the server cannot read the room, which is the combination the plan "
-            "forbids leaving implied",
-            file=sys.stderr,
-        )
-    return 1
-
-
 def check_published_extension(pages: list[Scanned]) -> int:
     """The page's install row against the identity and the registries the release publishes to.
 
-    Required rather than permitted, for the reason the disclosures are: a `clean` fixture proves a
+    Required rather than permitted, for the reason the disclosure is: a `clean` fixture proves a
     pattern does not reject a sentence, never that the page carries one, and this page could keep
     every fixture green while saying nothing about where the extension is installed from. Three
     things are asked of the scanned page:
@@ -1909,6 +1877,260 @@ def check_published_extension(pages: list[Scanned]) -> int:
     return 0
 
 
+# The card the page offers and does not have: a hosted tier the project would run for the reader.
+# Its parts are one claim — the card, the status on it, the sentence saying who would run it, and
+# the row that is a plan rather than a control — and each is a pattern of its own, so a rewrite
+# that keeps the fact passes and one that drops it fails.
+HOSTED_TIER = (
+    ("the card that offers it", re.compile(r"Rent a server", re.IGNORECASE)),
+    ("that it is not available yet", re.compile(r"\bNot available yet\b", re.IGNORECASE)),
+    ("who would run it", re.compile(r"\bWe run the server\b", re.IGNORECASE)),
+    (
+        "and that its row is a plan rather than a control",
+        re.compile(r"Hosted servers\s*planned", re.IGNORECASE),
+    ),
+)
+
+# The repository grid's rows: the repository each one names, the description it shows, the word
+# the page puts beside it, and the pattern that word is matched by. A row's name, description,
+# pill and destination are one claim about one repository, so all four are asserted together:
+# the pattern alone is not enough, because a swap of two rows' links leaves every name and every
+# word still on the page.
+GRID_ROWS = (
+    (
+        "specification",
+        "Prose, schema, vectors",
+        "source of truth",
+        re.compile(r"\bspecification[^.]{0,32}source of truth\b", re.IGNORECASE),
+    ),
+    (
+        "vscode_client",
+        "VS Code extension",
+        "published",
+        re.compile(r"\bvscode_client[^.]{0,32}published\b", re.IGNORECASE),
+    ),
+    (
+        "reference_server",
+        "selvaged",
+        "available",
+        re.compile(r"\breference_server[^.]{0,32}available\b", re.IGNORECASE),
+    ),
+    (
+        "nvim_client",
+        "Neovim plugin",
+        "available",
+        re.compile(r"\bnvim_client[^.]{0,32}available\b", re.IGNORECASE),
+    ),
+    (
+        "web_client",
+        "The browser page",
+        "available",
+        re.compile(r"\bweb_client[^.]{0,32}available\b", re.IGNORECASE),
+    ),
+)
+
+# The row that is a plan rather than a repository: the page links it to nothing, which is the
+# claim — a client nobody has written cannot be offered. The design's sixth row was
+# `jetbrains_client`, and `github.com/selvage-protocol/jetbrains_client` answers 404 while the
+# organisation carries no such public repository, so it is dropped rather than linked; the
+# destination rule below is what keeps a row for it, or for any other repository the project does
+# not have, off the page.
+GRID_PLANNED = re.compile(r"\bMore clients[^.]{0,32}Planned\b", re.IGNORECASE)
+
+# The URL shape of a repository link. The grid's own rows are the list of names the page may
+# carry, so a row's word and its destination cannot name two different repositories.
+GRID_LINK = re.compile(r"https?://github\.com/selvage-protocol/([\w.-]+)")
+
+# One anchor's opening tag through its own closer. A grid row is one `<a>`, so its name,
+# description and pill are the visible text inside that element and nowhere else.
+GRID_ANCHOR = re.compile(r"<a\b[^>]*>.*?</a>", re.DOTALL | re.IGNORECASE)
+GRID_HREF = re.compile(r'''href\s*=\s*"([^"]*)"''', re.IGNORECASE)
+
+
+def grid_row_text(raw: str) -> list[tuple[str, str]]:
+    """Every anchor that points at a repository, as (repository name, the anchor's visible text).
+
+    The repository comes from the `href` and the text from the anchor's own markup, so the two
+    can be compared. A grid whose links have been swapped still carries every name, description
+    and pill on the page; only the pairing shows the row that points a reader at the wrong code.
+    """
+    rows: list[tuple[str, str]] = []
+    for match in GRID_ANCHOR.finditer(raw):
+        anchor = match.group(0)
+        href = GRID_HREF.search(anchor)
+        if href is None:
+            continue
+        named = GRID_LINK.match(html.unescape(href.group(1)))
+        if named is None:
+            continue
+        rows.append((named.group(1), normalise(anchor)[0]))
+    return rows
+
+
+def check_hosted_tier(pages: list[Scanned]) -> int:
+    """The hosted tier the page offers and does not run yet.
+
+    The card is the one place a reader can ask for something the project cannot give them, so
+    what it says is read as a whole: it offers a server the project would run, it says that is
+    not available yet, and the row under it is a plan rather than a control. Required rather than
+    permitted, for the reason the disclosure is: a `clean` fixture proves a pattern does not
+    reject a sentence, never that the page carries one. The phrase list's `now available` entry
+    can only catch the opposite direction — a page that dropped the status would read as an offer
+    with nothing saying it cannot be taken, and nothing else here would notice.
+
+    Returns 0 when a scanned page carries every part of the card and 1 when none does; it asks no
+    network.
+    """
+    page, failures = first_page_stating(pages, HOSTED_TIER)
+    if page is not None:
+        print(
+            "check-claims: the page offers a hosted tier and says it is not available yet — the "
+            "card, its status, who would run it, and the row that is a plan rather than a control"
+        )
+        return 0
+    for where, absent in failures:
+        print(
+            f"check-claims: {where} does not say what the hosted tier's card offers: it is "
+            f"missing {', '.join(absent)}. The page offers a server the project does not run "
+            "yet, and a card without that status reads as something a reader can ask for",
+            file=sys.stderr,
+        )
+    return 1
+
+
+def check_repository_grid(pages: list[Scanned]) -> int:
+    """The repository grid: what each row links, and what each row says of it.
+
+    The grid is the page's own account of what exists. A row names a repository, describes it in
+    a word or two, says one word about it and links it, and a reader who follows the row lands on
+    the code the word is about. Four things hold that together, and all four are required rather
+    than permitted, for the reason the disclosure is:
+
+    - every row carries the word the project uses for that repository: the specification is the
+      source of truth, the reference server and the two clients the project publishes itself are
+      available, and the extension is published;
+    - a row's name, description, pill and destination are one claim, and all four are read from
+      inside the row's own anchor, so a row that links a different repository fails even though
+      the page still carries every name and every word;
+    - every repository the grid names is linked, so a word about a repository hands the reader
+      something to check;
+    - every repository the page links is one the grid names, so no row and no source link beside
+      the terminal points at a repository the project does not have. `jetbrains_client` is the
+      one the design carried and the organisation does not, so it is dropped rather than linked.
+
+    The `published` word is the one here that is a claim about a registry rather than a
+    repository, and another function owns that claim: `check_published_extension` holds the
+    identity and the two registries the release publishes to. So the page that carries the word
+    has to carry the identity too, and the two cannot disagree — this function reads the word
+    beside the repository, that one reads what the extension is published as and where.
+
+    What it does not do is ask GitHub whether any of them answers. A repository's existence is
+    the organisation's fact; what is read here is the page's own consistency about it.
+
+    Returns 0 when all of it holds and 1 when it does not; it asks no network.
+    """
+    root = root_of_this_checkout()
+    facts = [(f"the {name} row", pattern) for name, _desc, _status, pattern in GRID_ROWS]
+    facts.append(("the row that is a plan", GRID_PLANNED))
+    page, failures = first_page_stating(pages, facts)
+    if page is None:
+        for where, absent in failures:
+            print(
+                f"check-claims: {where} does not carry the repository grid: it is missing "
+                f"{', '.join(absent)}. The grid is the page's own account of what exists, and "
+                "a row that loses its word is a claim about a repository that nothing beside "
+                "it supports",
+                file=sys.stderr,
+            )
+        return 1
+
+    if not any(PUBLISHED_EXTENSION in scanned.text for scanned in pages):
+        published = next(status for name, _desc, status, _ in GRID_ROWS if name == "vscode_client")
+        print(
+            f"check-claims: the grid says the extension's repository is {published}, and no "
+            f"scanned file names `{PUBLISHED_EXTENSION}`, so the row claims a publication the "
+            "page does not otherwise state. The word beside the row and the identity the "
+            "release publishes under are one claim",
+            file=sys.stderr,
+        )
+        return 1
+
+    linked = {
+        match.group(1)
+        for scanned in pages
+        for destination, _ in scanned.destinations
+        for match in [GRID_LINK.match(destination)]
+        if match
+    }
+    unlinked = [(name, status) for name, _desc, status, _ in GRID_ROWS if name not in linked]
+    if unlinked:
+        for name, status in unlinked:
+            print(
+                f"check-claims: the grid says {name} is {status} and links nothing for it. A "
+                "word about a repository is a claim a reader checks by following the row, so a "
+                "row that says one and links nowhere hands the reader nothing",
+                file=sys.stderr,
+            )
+        return 1
+
+    known = {name for name, _desc, _status, _ in GRID_ROWS}
+    stray = [
+        f"{os.path.relpath(scanned.path, root)}:{line}: {destination!r}"
+        for scanned in pages
+        for destination, line in scanned.destinations
+        for match in [GRID_LINK.match(destination)]
+        if match and match.group(1) not in known
+    ]
+    if stray:
+        for where in stray:
+            print(
+                f"check-claims: the page links a repository at {where}, and the grid names "
+                f"{', '.join(name for name, _desc, _status, _ in GRID_ROWS)}. A link is a "
+                "claim that a repository is there to read, and the design's own sixth row is the "
+                "one that is not",
+                file=sys.stderr,
+            )
+        return 1
+
+    # A row's name, description, pill and destination are one claim about one repository. The
+    # patterns above prove each word is somewhere on the page, not that it is beside its own
+    # link; this reads each row's own anchor and holds all four inside it.
+    rows = grid_row_text(page.raw)
+    for name, desc, status, _pattern in GRID_ROWS:
+        owner = next(
+            (
+                text
+                for repo, text in rows
+                if repo == name and name in text and desc in text and status in text
+            ),
+            None,
+        )
+        if owner is not None:
+            continue
+        beside = next((text for repo, text in rows if repo == name), None)
+        detail = (
+            f"The anchor whose destination names {name} reads {beside!r}"
+            if beside is not None
+            else f"The page links nothing whose destination names {name}"
+        )
+        print(
+            f"check-claims: the {name} row does not join its name, its description ({desc!r}), "
+            f"its pill ({status!r}) and its own link. {detail}. A row is a claim about one "
+            "repository, and a reader who follows it has to land on the code the word beside it "
+            "is about",
+            file=sys.stderr,
+        )
+        return 1
+
+    print(
+        f"check-claims: the grid names its {len(GRID_ROWS)} repositories and the row that is a "
+        "plan, says what each one is, links every repository it names and no other, keeps each "
+        "name, description and pill inside its own row's link, and names "
+        f"`{PUBLISHED_EXTENSION}` where its own row says the extension is published"
+    )
+    return 0
+
+
 def names_wire(text: str, version: str) -> bool:
     """Whether this text names the wire version as a name of its own, not as `selvage/21`."""
     return re.search(rf"(?<![\w/]){re.escape(version)}(?![\w/])", text) is not None
@@ -1925,20 +2147,20 @@ def page_names(version: str, pages: list[Scanned]) -> bool:
 
 
 def wire_binding_problems(
-    page: Scanned, offered: tuple[str, ...], pinned_wire: str
+    page: Scanned, offered: tuple[str, ...], image_wire: str
 ) -> list[str]:
     """What this page says about the wire that the artefacts behind it do not support."""
     problems: list[str] = []
-    pinned = WIRE_OF_PINNED.search(page.text)
-    if pinned is None:
+    image = WIRE_OF_IMAGE.search(page.text)
+    if image is None:
         problems.append(
-            "it never says which wire the image under the `docker run` speaks (that release "
-            f"is {pinned_wire})"
+            "it never says which wire the image under the `docker run` speaks (that tag "
+            f"is {image_wire})"
         )
-    elif pinned.group(1) != pinned_wire:
+    elif image.group(1) != image_wire:
         problems.append(
-            f"it says the pinned image speaks {pinned.group(1)!r}, and the pin "
-            f"{PINNED_IMAGE_VERSION} speaks {pinned_wire}"
+            f"it says the image under the `docker run` speaks {image.group(1)!r}, and the "
+            f"tag {PUBLISHED_IMAGE_TAG} speaks {image_wire}"
         )
     demo = WIRE_OF_DEMO.search(page.text)
     if demo is None:
@@ -1962,8 +2184,8 @@ def wire_binding_problems(
     unreleased = WIRE_UNRELEASED.search(page.text)
     if unreleased is not None:
         problems.append(
-            f"it calls the wire unreleased ({unreleased.group(0)!r}), and the pinned release "
-            f"{PINNED_IMAGE_VERSION} speaks it (`IMAGE_WIRE_BY_TAG`)"
+            f"it calls the wire unreleased ({unreleased.group(0)!r}), and the tag the page "
+            f"hands a reader ({PUBLISHED_IMAGE_TAG}) speaks it (`IMAGE_WIRE_BY_TAG`)"
         )
     return problems
 
@@ -1975,17 +2197,18 @@ def check_wire_binding(pages: list[Scanned]) -> int:
     and it is the sealed one. A page that describes sealing without saying which version does
     which invites the failure a confidentiality feature cannot have: a reader pastes the command
     under the paragraph and gets a server that carries the room through it in the clear. So the
-    page has to say which wire the pinned image speaks and which wire the demo speaks, and to
+    page has to say which wire the image under the `docker run` speaks and which wire the demo
+    speaks, and to
     name no other version: with one version a second name is a claim about a version this protocol
     does not have, and the plaintext one is what the reader of a sealing paragraph meets when the
-    pin is a release that cannot seal. The demo's half is measured, against what `/meta` offers,
+    tag is one that cannot seal. The demo's half is measured, against what `/meta` offers,
     where no wording can forge it; the image's half is read from `IMAGE_WIRE_BY_TAG`, because no
-    registry says what wire a binary speaks, and a release that moves the pin has to declare the
-    new tag's wire in the same wave. Both halves together are what make the page's own sentence
-    about the pin and the sentence about the instance agree with what a reader will actually get.
+    registry says what wire a binary speaks, and a tag the map does not name has to declare its
+    wire in the same wave. Both halves together are what make the page's own sentence
+    about the image and the sentence about the instance agree with what a reader will actually get.
 
     Returns 0, 1 when the page says something the artefacts disprove, 2 when the instance cannot
-    be asked or this file cannot say what the pin speaks.
+    be asked or this file cannot say what the tag speaks.
     """
     root = root_of_this_checkout()
     binding = [page for page in pages if WIRE_VERSION.search(page.text)]
@@ -1997,15 +2220,15 @@ def check_wire_binding(pages: list[Scanned]) -> int:
             file=sys.stderr,
         )
         return 1
-    if PINNED_IMAGE_VERSION not in IMAGE_WIRE_BY_TAG:
+    if PUBLISHED_IMAGE_TAG not in IMAGE_WIRE_BY_TAG:
         print(
-            f"check-claims: the pin is {PINNED_IMAGE_VERSION} and nothing here says which "
-            "wire version that release speaks (see `IMAGE_WIRE_BY_TAG`); a pin whose wire is "
-            "unknown cannot be held to the page's sentence about it",
+            f"check-claims: the page hands a reader the tag {PUBLISHED_IMAGE_TAG} and nothing "
+            "here says which wire version that tag speaks (see `IMAGE_WIRE_BY_TAG`); a tag "
+            "whose wire is unknown cannot be held to the page's sentence about it",
             file=sys.stderr,
         )
         return 2
-    pinned_wire = IMAGE_WIRE_BY_TAG[PINNED_IMAGE_VERSION]
+    image_wire = IMAGE_WIRE_BY_TAG[PUBLISHED_IMAGE_TAG]
     try:
         offered = demo_meta()[1]
     except (urllib.error.URLError, OSError, ValueError, KeyError) as error:
@@ -2019,7 +2242,7 @@ def check_wire_binding(pages: list[Scanned]) -> int:
 
     failed: list[tuple[str, list[str]]] = []
     for page in binding:
-        problems = wire_binding_problems(page, offered, pinned_wire)
+        problems = wire_binding_problems(page, offered, image_wire)
         if problems:
             failed.append((os.path.relpath(page.path, root), problems))
     if failed:
@@ -2032,7 +2255,7 @@ def check_wire_binding(pages: list[Scanned]) -> int:
         return 1
     print(
         f"check-claims: the page binds its sealing claim to the one wire version the artefacts "
-        f"speak — the pin {PINNED_IMAGE_VERSION} as {pinned_wire}, the demo as "
+        f"speak — the tag {PUBLISHED_IMAGE_TAG} as {image_wire}, the demo as "
         f"{', '.join(offered)} from `/meta` — names no other version, and does not call it "
         "unreleased"
     )
@@ -2099,6 +2322,7 @@ def main() -> int:
                 text=text,
                 line_of=line_of,
                 destinations=destinations(raw),
+                raw=raw,
                 prose=prose,
             )
         )
@@ -2118,10 +2342,11 @@ def main() -> int:
 
     for check in (
         check_relay_disclosure,
-        check_browser_trust,
         check_corpus_citation,
         check_published_extension,
-        check_pinned_image,
+        check_hosted_tier,
+        check_repository_grid,
+        check_published_image,
         check_demo_instance,
         check_wire_binding,
     ):

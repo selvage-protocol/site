@@ -1,8 +1,27 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { Geist, JetBrains_Mono } from "next/font/google";
 import "../style.css";
 
-const title = "Selvage is a live-coding collaboration protocol";
+// Both families are served from this origin: `next/font` fetches the glyphs at build
+// time and writes no request to a font host into the page. The two variables are what
+// `style.css` reads from, so the Tailwind classes and the page's own rules resolve to
+// the same families.
+const geistSans = Geist({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-geist-sans",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-jetbrains-mono",
+  display: "swap",
+});
+
+const title = "Selvage: edit the same file together, on a server you run";
 const description =
   "One Rust binary you host holds the room. An invite link is the whole permission: VS Code, Neovim and a browser page edit the same file, with no account and no third party's cloud holding the room. The session layer is written down as a specification, with JSON Schema and conformance vectors.";
 
@@ -35,7 +54,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${jetbrainsMono.variable}`}
+    >
       <body>{children}</body>
     </html>
   );

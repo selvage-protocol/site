@@ -1,65 +1,76 @@
-import { Check } from "lucide-react";
+import type { ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUpRight,
+  BookOpenText,
+  Check,
+  Code,
+  Eye,
+  Globe,
+  HardDrive,
+  Lock,
+  Play,
+  Plus,
+  SquareTerminal,
+  Terminal,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { DemoEndpoint } from "@/components/demo-endpoint";
+import { RoomWindow } from "@/components/room-window";
+import { SetupTerminal } from "@/components/setup-tabs";
 import { SiteHeader } from "@/components/site-header";
 import {
   CaretLines,
   ClientChips,
-  RoomWindow,
+  InviteChip,
   TreeFigure,
 } from "@/components/room-visuals";
+import { COMMAND, DEMO } from "@/lib/selvage";
 
-// One word each. The hero carried the four as full sentences, and three of them are argued
-// anyway below — the sealed relay in the paragraph under the `docker run`, the specification in
-// its own section, the granted paths in the third card — while `No account` is a fact the page
-// states nowhere else, which is why the row stays a row.
+const DEMO_ORIGIN = `https://${DEMO}`;
+
+/** One word each. Three of the four are argued on the page — the sealed relay in the
+    panel under the terminal, the specification in its own section, the granted paths
+    in the third figure — and `No account` is a fact stated nowhere else, which is
+    why the row stays a row. */
 const heroFacts = ["Sealed", "Specified", "Path-scoped", "No account"];
 
-const roomCards = [
+type RoomCard = {
+  lead: string;
+  body: string;
+  figure: ReactNode;
+};
+
+const roomCards: RoomCard[] = [
   {
     lead: "Anyone with the link is in",
-    body: (
-      <>
-        Hold the link and you are in, with no approval step. Treat an invite the way
-        you would treat a password.
-      </>
-    ),
-    figure: <InviteCard />,
-  },
-  {
-    lead: "Two carets, one text",
-    body: (
-      <>
-        Everyone&apos;s edits land in the one CRDT, and carets and selections travel
-        as anchors inside it, so a peer&apos;s caret stays where it was while the
-        text around it moves.
-      </>
-    ),
-    figure: <CaretLines />,
-  },
-  {
-    lead: "A guest sees the paths you granted",
-    body: (
-      <>
-        The host publishes the paths inside the folder it granted, and reads a file
-        from its own disk when somebody opens it. The room never adds, renames or
-        removes a path in your working copy.
-      </>
-    ),
+    body: "Hold the link and you are in, with no approval step. Treat an invite the way you would treat a password.",
     figure: (
-      <div className="fig">
-        <TreeFigure label="guest · mirror" />
+      <div className="fig fig-center">
+        <InviteChip />
       </div>
     ),
   },
   {
-    lead: "Multiple clients, one engine",
-    body: (
-      <>
-        The VS Code client, the Neovim client and the browser page each drive a copy
-        of the same engine, so a room&apos;s rules live in one implementation.
-      </>
+    lead: "Everyone's caret, in one file",
+    body: "Edits and cursors stay in sync for everyone in the room. A caret stays put while the text around it changes.",
+    figure: <CaretLines />,
+  },
+  {
+    lead: "Guests only see the folder you shared",
+    body: "Nothing outside that folder is visible. The room never adds, renames or removes a file in your working copy.",
+    figure: (
+      <div className="fig">
+        <TreeFigure />
+      </div>
     ),
+  },
+  {
+    lead: "Any client, one protocol",
+    body: "Every client talks to the server through the same spec, so VS Code, Neovim and the browser can share a room.",
     figure: (
       <div className="fig">
         <ClientChips />
@@ -70,291 +81,432 @@ const roomCards = [
 
 const steps = [
   {
-    lead: "Host a folder",
-    body: (
-      <>
-        Start the server, open a folder in VS Code or Neovim, and host a session
-        from there. The host lists the paths inside that folder and sends the
-        listing.
-      </>
-    ),
+    n: "01",
+    title: "Host a folder",
+    body: "Start the server, open a folder in VS Code or Neovim and host a session.",
   },
   {
-    lead: "Send the invite",
-    body: (
-      <>
-        Copy the invite link and send it however you already talk to each other. The
-        token in it is the permission, and only the paths you granted are behind it.
-        The host&apos;s client holds that confinement; nothing on the wire enforces
-        it.
-      </>
-    ),
+    n: "02",
+    title: "Send the invite",
+    body: "Send the link however you like. Anyone who has it can join and see the folder you shared.",
   },
   {
-    lead: "Type in the same file",
-    body: (
-      <>
-        A guest opens a file when they want it, and the host reads it from disk at
-        that moment. A file nobody has opened sends no text, so opening one file
-        never moves the whole project over the wire.
-      </>
-    ),
+    n: "03",
+    title: "Type in the same file",
+    body: "Files load when someone opens them, so the whole project never goes over the wire.",
   },
   {
-    lead: "Close the window",
-    body: (
-      <>
-        Closing the host&apos;s window ends the room: whoever is in it keeps editing
-        while a short countdown runs, and then each client&apos;s session ends. A
-        dropped connection does not end a room: it lives while it has connections
-        and for a short grace period after its last one. Rooms live in memory, so
-        nothing survives a restart of the server.
-      </>
-    ),
+    n: "04",
+    title: "Close the window",
+    body: "The room ends after a short countdown. A dropped connection doesn't end it.",
   },
 ];
 
-/** The invite, at card weight: the same chip the hero figure carries, minus the copy glyph
-    (there is nothing to copy here) and the label (the lead under it names the link). */
-function InviteCard() {
-  return (
-    <div className="fig fig-invite">
-      <span className="invite">
-        <span className="invite-url">
-          ?room=k7m2&amp;token=4f9c#k=&hellip;&amp;h=&hellip;
-        </span>
-      </span>
-    </div>
-  );
+type Comparison = { label: string; value: string; here?: boolean };
+
+/** The layers each collaborative tool builds for itself, and the one this project
+    writes down instead. */
+const comparison: Comparison[] = [
+  { label: "Language tooling", value: "LSP" },
+  { label: "Debugging", value: "DAP" },
+  { label: "Document sync", value: "y-protocols" },
+  { label: "Session layer", value: "selvage", here: true },
+];
+
+type Repo = {
+  name: string;
+  desc: string;
+  Icon: LucideIcon;
+  tag: string;
+  pill: string;
+};
+
+const repos: Repo[] = [
+  {
+    name: "specification",
+    desc: "Prose, schema, vectors",
+    Icon: BookOpenText,
+    tag: "source of truth",
+    pill: "bg-mauve/12 text-mauve",
+  },
+  {
+    name: "reference_server",
+    desc: "selvaged",
+    Icon: HardDrive,
+    tag: "available",
+    pill: "bg-green/10 text-green",
+  },
+  {
+    name: "vscode_client",
+    desc: "VS Code extension",
+    Icon: Code,
+    tag: "published",
+    pill: "bg-green/10 text-green",
+  },
+  {
+    name: "nvim_client",
+    desc: "Neovim plugin",
+    Icon: Terminal,
+    tag: "available",
+    pill: "bg-green/10 text-green",
+  },
+  {
+    name: "web_client",
+    desc: "The browser page",
+    Icon: Globe,
+    tag: "available",
+    pill: "bg-green/10 text-green",
+  },
+];
+
+function Eyebrow({ children }: { children: ReactNode }) {
+  return <p className="eyebrow">{children}</p>;
 }
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-base font-sans text-text antialiased">
       <SiteHeader />
-
-      <main id="top">
-        <section className="mx-auto w-full max-w-6xl px-5 pb-16 pt-10 md:pb-24 md:pt-16">
-          <div className="grid items-center gap-10 xl:grid-cols-[minmax(0,35rem)_minmax(0,1fr)] xl:gap-12">
-            <div>
-              <Badge>Live-coding collaboration protocol</Badge>
-              {/* One sentence per block, and a real space between them: the claims
-                  filter joins block markup with a single space, and without it the
-                  sentence boundary reads as `run.on` to it. */}
-              <h1 className="mt-7 text-balance text-[2rem] font-semibold leading-[1.12] tracking-[-0.025em] text-text sm:text-[2.375rem] xl:text-[2.5rem]">
-                <span className="block">Edit the same file together,</span>{" "}
-                <span className="block">on a server you run.</span>
-              </h1>
-              <p className="mt-6 max-w-[35rem] text-[1.0625rem] leading-[1.7] text-subtext md:text-[1.125rem]">
-                VS Code, Neovim and the browser join the same file, with no
-                third party&apos;s cloud holding the room.
-              </p>
-              {/* Two actions, and both of them are actions: the demo needs nothing
-                  installed and the editor is the other way in. The specification is a
-                  link in the body below, where a reader who wants the manual goes. */}
-              <div className="mt-9 flex flex-wrap items-center gap-3">
-                <Button href="https://selvage-demo.dontblameme.dev" size="lg">
-                  Try the demo in your browser
-                </Button>
-                <Button href="#get-it-working" variant="secondary" size="lg">
-                  Run it in your editor
-                </Button>
-              </div>
-              <ul className="mt-8 flex max-w-[35rem] flex-wrap items-center gap-x-5 gap-y-3">
-                {heroFacts.map((fact) => (
-                  <li key={fact} className="flex items-center gap-2.5">
-                    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-mauve/15">
+      <div className="prose-body">
+        <main id="top">
+          <section className="hero">
+            <div className="hero-grid">
+              <div className="hero-copy">
+                {/* One sentence per block, and a real space between them: the claims
+                    filter joins block markup with a single space, and without it the
+                    sentence boundary reads as `run.on` to it. */}
+                <h1 className="hero-title">
+                  Edit the same file together,{" "}
+                  <span className="text-mauve">on a server you run.</span>
+                </h1>
+                <p className="hero-lede">
+                  Your editor, their editor or a browser tab, all in the same file.
+                  No third party&apos;s cloud holds the room.
+                </p>
+                <div className="hero-actions">
+                  <Button
+                    href={DEMO_ORIGIN}
+                    size="hero"
+                    className="cta cta-glow flex-auto rounded-[10px] font-medium text-crust motion-safe:hover:-translate-y-px [&_svg]:size-[17px]"
+                  >
+                    <Play aria-hidden="true" />
+                    Try the demo in your browser
+                  </Button>
+                  <Button
+                    href="#run"
+                    variant="outline"
+                    size="hero"
+                    className="cta flex-auto rounded-[10px] font-medium [&_svg]:size-[17px]"
+                  >
+                    <SquareTerminal aria-hidden="true" />
+                    Run it in your editor
+                  </Button>
+                </div>
+                <ul className="hero-facts">
+                  {heroFacts.map((fact) => (
+                    <li key={fact}>
                       <Check
-                        className="h-3.5 w-3.5 text-mauve"
-                        strokeWidth={3}
+                        className="hero-fact-icon"
+                        strokeWidth={2.5}
                         aria-hidden="true"
                       />
-                    </span>
-                    <span className="text-[15px] font-medium text-text">
                       {fact}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-6 font-mono text-[12px] text-subtext">
-                The specification is a draft, and the wire version is{" "}
-                <code>selvage/2</code>.
-              </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <RoomWindow />
             </div>
-
-            <RoomWindow />
-          </div>
-        </section>
-
-        <div className="prose-body mx-auto w-full max-w-6xl px-5 pb-14">
-          <section
-            id="get-it-working"
-            className="scroll-mt-28 md:scroll-mt-24"
-          >
-            <h2>Get it working</h2>
-            <p>
-              One server holds the room, and the invite link your editor copies is
-              how somebody joins you. The published image is one command:
-            </p>
-            <pre>
-              <code>
-                {
-                  "docker run --rm -p 127.0.0.1:8080:8080 ghcr.io/selvage-protocol/selvaged:0.4.5"
-                }
-              </code>
-            </pre>
-            <p>
-              The server answers <code>ws://127.0.0.1:8080/session</code> and serves
-              the page on the same port. Rooms live in memory, so a restart ends
-              them.
-            </p>
-            <p>
-              The image and the demo speak <code>selvage/2</code>, the one wire
-              version this protocol has, and it is the sealed one.
-            </p>
-            <p>
-              The server carries bytes it cannot read: documents, cursors, the file
-              listing and the roles the host signs travel sealed under keys in the
-              part of the invite link a browser never sends to a server. It still
-              sees that a room exists, who is in it, their names, and the sizes and
-              timing of what moves, and it can drop, delay or end a room. The host is
-              a peer&apos;s signed claim: the server cannot seat a host, prove one,
-              or take the role.
-            </p>
-
-            <h3>Run it in an editor</h3>
-            <p>
-              VS Code installs it with{" "}
-              <code>code --install-extension selvage-protocol.selvage</code>: the
-              extension is published on the VS Code Marketplace and on Open VSX (
-              <a href="https://github.com/selvage-protocol/vscode_client">source</a>
-              ). An install is the client and not a server: a session pairs with the{" "}
-              <code>selvaged</code> you run. Then <em>Selvage: Host a session</em>.
-            </p>
-            <p>
-              Neovim: add{" "}
-              <code>{`{ 'selvage-protocol/nvim_client', build = 'npm ci' }`}</code> to
-              your plugin manager (
-              <a href="https://github.com/selvage-protocol/nvim_client">source</a>
-              ), then <code>:SelvageHost ws://127.0.0.1:8080</code> shares the current
-              buffer and copies the invite.
-            </p>
-
-            <h3>Try the demo</h3>
-            <p>
-              A small instance of the server runs at{" "}
-              <a href="https://selvage-demo.dontblameme.dev">
-                selvage-demo.dontblameme.dev
-              </a>
-              . Point an editor at{" "}
-              <code>wss://selvage-demo.dontblameme.dev</code> and it hosts a room
-              there; the invite link it copies opens in the page, so a guest needs
-              nothing installed. On Chrome or Edge the page can start its own room
-              from a folder you pick.
-            </p>
-            <p>
-              A guest who opens the page the room&apos;s own server serves trusts
-              that server for the client code as well as for the relay; the installed
-              clients are not in that position.
-            </p>
-            <p>
-              The instance&apos;s rooms live in memory, so a restart ends every one of
-              them, and it is non-commercial and for personal and evaluation use: its{" "}
-              <a href="https://selvage-demo.dontblameme.dev/terms">terms</a> cover that
-              one box, and the licences below cover the software.
-            </p>
           </section>
 
-          <section id="see-it" className="scroll-mt-28 md:scroll-mt-24">
-            <h2>See it working</h2>
-            <p>
-              A room is the host&apos;s folder, seen from somebody else&apos;s
-              editor.
-            </p>
+          <section id="try" className="band">
+            <div className="shell">
+              <div className="head-block">
+                <Eyebrow>Try &rarr; Run &rarr; Rent</Eyebrow>
+                <h2 className="display">
+                  Try it in the browser, then run your own.
+                </h2>
+                <p className="lede">
+                  Every room runs on a server. Use the demo to try it, then run your
+                  own.
+                </p>
+              </div>
+              <div className="try-grid">
+                <div className="try-card try-card-live">
+                  <div className="try-head">
+                    <p className="try-name">
+                      <span className="try-num">01</span>
+                      <span className="try-title">Try</span>
+                    </p>
+                    <Badge variant="pill" className="bg-green/12 text-green">
+                      Live
+                    </Badge>
+                  </div>
+                  <p className="try-body">
+                    Open it in your browser or point your editor at it. Guests join
+                    from the invite link with nothing installed.
+                  </p>
+                  <div className="try-actions">
+                    <a className="demo-link" href={DEMO_ORIGIN}>
+                      <Globe className="icon-17" aria-hidden="true" />
+                      Open the demo
+                      <ArrowUpRight className="icon-14 ml-auto" aria-hidden="true" />
+                    </a>
+                    <DemoEndpoint />
+                  </div>
+                  <p className="try-foot">
+                    The demo is non-commercial and meant for personal use and
+                    evaluation (<a href={`${DEMO_ORIGIN}/terms`}>terms</a>); those
+                    terms cover that one box, not the software.
+                  </p>
+                </div>
+
+                <div className="try-card">
+                  <div className="try-head">
+                    <p className="try-name">
+                      <span className="try-num">02</span>
+                      <span className="try-title">Run</span>
+                    </p>
+                    <Badge variant="pill" className="bg-green/12 text-green">
+                      selvaged
+                    </Badge>
+                  </div>
+                  <p className="try-body">
+                    One Docker command. Rooms live in memory, so a restart ends them.
+                  </p>
+                  <p className="command">
+                    <span className="command-prompt">$ </span>
+                    {COMMAND}
+                  </p>
+                  <p className="try-foot">
+                    The image and the demo both speak <code>selvage/2</code>, the one
+                    wire version this protocol has, and it is the sealed one.
+                  </p>
+                  <a className="try-link" href="#run">
+                    Set up the server and your editor
+                    <ArrowDown className="icon-14" aria-hidden="true" />
+                  </a>
+                </div>
+
+                <div className="try-card try-card-planned">
+                  <div className="try-head">
+                    <p className="try-name">
+                      <span className="try-num">03</span>
+                      <span className="try-title">Rent a server</span>
+                    </p>
+                    <Badge variant="pill" className="bg-yellow/10 text-yellow">
+                      Not available yet
+                    </Badge>
+                  </div>
+                  <p className="try-body">We run the server, you open rooms.</p>
+                  <p className="planned-row">
+                    <HardDrive className="icon-17" aria-hidden="true" />
+                    Hosted servers
+                    <span className="planned-note">planned</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="run" className="shell">
+            <div className="head-block">
+              <Eyebrow>Get it working</Eyebrow>
+              <h2 className="display">One server, any client.</h2>
+              <p className="lede">
+                An install is the client and not a server: a session pairs with the{" "}
+                <code>selvaged</code> you run.
+              </p>
+            </div>
+            <div className="run-grid">
+              <SetupTerminal />
+              <div className="panels">
+                <Card className="p-5">
+                  <p className="panel-head">
+                    <Lock className="panel-icon-green" aria-hidden="true" />
+                    The server carries bytes it cannot read
+                  </p>
+                  <p className="panel-body">
+                    These travel sealed under keys in the part of the invite link a
+                    browser never sends to a server.
+                  </p>
+                  <ul className="chips chips-green">
+                    <li>documents</li>
+                    <li>cursors</li>
+                    <li>the file listing</li>
+                    <li>the roles the host signs</li>
+                  </ul>
+                </Card>
+                <Card className="p-5">
+                  <p className="panel-head">
+                    <Eye className="panel-icon-peach" aria-hidden="true" />
+                    What the server can still see
+                  </p>
+                  <ul className="chips chips-peach">
+                    <li>that a room exists</li>
+                    <li>who is in it and their names</li>
+                    <li>sizes and timing of what moves</li>
+                  </ul>
+                  <p className="panel-body">
+                    It still sees that a room exists, who is in it, their names, and
+                    the sizes and timing of what moves. It can drop, delay or end a
+                    room. The host is a peer&apos;s signed claim: the server cannot
+                    seat a host, prove one, or take the role.
+                  </p>
+                </Card>
+              </div>
+            </div>
+          </section>
+
+          <section id="see-it" className="shell">
+            <div className="head-block">
+              <Eyebrow>See it working</Eyebrow>
+              <h2 className="display">Your folder, open in their editor.</h2>
+            </div>
             <ul className="cards">
               {roomCards.map((card) => (
                 <li key={card.lead}>
                   {card.figure}
-                  <p className="card-lead">{card.lead}</p>
-                  <p className="card-body">{card.body}</p>
+                  <div className="card-text">
+                    <p className="card-lead">{card.lead}</p>
+                    <p className="card-body">{card.body}</p>
+                  </div>
                 </li>
               ))}
             </ul>
           </section>
 
-          <section id="how-it-works" className="scroll-mt-28 md:scroll-mt-24">
-            <h2>How it works</h2>
-            <p>
-              The workflow is one sentence:{" "}
-              <strong>share a link, come edit my code with me.</strong> In order, it
-              comes to four moves.
-            </p>
+          <section id="how-it-works" className="shell">
+            <div className="head-block">
+              <Eyebrow>How it works</Eyebrow>
+              <h2 className="display">Share a link, come edit my code with me.</h2>
+            </div>
             <ol className="steps">
               {steps.map((step) => (
-                <li key={step.lead}>
-                  <strong>{step.lead}.</strong> {step.body}
+                <li key={step.n}>
+                  <p className="step-num">{step.n}</p>
+                  <p className="step-title">{step.title}</p>
+                  <p className="step-body">{step.body}</p>
                 </li>
               ))}
             </ol>
           </section>
 
-          <section id="why-a-spec" className="scroll-mt-28 md:scroll-mt-24">
-            <h2>The session layer is written down</h2>
-            <p>
-              Language tooling has the Language Server Protocol and debugging has
-              the Debug Adapter Protocol. Document sync has{" "}
-              <code>y-protocols</code>. Which rooms exist, who is in one, which
-              documents are open, where the carets are: every collaborative tool
-              decides those for itself, so none of the tools can talk to each other.
-            </p>
-            <p>
-              Selvage writes that layer down: prose, a canonical byte form for a
-              frame, JSON Schema, and 24 conformance vectors (33760 frame checks and
-              8387 assertions) replayed byte for byte against a real server. The
-              numbers are constants in <code>schema/validate.py</code>.
-            </p>
-            <p>
-              <a href="https://github.com/selvage-protocol/specification">
-                Read the specification
-              </a>
-              . It is written to be implemented on its own, without reading the
-              server&apos;s code.
-            </p>
+          <section id="why-a-spec" className="shell shell-end">
+            <div className="spec-grid">
+              <div className="spec-copy">
+                <Eyebrow>Why a spec</Eyebrow>
+                <h2 className="display">The session layer is written down.</h2>
+                <p className="spec-line">
+                  Which rooms exist, who is in one, which documents are open, where the
+                  carets are: every collaborative tool decides those for itself, so
+                  none of the tools can talk to each other.
+                </p>
+                <p className="spec-line">
+                  Selvage writes that layer down: prose, a canonical byte form for a
+                  frame, JSON Schema, and 24 conformance vectors (33760 frame checks
+                  and 8387 assertions) replayed byte for byte against a real server.
+                  The numbers are constants in <code>schema/validate.py</code>. It is
+                  written to be implemented on its own, without reading the
+                  server&apos;s code. The specification is a draft.
+                </p>
+                <a
+                  className="spec-link"
+                  href="https://github.com/selvage-protocol/specification"
+                >
+                  <BookOpenText className="icon-18" aria-hidden="true" />
+                  Read the specification
+                </a>
+              </div>
+              <div className="compare">
+                {comparison.map((row) => (
+                  <div
+                    key={row.label}
+                    className={row.here ? "compare-row compare-here" : "compare-row"}
+                  >
+                    <span>{row.label}</span>
+                    <span className="compare-value">{row.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <ul className="repos">
+              {repos.map((repo) => (
+                <li key={repo.name}>
+                  <a
+                    className="repo"
+                    href={`https://github.com/selvage-protocol/${repo.name}`}
+                  >
+                    <repo.Icon className="repo-icon" aria-hidden="true" />
+                    <span className="repo-text">
+                      <span className="repo-name">{repo.name}</span>
+                      <span className="repo-desc">{repo.desc}</span>
+                    </span>
+                    <Badge variant="pill" className={`repo-pill text-[11px] ${repo.pill}`}>
+                      {repo.tag}
+                    </Badge>
+                  </a>
+                </li>
+              ))}
+              <li className="repo-more">
+                <Plus className="repo-icon" aria-hidden="true" />
+                <span className="repo-text">
+                  <span className="repo-more-name">More clients</span>
+                  <span className="repo-desc">Planned</span>
+                </span>
+              </li>
+            </ul>
           </section>
-        </div>
-      </main>
+        </main>
 
-      <footer className="prose-body page-foot mx-auto w-full max-w-6xl px-5 pb-20">
-        <div>
-          <h2>Licences</h2>
-          <p>
-            The specification (prose, canonical form, JSON Schema and vectors) is
-            CC-BY-4.0, and its tooling is MIT OR Apache-2.0. The reference server and
-            the clients are MIT OR Apache-2.0, with one exception: the server binary{" "}
-            <code>selvaged</code> is <strong>FSL-1.1-MIT</strong>, which is
-            source-available and not OSI-approved. It is free for any non-competing
-            purpose, converts to MIT two years after each release, and forbids
-            offering it to others as a competing commercial product or service.
-          </p>
-          <p>
-            This page prerenders to static HTML: one stylesheet, the mark in its
-            header, the favicon set and the framework&apos;s runtime scripts, every one
-            of them from this origin. It sets no cookie, makes no third-party request
-            and collects no personal data of its own; the{" "}
-            <a href="https://github.com/selvage-protocol">selvage-protocol</a> GitHub
-            organisation is its controller.
-          </p>
-          <p>
-            Write to{" "}
-            <a href="mailto:selvage@dontblameme.dev">
-              selvage@dontblameme.dev
-            </a>{" "}
-            about the project or a security problem in it. A message is the only thing
-            here that carries your own address back; the controller receives it and
-            keeps it only to answer. This page is MIT OR Apache-2.0.
-          </p>
-        </div>
-      </footer>
+        <footer className="band">
+          <div className="shell shell-end foot-grid">
+            <div className="foot-col">
+              <h3 className="foot-h">Licences</h3>
+              <dl className="licences">
+                <div className="licence-row">
+                  <dt>Specification</dt>
+                  <dd>CC-BY-4.0</dd>
+                </div>
+                <div className="licence-row">
+                  <dt>Spec tooling, clients, server</dt>
+                  <dd>MIT or Apache-2.0</dd>
+                </div>
+                <div className="licence-row">
+                  <dt>
+                    Server binary <code>selvaged</code>
+                  </dt>
+                  <dd>FSL-1.1-MIT</dd>
+                </div>
+              </dl>
+              <p className="foot-note">
+                <code>selvaged</code> is FSL-1.1-MIT: source-available, not
+                OSI-approved, free for any non-competing purpose, and it converts to
+                MIT two years after each release.
+              </p>
+            </div>
+            <div className="foot-col">
+              <h3 className="foot-h">This page</h3>
+              <p className="foot-note">
+                No cookies, no tracking, no personal data: it prerenders to static
+                HTML and makes no third-party request. Run by the{" "}
+                <a href="https://github.com/selvage-protocol">selvage-protocol</a>{" "}
+                GitHub organisation, and the page itself is MIT OR Apache-2.0.
+              </p>
+            </div>
+            <div className="foot-col">
+              <h3 className="foot-h">Contact</h3>
+              <p className="foot-note">
+                Questions or security reports:{" "}
+                <a href="mailto:selvage@dontblameme.dev">
+                  selvage@dontblameme.dev
+                </a>
+                . We only keep your address to reply.
+              </p>
+            </div>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }

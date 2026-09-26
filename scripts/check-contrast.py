@@ -4,17 +4,27 @@
 Parses the theme tokens out of `style.css` and asserts the pairs the page
 actually renders: body and muted prose, links, the button
 label on its mauve fill, code blocks, the sample's own token colours, the
-tinted badge and secondary button (computed as alpha composites over the page
-background, the way the browser composes them), and the worst case of the
-translucent glass card over every stop of the hero panel. The secondary
-button's boundary is parsed out of `components/ui/button.tsx` (`border-mauve/*`)
-and asserted at the non-text 3.0:1 floor too, so weakening the class fails the
-build, and the ground a code sample is drawn on is parsed the same way: the
+badge primitive and the button variants the component still carries (computed as
+alpha composites over the page background, the way the browser composes them), the
+boundary of the outline button the page renders, and the worst case of the
+translucent glass card over every stop of the hero figure's own ground. The text
+that is not a theme token — the window's line numbers, the card the page offers
+but cannot sell yet, the repository descriptions — is read out of the rule that
+paints it, so a pair cannot go on measuring a token the page stopped using there
+(which is what the line-number pair did). The button
+component's own variants are parsed out of `components/ui/button.tsx`: the `secondary`
+and `ghost` pairs are the primitive's, because the page renders neither, and the
+`outline` variant the page's second hero CTA does render is read for its boundary
+(`border-surface1`). That boundary is drawn at the design's
+own 1.80:1, below the 3.0:1 a boundary that *identifies* a control would need and above
+the floor at which a reader loses it; it is held to the latter and named, the same way
+the README argues the decorative `--color-surface1` borders. The ground a code sample
+is drawn on is parsed the same way: the
 figure's own fill over the card's, rather than a constant that would measure a
 surface nobody renders. Thresholds are WCAG 2.2 AA: 4.5:1 for normal text,
 3.0:1 for non-text UI.
 
-A peer is three colours on the page and each is measured where it lands: the 2 px
+Each peer is three colours on the page and each is measured where it lands: the 2 px
 caret bar and the badge fill are the peer's own colour over the surface they are
 drawn on (non-text), the badge's label is a dark text on that fill (text), and
 the selection is the peer's colour at the client's quarter alpha *behind* the
@@ -22,10 +32,6 @@ sample's text, so the pair that matters is the token the fill sits under — rea
 out of `components/room-visuals.tsx`, so moving the fill over a dimmer token
 fails the build. A quarter-alpha tint cannot also clear the non-text floor (see
 `TINT_MIN`), and the pair below says so rather than pretending otherwise.
-
-The figure's one mark that is not a peer is the dot on the open file, in the panel's own
-text colour; it is floored where it is drawn, on the panel, so a restyle that dims it
-below the non-text floor fails here rather than in a reader's eyes.
 
 This is a floor, not an audit. It cannot see layout: touch-target sizes,
 keyboard reachability, focus visibility and reduced-motion handling are read
@@ -95,6 +101,14 @@ PNG_CHANNELS = {2: 3, 6: 4}
 # this one only fails a tint nobody can see at all. The mark that carries a peer at the
 # non-text floor is their caret bar, opaque, asserted at 3.0:1 below.
 TINT_MIN = 1.5
+
+# A boundary drawn in `--color-surface1` is the page's decorative hairline, the same case the
+# README argues for its panel and card borders: it measures 1.80:1 on the page, below the 3.0:1
+# a boundary that *identifies* a control would need, and the control it belongs to — the outline
+# hero button — is identified by its label. It is held to the floor below which a reader cannot
+# see it at all rather than to the non-text floor it does not meet, so a border dimmed into the
+# page fails here while the design's own tone does not.
+DECORATIVE_MIN = 1.5
 
 # The nav mark is a logotype, and WCAG 1.4.11 (Non-text Contrast) exempts logotypes from its
 # 3.0:1 requirement for graphical objects, so this check does not hold the owner's monogram to
@@ -297,8 +311,16 @@ def rgba_fill(css: str, selector: str) -> tuple[str, float] | None:
     return "#%02x%02x%02x" % (red, green, blue), alpha
 
 
-def solid_fill(css: str, selector: str) -> str | None:
-    """Read a solid hex background or palette variable; unsupported fills fail closed."""
+def declared_colour(css: str, selector: str, names: tuple[str, ...]) -> str | None:
+    """A solid hex or palette variable one rule declares for `selector`, or None.
+
+    The colour is read from the rule a browser reads, so a pair on text that is not a
+    theme token — a line number, a card's number, a description drawn dimmer than the
+    prose beside it — measures what is painted in that place rather than a token assumed
+    to be in force there. A `var()` is resolved against the file's own palette, and
+    anything this cannot read (a gradient, a `color-mix()`, a rule that is gone) is None:
+    exit 2, not a pass.
+    """
     css = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
     value = None
     for rule in re.finditer(r"([^{}]+)\{([^{}]*)\}", css):
@@ -306,7 +328,7 @@ def solid_fill(css: str, selector: str) -> str | None:
             continue
         for declaration in rule.group(2).split(";"):
             name, separator, fill = declaration.partition(":")
-            if separator and name.strip() in ("background", "background-color"):
+            if separator and name.strip() in names:
                 value = fill.strip()
     if value is None:
         return None
@@ -314,9 +336,19 @@ def solid_fill(css: str, selector: str) -> str | None:
     if variable:
         palette = dict(re.findall(r"--([\w-]+)\s*:\s*([^;{}]+)", css))
         value = palette.get(variable.group(1), "").strip()
-    if value is None or not re.fullmatch(r"#[0-9a-fA-F]{6}", value):
+    if not re.fullmatch(r"#[0-9a-fA-F]{6}", value):
         return None
     return value.lower()
+
+
+def solid_fill(css: str, selector: str) -> str | None:
+    """Read a solid hex background or palette variable; unsupported fills fail closed."""
+    return declared_colour(css, selector, ("background", "background-color"))
+
+
+def text_colour(css: str, selector: str) -> str | None:
+    """The colour one rule paints its text in; unsupported values fail closed."""
+    return declared_colour(css, selector, ("color",))
 
 
 def glass_fill(css: str) -> tuple[str, float] | None:
@@ -330,10 +362,40 @@ def selection_fill(css: str, tone: str) -> tuple[str, float] | None:
 
 
 def hero_stops(css: str) -> list[str]:
+    """Every ground the hero figure's glass card is composited over, as hex colours.
+
+    The window's own fill is one ground, and the radial wash the glow paints under the glass is
+    the other. The wash is translucent, so the ground it makes is its own colour at its own alpha
+    over the window's fill, and its centre is where that alpha is at full strength: the lightest
+    stop, and therefore the one the glass card's worst case is read over. A glow the check cannot
+    read is an empty list rather than a silent fallback to the bare fill.
+    """
     block = re.search(r"\.hero-visual\s*\{(.*?)\}", css, re.DOTALL)
     if block is None:
         return []
-    return [h.lower() for h in re.findall(r"#[0-9a-fA-F]{6}", block.group(1))]
+    fill = re.findall(r"#[0-9a-fA-F]{6}", block.group(1))
+    if not fill:
+        return []
+    glow = re.search(r"\.hero-glow\s*\{(.*?)\}", css, re.DOTALL)
+    if glow is None:
+        return []
+    wash = re.search(
+        r"radial-gradient\(\s*[^,]*,\s*rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([0-9.]+)\s*\)",
+        glow.group(1),
+    )
+    if wash is None:
+        return []
+    stops = [fill[0].lower()]
+    alpha = float(wash.group(4))
+    if 0 < alpha <= 1:
+        stops.append(
+            composite(
+                "#%02x%02x%02x" % (int(wash.group(1)), int(wash.group(2)), int(wash.group(3))),
+                stops[0],
+                alpha,
+            )
+        )
+    return stops
 
 
 class FillError(ValueError):
@@ -437,11 +499,16 @@ def main() -> int:
         "link",
         "code-bg",
         "mantle",
+        # A peer's own colour: the caret bar, the badge fill, and the ground the badge's
+        # label sits on. Two peers hold a selection and the third does not, which is why the
+        # selection pairs below name their tones rather than walking this list.
         "teal",
+        "peach",
         # The sample's token colours: each one is a pair below, and a missing token would
         # leave the code in one colour without failing anything.
         "code-comment",
         "code-keyword",
+        "code-fn",
         "code-string",
         "code-number",
         "code-type",
@@ -477,6 +544,17 @@ def main() -> int:
         tok["code-bg"],
         tok["mantle"],
     )
+    # The peer badges' label is read off the rule that paints it rather than taken to be the
+    # page's own pair: the badge wore the page's background once and wears the palette's crust
+    # now, and a pair that assumed either would go on measuring the colour it replaced.
+    peer_label = text_colour(css, ".peer-badge")
+    if peer_label is None:
+        print(
+            "check-contrast: no usable colour on .peer-badge; the peer badges' label cannot "
+            "be measured",
+            file=sys.stderr,
+        )
+        return 2
     checks: list[tuple[str, str, str, float]] = [
         ("body text", fg, bg, TEXT_MIN),
         ("muted prose", muted, bg, TEXT_MIN),
@@ -484,11 +562,17 @@ def main() -> int:
         ("button label on mauve fill", bg, link, TEXT_MIN),
         ("code text", fg, code_bg, TEXT_MIN),
         ("muted text on code background", muted, code_bg, TEXT_MIN),
+        # The badge primitive's own chip: the mauve label over its own 10% wash. The page's
+        # badges are the pills its cards colour row by row, so this pair is kept for the
+        # primitive the way the ghost button's is, and the pills are measured by hand in the
+        # accessibility notes rather than parsed here.
         ("badge text on badge fill", link, composite(link, bg, 0.10), TEXT_MIN),
-        # A peer's name wears the glyph-margin badge's pair, in both tones: a dark label on
-        # the peer's own colour, the same pair the default button's label is measured on.
-        ("peer badge label on mauve fill", bg, link, TEXT_MIN),
-        ("peer badge label on teal fill", bg, tok["teal"], TEXT_MIN),
+        # A peer's name wears the glyph-margin badge's pair, in all three tones: the label's
+        # own colour on the peer's own colour, the same pair the default button's label is
+        # measured on.
+        ("peer badge label on mauve fill", peer_label, link, TEXT_MIN),
+        ("peer badge label on teal fill", peer_label, tok["teal"], TEXT_MIN),
+        ("peer badge label on peach fill", peer_label, tok["peach"], TEXT_MIN),
         ("focus outline against the page", link, bg, NON_TEXT_MIN),
     ]
     tsx_path = os.environ.get(
@@ -511,7 +595,7 @@ def main() -> int:
     weakest = min(alphas)
     checks.append(
         (
-            f"secondary button boundary (border-mauve/{weakest})",
+            f"secondary button boundary, the primitive's own (border-mauve/{weakest})",
             composite(link, bg, weakest / 100),
             bg,
             NON_TEXT_MIN,
@@ -537,7 +621,7 @@ def main() -> int:
     strongest = max(fills)
     checks.append(
         (
-            f"secondary button text on its fill (bg-mauve/{strongest})",
+            f"secondary button text on its fill, the primitive's own (bg-mauve/{strongest})",
             link,
             composite(link, bg, strongest / 100),
             TEXT_MIN,
@@ -624,18 +708,53 @@ def main() -> int:
     for token, colour in (
         ("comment", tok["code-comment"]),
         ("keyword", tok["code-keyword"]),
+        ("function", tok["code-fn"]),
         ("string", tok["code-string"]),
         ("number", tok["code-number"]),
         ("type", tok["code-type"]),
     ):
         checks.append((f"code {token} on the code figure", colour, figure_ground, TEXT_MIN))
         checks.append((f"code {token} on the glass card", colour, worst_glass, TEXT_MIN))
-    # The line numbers are drawn on the same grounds as the sample's own text.
-    checks.append(("code line numbers on the code figure", muted, figure_ground, TEXT_MIN))
+    # The page's line numbers are the ones in the room window, and its own rule paints them
+    # in a colour of their own: reading `muted` here measured a token the window does not use
+    # for them, which is the way this pair goes blind to a dimmed number. The ground is the
+    # window's, the glass over the figure's fill.
+    room_num = text_colour(css, ".room-num")
+    if room_num is None:
+        print(
+            "check-contrast: no usable colour on .room-num; the room window's line "
+            "numbers cannot be measured",
+            file=sys.stderr,
+        )
+        return 2
+    checks.append(("room window line numbers", room_num, worst_glass, TEXT_MIN))
+    # The card the page offers but cannot sell yet is drawn on the band rather than on a card
+    # of its own, so its number and its planned row are floored on the band's own fill.
+    band = solid_fill(css, ".band")
+    if band is None:
+        print(
+            "check-contrast: no usable solid background on .band; the ground the "
+            "not-yet-available card is drawn on cannot be computed",
+            file=sys.stderr,
+        )
+        return 2
+    for label, selector in (
+        ("not-yet-available card number", ".try-card-planned .try-num"),
+        ("not-yet-available card row", ".planned-row"),
+    ):
+        colour = text_colour(css, selector)
+        if colour is None:
+            print(
+                f"check-contrast: no usable colour on {selector}; the text the "
+                "not-yet-available card draws cannot be measured",
+                file=sys.stderr,
+            )
+            return 2
+        checks.append((f"{label} on the band", colour, band, TEXT_MIN))
     # A peer's caret bar and the fill of their badge are one colour, opaque, drawn on both
-    # grounds: a mark nobody can see is not a caret, so both tones are floored as non-text
-    # UI on both grounds.
-    for tone, colour in (("mauve", link), ("teal", tok["teal"])):
+    # grounds: a mark nobody can see is not a caret, so every tone is floored as non-text UI
+    # on both grounds.
+    for tone, colour in (("mauve", link), ("teal", tok["teal"]), ("peach", tok["peach"])):
         checks.append(
             (f"{tone} caret bar and badge fill on the code figure", colour, figure_ground, NON_TEXT_MIN)
         )
@@ -668,6 +787,8 @@ def main() -> int:
         "type": tok["code-type"],
         "body": fg,
     }
+    # The peers who hold a selection: the third peer is drawn with a caret and a badge and no
+    # fill of their own, so this is the pair list the stylesheet has the rules for.
     for tone, colour in (("mauve", link), ("teal", tok["teal"])):
         spec = selection_fill(css, tone)
         if spec is None:
@@ -705,8 +826,8 @@ def main() -> int:
     # floor every token-drawn mark gets; the measured ratio is printed with the pair. Two things
     # make this pair the bar's own: the bar is `bg-base/85` over a page whose ground is the same
     # `bg-base`, so a translucent bar over it composites to that colour exactly; and the mark in
-    # the HTML is `h-8 w-auto`, 32 CSS px of a 128 px file, which resampling does not change the
-    # tone of. The median is the typical ink pixel rather than the brightest one, so a mark that
+    # the HTML is `h-[30px] w-auto`, 30 CSS px of a 128 px file, which resampling does not change
+    # the tone of. The median is the typical ink pixel rather than the brightest one, so a mark that
     # is dark except for a highlight does not pass.
     mark_path = os.environ.get(
         "MARK_PNG", os.path.join(here, "..", "public", "mark-header.png")
@@ -729,31 +850,70 @@ def main() -> int:
             MARK_MIN,
         )
     )
-    dot_fill = solid_fill(css, ".open-dot")
-    if dot_fill is None:
-        print(
-            "check-contrast: no usable solid background on .open-dot; "
-            "the open-file mark cannot be measured",
-            file=sys.stderr,
-        )
-        return 2
     for stop in stops:
         surface = composite(glass_rgb, stop, glass_alpha)
         checks.append((f"glass card text over {stop}", fg, surface, TEXT_MIN))
         checks.append((f"glass card muted text over {stop}", muted, surface, TEXT_MIN))
-        # The tree, the bar's count and the figure's caption sit on the panel itself
-        # rather than on the card, so the panel's own stops carry text too.
-        checks.append((f"panel text over {stop}", fg, stop, TEXT_MIN))
-        checks.append((f"panel muted text over {stop}", muted, stop, TEXT_MIN))
-        # Read the open-file mark's fill rather than assuming it still wears --fg,
-        # so a stylesheet change cannot silently bypass the non-text floor.
-        checks.append((f"open-file dot on the panel over {stop}", dot_fill, stop, NON_TEXT_MIN))
+        # The glass is composited over the figure's own fill, and that fill is a ground the
+        # page paints text on too, so it carries the pair as well as the surface above it.
+        checks.append((f"hero figure text over {stop}", fg, stop, TEXT_MIN))
+        checks.append((f"hero figure muted text over {stop}", muted, stop, TEXT_MIN))
+    # The repository descriptions are the page's other small text on a surface of its own. The
+    # card's hover state lightens that surface to the page's own colour, which is the worst of
+    # the two, and the planned card carries one on the page itself.
+    repo_desc = text_colour(css, ".repo-desc")
+    repo_fill = solid_fill(css, ".prose-body .repo")
+    repo_hover = solid_fill(css, ".prose-body .repo:hover")
+    if repo_desc is None or repo_fill is None or repo_hover is None:
+        print(
+            "check-contrast: no usable colour on .repo-desc or on the repository card it "
+            "sits in; the description cannot be measured",
+            file=sys.stderr,
+        )
+        return 2
+    checks.append(("repository description on the repository card", repo_desc, repo_fill, TEXT_MIN))
+    checks.append(
+        ("repository description on the hovered card", repo_desc, repo_hover, TEXT_MIN)
+    )
+    checks.append(("planned card description on the page", repo_desc, bg, TEXT_MIN))
 
     # WCAG 1.4.1, and the pair this check went blind to: a link judged against the page's
     # background and never against the prose beside it. The two floors cannot both hold on
     # this palette (see the module docstring), so the pair is asserted where colour is the
     # lone affordance, read out of the stylesheet rather than assumed.
     notes: list[str] = []
+    # The outline variant is the second hero CTA, and it is the only button boundary the page
+    # draws from the palette. The component names it, so a weakened or dimmed boundary fails
+    # here rather than going unnoticed.
+    try:
+        outline = variant_classes(tsx, "outline")
+    except FillError as exc:
+        print(
+            f"check-contrast: {exc}; the boundary of the button the page renders cannot be "
+            "measured",
+            file=sys.stderr,
+        )
+        return 2
+    outline_border = re.search(r"(?<![\w-])border-([\w]+)", outline)
+    outline_hex = tok.get(outline_border.group(1)) if outline_border else None
+    if outline_hex is None:
+        print(
+            "check-contrast: the outline variant names no `border-<token>` the palette carries, "
+            "so the boundary of the button the page renders has nothing to measure it from",
+            file=sys.stderr,
+        )
+        return 2
+    checks.append(("outline button boundary on the page", outline_hex, bg, DECORATIVE_MIN))
+    notes.append(
+        f"the outline button's boundary ({outline_hex} on {bg}) is {ratio(outline_hex, bg):.2f}:1, "
+        "below the 3.0:1 a boundary that identifies a control would need and above the "
+        f"{DECORATIVE_MIN:.1f}:1 a reader loses it at; the label and the focus ring identify the "
+        "button, and the design draws the boundary at this tone"
+    )
+    notes.append(
+        "the page carries no `secondary` button: its two pairs above are the primitive's own, "
+        "measured from the component because the variant is still in the file"
+    )
     if underlines(css, ".prose-body a"):
         notes.append(
             f"prose links are underlined, the non-colour affordance WCAG 1.4.1 allows "
@@ -775,12 +935,18 @@ def main() -> int:
     if failures:
         print(
             f"check-contrast: {failures} pair(s) below their floor; the lines above name each "
-            f"pair's own floor — WCAG AA, or the logotype nav mark's visibility floor"
+            f"pair's own floor — WCAG AA, the selection tint's and the outline button boundary's "
+            f"visibility floors, or the logotype nav mark's"
         )
         return 1
+    text_pairs = sum(1 for _, _, _, minimum in checks if minimum == TEXT_MIN)
+    non_text_pairs = sum(1 for _, _, _, minimum in checks if minimum == NON_TEXT_MIN)
+    visibility_pairs = len(checks) - text_pairs - non_text_pairs
     print(
-        f"check-contrast: {len(checks)} pairs at or above their floors — WCAG AA for the "
-        f"{len(checks) - 1} token-drawn pairs, a visibility floor for the logotype nav mark "
+        f"check-contrast: {len(checks)} pairs at or above their floors — {text_pairs} at the "
+        f"4.5:1 text floor, {non_text_pairs} at the 3.0:1 non-text floor, and {visibility_pairs} "
+        f"at the 1.5:1 visibility floor the selection tint, the decorative outline button "
+        f"boundary and the logotype nav mark are held to "
         f"(glass {glass_rgb} at alpha {glass_alpha} parsed from .hero-glass, "
         f"sample ground {figure_ground} parsed from the code figure)"
     )

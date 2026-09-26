@@ -12,21 +12,24 @@ name: ci
 # matches known wordings only — a green run is not a proof that every sentence is true, so the
 # page's claims are still read against the corpus by a person. The claims it does assert
 # positively are the ones with artefacts behind them. The image tag the page's happy path hands a
-# reader: it asks `ghcr.io` for the pinned version, requires a leg per architecture, and compares
+# reader: it asks `ghcr.io` for the tag the page names, requires a leg per architecture, and compares
 # the per-platform manifests' layer digests, because a platform entry only labels a slot. The
 # demo instance the page points at: it requires every reference to that host to be one of the
 # three the page may carry, the address the demo section hands an editor to reach the server
 # (its path answers the server's own JSON, not the proxy's page), that address's origin to report a
 # `selvaged` server offering a wire version the page names, and the origin's `/` to serve the guest
 # page the browser row points at. The wire version is then bound to the artefacts: the page has
-# to say which wire the pinned image speaks and which the demo speaks, the demo's half against
-# what `/meta` offers and the image's half against `IMAGE_WIRE_BY_TAG`, and the page may name no
-# other version, because this protocol has one — the paragraph and the command under it are read
-# together, so the landing page cannot deliver a downgrade quietly. Two disclosures are required
+# to say which wire the image under the command speaks and which the demo speaks, the demo's half
+# against what `/meta` offers and the image's half against `IMAGE_WIRE_BY_TAG`, and the page may
+# name no other version, because this protocol has one — the paragraph and the command under it are
+# read together, so the landing page cannot deliver a downgrade quietly. One disclosure is required
 # besides: the relay-visibility facts, one pattern per fact, so deleting the paragraph fails where
-# the clean fixtures alone would not, and the browser guest's trust in the room's own server for
-# the client code, which the plan forbids leaving implied. The registry and the instance halves
-# need egress and fail rather than pass when they cannot reach it.
+# the clean fixtures alone would not. The hosted tier the page offers and does not run yet is
+# required the same way — the card, its status, who would run it, and the row that is a plan — and
+# so is the repository grid, where each row's word is pinned beside the row, the `published` one
+# against the identity the release publishes under, every repository the grid names against a link
+# to it, and every repository the page links against the grid. The registry and the
+# instance halves need egress and fail rather than pass when they cannot reach it.
 # No `push: branches: [main]`: a pull request already runs the whole gate, and the
 # merge commit carries the same content, so the merge would run it a second time.
 # `workflow_dispatch` is the re-run for a commit that reached `main` without one.
