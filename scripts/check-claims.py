@@ -1990,8 +1990,8 @@ def check_published_extension(pages: list[Scanned]) -> int:
 # yet and the row calls it planned. The pattern reads both rather than requiring both, because a
 # card that states the same fact twice is the redundancy this replaced; a card that states it
 # neither way is the absent status the check still catches. The facts are read from the card's own
-# markup, not the page's text, so a `planned` word elsewhere on the page — the grid's own plan —
-# cannot stand in for the status the card owes.
+# markup, not the page's text, so the same words elsewhere on the page — the grid's own plan wears
+# them — cannot stand in for the status the card owes.
 HOSTED_CARD_CLASS = "try-card-planned"
 HOSTED_TIER_FACTS = (
     ("the card that offers it", re.compile(r"Rent a server", re.IGNORECASE)),
@@ -2065,19 +2065,20 @@ GRID_PINNED_PLANS = (
     (
         "jetbrains_client",
         "JetBrains IDEs",
-        "planned",
+        "Not available yet",
         re.compile(
-            r"\bjetbrains_client[^.]{0,32}JetBrains IDEs[^.]{0,32}planned\b", re.IGNORECASE
+            r"\bjetbrains_client[^.]{0,32}JetBrains IDEs[^.]{0,32}Not available yet\b",
+            re.IGNORECASE,
         ),
     ),
 )
 
 # The words the grid's rows carry. A row the page links states a repository a reader can open;
-# a row it leaves unlinked is a plan and says so. The plan's word is the only one an unlinked row
-# may wear, and a linked row may not wear it, which is what keeps a plan from becoming a way to
-# name a live repository without linking it.
+# a row it leaves unlinked is a plan and says so, in the hosted tier's words. The plan's words are
+# the only ones an unlinked row may wear, and a linked row may not wear them, which is what keeps
+# a plan from becoming a way to name a live repository without linking it.
 GRID_LIVE_WORDS = ("available", "source of truth")
-GRID_PLAN_WORD = "planned"
+GRID_PLAN_WORD = "Not available yet"
 
 # The key a surface carries for the client it draws. `lib/clients.ts` gives a client one `id`,
 # and the grid's row, the chips and the install route each carry it, so the three can be read
@@ -2447,7 +2448,7 @@ def check_repository_grid(pages: list[Scanned]) -> int:
             if GRID_PLAN_WORD not in row.text:
                 print(
                     f"check-claims: the grid row {row.text!r} links nothing and does not say it "
-                    "is planned. A row is either a repository a reader can open or a plan, and "
+                    "is not available yet. A row is either a repository a reader can open or a plan, and "
                     "an unlinked row that says neither reads as a mistake",
                     file=sys.stderr,
                 )

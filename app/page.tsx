@@ -127,11 +127,12 @@ type GridRow = {
   client?: string;
 };
 
-/** The tone each word is drawn in: the palette's colour for the status the word states. */
-const GRID_TONE: Record<GridRow["tag"], string> = {
-  "source of truth": "bg-mauve/12 text-mauve",
-  available: "bg-green/10 text-green",
-  planned: "bg-overlay2/12 text-overlay2",
+/** The word each status is drawn as, in the palette's colour for it. A plan wears the hosted
+    tier's words and yellow, the page's one way of saying something does not exist yet. */
+const GRID_TAG: Record<GridRow["tag"], { word: string; tone: string }> = {
+  "source of truth": { word: "source of truth", tone: "bg-mauve/12 text-mauve" },
+  available: { word: "available", tone: "bg-green/10 text-green" },
+  planned: { word: "Not available yet", tone: "bg-yellow/10 text-yellow" },
 };
 
 const gridRows: GridRow[] = [
@@ -299,8 +300,7 @@ export default function Home() {
               <h2 className="display">One server, any client.</h2>
               <p className="lede">
                 The extension, the plugin and the browser page are clients, not a
-                server: each one connects to a {" "}
-                <code>selvaged</code> you run.
+                server: each one connects to a selvaged you run.
               </p>
             </div>
             <div className="run-grid">
@@ -389,7 +389,7 @@ export default function Home() {
                 <p className="spec-line">
                   Selvage writes that layer down: prose, a canonical byte form for a
                   frame, JSON Schema, and a corpus of conformance vectors, replayed byte
-                  for byte against a real server. The specification&apos;s own validator,
+                  for byte against a real server. The specification&apos;s own validator,{" "}
                   <code>specification/schema/validate.py</code>, prints the corpus&apos;s
                   counts, so a reader can check the current figures. It is written to be
                   implemented on its own, without reading the server&apos;s code.
@@ -401,7 +401,6 @@ export default function Home() {
                   <BookOpenText className="icon-18" aria-hidden="true" />
                   Read the specification
                 </a>
-                <p className="spec-note">The specification is a draft.</p>
               </div>
               <div className="compare">
                 {comparison.map((row) => (
@@ -426,9 +425,9 @@ export default function Home() {
                     </span>
                     <Badge
                       variant="pill"
-                      className={`repo-pill text-[11px] ${GRID_TONE[row.tag]}`}
+                      className={`repo-pill text-[11px] ${GRID_TAG[row.tag].tone}`}
                     >
-                      {row.tag}
+                      {GRID_TAG[row.tag].word}
                     </Badge>
                   </>
                 );
@@ -480,7 +479,7 @@ export default function Home() {
                 </div>
               </dl>
               <p className="foot-note">
-                <code>selvaged</code> is FSL-1.1-MIT: source-available, not
+                selvaged is FSL-1.1-MIT: source-available, not
                 OSI-approved, free for any non-competing purpose, and it converts to
                 MIT two years after each release.
               </p>

@@ -1311,16 +1311,6 @@ section[id],
   line-height: 1.65;
 }
 
-/* The draft status sits with the link it qualifies rather than ending the
-   paragraph above it. */
-.spec-note {
-  margin: 0;
-  max-width: var(--measure);
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.5;
-}
-
 .spec-link {
   display: inline-flex;
   align-items: center;
