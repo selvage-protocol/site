@@ -77,7 +77,7 @@ const TABS: Tab[] = [
       { prompt: ":", text: NEOVIM_COMMAND },
     ],
     copy: NEOVIM_PLUGIN_LINE,
-    announce: "Neovim command",
+    announce: "Neovim plugin line",
     note: "Works with any plugin manager.",
     source: "https://github.com/selvage-protocol/nvim_client",
   },
