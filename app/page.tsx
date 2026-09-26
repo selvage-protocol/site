@@ -284,10 +284,6 @@ export default function Home() {
                     <span className="command-prompt">$ </span>
                     {COMMAND}
                   </p>
-                  <p className="try-foot">
-                    The image and the demo both speak <code>selvage/2</code>, the one
-                    wire version this protocol has, and it is the sealed one.
-                  </p>
                   <a className="try-link" href="#run">
                     Set up the server and your editor
                     <ArrowDown className="icon-14" aria-hidden="true" />

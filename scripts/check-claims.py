@@ -9,10 +9,10 @@ encodes the characters as HTML entities.
 
 Facts are asserted in the positive instead, because a phrase list cannot reach them: the image tag
 in the `docker run` the page hands a reader, the instance the demo section points at — the address
-it gives an editor, the wire version that address speaks, and the page a guest is sent to — the
-wire version the page says each artefact it hands a reader speaks, the disclosure the page owes a
-reader of what the sealed relay still sees, and the identity the extension is published under with
-the two registries the release publishes it to and what an
+it gives an editor and the page a guest is sent to — the wire the tag and that address each speak,
+held together and to no version this protocol does not have, the disclosure the page owes a reader
+of what the sealed relay still sees, and the identity the extension is published under with the two
+registries the release publishes it to and what an
 install is and is not. The address half asks the
 path a plain `GET` can reach, not the upgrade: see `demo_session_route`. Each is a fact with an
 artefact behind it, and a wrong tag is a command that fails rather than a wording that lies. See
@@ -303,9 +303,10 @@ EXTENSION_PUBLICATION = (
     *EXTENSION_INSTALL_LIMITATION,
 )
 
-# The two sentences that bind the page's sealing claim to the wire version it is true of: which
-# wire the image under the `docker run` speaks, and which wire the demo speaks.
-# `check_wire_binding` reads both.
+# How a page that says which wire an artefact speaks is read: which wire the image under the
+# `docker run` speaks, and which wire the demo speaks. A page is no longer required to say
+# either, so `check_wire_binding` reads them where they are written and holds each to the
+# artefact it names.
 WIRE_OF_IMAGE = re.compile(
     r"\bthe (?:published |pinned )?(?:image|container)\b"
     r"[^.]{0,80}?\bspeaks?\b[^.]{0,40}?\b(selvage/\d+)\b",
@@ -1585,15 +1586,6 @@ def check_demo_instance(pages: list[Scanned]) -> int:
         )
         return 1
 
-    if not any(page_names(one, pages) for one in offered):
-        print(
-            f"check-claims: {DEMO_ORIGIN} offers the wire versions {', '.join(offered)} and the "
-            "page names none of them: a client refuses a server that does not offer its wire "
-            "version, so an editor set to that address is a session the page cannot open",
-            file=sys.stderr,
-        )
-        return 1
-
     if not session_path_reaches_the_server(session_status, session_type):
         print(
             f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} answered {session_status} "
@@ -2204,41 +2196,24 @@ def check_repository_grid(pages: list[Scanned]) -> int:
     return 0
 
 
-def names_wire(text: str, version: str) -> bool:
-    """Whether this text names the wire version as a name of its own, not as `selvage/21`."""
-    return re.search(rf"(?<![\w/]){re.escape(version)}(?![\w/])", text) is not None
-
-
-def page_names(version: str, pages: list[Scanned]) -> bool:
-    """Whether the page's visible text carries this wire version as a name of its own.
-
-    The needle comes from the instance, so a page that names none of what the instance offers is
-    the failure this reports rather than a scan that quietly looked for nothing. The lookarounds
-    keep `selvage/2` from being satisfied by `selvage/21`.
-    """
-    return any(names_wire(page.text, version) for page in pages)
-
-
 def wire_binding_problems(
     page: Scanned, offered: tuple[str, ...], image_wire: str
 ) -> list[str]:
-    """What this page says about the wire that the artefacts behind it do not support."""
+    """What this page says about the wire that the artefacts behind it do not support.
+
+    Nothing here has to be said: the page names no wire version and binds no artefact to one. Each
+    rule reads what a page does say and holds it to the thing it names, so a sentence that comes
+    back is checked the moment it is written rather than passing unread.
+    """
     problems: list[str] = []
     image = WIRE_OF_IMAGE.search(page.text)
-    if image is None:
-        problems.append(
-            "it never says which wire the image under the `docker run` speaks (that tag "
-            f"is {image_wire})"
-        )
-    elif image.group(1) != image_wire:
+    if image is not None and image.group(1) != image_wire:
         problems.append(
             f"it says the image under the `docker run` speaks {image.group(1)!r}, and the "
             f"tag {PUBLISHED_IMAGE_TAG} speaks {image_wire}"
         )
     demo = WIRE_OF_DEMO.search(page.text)
-    if demo is None:
-        problems.append("it never says which wire the demo speaks")
-    elif demo.group(1) not in offered:
+    if demo is not None and demo.group(1) not in offered:
         problems.append(
             f"it says the demo speaks {demo.group(1)!r}, and {DEMO_ORIGIN}/meta offers "
             f"{', '.join(offered)}"
@@ -2252,8 +2227,6 @@ def wire_binding_problems(
         problems.append(
             f"it names {', '.join(strangers)}, and this protocol has one wire version, {WIRE}"
         )
-    if not names_wire(page.text, WIRE):
-        problems.append(f"it never names {WIRE}, the one wire version this protocol has")
     unreleased = WIRE_UNRELEASED.search(page.text)
     if unreleased is not None:
         problems.append(
@@ -2267,37 +2240,25 @@ def check_wire_binding(pages: list[Scanned]) -> int:
     """Which wire version the page says each artefact it hands a reader speaks.
 
     The page hands a reader one `docker run` and one instance address, there is one wire version,
-    and it is the sealed one. A page that describes sealing without saying which version does
-    which invites the failure a confidentiality feature cannot have: a reader pastes the command
-    under the paragraph and gets a server that carries the room through it in the clear. So the
-    page has to say which wire the image under the `docker run` speaks and which wire the demo
-    speaks, and to
-    name no other version: with one version a second name is a claim about a version this protocol
-    does not have, and the plaintext one is what the reader of a sealing paragraph meets when the
-    tag is one that cannot seal. The demo's half is measured, against what `/meta` offers,
-    where no wording can forge it; the image's half is read from `IMAGE_WIRE_BY_TAG`, because no
-    registry says what wire a binary speaks, and a tag the map does not name has to declare its
-    wire in the same wave. Both halves together are what make the page's own sentence
-    about the image and the sentence about the instance agree with what a reader will actually get.
+    and it is the sealed one. It no longer has to say which: what is read here is what it says
+    about the wire, and behind that the two artefacts against each other, which is the fact the
+    sentence used to carry. The wire the tag speaks is read from `IMAGE_WIRE_BY_TAG`, because no
+    registry answers what wire a binary speaks and a tag the map does not name has to declare its
+    wire in the same wave; the instance's half is measured, from `/meta`, where no wording can
+    forge it. A tag the instance does not offer, or a version the page names that this protocol
+    does not have, is a reader pasting the command under the sealing paragraph and getting a
+    server that carries the room through it in the clear — the failure a confidentiality feature
+    cannot have, and the one the pairing of the command and the paragraph is for.
 
-    Returns 0, 1 when the page says something the artefacts disprove, 2 when the instance cannot
+    Returns 0, 1 when a page says something the artefacts disprove, 2 when the instance cannot
     be asked or this file cannot say what the tag speaks.
     """
     root = root_of_this_checkout()
-    binding = [page for page in pages if WIRE_VERSION.search(page.text)]
-    if not binding:
-        print(
-            f"check-claims: none of {len(pages)} scanned file(s) names a wire version, and the "
-            "page hands a reader a server to run: a scan that reaches no version is not "
-            "checking the version",
-            file=sys.stderr,
-        )
-        return 1
     if PUBLISHED_IMAGE_TAG not in IMAGE_WIRE_BY_TAG:
         print(
             f"check-claims: the page hands a reader the tag {PUBLISHED_IMAGE_TAG} and nothing "
             "here says which wire version that tag speaks (see `IMAGE_WIRE_BY_TAG`); a tag "
-            "whose wire is unknown cannot be held to the page's sentence about it",
+            "whose wire is unknown cannot be held to what the page hands over beside it",
             file=sys.stderr,
         )
         return 2
@@ -2307,30 +2268,48 @@ def check_wire_binding(pages: list[Scanned]) -> int:
     except (urllib.error.URLError, OSError, ValueError, KeyError) as error:
         print(
             f"check-claims: cannot ask {DEMO_ORIGIN} which wire versions it offers ({error}); "
-            "the page says which artefact speaks which version, and the half of that sentence "
-            "about the instance cannot be checked without it",
+            "the page hands a reader that address and this file cannot say what a client meets "
+            "there without it",
             file=sys.stderr,
         )
         return 2
 
+    # The two artefacts the page hands over are one protocol, and that is the half of the
+    # sentence that does not depend on the page saying it: the command a reader pastes and the
+    # address a reader points an editor at have to deliver the same wire, or the page's own happy
+    # path ends in a server the reader's client refuses.
+    if image_wire not in offered:
+        print(
+            f"check-claims: the page hands a reader the tag {PUBLISHED_IMAGE_TAG}, which speaks "
+            f"{image_wire}, and {DEMO_ORIGIN}/meta offers {', '.join(offered)}: the command and "
+            "the address on the page are not the same protocol, so a reader who follows both "
+            "meets a version one of the two does not have",
+            file=sys.stderr,
+        )
+        return 1
+
     failed: list[tuple[str, list[str]]] = []
-    for page in binding:
+    for page in pages:
         problems = wire_binding_problems(page, offered, image_wire)
         if problems:
             failed.append((os.path.relpath(page.path, root), problems))
     if failed:
         for where, problems in failed:
             print(
-                f"check-claims: {where} does not bind what it says to the one wire version: "
-                + "; ".join(problems),
+                f"check-claims: {where} says something about the wire the artefacts do not "
+                "support: " + "; ".join(problems),
                 file=sys.stderr,
             )
         return 1
+    named = sorted(
+        {match.group(0) for page in pages for match in WIRE_VERSION.finditer(page.text)}
+    )
     print(
-        f"check-claims: the page binds its sealing claim to the one wire version the artefacts "
-        f"speak — the tag {PUBLISHED_IMAGE_TAG} as {image_wire}, the demo as "
-        f"{', '.join(offered)} from `/meta` — names no other version, and does not call it "
-        "unreleased"
+        "check-claims: "
+        + (f"the page names {', '.join(named)}" if named else "the page names no wire version")
+        + f"; the tag {PUBLISHED_IMAGE_TAG} speaks {image_wire} and {DEMO_ORIGIN}/meta offers "
+        f"{', '.join(offered)}, so the two artefacts the page hands a reader speak the same "
+        "version, and nothing here names another one or calls the wire unreleased"
     )
     return 0
 
