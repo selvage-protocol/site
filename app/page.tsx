@@ -165,7 +165,7 @@ const repos: Repo[] = [
     desc: "JetBrains IDEs",
     Icon: Box,
     tag: "planned",
-    pill: "bg-overlay1/12 text-overlay1",
+    pill: "bg-overlay2/12 text-overlay2",
     planned: true,
   },
 ];
