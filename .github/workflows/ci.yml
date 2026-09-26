@@ -28,8 +28,9 @@ name: ci
 # required the same way — the card, its status, who would run it, and the row that is a plan — and
 # so is the repository grid, where each row's word is pinned beside the row, the `published` one
 # against the identity the release publishes under, every repository the grid names against a link
-# to it, and every repository the page links against the grid. The registry and the
-# instance halves need egress and fail rather than pass when they cannot reach it.
+# to it, the row that is a plan against carrying none, and every repository the page links against
+# the grid. The registry and the instance halves need egress and fail rather than pass when they
+# cannot reach it.
 # No `push: branches: [main]`: a pull request already runs the whole gate, and the
 # merge commit carries the same content, so the merge would run it a second time.
 # `workflow_dispatch` is the re-run for a commit that reached `main` without one.

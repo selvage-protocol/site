@@ -4,6 +4,7 @@ import {
   ArrowDown,
   ArrowUpRight,
   BookOpenText,
+  Box,
   Check,
   Code,
   Eye,
@@ -11,7 +12,6 @@ import {
   HardDrive,
   Lock,
   Play,
-  Plus,
   SquareTerminal,
   Terminal,
 } from "lucide-react";
@@ -119,6 +119,9 @@ type Repo = {
   Icon: LucideIcon;
   tag: string;
   pill: string;
+  // A client the project plans and has not written. The row carries no link: there is no
+  // repository to open, so there is nowhere for a reader to go.
+  planned?: boolean;
 };
 
 const repos: Repo[] = [
@@ -156,6 +159,14 @@ const repos: Repo[] = [
     Icon: Globe,
     tag: "available",
     pill: "bg-green/10 text-green",
+  },
+  {
+    name: "jetbrains_client",
+    desc: "JetBrains IDEs",
+    Icon: Box,
+    tag: "planned",
+    pill: "bg-overlay1/12 text-overlay1",
+    planned: true,
   },
 ];
 
@@ -431,12 +442,9 @@ export default function Home() {
               </div>
             </div>
             <ul className="repos">
-              {repos.map((repo) => (
-                <li key={repo.name}>
-                  <a
-                    className="repo"
-                    href={`https://github.com/selvage-protocol/${repo.name}`}
-                  >
+              {repos.map((repo) => {
+                const row = (
+                  <>
                     <repo.Icon className="repo-icon" aria-hidden="true" />
                     <span className="repo-text">
                       <span className="repo-name">{repo.name}</span>
@@ -445,16 +453,23 @@ export default function Home() {
                     <Badge variant="pill" className={`repo-pill text-[11px] ${repo.pill}`}>
                       {repo.tag}
                     </Badge>
-                  </a>
-                </li>
-              ))}
-              <li className="repo-more">
-                <Plus className="repo-icon" aria-hidden="true" />
-                <span className="repo-text">
-                  <span className="repo-more-name">More clients</span>
-                  <span className="repo-desc">Planned</span>
-                </span>
-              </li>
+                  </>
+                );
+                return (
+                  <li key={repo.name}>
+                    {repo.planned ? (
+                      <div className="repo">{row}</div>
+                    ) : (
+                      <a
+                        className="repo"
+                        href={`https://github.com/selvage-protocol/${repo.name}`}
+                      >
+                        {row}
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </section>
         </main>

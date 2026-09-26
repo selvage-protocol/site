@@ -1371,7 +1371,9 @@ section[id],
     background 0.15s;
 }
 
-.prose-body .repo:hover {
+/* The hover state is the link's: the grid carries one row that is a plan and not a link, and a
+   card that lightens under the pointer offers something to follow. */
+.prose-body a.repo:hover {
   border-color: var(--color-surface2);
   background: var(--bg);
   color: var(--fg);
@@ -1397,7 +1399,8 @@ section[id],
 
 .repo-desc {
   /* Read on three grounds — the card's fill, the page colour the card lightens to on hover, and
-     the planned card on the page — so it wears the tone that clears 4.5:1 on all three. */
+     the page's own colour, which is where a row drawn without a card of its own is read — so it
+     wears the tone that clears 4.5:1 on all three. */
   color: var(--color-overlay2);
   font-size: 12px;
   /* One line, like the name above it: a description that wraps makes its own card taller
@@ -1411,21 +1414,6 @@ section[id],
 .repo-pill {
   margin-left: auto;
   white-space: nowrap;
-}
-
-.repo-more {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 1px dashed var(--color-surface1);
-  border-radius: 10px;
-  color: var(--color-overlay1);
-}
-
-.repo-more-name {
-  color: var(--color-subtext1);
-  font-size: 13px;
 }
 
 /* The footer: the terms, the page's own promise and the address to write to. */

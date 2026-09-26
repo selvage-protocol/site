@@ -860,10 +860,11 @@ def main() -> int:
         checks.append((f"hero figure muted text over {stop}", muted, stop, TEXT_MIN))
     # The repository descriptions are the page's other small text on a surface of its own. The
     # card's hover state lightens that surface to the page's own colour, which is the worst of
-    # the two, and the planned card carries one on the page itself.
+    # the two, and the page's own colour is kept as a third ground beside them, for a row drawn
+    # with no card of its own.
     repo_desc = text_colour(css, ".repo-desc")
     repo_fill = solid_fill(css, ".prose-body .repo")
-    repo_hover = solid_fill(css, ".prose-body .repo:hover")
+    repo_hover = solid_fill(css, ".prose-body a.repo:hover")
     if repo_desc is None or repo_fill is None or repo_hover is None:
         print(
             "check-contrast: no usable colour on .repo-desc or on the repository card it "
@@ -875,7 +876,7 @@ def main() -> int:
     checks.append(
         ("repository description on the hovered card", repo_desc, repo_hover, TEXT_MIN)
     )
-    checks.append(("planned card description on the page", repo_desc, bg, TEXT_MIN))
+    checks.append(("repository description on the page", repo_desc, bg, TEXT_MIN))
 
     # WCAG 1.4.1, and the pair this check went blind to: a link judged against the page's
     # background and never against the prose beside it. The two floors cannot both hold on
