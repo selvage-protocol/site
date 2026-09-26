@@ -2,7 +2,7 @@ import { Box, Code, Globe, Terminal, type LucideIcon } from "lucide-react";
 import { DEMO } from "@/lib/selvage";
 
 /* One entry per client, and every surface the page draws a client on derives from this list:
-   the repository grid's row, the chips in *Any client, one protocol*, and the install route in
+   the repository grid's row, the chips in *Clients share one protocol*, and the install route in
    the terminal. A client added here appears on all three; nothing else about it is written
    out a second time.
 
@@ -65,7 +65,7 @@ export const CLIENTS: Client[] = [
     install: {
       lines: [
         { prompt: "$", text: "code --install-extension selvage-protocol.selvage" },
-        { text: "# then run  Selvage: Host a session", comment: true },
+        { text: "# then run  Selvage: Host a session — this opens the room", comment: true },
       ],
       copy: "code --install-extension selvage-protocol.selvage",
       announce: "VS Code command",

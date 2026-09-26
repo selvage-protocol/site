@@ -321,6 +321,12 @@ section[id],
   text-wrap: balance;
 }
 
+/* The accent phrase starts its own line, so the colour change begins where a line
+   begins rather than stranding a word at the end of a white one. */
+.hero-accent {
+  display: block;
+}
+
 .hero-lede {
   margin: 22px 0 0;
   max-width: 34rem;
@@ -516,7 +522,7 @@ section[id],
   background: var(--color-crust);
 }
 
-.invite-button {
+.invite-sample {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -531,11 +537,6 @@ section[id],
   font-family: var(--mono);
   font-size: 12px;
   text-align: left;
-  cursor: pointer;
-}
-
-.invite-button:hover {
-  border-color: var(--link);
 }
 
 .invite-glyph {
@@ -1319,6 +1320,16 @@ section[id],
   color: var(--muted);
   font-size: 16px;
   line-height: 1.65;
+}
+
+/* The draft status sits with the link it qualifies rather than ending the
+   paragraph above it. */
+.spec-note {
+  margin: 0;
+  max-width: var(--measure);
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .spec-link {

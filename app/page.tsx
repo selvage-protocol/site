@@ -46,7 +46,7 @@ type RoomCard = {
 const roomCards: RoomCard[] = [
   {
     lead: "Anyone with the link is in",
-    body: "Hold the link and you are in, with no approval step. Treat an invite the way you would treat a password.",
+    body: "There is no approval step and no account to create. Treat an invite the way you would treat a password.",
     figure: (
       <div className="fig fig-center">
         <InviteChip />
@@ -55,12 +55,12 @@ const roomCards: RoomCard[] = [
   },
   {
     lead: "Everyone's caret, in one file",
-    body: "Edits and cursors stay in sync for everyone in the room. A caret stays put while the text around it changes.",
+    body: "A caret stays where it was while the text around it changes, and two people can type at once without one overwriting the other.",
     figure: <CaretLines />,
   },
   {
     lead: "Guests only see the folder you shared",
-    body: "Nothing outside that folder is visible. The room never adds, renames or removes a file in your working copy.",
+    body: "The room never adds, renames or removes a file in your working copy; a guest's edit reaches the folder through your own client, which is what writes it out.",
     figure: (
       <div className="fig">
         <TreeFigure />
@@ -68,8 +68,8 @@ const roomCards: RoomCard[] = [
     ),
   },
   {
-    lead: "Any client, one protocol",
-    body: "Every client talks to the server through the same spec, so VS Code, Neovim and the browser can share a room.",
+    lead: "Clients share one protocol",
+    body: "That is what lets VS Code, Neovim and the browser open the same room.",
     figure: (
       <div className="fig">
         <ClientChips />
@@ -82,7 +82,7 @@ const steps = [
   {
     n: "01",
     title: "Host a folder",
-    body: "Start the server, open a folder in VS Code or Neovim and host a session.",
+    body: "Start the server, open a folder in VS Code or Neovim and host a room.",
   },
   {
     n: "02",
@@ -92,12 +92,12 @@ const steps = [
   {
     n: "03",
     title: "Type in the same file",
-    body: "Files load when someone opens them, so the whole project never goes over the wire.",
+    body: "Type in the same file and your edits arrive in everyone's copy. Files load when someone opens them, so the whole project never goes over the wire.",
   },
   {
     n: "04",
     title: "Close the window",
-    body: "The room ends after a short countdown. A dropped connection doesn't end it.",
+    body: "Closing the host's window ends the room after a short countdown. A guest who closes theirs leaves the others in it, and a connection that only drops can rejoin inside the countdown.",
   },
 ];
 
@@ -169,7 +169,7 @@ export default function Home() {
                     sentence boundary reads as `run.on` to it. */}
                 <h1 className="hero-title">
                   Edit the same file together,{" "}
-                  <span className="text-mauve">on a server you run.</span>
+                  <span className="hero-accent text-mauve">on a server you run.</span>
                 </h1>
                 <p className="hero-lede">
                   Your editor, their editor or a browser tab, all in the same file.
@@ -214,7 +214,7 @@ export default function Home() {
           <section id="try" className="band">
             <div className="shell">
               <div className="head-block">
-                <Eyebrow>Try &rarr; Run &rarr; Rent</Eyebrow>
+                <Eyebrow>Try &rarr; Run</Eyebrow>
                 <h2 className="display">
                   Try it in the browser, then run your own.
                 </h2>
@@ -235,8 +235,8 @@ export default function Home() {
                     </Badge>
                   </div>
                   <p className="try-body">
-                    Open it in your browser or point your editor at it. Guests join
-                    from the invite link with nothing installed.
+                    Open the demo in your browser, or point your editor at it.
+                    Guests join from the invite link.
                   </p>
                   <div className="try-actions">
                     <a className="demo-link" href={DEMO_ORIGIN}>
@@ -304,7 +304,8 @@ export default function Home() {
               <Eyebrow>Get it working</Eyebrow>
               <h2 className="display">One server, any client.</h2>
               <p className="lede">
-                An install is the client and not a server: a session pairs with the{" "}
+                The extension, the plugin and the browser page are clients, not a
+                server: each one connects to a {" "}
                 <code>selvaged</code> you run.
               </p>
             </div>
@@ -317,7 +318,8 @@ export default function Home() {
                     The server carries bytes it cannot read
                   </p>
                   <p className="panel-body">
-                    These travel sealed under keys in the part of the invite link a
+                    Documents, cursors, the file listing and the roles the host signs
+                    travel sealed, under keys the invite link carries in the part a
                     browser never sends to a server.
                   </p>
                   <ul className="chips chips-green">
@@ -367,7 +369,7 @@ export default function Home() {
           <section id="how-it-works" className="shell">
             <div className="head-block">
               <Eyebrow>How it works</Eyebrow>
-              <h2 className="display">Share a link, come edit my code with me.</h2>
+              <h2 className="display">Share a link and edit the same file together.</h2>
             </div>
             <ol className="steps">
               {steps.map((step) => (
@@ -387,16 +389,17 @@ export default function Home() {
                 <h2 className="display">The session layer is written down.</h2>
                 <p className="spec-line">
                   Which rooms exist, who is in one, which documents are open, where the
-                  carets are: every collaborative tool decides those for itself, so
-                  none of the tools can talk to each other.
+                  carets are: every collaborative tool decides those for itself, so a
+                  tool from one cannot join a room from another.
                 </p>
                 <p className="spec-line">
                   Selvage writes that layer down: prose, a canonical byte form for a
-                  frame, JSON Schema, and 24 conformance vectors (33760 frame checks
-                  and 8387 assertions) replayed byte for byte against a real server.
-                  The numbers are constants in <code>schema/validate.py</code>. It is
-                  written to be implemented on its own, without reading the
-                  server&apos;s code. The specification is a draft.
+                  frame, JSON Schema, and 24 conformance vectors, replayed byte for
+                  byte against a real server. That replay runs 33,760 frame checks
+                  and 8,387 assertions, and the specification&apos;s own validator,
+                  <code>specification/schema/validate.py</code>, prints each count,
+                  so a reader can check it. It is written to be implemented on its
+                  own, without reading the server&apos;s code.
                 </p>
                 <a
                   className="spec-link"
@@ -405,6 +408,7 @@ export default function Home() {
                   <BookOpenText className="icon-18" aria-hidden="true" />
                   Read the specification
                 </a>
+                <p className="spec-note">The specification is a draft.</p>
               </div>
               <div className="compare">
                 {comparison.map((row) => (
@@ -478,14 +482,8 @@ export default function Home() {
                   <dd>CC-BY-4.0</dd>
                 </div>
                 <div className="licence-row">
-                  <dt>Spec tooling, clients, server</dt>
-                  <dd>MIT or Apache-2.0</dd>
-                </div>
-                <div className="licence-row">
-                  <dt>
-                    Server binary <code>selvaged</code>
-                  </dt>
-                  <dd>FSL-1.1-MIT</dd>
+                  <dt>Spec tooling and clients</dt>
+                  <dd>MIT OR Apache-2.0</dd>
                 </div>
               </dl>
               <p className="foot-note">

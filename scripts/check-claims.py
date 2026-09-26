@@ -68,9 +68,13 @@ SKIP_DIRS = {".git", ".tmp", "node_modules"}
 # A claimed corpus number that is not the one `specification/schema/validate.py` pins is a wrong
 # number the page would otherwise show without failing anything. The lookahead is what makes the
 # pinned value the only one that passes. There are two layers and each is pinned on its own — the
-# wire corpus's 24 vectors, 33760 frame checks and 8387 assertions, and the peer corpus's 26
+# wire corpus's 24 vectors, 33,760 frame checks and 8,387 assertions, and the peer corpus's 26
 # vectors, 221 checks and 74 assertions — so a number before one of those nouns has to be that
 # layer's pin, and the peer layer's count is written with the layer named ('26 peer vectors').
+#
+# The wire layer's two largest counts are written with their thousands separated on the page,
+# because a reader has to read them; `33,?760` accepts either spelling so a count written without
+# the separator is still recognised rather than read as a number that is missing.
 VEHICLE = r"\d[\d,]*"
 
 # The address the project's own landing page is served at. The browser entry holds a claim that
@@ -204,7 +208,7 @@ RELAY_DISCLOSURE = (
     ),
 )
 # Every count the page shows for the corpus, and the file that pins each of them: the wire
-# layer's 24 vectors, 33760 frame checks and 8387 assertions, and the peer layer's 26 vectors,
+# layer's 24 vectors, 33,760 frame checks and 8,387 assertions, and the peer layer's 26 vectors,
 # 221 checks and 74 assertions are all constants in `specification/schema/validate.py`. A number
 # the page hands a reader with no file beside it is one the reader cannot check, which is the
 # defect this pair exists for: the frame counts named the file and the peer counts did not.
@@ -218,8 +222,8 @@ CORPUS_COUNTS = (
     # the other wording unguarded — the count would not be seen at all, so nothing would ask it
     # for a file.
     (re.compile(r"\b24 (?:conformance|wire) vectors\b"), "the 24 wire vectors"),
-    (re.compile(r"\b33760 frame[- ]checks\b"), "33760 frame checks"),
-    (re.compile(r"\b8387 assertions\b"), "8387 assertions"),
+    (re.compile(r"\b33,?760 frame[- ]checks\b"), "33,760 frame checks"),
+    (re.compile(r"\b8,?387 assertions\b"), "8,387 assertions"),
     (re.compile(r"\b26 peer vectors\b"), "26 peer vectors"),
     (re.compile(r"\b221 peer checks\b"), "221 peer checks"),
     (re.compile(r"\b74 peer assertions\b"), "74 peer assertions"),
@@ -768,7 +772,7 @@ FORBIDDEN: list[Phrase] = [
         r"|subscribers)\b",
         "used in production by 40 engineering teams",
         "no user count exists. The only numbers this project can show are the corpus counts its "
-        "own validator pins (24 vectors, 33760 frame checks, 8387 assertions)",
+        "own validator pins (24 vectors, 33,760 frame checks, 8,387 assertions)",
     ),
     Phrase(
         r"\bfirst\b",
@@ -851,12 +855,12 @@ FORBIDDEN: list[Phrase] = [
         "0, which is not this one",
     ),
     Phrase(
-        rf"\b(?!33760\b){VEHICLE}\s+frame[- ]checks?\b",
+        rf"(?<![\d,])\b(?!33,?760\b){VEHICLE}\s+frame[- ]checks?\b",
         "33759 frame checks",
-        "the wire corpus's pinned number is 33760 frame checks "
+        "the wire corpus's pinned number is 33,760 frame checks "
         "(`specification/schema/validate.py`); a different number is a claim the corpus "
         "disproves. The peer layer's 221 are checks and are pinned by that entry",
-        clean=("33760 frame checks",),
+        clean=("33,760 frame checks", "33760 frame checks"),
     ),
     Phrase(
         # The wire corpus and the peer corpus are two layers of one corpus and each is counted
@@ -877,12 +881,12 @@ FORBIDDEN: list[Phrase] = [
         clean=("24 conformance vectors", "the 24 wire vectors", "26 peer vectors"),
     ),
     Phrase(
-        rf"\b(?!8387\b){VEHICLE}\s+assertions?\b",
+        rf"(?<![\d,])\b(?!8,?387\b){VEHICLE}\s+assertions?\b",
         "8386 assertions",
-        "the wire corpus's pinned number is 8387 assertions "
+        "the wire corpus's pinned number is 8,387 assertions "
         "(`specification/schema/validate.py`); a different number is a claim the corpus "
         "disproves. The peer layer's count is its own pin and is written '74 peer assertions'",
-        clean=("8387 assertions", "74 peer assertions"),
+        clean=("8,387 assertions", "8387 assertions", "74 peer assertions"),
     ),
     Phrase(
         rf"\b(?!26\b){VEHICLE}\s+peer\s+vectors?\b",
@@ -901,7 +905,7 @@ FORBIDDEN: list[Phrase] = [
         "220 peer checks",
         "the peer corpus's pinned count is 221 checks (`EXPECTED_PEER_CHECKS` in "
         "`specification/schema/validate.py`); a different number is a claim the corpus "
-        "disproves. The wire layer's 33760 are frame checks and are pinned by that entry",
+        "disproves. The wire layer's 33,760 are frame checks and are pinned by that entry",
         clean=("221 peer checks",),
     ),
     Phrase(
@@ -909,7 +913,7 @@ FORBIDDEN: list[Phrase] = [
         "75 peer assertions",
         "the peer corpus's pinned number is 74 assertion steps (`EXPECTED_PEER_ASSERTIONS` in "
         "`specification/schema/validate.py`); a different number is a claim the corpus "
-        "disproves. The wire layer's 8387 are pinned by that entry",
+        "disproves. The wire layer's 8,387 are pinned by that entry",
         clean=("74 peer assertions",),
     ),
     Phrase(
@@ -1715,11 +1719,11 @@ def check_relay_disclosure(pages: list[Scanned]) -> int:
 def window_with_following_sentence(text: str, start: int, end: int) -> str:
     """The sentence a hit sits in and the one after it, from the visible text.
 
-    A citation is read from where the number is: the page's own frame-count paragraph puts the
-    count in one sentence and "the numbers are constants in `schema/validate.py`" in the next,
-    which is the pair a reader reads together. A file named a section away is not what the
-    number is checked against, so the window stops at the end of the following sentence — and
-    a sentence ends at a period followed by whitespace, not at any period (see `SENTENCE_END`).
+    A citation is read from where the number is: the page's own frame-count sentence names the
+    counts and the sentence after it names the validator that prints them, which is the pair a
+    reader reads together. A file named a section away is not what the number is checked against,
+    so the window stops at the end of the following sentence — and a sentence ends at a period
+    followed by whitespace, not at any period (see `SENTENCE_END`).
     """
     left = 0
     for stop in SENTENCE_END.finditer(text, 0, start):
@@ -1943,7 +1947,7 @@ GRID_PLAN_WORD = "planned"
 # against each other without a list of client names here.
 GRID_CLIENT = re.compile(r'\bdata-client="([\w-]+)"')
 
-# The chips figure in *Any client, one protocol*, and the install routes' panels. A route's key
+# The chips figure in *Clients share one protocol*, and the install routes' panels. A route's key
 # is its panel's own id, which is the client's.
 CHIPS_FIGURE = re.compile(
     r'<div\b[^>]*\bclass="[^"]*\bclients\b[^"]*"[^>]*>(.*?)</div>',
@@ -2009,7 +2013,7 @@ def grid_rows(raw: str) -> list[GridRow]:
 
 
 def chip_clients(raw: str) -> list[str]:
-    """The client each chip in the *Any client, one protocol* figure names, in order.
+    """The client each chip in the *Clients share one protocol* figure names, in order.
 
     The figure is decoration drawn from the client list, so its chips are read from the figure's
     own markup rather than from the page's text. A page that no longer draws the figure answers
@@ -2085,7 +2089,7 @@ def check_repository_grid(pages: list[Scanned]) -> int:
       every name and every word;
     - every repository the page links is one a row of the grid links too, so no row and no source
       link beside the terminal points at a repository the project does not have;
-    - the client each row draws, each chip in *Any client, one protocol* and each install route
+    - the client each row draws, each chip in *Clients share one protocol* and each install route
       in the terminal are read from the key the surface carries, and all three have to name the
       same clients. A client added to the page's own list appears on every surface at once; a
       surface written out by hand is the half-added client this catches;
