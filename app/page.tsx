@@ -4,16 +4,14 @@ import {
   ArrowDown,
   ArrowUpRight,
   BookOpenText,
-  Box,
   Check,
-  Code,
   Eye,
   Globe,
   HardDrive,
   Lock,
   Play,
+  Plus,
   SquareTerminal,
-  Terminal,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +27,7 @@ import {
   TreeFigure,
 } from "@/components/room-visuals";
 import { COMMAND, DEMO } from "@/lib/selvage";
+import { CLIENTS, repositoryUrl } from "@/lib/clients";
 
 const DEMO_ORIGIN = `https://${DEMO}`;
 
@@ -113,61 +112,43 @@ const comparison: Comparison[] = [
   { label: "Session layer", value: "selvage", here: true },
 ];
 
-type Repo = {
+/** A row of the repository grid. Two rows are the project's own repositories and carry no
+    client; the rest are one per client, drawn from the one list the chips and the terminal
+    read too. */
+type GridRow = {
   name: string;
   desc: string;
   Icon: LucideIcon;
-  tag: string;
-  pill: string;
-  // A client the project plans and has not written. The row carries no link: there is no
-  // repository to open, so there is nowhere for a reader to go.
-  planned?: boolean;
+  /** The word beside the row, and the status it states. A plan wears the plan's word and is
+      not linked: there is no repository at the other end of its row. */
+  tag: "source of truth" | "available" | "planned";
+  /** The client this row draws, where it draws one. The chips and the install routes carry the
+      same key, which is what holds the three surfaces to one list. */
+  client?: string;
 };
 
-const repos: Repo[] = [
+/** The tone each word is drawn in: the palette's colour for the status the word states. */
+const GRID_TONE: Record<GridRow["tag"], string> = {
+  "source of truth": "bg-mauve/12 text-mauve",
+  available: "bg-green/10 text-green",
+  planned: "bg-overlay2/12 text-overlay2",
+};
+
+const gridRows: GridRow[] = [
   {
     name: "specification",
     desc: "Prose, schema, vectors",
     Icon: BookOpenText,
     tag: "source of truth",
-    pill: "bg-mauve/12 text-mauve",
   },
-  {
-    name: "reference_server",
-    desc: "selvaged",
-    Icon: HardDrive,
-    tag: "available",
-    pill: "bg-green/10 text-green",
-  },
-  {
-    name: "vscode_client",
-    desc: "VS Code extension",
-    Icon: Code,
-    tag: "available",
-    pill: "bg-green/10 text-green",
-  },
-  {
-    name: "nvim_client",
-    desc: "Neovim plugin",
-    Icon: Terminal,
-    tag: "available",
-    pill: "bg-green/10 text-green",
-  },
-  {
-    name: "web_client",
-    desc: "The browser page",
-    Icon: Globe,
-    tag: "available",
-    pill: "bg-green/10 text-green",
-  },
-  {
-    name: "jetbrains_client",
-    desc: "JetBrains IDEs",
-    Icon: Box,
-    tag: "planned",
-    pill: "bg-overlay2/12 text-overlay2",
-    planned: true,
-  },
+  { name: "reference_server", desc: "selvaged", Icon: HardDrive, tag: "available" },
+  ...CLIENTS.map((client) => ({
+    name: client.repository,
+    desc: client.description,
+    Icon: client.Icon,
+    tag: client.status,
+    client: client.id,
+  })),
 ];
 
 function Eyebrow({ children }: { children: ReactNode }) {
@@ -280,10 +261,17 @@ export default function Home() {
                   <p className="try-body">
                     One Docker command. Rooms live in memory, so a restart ends them.
                   </p>
-                  <p className="command">
-                    <span className="command-prompt">$ </span>
-                    {COMMAND}
-                  </p>
+                  {/* What the command is for, beside it: the port is in the command, and this
+                      card is where a reader who has just started the server looks for it. */}
+                  <div className="command">
+                    <p className="command-line">
+                      <span className="command-prompt">$ </span>
+                      {COMMAND}
+                    </p>
+                    <p className="command-line command-comment">
+                      # answers ws://127.0.0.1:8080/session and serves the page on the same port
+                    </p>
+                  </div>
                   <a className="try-link" href="#run">
                     Set up the server and your editor
                     <ArrowDown className="icon-14" aria-hidden="true" />
@@ -431,29 +419,35 @@ export default function Home() {
               </div>
             </div>
             <ul className="repos">
-              {repos.map((repo) => {
-                const row = (
+              {gridRows.map((row) => {
+                const body = (
                   <>
-                    <repo.Icon className="repo-icon" aria-hidden="true" />
+                    <row.Icon className="repo-icon" aria-hidden="true" />
                     <span className="repo-text">
-                      <span className="repo-name">{repo.name}</span>
-                      <span className="repo-desc">{repo.desc}</span>
+                      <span className="repo-name">{row.name}</span>
+                      <span className="repo-desc">{row.desc}</span>
                     </span>
-                    <Badge variant="pill" className={`repo-pill text-[11px] ${repo.pill}`}>
-                      {repo.tag}
+                    <Badge
+                      variant="pill"
+                      className={`repo-pill text-[11px] ${GRID_TONE[row.tag]}`}
+                    >
+                      {row.tag}
                     </Badge>
                   </>
                 );
                 return (
-                  <li key={repo.name}>
-                    {repo.planned ? (
-                      <div className="repo">{row}</div>
+                  <li key={row.name}>
+                    {row.tag === "planned" ? (
+                      <div className="repo" data-client={row.client}>
+                        {body}
+                      </div>
                     ) : (
                       <a
                         className="repo"
-                        href={`https://github.com/selvage-protocol/${repo.name}`}
+                        data-client={row.client}
+                        href={repositoryUrl(row.name)}
                       >
-                        {row}
+                        {body}
                         {/* Linked rows only: the row that is a plan has nowhere to go, so it
                             carries no mark either. */}
                         <ArrowUpRight className="repo-go icon-14" aria-hidden="true" />
@@ -463,6 +457,14 @@ export default function Home() {
                 );
               })}
             </ul>
+            {/* The grid's own last row, and a full-width one: the list it stands under is
+                open, and a strip that spans the grid says so without becoming a cell that a
+                row count can strand. */}
+            <div className="repos-more">
+              <Plus className="repos-more-icon" aria-hidden="true" />
+              <span className="repos-more-lead">More clients</span>
+              <span className="repos-more-note">Planned</span>
+            </div>
           </section>
         </main>
 

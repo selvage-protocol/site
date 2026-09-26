@@ -2,108 +2,51 @@
 
 import type { KeyboardEvent } from "react";
 import { useEffect, useRef, useState } from "react";
-import {
-  ArrowUpRight,
-  Code,
-  Copy,
-  Globe,
-  HardDrive,
-  Info,
-  Terminal,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { ArrowUpRight, Copy, Info } from "lucide-react";
+import { CLIENTS, repositoryUrl, type InstallLine } from "@/lib/clients";
 import { useCopy } from "@/lib/use-copy";
-import { COMMAND, DEMO } from "@/lib/selvage";
 
-/* The terminal a reader copies from: one route per client, with the command that
-   route is, the note a reader needs before running it, and the repository it comes
-   from. The panels are the ARIA tabs pattern — one strip, one panel per tab, the
-   inactive ones `hidden` — and every panel is in the document, so the page still
-   carries all four routes for a reader without scripting. */
+/* The terminal a reader copies from: one route per client that has one, with the command that
+   route is, the note a reader needs before running it, and the repository it comes from. The
+   panels are the ARIA tabs pattern — one strip, one panel per tab, the inactive ones `hidden` —
+   and every panel is in the document, so the page still carries every route for a reader
+   without scripting.
 
-const NEOVIM_COMMAND = ":SelvageHost ws://127.0.0.1:8080";
-const NEOVIM_PLUGIN_LINE = "{ 'selvage-protocol/nvim_client', build = 'npm ci' }";
-
-type Line = { prompt?: string; text: string; comment?: boolean };
+   The routes are the client list's own install data, and the tab labels are its chip labels:
+   a client is added to the list and its route appears here, rather than being written out a
+   second time. */
 
 type Tab = {
   id: string;
   label: string;
-  Icon: LucideIcon;
-  lines: Line[];
+  Icon: (typeof CLIENTS)[number]["Icon"];
+  source: string;
+  lines: InstallLine[];
   copy: string;
-  /** What the control puts on the clipboard, named in the announcement: the tab it
-      came from is not something the reader listening can see. */
   announce: string;
   note: string;
-  source: string;
 };
 
-const TABS: Tab[] = [
-  {
-    id: "server",
-    label: "Server",
-    Icon: HardDrive,
-    lines: [
-      { prompt: "$", text: COMMAND },
-      { text: "# answers ws://127.0.0.1:8080/session", comment: true },
-      { text: "# serves the page on the same port", comment: true },
-    ],
-    copy: COMMAND,
-    announce: "Server command",
-    note: "Rooms live in memory, so a restart ends them.",
-    source: "https://github.com/selvage-protocol/reference_server",
-  },
-  {
-    id: "vscode",
-    label: "VS Code",
-    Icon: Code,
-    lines: [
-      { prompt: "$", text: "code --install-extension selvage-protocol.selvage" },
-      { text: "# then run  Selvage: Host a session", comment: true },
-    ],
-    copy: "code --install-extension selvage-protocol.selvage",
-    announce: "VS Code command",
-    note: "Published on the VS Code Marketplace and on Open VSX.",
-    source: "https://github.com/selvage-protocol/vscode_client",
-  },
-  {
-    id: "nvim",
-    label: "Neovim",
-    Icon: Terminal,
-    lines: [
-      { text: "-- lazy.nvim: add this line to your spec", comment: true },
-      { text: NEOVIM_PLUGIN_LINE },
-      /* `:SelvageHost` is the whole command, colon included: this row's prompt gutter stays
-         empty so the line reads as one colon, and the command lines up with the rows that
-         draw a prompt of their own. */
-      { text: NEOVIM_COMMAND },
-    ],
-    copy: NEOVIM_PLUGIN_LINE,
-    announce: "Neovim plugin line",
-    note: "Works with any plugin manager; the spec above is the lazy.nvim form.",
-    source: "https://github.com/selvage-protocol/nvim_client",
-  },
-  {
-    id: "web",
-    label: "Browser",
-    Icon: Globe,
-    lines: [
-      { text: `# point an editor at wss://${DEMO}`, comment: true },
-      { prompt: "›", text: DEMO },
-      { text: "# the invite a host sends opens in the page", comment: true },
-    ],
-    copy: DEMO,
-    announce: "Browser address",
-    note: "Guests need nothing installed.",
-    source: "https://github.com/selvage-protocol/web_client",
-  },
-];
+/* Only the clients a reader can install have a route: a plan has none, and so has no tab. */
+const TABS: Tab[] = CLIENTS.flatMap((client) =>
+  client.install
+    ? [
+        {
+          id: client.id,
+          label: client.chip,
+          Icon: client.Icon,
+          source: repositoryUrl(client.repository),
+          ...client.install,
+        },
+      ]
+    : [],
+);
 
 export function SetupTerminal() {
   const [active, setActive] = useState(TABS[0].id);
-  /* Which edge of the strip has a tab past it. Four tabs are wider than a phone's panel, and
-     this is what says so: the clipped label on its own reads as a mistake. */
+  /* Which edge of the strip has a tab past it. Three tabs fit every panel this page is read at
+down to 360 px; at 320 the last one is clipped, and the clipped label on its own reads as a
+mistake. */
   const [edges, setEdges] = useState({ left: false, right: false });
   const strip = useRef<HTMLDivElement>(null);
   const { copied, copy } = useCopy<string>();
@@ -134,8 +77,8 @@ export function SetupTerminal() {
     };
   }, []);
 
-  /* The tab a reader picks has to be the one in view: the strip is wider than its panel on a
-     phone, so the tab at either end sits clipped at the edge until it is scrolled to. */
+  /* The tab a reader picks has to be the one in view: the strip can be wider than its panel, so
+     the tab at either end sits clipped at the edge until it is scrolled to. */
   function select(id: string) {
     setActive(id);
     const tab = document.getElementById(`install-tab-${id}`);

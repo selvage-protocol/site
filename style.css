@@ -764,6 +764,9 @@ section[id],
 }
 
 .command {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   margin: 0;
   padding: 12px;
   border: 1px solid var(--rule);
@@ -774,6 +777,15 @@ section[id],
   font-size: 12px;
   line-height: 1.6;
   overflow-wrap: anywhere;
+}
+
+.command-line {
+  margin: 0;
+}
+
+/* The tone the terminal's own comments wear, for the note under the command. */
+.command-comment {
+  color: var(--color-overlay2);
 }
 
 .command-prompt {
@@ -848,9 +860,10 @@ section[id],
   background: var(--code-bg);
 }
 
-/* Four tabs and their icons are wider than a phone's panel, so the strip scrolls. The mark of
-   that is drawn beside the scroller rather than in it: an overlay inside it would travel with
-   the tabs and sit over the last one at the end of the scroll. */
+/* The routes are one per client and the strip is a scroller rather than a wrap, so a growing
+   list costs the row its width rather than the panel its height. The mark of that is drawn
+   beside the scroller rather than in it: an overlay inside it would travel with the tabs and
+   sit over the last one at the end of the scroll. */
 .tab-strip {
   position: relative;
 }
@@ -1162,6 +1175,8 @@ section[id],
   color: var(--fg);
 }
 
+/* The clients one room is open to, as chips. A client the project has not written wears the
+   dashes the grid's plan wears, and the last chip is the open list rather than a client. */
 .clients {
   display: flex;
   flex-wrap: wrap;
@@ -1174,6 +1189,11 @@ section[id],
   border-radius: 6px;
   color: var(--fg);
   font-size: 12px;
+}
+
+.client-planned {
+  border-style: dashed;
+  color: var(--color-overlay2);
 }
 
 .client-more {
@@ -1361,9 +1381,9 @@ section[id],
 
 .repos {
   display: grid;
-  /* Six cells and a track minimum that divides them: three columns at the column's own
-     width, two below it, one on a phone, so every row is full rather than trailing a
-     pair of cards and a gap. */
+  /* A track minimum of 320px gives three columns at the section's own width and one on a
+     phone, so the six cards the page carries fill two rows exactly. The list is open, and no
+     track width keeps a growing count even: the strip under the grid is what closes it. */
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: 10px;
   margin: 56px 0 0;
@@ -1446,6 +1466,35 @@ section[id],
 /* The mark a linked row wears at rest, in the tone the row's leading icon wears. The row that
    is a plan carries none: it is not a link, and nothing on it should say otherwise. */
 .repo-go {
+  color: var(--color-overlay2);
+}
+
+/* The grid's open end, under it and spanning it. It is not a cell: a full-width band cannot be
+   stranded by a count, which a seventh card in the grid can, and it reads as the list
+   continuing rather than as one more repository. */
+.repos-more {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 14px 16px;
+  border: 1px dashed var(--color-surface1);
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.repos-more-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--color-overlay2);
+}
+
+.repos-more-lead {
+  color: var(--color-subtext1);
+}
+
+.repos-more-note {
   color: var(--color-overlay2);
 }
 
