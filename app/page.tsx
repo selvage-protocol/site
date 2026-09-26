@@ -265,11 +265,6 @@ export default function Home() {
                     </a>
                     <DemoEndpoint />
                   </div>
-                  <p className="try-foot">
-                    The demo is non-commercial and meant for personal use and
-                    evaluation (<a href={`${DEMO_ORIGIN}/terms`}>terms</a>); those
-                    terms cover that one box, not the software.
-                  </p>
                 </div>
 
                 <div className="try-card">
