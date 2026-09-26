@@ -1914,6 +1914,24 @@ GRID_PINNED_ROWS = (
         "available",
         re.compile(r"\bvscode_client[^.]{0,32}available\b", re.IGNORECASE),
     ),
+    (
+        "reference_server",
+        "selvaged",
+        "available",
+        re.compile(r"\breference_server[^.]{0,32}available\b", re.IGNORECASE),
+    ),
+    (
+        "nvim_client",
+        "Neovim plugin",
+        "available",
+        re.compile(r"\bnvim_client[^.]{0,32}available\b", re.IGNORECASE),
+    ),
+    (
+        "web_client",
+        "The browser page",
+        "available",
+        re.compile(r"\bweb_client[^.]{0,32}available\b", re.IGNORECASE),
+    ),
 )
 
 # The row that is a plan rather than a repository a reader can open: a client nobody has written

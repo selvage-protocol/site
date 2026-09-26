@@ -652,7 +652,8 @@ rows are read from the page rather than listed in the check, because the clients
 list: a hand-maintained list of names here would be the drift the rule exists to catch, and a client
 added to the page would be one the check never looked at. What is pinned by name is the handful of
 facts that have to stay true of named rows: the specification is the source of truth, the extension's
-row is the one a reader is also handed an install for, and `jetbrains_client` is the plan. A row's
+row is the one a reader is also handed an install for, `reference_server`, `nvim_client` and
+`web_client` each keep a row that names them, and `jetbrains_client` is the plan. A row's
 name, description, word and destination are one claim, read together from the row's own list item
 rather than from the page's text, so a row that links a different repository fails even though the
 page still carries every name and every word. A row the page links has to wear one of the words a live
