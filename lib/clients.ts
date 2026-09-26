@@ -14,13 +14,34 @@ import { DEMO } from "@/lib/selvage";
    plan rather than something a reader can open carries the `planned` status: the row marks it
    and links nothing, because there is nothing at the other end of the link. */
 
+/** The glyphs a route's prompt gutter draws: the shell's, Neovim's command line's, and the
+    browser's address bar's. */
+type Prompt = "$" | ":" | "›";
+
+declare const afterPrompt: unique symbol;
+/** A command as it reads after its prompt. Only `command` makes one. */
+type CommandText = string & { readonly [afterPrompt]: true };
+
 /** One line of an install route, as the terminal draws it. */
-export type InstallLine = {
-  prompt?: string;
-  text: string;
-  /** A note about the command rather than the command, in the terminal's dim tone. */
-  comment?: boolean;
-};
+export type InstallLine =
+  | { prompt: Prompt; text: CommandText; comment?: never }
+  | {
+      prompt?: never;
+      text: string;
+      /** A note about the command rather than the command, in the terminal's dim tone. */
+      comment?: boolean;
+    };
+
+/* The gutter draws the prompt and the text is what follows it, so a text that begins with its
+   own prompt reads doubled (`::`). The two are literals, and a text that starts with its prompt,
+   or that is not a literal and so cannot be read, is `never` and fails the typecheck: a prompted
+   line cannot be written any other way, because `CommandText` comes from nowhere else. */
+function command<P extends Prompt, T extends string>(
+  prompt: P,
+  text: string extends T ? never : T extends `${P}${string}` ? never : T,
+): InstallLine {
+  return { prompt, text: text as string as CommandText };
+}
 
 /** A client the page offers, or writes down as a plan. */
 export type Client = {
@@ -48,10 +69,7 @@ export function repositoryUrl(repository: string) {
   return `https://github.com/selvage-protocol/${repository}`;
 }
 
-/* `:SelvageHost` is the whole command, colon included: the route's prompt gutter stays empty
-   so the line reads as one colon, and the command lines up with the rows that draw a prompt of
-   their own. */
-const NEOVIM_COMMAND = ":SelvageHost ws://127.0.0.1:8080";
+const NEOVIM_COMMAND = "SelvageHost ws://127.0.0.1:8080";
 const NEOVIM_PLUGIN_LINE = "{ 'selvage-protocol/nvim_client', build = 'npm ci' }";
 
 export const CLIENTS: Client[] = [
@@ -64,7 +82,7 @@ export const CLIENTS: Client[] = [
     chip: "VS Code",
     install: {
       lines: [
-        { prompt: "$", text: "code --install-extension selvage-protocol.selvage" },
+        command("$", "code --install-extension selvage-protocol.selvage"),
         { text: "# then run  Selvage: Host a session — this opens the room", comment: true },
       ],
       copy: "code --install-extension selvage-protocol.selvage",
@@ -83,7 +101,7 @@ export const CLIENTS: Client[] = [
       lines: [
         { text: "-- lazy.nvim: add this line to your spec", comment: true },
         { text: NEOVIM_PLUGIN_LINE },
-        { text: NEOVIM_COMMAND },
+        command(":", NEOVIM_COMMAND),
       ],
       copy: NEOVIM_PLUGIN_LINE,
       announce: "Neovim plugin line",
@@ -100,7 +118,7 @@ export const CLIENTS: Client[] = [
     install: {
       lines: [
         { text: `# point an editor at wss://${DEMO}`, comment: true },
-        { prompt: "›", text: DEMO },
+        command("›", DEMO),
         { text: "# the invite a host sends opens in the page", comment: true },
       ],
       copy: DEMO,

@@ -784,11 +784,6 @@ section[id],
   margin: 0;
 }
 
-/* The tone the terminal's own comments wear, for the note under the command. */
-.command-comment {
-  color: var(--color-overlay2);
-}
-
 .command-prompt {
   color: var(--link);
 }

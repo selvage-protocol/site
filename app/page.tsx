@@ -55,12 +55,12 @@ const roomCards: RoomCard[] = [
   },
   {
     lead: "Everyone's caret, in one file",
-    body: "A caret stays where it was while the text around it changes, and two people can type at once without one overwriting the other.",
+    body: "You see where each person is typing, and their caret and selection travel with their edits.",
     figure: <CaretLines />,
   },
   {
     lead: "Guests only see the folder you shared",
-    body: "The room never adds, renames or removes a file in your working copy; a guest's edit reaches the folder through your own client, which is what writes it out.",
+    body: "The room never adds, renames or removes a file in your working copy.",
     figure: (
       <div className="fig">
         <TreeFigure />
@@ -69,7 +69,7 @@ const roomCards: RoomCard[] = [
   },
   {
     lead: "Clients share one protocol",
-    body: "That is what lets VS Code, Neovim and the browser open the same room.",
+    body: "The session layer is written down rather than glued into each editor, so any client that speaks it can share the room.",
     figure: (
       <div className="fig">
         <ClientChips />
@@ -82,7 +82,7 @@ const steps = [
   {
     n: "01",
     title: "Host a folder",
-    body: "Start the server, open a folder in VS Code or Neovim and host a room.",
+    body: "Start the server, open a folder in your editor and host a room.",
   },
   {
     n: "02",
@@ -92,12 +92,12 @@ const steps = [
   {
     n: "03",
     title: "Type in the same file",
-    body: "Type in the same file and your edits arrive in everyone's copy. Files load when someone opens them, so the whole project never goes over the wire.",
+    body: "Type in the same file and your edits arrive in everyone's copy.",
   },
   {
     n: "04",
     title: "Close the window",
-    body: "Closing the host's window ends the room after a short countdown. A guest who closes theirs leaves the others in it, and a connection that only drops can rejoin inside the countdown.",
+    body: "Closing the host's window ends the room after a short countdown. A dropped connection can rejoin before it runs out.",
   },
 ];
 
@@ -261,15 +261,10 @@ export default function Home() {
                   <p className="try-body">
                     One Docker command. Rooms live in memory, so a restart ends them.
                   </p>
-                  {/* What the command is for, beside it: the port is in the command, and this
-                      card is where a reader who has just started the server looks for it. */}
                   <div className="command">
                     <p className="command-line">
                       <span className="command-prompt">$ </span>
                       {COMMAND}
-                    </p>
-                    <p className="command-line command-comment">
-                      # answers ws://127.0.0.1:8080/session and serves the page on the same port
                     </p>
                   </div>
                   <a className="try-link" href="#run">
@@ -393,12 +388,11 @@ export default function Home() {
                 </p>
                 <p className="spec-line">
                   Selvage writes that layer down: prose, a canonical byte form for a
-                  frame, JSON Schema, and 24 conformance vectors, replayed byte for
-                  byte against a real server. That replay runs 33,760 frame checks
-                  and 8,387 assertions, and the specification&apos;s own validator,
-                  <code>specification/schema/validate.py</code>, prints each count,
-                  so a reader can check it. It is written to be implemented on its
-                  own, without reading the server&apos;s code.
+                  frame, JSON Schema, and a corpus of conformance vectors, replayed byte
+                  for byte against a real server. The specification&apos;s own validator,
+                  <code>specification/schema/validate.py</code>, prints the corpus&apos;s
+                  counts, so a reader can check the current figures. It is written to be
+                  implemented on its own, without reading the server&apos;s code.
                 </p>
                 <a
                   className="spec-link"

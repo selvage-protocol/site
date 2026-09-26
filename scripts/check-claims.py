@@ -240,11 +240,13 @@ FSL_DISCLOSURE = (
         re.compile(r"\bMIT\b[^.]{0,64}\b(?:two|2)\s+years\b", re.IGNORECASE),
     ),
 )
-# Every count the page shows for the corpus, and the file that pins each of them: the wire
-# layer's 24 vectors, 33,760 frame checks and 8,387 assertions, and the peer layer's 26 vectors,
-# 221 checks and 74 assertions are all constants in `specification/schema/validate.py`. A number
-# the page hands a reader with no file beside it is one the reader cannot check, which is the
-# defect this pair exists for: the frame counts named the file and the peer counts did not.
+# The corpus and every count the page could show for it, and the file that pins each count: the
+# wire layer's 24 vectors, 33,760 frame checks and 8,387 assertions, and the peer layer's 26
+# vectors, 221 checks and 74 assertions are all constants in `specification/schema/validate.py`.
+# The page shows none of them, because they move as the corpus grows, and names the file
+# instead, which is where a reader reads the current ones. A number the page hands a reader with
+# no file beside it is one the reader cannot check, so a count that comes back is held to the same
+# citation.
 # Where a sentence ends in the visible text. A bare `.` is not one: the file this check reads
 # for is `schema/validate.py`, and cutting a window at the period before its `py` truncated the
 # citation out of the very sentence that carries it.
@@ -261,6 +263,8 @@ CORPUS_COUNTS = (
     (re.compile(r"\b221 peer checks\b"), "221 peer checks"),
     (re.compile(r"\b74 peer assertions\b"), "74 peer assertions"),
 )
+# The page's name for the corpus, in both spellings the counts above accept.
+CORPUS_MENTION = re.compile(r"\b(?:conformance|wire) vectors\b")
 CORPUS_FILE = re.compile(r"\b(?:specification/)?schema/validate\.py\b")
 USER_AGENT = "selvage-site-check/1.0"
 
@@ -1828,43 +1832,48 @@ def window_with_following_sentence(text: str, start: int, end: int) -> str:
 
 
 def check_corpus_citation(pages: list[Scanned]) -> int:
-    """Every corpus count the page shows names the file that pins it, beside the number.
+    """The page's corpus names the file that prints its counts, and any count it shows does too.
 
-    Required rather than permitted, for the reason the disclosure is: a page that shows the
-    counts and names no file lets a reader take six numbers on trust. The window is the count's
-    own sentence and the one after it (see `window_with_following_sentence`), so the citation
-    has to be where the number is.
+    The page states no count: the corpus grows, and a number written into the page is stale as soon
+    as it moves. What it hands a reader instead is the file, so the file is what is required, beside
+    the corpus it counts: the window is the corpus's own sentence and the one after it (see
+    `window_with_following_sentence`), and a scan that reaches no cited corpus fails rather than
+    reporting a page that has stopped pointing anywhere as a page with nothing wrong.
 
-    Every count in every scanned page is read, and the scan fails when it reaches none: a check
-    that returned on the first page whose counts were cited would let a later page carry an
-    uncited number, and one that returned on the first count would do the same within a page.
-    What is *not* required is a count on every scanned page — a scan may legitimately include a
-    page that shows none (the disclosures' own checks state the facts on one page for the same
-    reason) — so the pages that carry counts are the ones held to this.
+    A count that does reach a page is held to the same window around the number, and every count
+    in every scanned page is read: a check that returned on the first cited page would let a later
+    page carry an uncited number, and one that returned on the first count would do the same within
+    a page. Whether a count is the right one is the phrase list's business, which pins each of them.
     """
     root = root_of_this_checkout()
+    cited = 0
     shown = 0
     uncited: list[tuple[str, str]] = []
     for page in pages:
         where = os.path.relpath(page.path, root)
+        for match in CORPUS_MENTION.finditer(page.text):
+            window = window_with_following_sentence(page.text, match.start(), match.end())
+            if CORPUS_FILE.search(window):
+                cited += 1
         for pattern, label in CORPUS_COUNTS:
             for match in pattern.finditer(page.text):
                 shown += 1
                 window = window_with_following_sentence(page.text, match.start(), match.end())
                 if not CORPUS_FILE.search(window):
                     uncited.append((where, label))
-    if shown == 0:
+    if cited == 0:
         print(
-            f"check-claims: none of {len(pages)} scanned file(s) shows a corpus count, so this "
-            "check decided nothing. The counts are the page's evidence for its own corpus, and a "
-            "rewrite that drops them is not a page this passes",
+            f"check-claims: none of {len(pages)} scanned file(s) names {CORPUS_FILE.pattern} in "
+            "the sentence that mentions the conformance vectors or the one after it. The page "
+            "states no count, so that file is where a reader checks the corpus, and a rewrite that "
+            "drops it leaves the corpus with nowhere to check it",
             file=sys.stderr,
         )
         return 1
     if not uncited:
         print(
-            f"check-claims: all {shown} corpus count(s) the scanned page(s) show name "
-            f"{CORPUS_FILE.pattern} beside them, so each number can be checked"
+            f"check-claims: the corpus is cited to {CORPUS_FILE.pattern} {cited} time(s), and all "
+            f"{shown} corpus count(s) the scanned page(s) show name it beside them"
         )
         return 0
     for where, label in uncited:
