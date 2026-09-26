@@ -2176,6 +2176,19 @@ def check_repository_grid(pages: list[Scanned]) -> int:
     chips = chip_clients(page.raw)
     routes = [match.group(1) for match in INSTALL_PANEL_ID.finditer(page.raw)]
 
+    # Every rule below is about a chip and something else, so a figure that is not drawn at all
+    # satisfies the lot of them: an empty list is a subset of every set, and it is the prefix of
+    # the grid's clients. The figure is one of the two drawings of the client list, so reaching
+    # no chip fails here rather than passing on the grid alone.
+    if not chips:
+        print(
+            "check-claims: the page draws no client chips, so the figure cannot be read against "
+            "the grid; the chips are one of the two drawings of the client list, and a figure "
+            "the check cannot see is not a figure that passed",
+            file=sys.stderr,
+        )
+        return 1
+
     for client in sorted(set(chips) - clients):
         print(
             f"check-claims: the chips name the client {client!r} and no row of the grid draws "
