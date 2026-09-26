@@ -780,8 +780,9 @@ that reintroduces a false positive fails it too, and those fixtures include the 
 readings the specification itself uses and the peer's signed host claim. The scan reads the prose
 in the page's `meta` attributes beside the visible text, because a link unfurl prints it. It also
 requires two disclosures in the scanned file: the relay-visibility facts and the licence terms
-`selvaged` is under, each as its own pattern,
-so neither statement can be deleted while the fixtures stay green. The corpus's citation is required
+`selvaged` is under, each as its own pattern, and the non-competing grant is read as a grant: a
+`not` in front of it or inside it denies it and fails. Neither statement can be deleted while the
+fixtures stay green. The corpus's citation is required
 the same way: the page states no count, because the counts move as the corpus grows, so the
 sentence that names the conformance vectors, or the one after it, has to name
 `specification/schema/validate.py`, the file that prints the current ones, and the scan fails when

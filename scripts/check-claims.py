@@ -233,7 +233,11 @@ FSL_DISCLOSURE = (
     ),
     (
         "that it is free for non-competing use",
-        re.compile(r"\bfree\b[^.]{0,64}\bnon[-\s]?competing\b", re.IGNORECASE),
+        # A `not` in front of the grant or inside it denies it rather than stating it.
+        re.compile(
+            r"(?<!\bnot )(?<!n't )\bfree\b(?:(?!\bnot\b)[^.]){0,64}\bnon[-\s]?competing\b",
+            re.IGNORECASE,
+        ),
     ),
     (
         "that it converts to MIT two years after each release",
@@ -1999,8 +2003,9 @@ HOSTED_TIER_FACTS = (
         "that it is not available yet",
         # The note is drawn at the row's right edge by CSS, so its word joins the label in the
         # flattened text (`Hosted serversplanned`); the pattern reads the word without a leading
-        # boundary for that reason, which is safe inside the card's own small region.
-        re.compile(r"\bNot available yet\b|planned", re.IGNORECASE),
+        # boundary for that reason, which is safe inside the card's own small region as long as
+        # `unplanned` is not read as the word.
+        re.compile(r"\bNot available yet\b|(?<!un)planned", re.IGNORECASE),
     ),
     ("who would run it", re.compile(r"\bWe run the server\b", re.IGNORECASE)),
 )
@@ -2164,20 +2169,20 @@ def chip_clients(raw: str) -> list[str]:
 
 
 def install_panel_text(raw: str, panel: str) -> str | None:
-    """One install route's own visible text, from its panel's id to the next panel's.
+    """One install route's own visible text, its panel read to the panel's own closer.
 
-    The panels are siblings and each nests boxes of its own, so the next panel's id is where
-    this one ends: slicing there reads the route whole without counting tags. A page that no
-    longer draws the terminal answers with None, which fails where a route is required rather
-    than passing quietly.
+    Reading to the closer rather than to the next panel is what keeps the route whole wherever
+    the strip puts it: the last panel would otherwise run to the end of the document and borrow
+    whatever the page says after it. A page that no longer draws the terminal answers with None,
+    which fails where a route is required rather than passing quietly.
     """
-    panels = [(match.start(), match.group(1)) for match in INSTALL_PANEL_ID.finditer(raw)]
-    for at, (start, name) in enumerate(panels):
-        if name != panel:
-            continue
-        end = panels[at + 1][0] if at + 1 < len(panels) else len(raw)
-        return normalise(raw[start:end])[0]
-    return None
+    opening = re.compile(
+        rf'<(?P<tag>[a-z][\w-]*)\b[^>]*\bid="install-panel-{re.escape(panel)}"[^>]*>',
+        re.IGNORECASE,
+    )
+    match = opening.search(raw)
+    element = element_from(raw, match) if match is not None else None
+    return normalise(element[1])[0] if element is not None else None
 
 
 def element_by_class(raw: str, class_name: str) -> tuple[str, str] | None:
@@ -2193,8 +2198,11 @@ def element_by_class(raw: str, class_name: str) -> tuple[str, str] | None:
         re.IGNORECASE,
     )
     match = opening.search(raw)
-    if match is None:
-        return None
+    return element_from(raw, match) if match is not None else None
+
+
+def element_from(raw: str, match: re.Match[str]) -> tuple[str, str] | None:
+    """The element whose opening tag `match` is, read to its own closer: its tag and its markup."""
     name = match.group("tag")
     scanner = re.compile(rf"<\s*(?P<close>/?)\s*{re.escape(name)}(?=[\s>/])", re.IGNORECASE)
     depth = 1
