@@ -61,7 +61,7 @@ away from the owner's colours, and a mark the standard exempts should not have t
 it. What the check does hold is the property the exemption leaves — the mark is ink, so its
 typical pixel must be no darker than the ground the bar shows it on (`MARK_MIN`, the floor below
 which no reader can see it). It reads `public/mark-header.png` itself, composites its own pixels
-over that ground, and prints the measured ratio: 1.72:1 for the owner's own tones. A derivative
+over that ground, and prints the measured ratio: 1.88:1 for the owner's own tones. A derivative
 recoloured darker until it is a smudge on the bar fails here.
 
 `STYLE_CSS` overrides the stylesheet under test, `BUTTON_TSX` the button
@@ -115,7 +115,7 @@ DECORATIVE_MIN = 1.5
 # `NON_TEXT_MIN`. It holds it to the floor a reader can still see it at — the same one the
 # selection tint gets, and not a WCAG threshold — because the mark is ink drawn on a dark bar,
 # and a mark darkened into that bar is the defect worth failing. The owner's own tones measure
-# 1.72:1 there.
+# 1.88:1 there.
 MARK_MIN = 1.5
 
 
