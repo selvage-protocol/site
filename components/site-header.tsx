@@ -94,8 +94,11 @@ export function SiteHeader() {
           ))}
         </div>
         <div className="ml-auto flex items-center gap-3.5">
+          {/* The label is hidden below 720px, so the icon would be the anchor's only
+              name there; the attribute names it at every width. */}
           <a
             href="https://github.com/selvage-protocol"
+            aria-label="GitHub"
             className="inline-flex items-center gap-1.5 text-[14px] text-subtext transition-colors hover:text-text"
           >
             <GithubMark className="icon-18" />

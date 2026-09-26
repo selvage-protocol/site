@@ -44,6 +44,10 @@ async function writeClipboard(text: string): Promise<void> {
  * The state one or more copy controls share: which key was copied last, and the
  * button that copies a value under a key. A control reads its own key, so the
  * tab a reader copied from says `Copied` and the others do not.
+ *
+ * That label is a visual change on its own, so a control that swaps one also
+ * carries a `role="status"` region keyed on the same value: the region is the
+ * announcement, and it names what was copied.
  */
 export function useCopy<Key extends string>() {
   const [copied, setCopied] = useState<Key | null>(null);

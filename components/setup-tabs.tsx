@@ -32,6 +32,9 @@ type Tab = {
   Icon: LucideIcon;
   lines: Line[];
   copy: string;
+  /** What the control puts on the clipboard, named in the announcement: the tab it
+      came from is not something the reader listening can see. */
+  announce: string;
   note: string;
   source: string;
 };
@@ -47,6 +50,7 @@ const TABS: Tab[] = [
       { text: "# serves the page on the same port", comment: true },
     ],
     copy: COMMAND,
+    announce: "Server command",
     note: "Rooms live in memory, so a restart ends them.",
     source: "https://github.com/selvage-protocol/reference_server",
   },
@@ -59,6 +63,7 @@ const TABS: Tab[] = [
       { text: "# then run  Selvage: Host a session", comment: true },
     ],
     copy: "code --install-extension selvage-protocol.selvage",
+    announce: "VS Code command",
     note: "Published on the VS Code Marketplace and on Open VSX.",
     source: "https://github.com/selvage-protocol/vscode_client",
   },
@@ -72,6 +77,7 @@ const TABS: Tab[] = [
       { prompt: ":", text: NEOVIM_COMMAND },
     ],
     copy: NEOVIM_PLUGIN_LINE,
+    announce: "Neovim command",
     note: "Works with any plugin manager.",
     source: "https://github.com/selvage-protocol/nvim_client",
   },
@@ -85,6 +91,7 @@ const TABS: Tab[] = [
       { text: "# the invite it copies opens in the page", comment: true },
     ],
     copy: DEMO,
+    announce: "Browser address",
     note: "Guests need nothing installed.",
     source: "https://github.com/selvage-protocol/web_client",
   },
@@ -152,6 +159,9 @@ export function SetupTerminal() {
               <Copy className="icon-14" aria-hidden="true" />
               {copied === tab.id ? "Copied" : "Copy"}
             </button>
+            <span role="status" className="sr-only">
+              {copied === tab.id ? `${tab.announce} copied` : ""}
+            </span>
             {tab.lines.map((line, at) => (
               <div key={at} className="term-line">
                 <span className="term-prompt">{line.prompt ?? ""}</span>

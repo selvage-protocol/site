@@ -1401,8 +1401,11 @@ section[id],
   color: var(--color-overlay2);
   font-size: 12px;
   /* One line, like the name above it: a description that wraps makes its own card taller
-     than the row beside it. */
+     than the row beside it. A line longer than the card is clipped at its edge, so it ends
+     in an ellipsis rather than over the card next to it. */
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .repo-pill {

@@ -174,6 +174,9 @@ export function RoomWindow({ animatePlayground = true }: { animatePlayground?: b
               {copied === "invite" ? "copied" : "copy"}
             </span>
           </button>
+          <span role="status" className="sr-only">
+            {copied === "invite" ? "Invite link copied" : ""}
+          </span>
         </div>
       </div>
     </figure>
