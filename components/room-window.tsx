@@ -3,15 +3,10 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { FolderOpen, Link as LinkIcon } from "lucide-react";
-import { useCopy } from "@/lib/use-copy";
 
 /* The hero figure: a guest's window onto the host's folder, with the line the two
    of them are in being typed. The typing is the point rather than decoration — it
    is what the page is: one file, edited by two people at once. */
-
-/** The invite the button copies, fragment and all: the keys travel in the fragment a
-    browser never puts in a request, which is why the link can be pasted anywhere. */
-const INVITE = "?room=k7m2&token=4f9c#k=\u2026&h=\u2026";
 
 const TICK_MS = 85;
 /** How long the finished line rests before it is typed again. */
@@ -72,7 +67,6 @@ function Line({
     asked for less motion gets a still one. */
 export function RoomWindow({ animatePlayground = true }: { animatePlayground?: boolean }) {
   const [count, setCount] = useState(0);
-  const { copied, copy } = useCopy<"invite">();
 
   useEffect(() => {
     if (
@@ -160,23 +154,15 @@ export function RoomWindow({ animatePlayground = true }: { animatePlayground?: b
           </div>
         </div>
         <div className="room-foot">
-          <button
-            type="button"
-            className="invite-button"
-            aria-label="Copy the invite link"
-            onClick={() => copy("invite", INVITE)}
-          >
-            <LinkIcon className="invite-glyph" aria-hidden="true" />
+          {/* A sample, not a control: the link is one to no room, so the figure draws it
+              with the word `sample` and nothing to press. */}
+          <div className="invite-sample" aria-hidden="true">
+            <LinkIcon className="invite-glyph" />
             <span className="invite-url">
               ?room=k7m2&amp;token=4f9c#k=&hellip;&amp;h=&hellip;
             </span>
-            <span className="invite-label">
-              {copied === "invite" ? "copied" : "copy"}
-            </span>
-          </button>
-          <span role="status" className="sr-only">
-            {copied === "invite" ? "Invite link copied" : ""}
-          </span>
+            <span className="invite-label">sample</span>
+          </div>
         </div>
       </div>
     </figure>

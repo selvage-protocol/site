@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link as LinkIcon } from "lucide-react";
+import { CHIP_LIMIT, CLIENTS } from "@/lib/clients";
 
 /* Renderings of the product surface: the invite a host copies, the carets in one
    file, the guest's view of the folder, the clients that can share a room. They
@@ -123,13 +124,21 @@ export function TreeFigure() {
   );
 }
 
-/** The clients one room is open to, and the one that is still only planned. */
+/** The clients one room is open to, with the ones the figure has no room for rolled into its
+    last chip, and the one that is still only a plan marked as the grid marks it. */
 export function ClientChips() {
+  const shown = CLIENTS.slice(0, CHIP_LIMIT);
   return (
     <div className="clients" aria-hidden="true">
-      <span className="client">VS Code</span>
-      <span className="client">Neovim</span>
-      <span className="client">Browser</span>
+      {shown.map((client) => (
+        <span
+          key={client.id}
+          className={client.status === "planned" ? "client client-planned" : "client"}
+          data-client={client.id}
+        >
+          {client.chip}
+        </span>
+      ))}
       <span className="client client-more">and more&hellip;</span>
     </div>
   );

@@ -4,7 +4,8 @@
     version, `selvage/2`. */
 const IMAGE = "ghcr.io/selvage-protocol/selvaged:latest";
 
-/** The one command the page hands a reader, in both places it appears. */
+/** The one `docker run` the page hands a reader, built from the image above so the command and
+    the tag inside it are one string. */
 export const COMMAND = `docker run --rm -p 127.0.0.1:8080:8080 ${IMAGE}`;
 
 /** The demo instance: the origin a guest opens, and the address an editor hosts on. */

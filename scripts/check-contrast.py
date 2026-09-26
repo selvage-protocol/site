@@ -61,7 +61,7 @@ away from the owner's colours, and a mark the standard exempts should not have t
 it. What the check does hold is the property the exemption leaves — the mark is ink, so its
 typical pixel must be no darker than the ground the bar shows it on (`MARK_MIN`, the floor below
 which no reader can see it). It reads `public/mark-header.png` itself, composites its own pixels
-over that ground, and prints the measured ratio: 1.72:1 for the owner's own tones. A derivative
+over that ground, and prints the measured ratio: 1.88:1 for the owner's own tones. A derivative
 recoloured darker until it is a smudge on the bar fails here.
 
 `STYLE_CSS` overrides the stylesheet under test, `BUTTON_TSX` the button
@@ -115,7 +115,7 @@ DECORATIVE_MIN = 1.5
 # `NON_TEXT_MIN`. It holds it to the floor a reader can still see it at — the same one the
 # selection tint gets, and not a WCAG threshold — because the mark is ink drawn on a dark bar,
 # and a mark darkened into that bar is the defect worth failing. The owner's own tones measure
-# 1.72:1 there.
+# 1.88:1 there.
 MARK_MIN = 1.5
 
 
@@ -860,10 +860,11 @@ def main() -> int:
         checks.append((f"hero figure muted text over {stop}", muted, stop, TEXT_MIN))
     # The repository descriptions are the page's other small text on a surface of its own. The
     # card's hover state lightens that surface to the page's own colour, which is the worst of
-    # the two, and the planned card carries one on the page itself.
+    # the two, and the page's own colour is kept as a third ground beside them, for a row drawn
+    # with no card of its own.
     repo_desc = text_colour(css, ".repo-desc")
     repo_fill = solid_fill(css, ".prose-body .repo")
-    repo_hover = solid_fill(css, ".prose-body .repo:hover")
+    repo_hover = solid_fill(css, ".prose-body a.repo:hover")
     if repo_desc is None or repo_fill is None or repo_hover is None:
         print(
             "check-contrast: no usable colour on .repo-desc or on the repository card it "
@@ -875,7 +876,7 @@ def main() -> int:
     checks.append(
         ("repository description on the hovered card", repo_desc, repo_hover, TEXT_MIN)
     )
-    checks.append(("planned card description on the page", repo_desc, bg, TEXT_MIN))
+    checks.append(("repository description on the page", repo_desc, bg, TEXT_MIN))
 
     # WCAG 1.4.1, and the pair this check went blind to: a link judged against the page's
     # background and never against the prose beside it. The two floors cannot both hold on

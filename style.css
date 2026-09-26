@@ -321,6 +321,12 @@ section[id],
   text-wrap: balance;
 }
 
+/* The accent phrase starts its own line, so the colour change begins where a line
+   begins rather than stranding a word at the end of a white one. */
+.hero-accent {
+  display: block;
+}
+
 .hero-lede {
   margin: 22px 0 0;
   max-width: 34rem;
@@ -335,7 +341,6 @@ section[id],
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 34px;
-  align-self: stretch;
 }
 
 /* The primary action carries its own light: a 1 px border of its own, so its box is the
@@ -517,7 +522,7 @@ section[id],
   background: var(--color-crust);
 }
 
-.invite-button {
+.invite-sample {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -532,11 +537,6 @@ section[id],
   font-family: var(--mono);
   font-size: 12px;
   text-align: left;
-  cursor: pointer;
-}
-
-.invite-button:hover {
-  border-color: var(--link);
 }
 
 .invite-glyph {
@@ -697,6 +697,9 @@ section[id],
 .try-actions {
   display: flex;
   flex-direction: column;
+  /* The card's last element: the controls sit on its bottom edge rather than under the body
+     text, which is where the card beside it ends. */
+  margin-top: auto;
   gap: 8px;
 }
 
@@ -762,6 +765,9 @@ section[id],
 }
 
 .command {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   margin: 0;
   padding: 12px;
   border: 1px solid var(--rule);
@@ -774,15 +780,12 @@ section[id],
   overflow-wrap: anywhere;
 }
 
-.command-prompt {
-  color: var(--link);
+.command-line {
+  margin: 0;
 }
 
-.try-foot {
-  margin: 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.55;
+.command-prompt {
+  color: var(--link);
 }
 
 .try-link {
@@ -809,12 +812,6 @@ section[id],
      reads dimmer than the controls around it without falling below 4.5:1 there. */
   color: var(--color-overlay1);
   font-size: 14px;
-}
-
-.planned-note {
-  margin-left: auto;
-  font-family: var(--mono);
-  font-size: 12px;
 }
 
 /* Get it working: the terminal a reader copies from, beside what the server
@@ -851,6 +848,33 @@ section[id],
   overflow-x: auto;
   border-bottom: 1px solid var(--rule);
   background: var(--code-bg);
+}
+
+/* The routes are one per client and the strip is a scroller rather than a wrap, so a growing
+   list costs the row its width rather than the panel its height. The mark of that is drawn
+   beside the scroller rather than in it: an overlay inside it would travel with the tabs and
+   sit over the last one at the end of the scroll. */
+.tab-strip {
+  position: relative;
+}
+
+.tab-fade {
+  position: absolute;
+  /* The strip's own bottom rule stays whole under the fade. */
+  top: 0;
+  bottom: 1px;
+  width: 34px;
+  pointer-events: none;
+}
+
+.tab-fade-left {
+  left: 0;
+  background: linear-gradient(to right, var(--code-bg) 12%, transparent);
+}
+
+.tab-fade-right {
+  right: 0;
+  background: linear-gradient(to left, var(--code-bg) 12%, transparent);
 }
 
 .tab {
@@ -890,7 +914,13 @@ section[id],
 
 .term-output {
   position: relative;
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  /* The block is as tall as the panels beside the terminal, and a tab's lines fill a third of
+     it: they sit in the middle of that height, so the slack reads as the block's own margins.
+     On a phone the block is as tall as its lines, so nothing moves. */
+  justify-content: center;
   min-height: 150px;
   padding: 18px 18px 20px;
   font-family: var(--mono);
@@ -1135,6 +1165,8 @@ section[id],
   color: var(--fg);
 }
 
+/* The clients one room is open to, as chips. A client the project has not written wears the
+   dashes the grid's plan wears, and the last chip is the open list rather than a client. */
 .clients {
   display: flex;
   flex-wrap: wrap;
@@ -1147,6 +1179,11 @@ section[id],
   border-radius: 6px;
   color: var(--fg);
   font-size: 12px;
+}
+
+.client-planned {
+  border-style: dashed;
+  color: var(--color-overlay2);
 }
 
 .client-more {
@@ -1334,9 +1371,9 @@ section[id],
 
 .repos {
   display: grid;
-  /* Six cells and a track minimum that divides them: three columns at the column's own
-     width, two below it, one on a phone, so every row is full rather than trailing a
-     pair of cards and a gap. */
+  /* A track minimum of 320px gives three columns at the section's own width and one on a
+     phone, so the six cards the page carries fill two rows exactly. The list is open, and no
+     track width keeps a growing count even: the strip under the grid is what closes it. */
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: 10px;
   margin: 56px 0 0;
@@ -1371,7 +1408,9 @@ section[id],
     background 0.15s;
 }
 
-.prose-body .repo:hover {
+/* The hover state is the link's: the grid carries one row that is a plan and not a link, and a
+   card that lightens under the pointer offers something to follow. */
+.prose-body a.repo:hover {
   border-color: var(--color-surface2);
   background: var(--bg);
   color: var(--fg);
@@ -1397,7 +1436,8 @@ section[id],
 
 .repo-desc {
   /* Read on three grounds — the card's fill, the page colour the card lightens to on hover, and
-     the planned card on the page — so it wears the tone that clears 4.5:1 on all three. */
+     the page's own colour, which is where a row drawn without a card of its own is read — so it
+     wears the tone that clears 4.5:1 on all three. */
   color: var(--color-overlay2);
   font-size: 12px;
   /* One line, like the name above it: a description that wraps makes its own card taller
@@ -1413,19 +1453,39 @@ section[id],
   white-space: nowrap;
 }
 
-.repo-more {
+/* The mark a linked row wears at rest, in the tone the row's leading icon wears. The row that
+   is a plan carries none: it is not a link, and nothing on it should say otherwise. */
+.repo-go {
+  color: var(--color-overlay2);
+}
+
+/* The grid's open end, under it and spanning it. It is not a cell: a full-width band cannot be
+   stranded by a count, which a seventh card in the grid can, and it reads as the list
+   continuing rather than as one more repository. */
+.repos-more {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  margin-top: 10px;
   padding: 14px 16px;
   border: 1px dashed var(--color-surface1);
   border-radius: 10px;
-  color: var(--color-overlay1);
+  font-size: 13px;
 }
 
-.repo-more-name {
+.repos-more-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--color-overlay2);
+}
+
+.repos-more-lead {
   color: var(--color-subtext1);
-  font-size: 13px;
+}
+
+.repos-more-note {
+  color: var(--color-overlay2);
 }
 
 /* The footer: the terms, the page's own promise and the address to write to. */

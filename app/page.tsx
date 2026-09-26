@@ -5,7 +5,6 @@ import {
   ArrowUpRight,
   BookOpenText,
   Check,
-  Code,
   Eye,
   Globe,
   HardDrive,
@@ -13,7 +12,6 @@ import {
   Play,
   Plus,
   SquareTerminal,
-  Terminal,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +27,7 @@ import {
   TreeFigure,
 } from "@/components/room-visuals";
 import { COMMAND, DEMO } from "@/lib/selvage";
+import { CLIENTS, repositoryUrl } from "@/lib/clients";
 
 const DEMO_ORIGIN = `https://${DEMO}`;
 
@@ -47,7 +46,7 @@ type RoomCard = {
 const roomCards: RoomCard[] = [
   {
     lead: "Anyone with the link is in",
-    body: "Hold the link and you are in, with no approval step. Treat an invite the way you would treat a password.",
+    body: "There is no approval step and no account to create. Treat an invite the way you would treat a password.",
     figure: (
       <div className="fig fig-center">
         <InviteChip />
@@ -56,12 +55,12 @@ const roomCards: RoomCard[] = [
   },
   {
     lead: "Everyone's caret, in one file",
-    body: "Edits and cursors stay in sync for everyone in the room. A caret stays put while the text around it changes.",
+    body: "You see where each person is typing, and their caret and selection travel with their edits.",
     figure: <CaretLines />,
   },
   {
     lead: "Guests only see the folder you shared",
-    body: "Nothing outside that folder is visible. The room never adds, renames or removes a file in your working copy.",
+    body: "The room never adds, renames or removes a file in your working copy.",
     figure: (
       <div className="fig">
         <TreeFigure />
@@ -69,8 +68,8 @@ const roomCards: RoomCard[] = [
     ),
   },
   {
-    lead: "Any client, one protocol",
-    body: "Every client talks to the server through the same spec, so VS Code, Neovim and the browser can share a room.",
+    lead: "Clients share one protocol",
+    body: "The session layer is written down rather than glued into each editor, so any client that speaks it can share the room.",
     figure: (
       <div className="fig">
         <ClientChips />
@@ -83,7 +82,7 @@ const steps = [
   {
     n: "01",
     title: "Host a folder",
-    body: "Start the server, open a folder in VS Code or Neovim and host a session.",
+    body: "Start the server, open a folder in your editor and host a room.",
   },
   {
     n: "02",
@@ -93,12 +92,12 @@ const steps = [
   {
     n: "03",
     title: "Type in the same file",
-    body: "Files load when someone opens them, so the whole project never goes over the wire.",
+    body: "Type in the same file and your edits arrive in everyone's copy.",
   },
   {
     n: "04",
     title: "Close the window",
-    body: "The room ends after a short countdown. A dropped connection doesn't end it.",
+    body: "Closing the host's window ends the room after a short countdown. A dropped connection can rejoin before it runs out.",
   },
 ];
 
@@ -113,50 +112,44 @@ const comparison: Comparison[] = [
   { label: "Session layer", value: "selvage", here: true },
 ];
 
-type Repo = {
+/** A row of the repository grid. Two rows are the project's own repositories and carry no
+    client; the rest are one per client, drawn from the one list the chips and the terminal
+    read too. */
+type GridRow = {
   name: string;
   desc: string;
   Icon: LucideIcon;
-  tag: string;
-  pill: string;
+  /** The word beside the row, and the status it states. A plan wears the plan's word and is
+      not linked: there is no repository at the other end of its row. */
+  tag: "source of truth" | "available" | "planned";
+  /** The client this row draws, where it draws one. The chips and the install routes carry the
+      same key, which is what holds the three surfaces to one list. */
+  client?: string;
 };
 
-const repos: Repo[] = [
+/** The word each status is drawn as, in the palette's colour for it. A plan wears the hosted
+    tier's words and yellow, the page's one way of saying something does not exist yet. */
+const GRID_TAG: Record<GridRow["tag"], { word: string; tone: string }> = {
+  "source of truth": { word: "source of truth", tone: "bg-mauve/12 text-mauve" },
+  available: { word: "available", tone: "bg-green/10 text-green" },
+  planned: { word: "Not available yet", tone: "bg-yellow/10 text-yellow" },
+};
+
+const gridRows: GridRow[] = [
   {
     name: "specification",
     desc: "Prose, schema, vectors",
     Icon: BookOpenText,
     tag: "source of truth",
-    pill: "bg-mauve/12 text-mauve",
   },
-  {
-    name: "reference_server",
-    desc: "selvaged",
-    Icon: HardDrive,
-    tag: "available",
-    pill: "bg-green/10 text-green",
-  },
-  {
-    name: "vscode_client",
-    desc: "VS Code extension",
-    Icon: Code,
-    tag: "published",
-    pill: "bg-green/10 text-green",
-  },
-  {
-    name: "nvim_client",
-    desc: "Neovim plugin",
-    Icon: Terminal,
-    tag: "available",
-    pill: "bg-green/10 text-green",
-  },
-  {
-    name: "web_client",
-    desc: "The browser page",
-    Icon: Globe,
-    tag: "available",
-    pill: "bg-green/10 text-green",
-  },
+  { name: "reference_server", desc: "selvaged", Icon: HardDrive, tag: "available" },
+  ...CLIENTS.map((client) => ({
+    name: client.repository,
+    desc: client.description,
+    Icon: client.Icon,
+    tag: client.status,
+    client: client.id,
+  })),
 ];
 
 function Eyebrow({ children }: { children: ReactNode }) {
@@ -177,7 +170,7 @@ export default function Home() {
                     sentence boundary reads as `run.on` to it. */}
                 <h1 className="hero-title">
                   Edit the same file together,{" "}
-                  <span className="text-mauve">on a server you run.</span>
+                  <span className="hero-accent text-mauve">on a server you run.</span>
                 </h1>
                 <p className="hero-lede">
                   Your editor, their editor or a browser tab, all in the same file.
@@ -222,13 +215,13 @@ export default function Home() {
           <section id="try" className="band">
             <div className="shell">
               <div className="head-block">
-                <Eyebrow>Try &rarr; Run &rarr; Rent</Eyebrow>
+                <Eyebrow>Try &rarr; Run</Eyebrow>
                 <h2 className="display">
                   Try it in the browser, then run your own.
                 </h2>
                 <p className="lede">
-                  Every room runs on a server. Use the demo to try it, then run your
-                  own.
+                  Every room runs on a server. The demo is one; the Run card starts the
+                  same server on a machine you control.
                 </p>
               </div>
               <div className="try-grid">
@@ -243,8 +236,8 @@ export default function Home() {
                     </Badge>
                   </div>
                   <p className="try-body">
-                    Open it in your browser or point your editor at it. Guests join
-                    from the invite link with nothing installed.
+                    Open the demo in your browser, or point your editor at it.
+                    Guests join from the invite link.
                   </p>
                   <div className="try-actions">
                     <a className="demo-link" href={DEMO_ORIGIN}>
@@ -254,11 +247,6 @@ export default function Home() {
                     </a>
                     <DemoEndpoint />
                   </div>
-                  <p className="try-foot">
-                    The demo is non-commercial and meant for personal use and
-                    evaluation (<a href={`${DEMO_ORIGIN}/terms`}>terms</a>); those
-                    terms cover that one box, not the software.
-                  </p>
                 </div>
 
                 <div className="try-card">
@@ -274,14 +262,12 @@ export default function Home() {
                   <p className="try-body">
                     One Docker command. Rooms live in memory, so a restart ends them.
                   </p>
-                  <p className="command">
-                    <span className="command-prompt">$ </span>
-                    {COMMAND}
-                  </p>
-                  <p className="try-foot">
-                    The image and the demo both speak <code>selvage/2</code>, the one
-                    wire version this protocol has, and it is the sealed one.
-                  </p>
+                  <div className="command">
+                    <p className="command-line">
+                      <span className="command-prompt">$ </span>
+                      {COMMAND}
+                    </p>
+                  </div>
                   <a className="try-link" href="#run">
                     Set up the server and your editor
                     <ArrowDown className="icon-14" aria-hidden="true" />
@@ -302,7 +288,6 @@ export default function Home() {
                   <p className="planned-row">
                     <HardDrive className="icon-17" aria-hidden="true" />
                     Hosted servers
-                    <span className="planned-note">planned</span>
                   </p>
                 </div>
               </div>
@@ -314,8 +299,8 @@ export default function Home() {
               <Eyebrow>Get it working</Eyebrow>
               <h2 className="display">One server, any client.</h2>
               <p className="lede">
-                An install is the client and not a server: a session pairs with the{" "}
-                <code>selvaged</code> you run.
+                The extension, the plugin and the browser page are clients, not a
+                server: each one connects to a selvaged you run.
               </p>
             </div>
             <div className="run-grid">
@@ -327,7 +312,8 @@ export default function Home() {
                     The server carries bytes it cannot read
                   </p>
                   <p className="panel-body">
-                    These travel sealed under keys in the part of the invite link a
+                    Documents, cursors, the file listing and the roles the host signs
+                    travel sealed, under keys the invite link carries in the part a
                     browser never sends to a server.
                   </p>
                   <ul className="chips chips-green">
@@ -348,10 +334,8 @@ export default function Home() {
                     <li>sizes and timing of what moves</li>
                   </ul>
                   <p className="panel-body">
-                    It still sees that a room exists, who is in it, their names, and
-                    the sizes and timing of what moves. It can drop, delay or end a
-                    room. The host is a peer&apos;s signed claim: the server cannot
-                    seat a host, prove one, or take the role.
+                    It can drop, delay or end a room. The host is a peer&apos;s signed
+                    claim: the server cannot seat a host, prove one, or take the role.
                   </p>
                 </Card>
               </div>
@@ -379,7 +363,7 @@ export default function Home() {
           <section id="how-it-works" className="shell">
             <div className="head-block">
               <Eyebrow>How it works</Eyebrow>
-              <h2 className="display">Share a link, come edit my code with me.</h2>
+              <h2 className="display">Share a link and edit the same file together.</h2>
             </div>
             <ol className="steps">
               {steps.map((step) => (
@@ -399,16 +383,16 @@ export default function Home() {
                 <h2 className="display">The session layer is written down.</h2>
                 <p className="spec-line">
                   Which rooms exist, who is in one, which documents are open, where the
-                  carets are: every collaborative tool decides those for itself, so
-                  none of the tools can talk to each other.
+                  carets are: every collaborative tool decides those for itself, so a
+                  tool from one cannot join a room from another.
                 </p>
                 <p className="spec-line">
                   Selvage writes that layer down: prose, a canonical byte form for a
-                  frame, JSON Schema, and 24 conformance vectors (33760 frame checks
-                  and 8387 assertions) replayed byte for byte against a real server.
-                  The numbers are constants in <code>schema/validate.py</code>. It is
-                  written to be implemented on its own, without reading the
-                  server&apos;s code. The specification is a draft.
+                  frame, JSON Schema, and a corpus of conformance vectors, replayed byte
+                  for byte against a real server. The specification&apos;s own validator,{" "}
+                  <code>specification/schema/validate.py</code>, prints the corpus&apos;s
+                  counts, so a reader can check the current figures. It is written to be
+                  implemented on its own, without reading the server&apos;s code.
                 </p>
                 <a
                   className="spec-link"
@@ -431,36 +415,57 @@ export default function Home() {
               </div>
             </div>
             <ul className="repos">
-              {repos.map((repo) => (
-                <li key={repo.name}>
-                  <a
-                    className="repo"
-                    href={`https://github.com/selvage-protocol/${repo.name}`}
-                  >
-                    <repo.Icon className="repo-icon" aria-hidden="true" />
+              {gridRows.map((row) => {
+                const body = (
+                  <>
+                    <row.Icon className="repo-icon" aria-hidden="true" />
                     <span className="repo-text">
-                      <span className="repo-name">{repo.name}</span>
-                      <span className="repo-desc">{repo.desc}</span>
+                      <span className="repo-name">{row.name}</span>
+                      <span className="repo-desc">{row.desc}</span>
                     </span>
-                    <Badge variant="pill" className={`repo-pill text-[11px] ${repo.pill}`}>
-                      {repo.tag}
+                    <Badge
+                      variant="pill"
+                      className={`repo-pill text-[11px] ${GRID_TAG[row.tag].tone}`}
+                    >
+                      {GRID_TAG[row.tag].word}
                     </Badge>
-                  </a>
-                </li>
-              ))}
-              <li className="repo-more">
-                <Plus className="repo-icon" aria-hidden="true" />
-                <span className="repo-text">
-                  <span className="repo-more-name">More clients</span>
-                  <span className="repo-desc">Planned</span>
-                </span>
-              </li>
+                  </>
+                );
+                return (
+                  <li key={row.name}>
+                    {row.tag === "planned" ? (
+                      <div className="repo" data-client={row.client}>
+                        {body}
+                      </div>
+                    ) : (
+                      <a
+                        className="repo"
+                        data-client={row.client}
+                        href={repositoryUrl(row.name)}
+                      >
+                        {body}
+                        {/* Linked rows only: the row that is a plan has nowhere to go, so it
+                            carries no mark either. */}
+                        <ArrowUpRight className="repo-go icon-14" aria-hidden="true" />
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
+            {/* The grid's own last row, and a full-width one: the list it stands under is
+                open, and a strip that spans the grid says so without becoming a cell that a
+                row count can strand. */}
+            <div className="repos-more">
+              <Plus className="repos-more-icon" aria-hidden="true" />
+              <span className="repos-more-lead">More clients</span>
+              <span className="repos-more-note">Planned</span>
+            </div>
           </section>
         </main>
 
         <footer className="band">
-          <div className="shell shell-end foot-grid">
+          <div className="shell foot-grid">
             <div className="foot-col">
               <h3 className="foot-h">Licences</h3>
               <dl className="licences">
@@ -469,18 +474,12 @@ export default function Home() {
                   <dd>CC-BY-4.0</dd>
                 </div>
                 <div className="licence-row">
-                  <dt>Spec tooling, clients, server</dt>
-                  <dd>MIT or Apache-2.0</dd>
-                </div>
-                <div className="licence-row">
-                  <dt>
-                    Server binary <code>selvaged</code>
-                  </dt>
-                  <dd>FSL-1.1-MIT</dd>
+                  <dt>Spec tooling and clients</dt>
+                  <dd>MIT OR Apache-2.0</dd>
                 </div>
               </dl>
               <p className="foot-note">
-                <code>selvaged</code> is FSL-1.1-MIT: source-available, not
+                selvaged is FSL-1.1-MIT: source-available, not
                 OSI-approved, free for any non-competing purpose, and it converts to
                 MIT two years after each release.
               </p>
