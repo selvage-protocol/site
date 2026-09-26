@@ -42,19 +42,20 @@ browser proof the runner cannot run, and nothing else.
 | `components/ui/badge.tsx` | the pill primitive: a status beside a card's own name, and a mono caps chip |
 | `components/ui/card.tsx` | the card primitive: the two panels under the terminal |
 | `components/site-header.tsx` | the bar: the mark, the four in-page routes, the GitHub link and the demo CTA, with the conceal-on-scroll effect and the second scrollable row a phone gets |
-| `components/room-visuals.tsx` | the four smaller figures the cards carry — the invite chip, the sample with three carets in it, the guest's tree, the clients — as inline markup and the page's own CSS, with no image, no dependency and nothing fetched (see "The product figures") |
+| `components/room-visuals.tsx` | the four smaller figures the cards carry — the invite chip, the sample with three carets in it, the guest's tree, the clients — as inline markup and the page's own CSS, with no image, no dependency and nothing fetched. The clients figure is drawn from the one client list, capped so the band keeps its shape (see "The product figures") |
 | `components/room-window.tsx` | the hero's room window, and the only place the page types: the line under the carets is written a character at a time, held, and started over, and the invite button copies the link it draws. `animatePlayground` types the line or writes it whole, and a reader who asked for less motion gets the whole line and a still caret |
-| `components/setup-tabs.tsx` | the terminal in *Get it working*: the four install routes as an ARIA tab strip with arrow-key movement, one panel each (the inactive ones `hidden`, so the page still carries all four routes without scripting), the note beside each route and the command it copies |
+| `components/setup-tabs.tsx` | the terminal in *Get it working*: one install route per client that has one, as an ARIA tab strip with arrow-key movement, one panel each (the inactive ones `hidden`, so the page still carries every route without scripting), the note beside each route and the command it copies. The routes and the tab labels are the client list's own data |
 | `components/demo-endpoint.tsx` | the demo's host, with the one control the card needs: the address an editor is pointed at, on the clipboard |
 | `lib/use-copy.ts` | the copy state one or more controls share, and the clipboard write with the textarea fallback an origin without the async clipboard needs |
-| `lib/selvage.ts` | the published image's reference and the one command built from it, so the two places the page hands a reader a command cannot drift, and the demo's host |
+| `lib/clients.ts` | the one list of clients: each one's key, the repository it lives in, the name and description the grid's row shows, its icon, whether it is available or a plan, the label it wears as a chip and as its install route's tab, and the route itself where it has one. The grid, the chips figure and the terminal all derive from it, so a client is one entry and appears on every surface at once — and each surface carries the client's key, which is what lets `scripts/check-claims.py` read the three against each other without a list of names of its own |
+| `lib/selvage.ts` | the published image's reference and the one command built from it, so the `docker run` and the tag inside it cannot drift apart, and the demo's host |
 | `lib/utils.ts` | the one shared helper (`cn`: `clsx` + `tailwind-merge`) |
 | `package.json` / `package-lock.json` | the only dependencies: `next`, `react`, `react-dom`, `tailwindcss` (+ its PostCSS plugin), `clsx`, `tailwind-merge`, `class-variance-authority` and `lucide-react` for icons, `typescript` and `@types/*`. No Radix, no component library, nothing else without a written reason |
 | `.nvmrc` | the pinned Node version for local work and CI (`nvm use` reads it); `package.json` `engines` carries the major (`24.x`), because Vercel only deploys major versions |
 | `.gitignore` | what the repository does not carry: the build output, `node_modules`, `.tmp` (the gate's artefacts, its `TMPDIR` included), the generated `next-env.d.ts`, TypeScript's build info, Python's caches, and the sibling worktrees a parallel piece of work builds in |
 | `LICENSE-MIT` / `LICENSE-APACHE` | the licence pair the repository is under, `MIT OR Apache-2.0` (see "Licence") |
 | `README.md` | this file: what the page is and says, what it must never say, what the gate checks, and the accessibility floor it holds itself to |
-| `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason, and the facts it asserts in the positive — the image tag, the demo instance, the wire version each of those two artefacts speaks, the disclosure a reader is owed of what the relay still sees, the file the page's corpus counts are pinned in, the identity the extension is published under with the two registries it is on, the hosted tier the page offers and does not run yet, and the word beside each repository in the grid |
+| `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason, and the facts it asserts in the positive — the image tag, the demo instance, the wire version each of those two artefacts speaks, the disclosure a reader is owed of what the relay still sees, the file the page's corpus counts are pinned in, the identity the extension is published under with the two registries it is on, the hosted tier the page offers and does not run yet, and the agreement between the grid, the chips figure and the terminal's install routes |
 | `scripts/check-button-props.tsx` | the button check: renders the button and anchor variants and asserts their props reach the DOM (run by `npm run check:button` inside the gate) |
 | `scripts/tsconfig.button-check.json` | the button check's own project, which extends the site's: the same strict settings with `noEmit` off, CommonJS as the module, and the output in `.tmp/button-check`, so the component can be rendered on its own and the check can import what it transpiled |
 | `scripts/check-contrast.py` | the contrast check: parses the theme tokens out of `style.css` — including the sample's `selvage-mocha` token colours, the ground the code figure draws them on, and the alpha a peer's selection fill is drawn at — reads the colours the page's own rules paint where a pair is not a token (the window's line numbers, the not-yet-available card, the repository descriptions) out of the same file, reads the token a selection fill sits under out of `components/room-visuals.tsx` and the fills and labels of the button variants out of `components/ui/button.tsx`, reads the nav mark's own pixels out of `public/mark-header.png` (a logotype, exempt from the non-text floor and held only to being visible on its ground), and asserts the rendered pairs sit at or above their floors, with measured ratios (run by `scripts/ci-local.sh contrast` inside the gate) |
@@ -167,10 +168,10 @@ the reader can name.
 |---|---|
 | Hero | the promise, two CTAs, four one-word facts, and the room window beside them: the host's folder down the side, the file the room has open, the line one of them is typing, and the invite link that put them there. The CTAs come **above** the facts because of the fold: four facts, a CTA row and the version line of the order the page carried put the primary button at y≈823 on a 1280×633 screen and nothing but the header's small link in the first one, so a reader met evidence and no action. The CTAs lead with the demo — the fastest thing a stranger can do, with nothing installed — then running it in the editor, which is where the commands are; the header's own CTA points at the demo for the same reason. The specification is not a third button: it is the link that closes *Why a spec*, and nothing on the page presents a link as a disabled-looking control. The four facts are one row of one-word chips — *Sealed*, *Specified*, *Path-scoped*, *No account* — and a check mark each. They were four sentences, and three of those arguments are made below in any case: the relay's disclosure is the panel beside the terminal in *Get it working*, the specification has its own section, and the granted paths are the third card of *See it working*. *No account* is the one the page carries nowhere else, and that is the reason the row is kept rather than deleted: the fact goes with it. The relay's chip leads because what the relay reads and does not read is the claim a reader has to be able to take before the others are worth anything, and it is read against the panel below, where the detail lives — the gate reads the panel, not the chip, for exactly that reason |
 | Try → Run → Rent | the three ways in, in the order they cost. *01 Try* is the one card the page draws a live border around: the demo, and the host a reader pastes into a client, with those two controls as the card's last element so they sit on its bottom edge. *02 Run* is the published image as one `docker run`, and a link down to the routes. *03 Rent* is the tier the project does not run yet: the card offers it, the pill on it says it is not available, and the row under it is a plan rather than a control, so nothing on the page offers a hosted room and nothing presents a row as a disabled-looking button |
-| Get it working | one server, any client: the four install routes in one tabbed terminal — Server, VS Code, Neovim, Browser — each with the command it copies, the note a reader needs before running it, and the repository it comes from. The strip is the ARIA tabs pattern (the arrow keys move between the four, and every panel is in the document, so the page carries all four routes without scripting), and the routes carry the facts a reader installs by: the published image's command and `ws://127.0.0.1:8080/session`, with the page on the same port; the extension's published identity (`selvage-protocol.selvage`) and the two registries it is on; the Neovim plugin-manager line and `:SelvageHost`; and the demo's address an editor hosts on. Beside the terminal the two panels say what the wire seals and what the relay still sees and still does, and that the host is a peer's signed claim rather than a server fact. The manual a reader wants next — the corpus check, the vector replay, each client's full command list — is the specification link and each repository's README, not a fold on this page; the per-client settings and the hosting routes were cut for the same reason |
+| Get it working | one server, any client: the install routes in one tabbed terminal — VS Code, Neovim, Browser — each with the command it copies, the note a reader needs before running it, and the repository it comes from. The strip is the ARIA tabs pattern (the arrow keys move between them, and every panel is in the document, so the page carries every route without scripting), and the routes are the client list's own install data: a client the project has not written has no route and so no tab. The routes carry the facts a reader installs by: the extension's published identity (`selvage-protocol.selvage`) and the two registries it is on; the Neovim plugin-manager line and `:SelvageHost`; and the demo's address an editor hosts on. The server's own two facts — the published image's `docker run` and `ws://127.0.0.1:8080/session`, with the page served on the same port — sit under that command in the *Run* card of *Try → Run → Rent*, where a reader who has just started the server meets them. Beside the terminal the two panels say what the wire seals and what the relay still sees and still does, and that the host is a peer's signed claim rather than a server fact. The manual a reader wants next — the corpus check, the vector replay, each client's full command list — is the specification link and each repository's README, not a fold on this page; the per-client settings and the hosting routes were cut for the same reason |
 | See it working | four cards, each with a drawing of the thing it claims: anyone with the link is in, the carets of three peers in one file, the paths a guest sees, multiple clients on one engine |
 | How it works | the four moves in order (host a folder, send the invite, type in the same file, close the window), under the design record's one-sentence workflow. They are the sequence rather than the argument: the grant, the sealed material and the host's signed claim are all made in the sections above, where a reader meets the thing they are about. The fourth move keeps the two facts a reader closing a room needs: the room ends after a short countdown, and a dropped connection does not end it |
-| Why a spec | the wedge: language tooling has the Language Server Protocol and debugging the Debug Adapter Protocol, document sync has `y-protocols`, and the session layer is unspecified, so every collaborative tool decides those for itself. The wire corpus's counts appear here once, as the evidence they are, with the file that pins them, and the section then hands the reader the specification itself, under a comparison card that sets the session layer beside the three layers that already have one. The repository grid below it is the page's own account of what exists: a word and a link for each repository the project has, and a row for the client that is planned and unwritten, which carries the word and no link because there is nothing to open. The peer corpus is no longer counted on the page: its counts backed the signed-host sentence, which the panels in *Get it working* still make, and one sentence of evidence under the specification is what the page's word budget buys. The heading says what the page does rather than denying what the hero's chip states: it used to read *The session layer has no specification*, which contradicted that fact for anyone skimming the two |
+| Why a spec | the wedge: language tooling has the Language Server Protocol and debugging the Debug Adapter Protocol, document sync has `y-protocols`, and the session layer is unspecified, so every collaborative tool decides those for itself. The wire corpus's counts appear here once, as the evidence they are, with the file that pins them, and the section then hands the reader the specification itself, under a comparison card that sets the session layer beside the three layers that already have one. The repository grid below it is the page's own account of what exists: a word and a link for each repository the project has, and a row for the client that is planned and unwritten, which carries the word and no link because there is nothing to open. Its client rows are the client list's own, so a client added to the page is a row here without a second edit, and the grid closes on a dashed full-width strip rather than another card: the list is open, and a strip that spans the grid cannot be stranded on a short last row the way a seventh cell can. The peer corpus is no longer counted on the page: its counts backed the signed-host sentence, which the panels in *Get it working* still make, and one sentence of evidence under the specification is what the page's word budget buys. The heading says what the page does rather than denying what the hero's chip states: it used to read *The session layer has no specification*, which contradicted that fact for anyone skimming the two |
 | Footer | the licences, the page's own privacy line and the contact address, nothing more |
 
 The page used to end on a two-column ledger of what is built and what is not. On a product page
@@ -191,8 +192,8 @@ and the licences included, were the clearest signal that the page was a document
 product, and the numbers the page carries now belong to things rather than to sections: the three
 cards of *Try → Run → Rent* and the four moves of *How it works*. The headings step up to a display
 size instead (the `h1` `clamp(36px, 4.6vw, 54px)`, the `h2` `clamp(26px, 6vw, 32px)`), the standing
-lede-and-checklist hero is gone, and the install guide that was a third of the page is four routes
-in one terminal.
+lede-and-checklist hero is gone, and the install guide that was a third of the page is the clients'
+routes in one terminal.
 
 The prose still descends from the static page's, and every sentence is a paraphrase of an
 already-audited true sentence or framed as direction. Two sentences differ on purpose: the static
@@ -635,27 +636,35 @@ fact passes and a card that loses its status fails. The phrase list's `now avail
 only catch the other direction: a page that reads as an offer with nothing saying it cannot be
 taken is the page this is for. It asks no network.
 
-The repository grid is required the same way, and it is the page's own account of what exists. Each
-row's word is pinned where the row is: the specification is the source of truth, and the reference
-server and the three clients the project publishes itself are available. A row's name, description,
-pill and destination are one claim, read together from the row's own anchor rather than from the
-page's text, so a row that links a different repository fails
-even though the page still carries every name and every word. The extension's row is the one whose
-repository a reader is also handed an install for, and the install is where the claim about a
+The repository grid is required the same way, and it is the page's own account of what exists. Its
+rows are read from the page rather than listed in the check, because the clients are the page's own
+list: a hand-maintained list of names here would be the drift the rule exists to catch, and a client
+added to the page would be one the check never looked at. What is pinned by name is the handful of
+facts that have to stay true of named rows: the specification is the source of truth, the extension's
+row is the one a reader is also handed an install for, and `jetbrains_client` is the plan. A row's
+name, description, word and destination are one claim, read together from the row's own list item
+rather than from the page's text, so a row that links a different repository fails even though the
+page still carries every name and every word. A row the page links has to wear one of the words a live
+row may wear, and a row it does not link has to be a plan and say so, so a live repository cannot give
+up its link by being called a plan without the word moving with it and the absence showing in the
+diff. Every repository the page links has to be one the grid links, so no row and no source link
+beside the terminal points at a repository the project does not have. The extension's row is the one
+whose repository a reader is also handed an install for, and the install is where the claim about a
 registry rather than a repository lives: the VS Code route in the terminal has to carry
 `selvage-protocol.selvage` and both registries it is published to, read from that route's own panel,
 so the row that says the client is available and the install a reader follows cannot be read apart —
 a route that lost the identity or a registry fails even though the page names them somewhere else.
-Every repository the grid names has to be linked, so a word about a repository hands a reader
-something to check, and every repository the page links has to be one the grid names, so no row and
-no source link beside the terminal points at a repository the project does not have. The row that is
-a plan runs the first of those the other way: it carries the word `planned`, and it must *not* link,
-and its own list item is read for its name, its description and its word because there is no
-destination to read them against. `jetbrains_client` is that row:
+
+The three surfaces that draw a client — the grid's rows, the chips figure in *Any client, one
+protocol* and the terminal's install routes — each carry the client's own key, and the check reads
+them against each other: a client a chip names has to be a row in the grid, an install route's key
+has to be a client the grid draws, and the chips have to be the leading clients in the grid's own
+order, so what the figure's cap leaves out is the tail of the list rather than a scatter. A client
+added to the page's own list moves all three at once; a surface written out by hand instead is the
+half-added client this catches. `jetbrains_client` is the plan:
 `github.com/selvage-protocol/jetbrains_client` answers `404` and the organisation carries no such
-public repository, so the page shows it as a plan rather than as something a reader can open. Both
-lists live in the check, so a repository that is there cannot give up its link by being called a
-plan without that move showing in the diff. It asks no network either.
+public repository, so the page shows it as a plan rather than as something a reader can open. It asks
+no network either.
 
 | Must not appear | Why not |
 |---|---|
@@ -770,12 +779,13 @@ produces, so a page offering the extension from "the extension gallery" or from 
 marketplace fails rather than passing on the two names it also carries. It asks no network, and
 why is in the section above. The hosted tier the page offers and does not run yet is required the
 same way — the card, the pill on it, the sentence saying who would run it, and the row that is a
-plan rather than a control — and so is the repository grid, where each row's word is pinned beside
-the row, the extension's row against the VS Code install route that names the identity the release
-publishes under and both registries, every repository the grid names against a link to it, the row
-that is a plan against carrying none, and every
-repository the page links against the grid, so `jetbrains_client` cannot come back as a link to a
-repository that is not there. It then reads the page's image reference, holds it to
+plan rather than a control — and so is the repository grid, where every row joins its own word to its
+own link, the extension's row is read against the VS Code install route that names the identity the release
+publishes under and both registries, the row that is a plan is held to carrying no link, every
+repository the page links is one the grid links, so `jetbrains_client` cannot come back as a link to a
+repository that is not there, and the grid's client rows, the chips figure and the terminal's install
+routes have to name the same clients, so a client written onto one surface and not the others fails
+the gate. It then reads the page's image reference, holds it to
 the one tag `scripts/check-claims.py` carries, and asks `ghcr.io` for that tag; reads the page's
 demo reference, holds it to the one host the check allows, and asks that instance what it reports,
 whether the editor address's `/session` path is answered by the server rather than by the proxy in
@@ -869,12 +879,15 @@ composites, and are re-measured whenever the fills around them move: inline code
 fill (`--color-surface0`) 8.69:1; the small text on the page's own ground — the try cards' numbers,
 their footnote, the invite strip's label and the host the copy control hands over — 7.37:1; the card
 body text on the card fill (`#181825`) 7.89:1; and the client chips 12.97:1 on the figure band they
-are drawn on. The status pills the cards carry are the same shape — their own colour over their own
+are drawn on, with the planned client's chip at 6.64:1 and the open-list chip at 5.07:1 on the same
+band. The status pills the cards carry are the same shape — their own colour over their own
 wash, on the card each one sits in — and the lowest of them is 6.38:1 (the specification's mauve on a
 hovered repository card). The two overlay tones are used only where they clear the floor of the ground they are
 painted on: `--color-overlay1` carries the copy control's own label on the card fill (4.75:1) and
-the planned-clients chip on the figure band (5.07:1), and `--color-overlay2` carries the terminal's
-comments on the terminal's fill (6.64:1). The washes the page paints its own marks over are measured
+the open-list chip on the figure band (5.07:1), and `--color-overlay2` carries the terminal's
+comments on the terminal's fill, the Run card's comment under the command on that command's own fill,
+and the planned client's chip on the figure band (all 6.64:1), as well as the repository grid's
+open-list note on the page (5.81:1), where `--color-subtext1` carries that strip's lead (9.26:1). The washes the page paints its own marks over are measured
 the same way: the panels' chips sit at 9.50:1 (green) and 8.10:1 (peach) on their own washes, the
 highlighted row of the comparison card at 10.70:1, and the open file's row in the window at
 10.42:1. The section hairlines sit at 1.30:1 against the page on purpose: they are decorative

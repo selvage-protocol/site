@@ -1888,12 +1888,16 @@ HOSTED_TIER = (
     ),
 )
 
-# The repository grid's rows: the repository each one names, the description it shows, the word
-# the page puts beside it, and the pattern that word is matched by. A row's name, description,
-# pill and destination are one claim about one repository, so all four are asserted together:
-# the pattern alone is not enough, because a swap of two rows' links leaves every name and every
-# word still on the page.
-GRID_ROWS = (
+# The repository grid's rows are read from the page rather than listed here. The clients are
+# the page's own list (`lib/clients.ts`), and a second hand-maintained list of names in this file
+# would be the drift the grid's rule exists to catch: a client added to the page would be one
+# this check never looked at. What is pinned below is the handful of facts that have to stay
+# true of named rows whatever else the grid carries.
+#
+# A row's claim is its name, its description, its word and its destination together, read from
+# the row's own markup: the pattern alone is not enough, because a swap of two rows' links leaves
+# every name and every word still on the page.
+GRID_PINNED_ROWS = (
     (
         "specification",
         "Prose, schema, vectors",
@@ -1906,24 +1910,6 @@ GRID_ROWS = (
         "available",
         re.compile(r"\bvscode_client[^.]{0,32}available\b", re.IGNORECASE),
     ),
-    (
-        "reference_server",
-        "selvaged",
-        "available",
-        re.compile(r"\breference_server[^.]{0,32}available\b", re.IGNORECASE),
-    ),
-    (
-        "nvim_client",
-        "Neovim plugin",
-        "available",
-        re.compile(r"\bnvim_client[^.]{0,32}available\b", re.IGNORECASE),
-    ),
-    (
-        "web_client",
-        "The browser page",
-        "available",
-        re.compile(r"\bweb_client[^.]{0,32}available\b", re.IGNORECASE),
-    ),
 )
 
 # The row that is a plan rather than a repository a reader can open: a client nobody has written
@@ -1931,11 +1917,10 @@ GRID_ROWS = (
 # its description and that word are required the way a linked row's are, and read below without a
 # destination, which is the half a linked row has no analogue for.
 #
-# That half is why the row is named here rather than left to the page's own markup: a repository
-# the grid names that is not on this list has to be linked, so naming a live repository without
-# handing a reader a link to it means moving the repository into this list, and the move is the
-# diff. `jetbrains_client` is the row the project plans and has not written.
-GRID_PLANNED_ROWS = (
+# It is named here so the page cannot quietly drop it: a plan that is not drawn at all satisfies
+# every agreement rule below, and the one row the project writes down as planned is a fact about
+# what the project has not written. `jetbrains_client` is that row.
+GRID_PINNED_PLANS = (
     (
         "jetbrains_client",
         "JetBrains IDEs",
@@ -1946,18 +1931,33 @@ GRID_PLANNED_ROWS = (
     ),
 )
 
+# The words the grid's rows carry. A row the page links states a repository a reader can open;
+# a row it leaves unlinked is a plan and says so. The plan's word is the only one an unlinked row
+# may wear, and a linked row may not wear it, which is what keeps a plan from becoming a way to
+# name a live repository without linking it.
+GRID_LIVE_WORDS = ("available", "source of truth")
+GRID_PLAN_WORD = "planned"
+
+# The key a surface carries for the client it draws. `lib/clients.ts` gives a client one `id`,
+# and the grid's row, the chips and the install route each carry it, so the three can be read
+# against each other without a list of client names here.
+GRID_CLIENT = re.compile(r'\bdata-client="([\w-]+)"')
+
+# The chips figure in *Any client, one protocol*, and the install routes' panels. A route's key
+# is its panel's own id, which is the client's.
+CHIPS_FIGURE = re.compile(
+    r'<div\b[^>]*\bclass="[^"]*\bclients\b[^"]*"[^>]*>(.*?)</div>',
+    re.DOTALL | re.IGNORECASE,
+)
+
 # The URL shape of a repository link. The grid's own rows are the list of names the page may
 # carry, so a row's word and its destination cannot name two different repositories.
 GRID_LINK = re.compile(r"https?://github\.com/selvage-protocol/([\w.-]+)")
 
-# One anchor's opening tag through its own closer. A grid row is one `<a>`, so its name,
-# description and pill are the visible text inside that element and nowhere else.
-GRID_ANCHOR = re.compile(r"<a\b[^>]*>.*?</a>", re.DOTALL | re.IGNORECASE)
 GRID_HREF = re.compile(r'''href\s*=\s*"([^"]*)"''', re.IGNORECASE)
-# The grid's own list, and one row of it. A linked row is read from its anchor, because its
-# destination is half its claim; a row that is a plan has none, so its list item is read whole,
-# which is what keeps a sentence naming the repository from standing in for the row the page
-# draws.
+# The grid's own list, and one row of it. A row's whole claim is inside its list item, whatever
+# shape that item takes, which is what keeps a sentence naming the repository from standing in
+# for the row the page draws.
 GRID_LIST = re.compile(r"<ul\b[^>]*\brepos\b[^>]*>(.*?)</ul>", re.DOTALL | re.IGNORECASE)
 GRID_ITEM = re.compile(r"<li\b[^>]*>(.*?)</li>", re.DOTALL | re.IGNORECASE)
 
@@ -1968,39 +1968,57 @@ GRID_ITEM = re.compile(r"<li\b[^>]*>(.*?)</li>", re.DOTALL | re.IGNORECASE)
 INSTALL_PANEL_ID = re.compile(r'\bid="install-panel-([\w-]+)"')
 
 
-def grid_row_text(raw: str) -> list[tuple[str, str]]:
-    """Every anchor that points at a repository, as (repository name, the anchor's visible text).
+@dataclass(frozen=True)
+class GridRow:
+    """One row of the repository grid, as the row's own markup reads it."""
 
-    The repository comes from the `href` and the text from the anchor's own markup, so the two
-    can be compared. A grid whose links have been swapped still carries every name, description
-    and pill on the page; only the pairing shows the row that points a reader at the wrong code.
+    text: str
+    linked: bool
+    repository: str | None
+    client: str | None
+
+
+def grid_rows(raw: str) -> list[GridRow]:
+    """Every row of the grid, from the list's own items.
+
+    A row's repository comes from its `href` where it has one and its client from the key the
+    surface carries, and its claim from the item whole, so one row cannot be satisfied by
+    another row's words. A grid the page no longer draws answers with no rows, which fails where
+    a row is required rather than passing quietly.
     """
-    rows: list[tuple[str, str]] = []
-    for match in GRID_ANCHOR.finditer(raw):
-        anchor = match.group(0)
-        href = GRID_HREF.search(anchor)
-        if href is None:
-            continue
-        named = GRID_LINK.match(html.unescape(href.group(1)))
-        if named is None:
-            continue
-        rows.append((named.group(1), normalise(anchor)[0]))
+    rows: list[GridRow] = []
+    for grid in GRID_LIST.finditer(raw):
+        for item in GRID_ITEM.finditer(grid.group(1)):
+            body = item.group(0)
+            href = GRID_HREF.search(body)
+            repository = None
+            if href is not None:
+                named = GRID_LINK.match(html.unescape(href.group(1)))
+                if named is not None:
+                    repository = named.group(1)
+            client = GRID_CLIENT.search(body)
+            rows.append(
+                GridRow(
+                    text=normalise(body)[0],
+                    linked=href is not None,
+                    repository=repository,
+                    client=client.group(1) if client else None,
+                )
+            )
     return rows
 
 
-def grid_unlinked_items(raw: str) -> list[str]:
-    """The grid's rows that carry no link, as each row's own visible text.
+def chip_clients(raw: str) -> list[str]:
+    """The client each chip in the *Any client, one protocol* figure names, in order.
 
-    A row that is a plan is not an anchor, so its item is what carries its claim. A grid the page
-    no longer draws answers with no items, which fails where such a row is required rather than
-    passing quietly.
+    The figure is decoration drawn from the client list, so its chips are read from the figure's
+    own markup rather than from the page's text. A page that no longer draws the figure answers
+    with no clients, which fails where its chips are required rather than passing quietly.
     """
-    items: list[str] = []
-    for grid in GRID_LIST.finditer(raw):
-        for item in GRID_ITEM.finditer(grid.group(1)):
-            if GRID_HREF.search(item.group(0)) is None:
-                items.append(normalise(item.group(0))[0])
-    return items
+    clients: list[str] = []
+    for figure in CHIPS_FIGURE.finditer(raw):
+        clients.extend(match.group(1) for match in GRID_CLIENT.finditer(figure.group(1)))
+    return clients
 
 
 def install_panel_text(raw: str, panel: str) -> str | None:
@@ -2052,31 +2070,35 @@ def check_hosted_tier(pages: list[Scanned]) -> int:
 
 
 def check_repository_grid(pages: list[Scanned]) -> int:
-    """The repository grid: what each row links, what each row says of it, and what it does not.
+    """The repository grid, against its own rows and against the surfaces that draw a client.
 
     The grid is the page's own account of what exists. A row names a repository, describes it in
     a word or two, says one word about it and links it, and a reader who follows the row lands on
     the code the word is about. Five things hold that together, and all five are required rather
     than permitted, for the reason the disclosure is:
 
-    - every row carries the word the project uses for that repository: the specification is the
-      source of truth, and the reference server and the three clients the project publishes
-      itself are available;
-    - a row's name, description, pill and destination are one claim, and all four are read from
-      inside the row's own anchor, so a row that links a different repository fails even though
-      the page still carries every name and every word;
-    - every repository the grid names is linked, so a word about a repository hands the reader
-      something to check;
-    - a row the grid marks as a plan is *not* linked, and names, describes and words itself the
-      way a linked row does. A client nobody has written has nothing at the other end of a link,
-      so the row is read from its own list item rather than from an anchor;
-    - every repository the page links is one the grid names, so no row and no source link beside
-      the terminal points at a repository the project does not have.
+    - a row that links wears one of the words a live row may wear, and a row that does not link
+      is a plan and says so. A plan is a client nobody has written, so a reader who follows the
+      row reaches nothing, and a row that links nowhere hands the reader nothing to check;
+    - a row's repository, its own text and its destination are one claim, read from inside the
+      row, so a row that links a different repository fails even though the page still carries
+      every name and every word;
+    - every repository the page links is one a row of the grid links too, so no row and no source
+      link beside the terminal points at a repository the project does not have;
+    - the client each row draws, each chip in *Any client, one protocol* and each install route
+      in the terminal are read from the key the surface carries, and all three have to name the
+      same clients. A client added to the page's own list appears on every surface at once; a
+      surface written out by hand is the half-added client this catches;
+    - the chips are the leading clients in the grid's own order. The figure caps how many it
+      names and rolls the rest into its last chip, so what it may leave out is a suffix of the
+      list rather than a scatter, which is what stops a chip standing for a client the grid has
+      not got.
 
-    The last two are one rule read from both sides, and they are what keeps the plan from
-    becoming a way to name a live repository without linking it: the rows that are not plans are
-    the ones required to link, and they are a list in this file, so a repository that moves into
-    the plan list moves in the diff.
+    What is pinned by name is the handful of facts that have to stay true of named rows whatever
+    else the grid carries: the specification is the source of truth, the extension's row is the
+    one a reader is also handed an install for, and the plan is the one row that must not link.
+    Nothing else about the grid is a list in this file: the clients are the page's own list, and
+    a client added there is one this function reads rather than one it has to be told about.
 
     The extension's row is the one whose repository a reader is also handed an install for, and
     the install is where the identity the release publishes under and the two registries it
@@ -2093,8 +2115,8 @@ def check_repository_grid(pages: list[Scanned]) -> int:
     Returns 0 when all of it holds and 1 when it does not; it asks no network.
     """
     root = root_of_this_checkout()
-    grid_rows = GRID_ROWS + GRID_PLANNED_ROWS
-    facts = [(f"the {name} row", pattern) for name, _desc, _status, pattern in grid_rows]
+    pinned = GRID_PINNED_ROWS + GRID_PINNED_PLANS
+    facts = [(f"the {name} row", pattern) for name, _desc, _status, pattern in pinned]
     page, failures = first_page_stating(pages, facts)
     if page is None:
         for where, absent in failures:
@@ -2105,6 +2127,15 @@ def check_repository_grid(pages: list[Scanned]) -> int:
                 "it supports",
                 file=sys.stderr,
             )
+        return 1
+
+    rows = grid_rows(page.raw)
+    if not rows:
+        print(
+            "check-claims: the page carries no repository grid, so no row can be read; a grid "
+            "the check cannot see is not a grid that passed",
+            file=sys.stderr,
+        )
         return 1
 
     # The extension's row is the one row here whose repository a reader is handed an install for,
@@ -2121,7 +2152,9 @@ def check_repository_grid(pages: list[Scanned]) -> int:
     ]
     identity = install is not None and PUBLISHED_EXTENSION in install
     if install is None or not identity or missing:
-        status = next(status for name, _desc, status, _ in GRID_ROWS if name == "vscode_client")
+        status = next(
+            status for name, _desc, status, _ in GRID_PINNED_ROWS if name == "vscode_client"
+        )
         absent = (
             ["the install route itself"]
             if install is None
@@ -2136,77 +2169,130 @@ def check_repository_grid(pages: list[Scanned]) -> int:
         )
         return 1
 
-    linked = {
-        match.group(1)
-        for scanned in pages
-        for destination, _ in scanned.destinations
-        for match in [GRID_LINK.match(destination)]
-        if match
-    }
-    unlinked = [(name, status) for name, _desc, status, _ in GRID_ROWS if name not in linked]
-    if unlinked:
-        for name, status in unlinked:
-            print(
-                f"check-claims: the grid says {name} is {status} and links nothing for it. A "
-                "word about a repository is a claim a reader checks by following the row, so a "
-                "row that says one and links nowhere hands the reader nothing",
-                file=sys.stderr,
-            )
+    # The three surfaces that draw a client, read from the keys they carry rather than from a
+    # list of names here.
+    client_rows = [row.client for row in rows if row.client]
+    clients = set(client_rows)
+    chips = chip_clients(page.raw)
+    routes = [match.group(1) for match in INSTALL_PANEL_ID.finditer(page.raw)]
+
+    for client in sorted(set(chips) - clients):
+        print(
+            f"check-claims: the chips name the client {client!r} and no row of the grid draws "
+            "it. The chips and the grid are two drawings of one list, so a client on one and "
+            "not the other is half a client",
+            file=sys.stderr,
+        )
+    for client in sorted(set(routes) - clients):
+        print(
+            f"check-claims: the terminal carries an install route for {client!r} and no row of "
+            "the grid draws that client. A route installs something the page's own account of "
+            "what exists has to name, so a reader following it reaches a client the grid has "
+            "not got",
+            file=sys.stderr,
+        )
+    if chips != client_rows[: len(chips)]:
+        kept = next(
+            (
+                client
+                for at, client in enumerate(client_rows)
+                if at >= len(chips) and client in chips
+            ),
+            None,
+        )
+        print(
+            "check-claims: the chips name "
+            f"{', '.join(repr(client) for client in chips)} and the grid draws "
+            f"{', '.join(repr(client) for client in client_rows)}. The figure caps how many "
+            "clients it names and rolls the rest into its last chip, so what it leaves out is "
+            "the tail of the grid's own list"
+            + (f", and {kept!r} is named past a client it does not name" if kept else ""),
+            file=sys.stderr,
+        )
+    if (set(chips) - clients) or (set(routes) - clients) or chips != client_rows[: len(chips)]:
         return 1
 
-    # A row that is a plan is the same rule the other way round: what it must not do is link,
-    # because the link is a claim that there is a repository to read, and a client nobody has
-    # written has none.
-    planned_linked = [
-        name for name, _desc, _status, _ in GRID_PLANNED_ROWS if name in linked
-    ]
-    if planned_linked:
-        for name in planned_linked:
+    # Each row's own claim, and the rule that decides which of the two shapes it has: a row the
+    # page links is a repository a reader can open, and one it does not is a plan and says so.
+    linked_repos: set[str] = set()
+    for row in rows:
+        if not row.linked:
+            if GRID_PLAN_WORD not in row.text:
+                print(
+                    f"check-claims: the grid row {row.text!r} links nothing and does not say it "
+                    "is planned. A row is either a repository a reader can open or a plan, and "
+                    "an unlinked row that says neither reads as a mistake",
+                    file=sys.stderr,
+                )
+                return 1
+            continue
+        if row.repository is None:
             print(
-                f"check-claims: the grid says {name} is planned and links it. A plan is a client "
-                "nobody has written, so a reader who follows the row reaches nothing; a page "
-                "that points at a repository is claiming the repository is there to read",
+                f"check-claims: the grid row {row.text!r} links somewhere that is not a "
+                "repository under the organisation. A linked row hands a reader the code the "
+                "word beside it is about",
                 file=sys.stderr,
             )
-        return 1
+            return 1
+        linked_repos.add(row.repository)
+        if row.repository not in row.text:
+            print(
+                f"check-claims: the grid row {row.text!r} links {row.repository!r} and does not "
+                "name it. A row is a claim about one repository, and a reader who follows it "
+                "has to land on the code the row is about",
+                file=sys.stderr,
+            )
+            return 1
+        if GRID_PLAN_WORD in row.text or not any(
+            word in row.text for word in GRID_LIVE_WORDS
+        ):
+            print(
+                f"check-claims: the grid row {row.text!r} links {row.repository!r} and does "
+                f"not wear one of {', '.join(repr(word) for word in GRID_LIVE_WORDS)}"
+                + (f" (it says {GRID_PLAN_WORD!r})" if GRID_PLAN_WORD in row.text else "")
+                + ". A row the page links states a repository a reader can open, and the plan's "
+                "word is the one it cannot wear",
+                file=sys.stderr,
+            )
+            return 1
 
-    known = {name for name, _desc, _status, _ in grid_rows}
     stray = [
         f"{os.path.relpath(scanned.path, root)}:{line}: {destination!r}"
         for scanned in pages
         for destination, line in scanned.destinations
         for match in [GRID_LINK.match(destination)]
-        if match and match.group(1) not in known
+        if match and match.group(1) not in linked_repos
     ]
     if stray:
         for where in stray:
             print(
-                f"check-claims: the page links a repository at {where}, and the grid names "
-                f"{', '.join(name for name, _desc, _status, _ in grid_rows)}. A link is a "
-                "claim that a repository is there to read, and a row that is a plan does not "
-                "name one",
+                f"check-claims: the page links a repository at {where}, and the grid links "
+                f"{', '.join(sorted(linked_repos))}. A link is a claim that a repository is "
+                "there to read, and a row that is a plan does not name one",
                 file=sys.stderr,
             )
         return 1
 
-    # A row's name, description, pill and destination are one claim about one repository. The
-    # patterns above prove each word is somewhere on the page, not that it is beside its own
-    # link; this reads each row's own anchor and holds all four inside it.
-    rows = grid_row_text(page.raw)
-    for name, desc, status, _pattern in GRID_ROWS:
+    # A row's repository, its own text and its destination are one claim about one repository.
+    # The rules above prove the shape of every row, not that a named row is still there; these
+    # three hold the facts that have to stay true of the rows the page has always carried.
+    for name, desc, status, _pattern in GRID_PINNED_ROWS:
         owner = next(
             (
-                text
-                for repo, text in rows
-                if repo == name and name in text and desc in text and status in text
+                row.text
+                for row in rows
+                if row.repository == name
+                and name in row.text
+                and desc in row.text
+                and status in row.text
             ),
             None,
         )
         if owner is not None:
             continue
-        beside = next((text for repo, text in rows if repo == name), None)
+        beside = next((row.text for row in rows if row.repository == name), None)
         detail = (
-            f"The anchor whose destination names {name} reads {beside!r}"
+            f"The row whose destination names {name} reads {beside!r}"
             if beside is not None
             else f"The page links nothing whose destination names {name}"
         )
@@ -2220,11 +2306,13 @@ def check_repository_grid(pages: list[Scanned]) -> int:
         return 1
 
     # A row that is a plan has no destination to be held against, so its own list item is what
-    # carries the claim. The text beside the row's name is read whole, which is what keeps a
-    # sentence naming the repository from standing in for the row the page draws.
-    items = grid_unlinked_items(page.raw)
-    for name, desc, status, _pattern in GRID_PLANNED_ROWS:
-        if any(name in text and desc in text and status in text for text in items):
+    # carries the claim. The row's text is read whole, which is what keeps a sentence naming the
+    # repository from standing in for the row the page draws.
+    for name, desc, status, _pattern in GRID_PINNED_PLANS:
+        if any(
+            not row.linked and name in row.text and desc in row.text and status in row.text
+            for row in rows
+        ):
             continue
         print(
             f"check-claims: the {name} row does not join its name, its description ({desc!r}) "
@@ -2236,12 +2324,12 @@ def check_repository_grid(pages: list[Scanned]) -> int:
         return 1
 
     print(
-        f"check-claims: the grid names its {len(GRID_ROWS)} repositories and its "
-        f"{len(GRID_PLANNED_ROWS)} planned row, says what each one is, links every "
-        "repository it names and no other, leaves the plan unlinked, keeps each name, "
-        "description and pill inside its own row, and hands the extension over in a VS "
-        f"Code install route that names `{PUBLISHED_EXTENSION}` on both registries it is "
-        "published to"
+        f"check-claims: the grid draws {len(rows)} rows, {len(linked_repos)} of them linked, "
+        f"and its {len(client_rows)} clients, its {len(chips)} chips and its {len(routes)} "
+        "install routes name the same ones. Each row joins its own name, description and word "
+        "to its own link, every repository the page links is one the grid links, the plan is "
+        f"the one row left unlinked, and the extension is handed over in a VS Code install "
+        f"route that names `{PUBLISHED_EXTENSION}` on both registries it is published to"
     )
     return 0
 
