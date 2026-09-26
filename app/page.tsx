@@ -219,8 +219,8 @@ export default function Home() {
                   Try it in the browser, then run your own.
                 </h2>
                 <p className="lede">
-                  Every room runs on a server. Use the demo to try it, then run your
-                  own.
+                  Every room runs on a server. The demo is one; the Run card starts the
+                  same server on a machine you control.
                 </p>
               </div>
               <div className="try-grid">
@@ -292,7 +292,6 @@ export default function Home() {
                   <p className="planned-row">
                     <HardDrive className="icon-17" aria-hidden="true" />
                     Hosted servers
-                    <span className="planned-note">planned</span>
                   </p>
                 </div>
               </div>

@@ -819,12 +819,6 @@ section[id],
   font-size: 14px;
 }
 
-.planned-note {
-  margin-left: auto;
-  font-family: var(--mono);
-  font-size: 12px;
-}
-
 /* Get it working: the terminal a reader copies from, beside what the server
    carries and what it still sees. */
 .run-grid {

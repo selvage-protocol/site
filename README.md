@@ -55,7 +55,7 @@ browser proof the runner cannot run, and nothing else.
 | `.gitignore` | what the repository does not carry: the build output, `node_modules`, `.tmp` (the gate's artefacts, its `TMPDIR` included), the generated `next-env.d.ts`, TypeScript's build info, Python's caches, and the sibling worktrees a parallel piece of work builds in |
 | `LICENSE-MIT` / `LICENSE-APACHE` | the licence pair the repository is under, `MIT OR Apache-2.0` (see "Licence") |
 | `README.md` | this file: what the page is and says, what it must never say, what the gate checks, and the accessibility floor it holds itself to |
-| `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason, and the facts it asserts in the positive — the image tag, the demo instance, the wire version each of those two artefacts speaks, the disclosure a reader is owed of what the relay still sees, the file the page's corpus counts are pinned in, the identity the extension is published under with the two registries it is on, the hosted tier the page offers and does not run yet, and the agreement between the grid, the chips figure and the terminal's install routes |
+| `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason, and the facts it asserts in the positive — the image tag, the demo instance, the wire version each of those two artefacts speaks, the disclosures a reader is owed of what the relay still sees and of the terms `selvaged` is under, the file the page's corpus counts are pinned in, the identity the extension is published under with the two registries it is on, the hosted tier the page offers and does not run yet, and the agreement between the grid, the chips figure and the terminal's install routes |
 | `scripts/check-button-props.tsx` | the button check: renders the button and anchor variants and asserts their props reach the DOM (run by `npm run check:button` inside the gate) |
 | `scripts/tsconfig.button-check.json` | the button check's own project, which extends the site's: the same strict settings with `noEmit` off, CommonJS as the module, and the output in `.tmp/button-check`, so the component can be rendered on its own and the check can import what it transpiled |
 | `scripts/check-contrast.py` | the contrast check: parses the theme tokens out of `style.css` — including the sample's `selvage-mocha` token colours, the ground the code figure draws them on, and the alpha a peer's selection fill is drawn at — reads the colours the page's own rules paint where a pair is not a token (the window's line numbers, the not-yet-available card, the repository descriptions) out of the same file, reads the token a selection fill sits under out of `components/room-visuals.tsx` and the fills and labels of the button variants out of `components/ui/button.tsx`, reads the nav mark's own pixels out of `public/mark-header.png` (a logotype, exempt from the non-text floor and held only to being visible on its ground), and asserts the rendered pairs sit at or above their floors, with measured ratios (run by `scripts/ci-local.sh contrast` inside the gate) |
@@ -519,7 +519,8 @@ beside the visible text, because a link unfurl prints that prose verbatim and th
 are stripped from the body: five planted overclaims in `og:description` used to pass the scan
 unseen, on the surface a person deciding whether to paste a link meets first. It also
 asserts facts in the positive — the image tag, the demo instance, the one wire version those two
-artefacts speak, one disclosure, the file the corpus counts are pinned in, the identity
+artefacts speak, two disclosures (what the relay still sees, and the terms `selvaged` is under),
+the file the corpus counts are pinned in, the identity
 the extension is published under with the two registries it is on, that the hosted tier the page
 offers is not available yet, and the word beside each repository in the grid — described just
 below.
@@ -641,11 +642,15 @@ with the release workflow about the identity and the two registries — not that
 answers.
 
 The hosted tier is required the same way, and it is the one card on the page that offers something
-the project cannot hand over yet. The card, the pill on it, the sentence saying who would run it and
-the row that is a plan rather than a control are read one pattern each, so a rewrite that keeps the
-fact passes and a card that loses its status fails. The phrase list's `now available` entry can
-only catch the other direction: a page that reads as an offer with nothing saying it cannot be
-taken is the page this is for. It asks no network.
+the project cannot hand over yet. The card, the sentence saying who would run it and the row that is
+a plan rather than a control are read one pattern each, and the status is read in either of its two
+spellings — the pill's *not available yet* or the row's *planned* — from the card's own markup, so a
+rewrite that keeps the fact passes, a card that states it neither way fails, and a `planned` word
+elsewhere on the page cannot stand in for it. The row's half is the element it is written on: the
+card is read for a link or a button, so a row a reader can press fails even though the words still
+read as a plan. The phrase list's `now available` entry can only catch the other direction: a page
+that reads as an offer with nothing saying it cannot be taken is the page this is for. It asks no
+network.
 
 The repository grid is required the same way, and it is the page's own account of what exists. Its
 rows are read from the page rather than listed in the check, because the clients are the page's own
@@ -680,7 +685,7 @@ no network either.
 
 | Must not appear | Why not |
 |---|---|
-| "open source" of the server or the project | The server binary is `FSL-1.1-MIT`: source-available, not OSI-approved, free for non-competing use and under MIT two years after each release. The specification and the clients are the open ones, and the page names their licences instead of reaching for the phrase |
+| "open source" of the server or the project | The server binary is `FSL-1.1-MIT`: source-available, not OSI-approved, free for non-competing use and under MIT two years after each release. The specification and the clients are the open ones, and the page names their licences instead of reaching for the phrase. That disclosure is required in the positive too, one pattern per fact, so deleting it fails the gate rather than passing on the fixture alone |
 | "SSP" | The abbreviation is taken by stack-smashing protection and by supply-side platforms. The protocol is the Selvage Session Protocol, written out |
 | `salvage/1`, `salvage/2` | The wire version is `selvage/2`. "Selvage" is heard as "salvage", which is why the name is written out in words rather than shortened: the `<title>` opens with the project's name, the nav carries the wordmark over the hero's `h1`, and every wire version the page names is spelled `selvage/2` |
 | "the session layer has no specification" | The page's own hero chip says the opposite in one word — *Specified* — and the section argues it. The layer every collaborative tool decides for itself is the subject, so a heading that reads as a denial of the fact a skimmer has just met is a contradiction rather than the argument |
@@ -705,6 +710,7 @@ no network either.
 | an ease claim (takes seconds, one-click, just works) | The image, the compose file and the systemd unit all exist; no ease claim around them is backed, because no install time, start-up time or latency has been measured or recorded anywhere in the corpus |
 | an only-machine claim (untouched by the network) | Document payloads travel through the server to the peers that ask for them; the grant bounds which paths are served, not which machines code touches |
 | a "live" / "now available" status | One small demo instance runs and there is no hosted service and no launch: a status reading "live" or "now available" sells the demo as a product. The honest status the page carries belongs to the hosted tier's card — *not available yet* — with the release named under the command a reader runs, and the specification called a draft where it is offered |
+| the protocol called finished, released or stable | The specification is a draft and the releases are 0.x: the wire version is `selvage/2`, no shape is frozen, and the corpus is still growing. A page that calls the specification finished, released or stable claims a status the project has not reached |
 | SaaS-creep words (sign in/up, get started, download, pricing) | No accounts exist, so nothing can be signed into; no package exists to download and no price exists to show. The page offers the specification to read and a server to run |
 
 Four things the check cannot make mechanical, and which a reader of a change has to hold:
@@ -773,8 +779,9 @@ the gate instead of passing everything; named honest wordings must stay unmatche
 that reintroduces a false positive fails it too, and those fixtures include the sealed-material
 readings the specification itself uses and the peer's signed host claim. The scan reads the prose
 in the page's `meta` attributes beside the visible text, because a link unfurl prints it. It also
-requires one disclosure in the scanned file: the relay-visibility facts, each as its own pattern,
-so the panel's statement cannot be deleted while the fixtures stay green. The corpus counts are required
+requires two disclosures in the scanned file: the relay-visibility facts and the licence terms
+`selvaged` is under, each as its own pattern,
+so neither statement can be deleted while the fixtures stay green. The corpus counts are required
 the same way: every
 count the scanned pages show has to name the file that pins it in the sentence the number sits in
 or the one after it, because a number with nowhere to check it is one a reader takes on trust, and
@@ -790,8 +797,9 @@ registries the release publishes to, and a link to a listing has to be one of th
 produces, so a page offering the extension from "the extension gallery" or from somebody else's
 marketplace fails rather than passing on the two names it also carries. It asks no network, and
 why is in the section above. The hosted tier the page offers and does not run yet is required the
-same way — the card, the pill on it, the sentence saying who would run it, and the row that is a
-plan rather than a control — and so is the repository grid, where every row joins its own word to its
+same way — the card, a status stated once in either its pill or its row, the sentence saying who
+would run it, and a row that is a plan rather than a control, read from the card's own markup —
+and so is the repository grid, where every row joins its own word to its
 own link, the extension's row is read against the VS Code install route that names the identity the release
 publishes under and both registries, the row that is a plan is held to carrying no link, every
 repository the page links is one the grid links, so `jetbrains_client` cannot come back as a link to a

@@ -10,13 +10,14 @@ encodes the characters as HTML entities.
 Facts are asserted in the positive instead, because a phrase list cannot reach them: the image tag
 in the `docker run` the page hands a reader, the instance the demo section points at — the address
 it gives an editor and the page a guest is sent to — the wire the tag and that address each speak,
-held together and to no version this protocol does not have, the disclosure the page owes a reader
-of what the sealed relay still sees, and the identity the extension is published under with the two
+held together and to no version this protocol does not have, the disclosures the page owes a reader
+of what the sealed relay still sees and of the terms `selvaged` is under, and the identity the
+extension is published under with the two
 registries the release publishes it to and what an
 install is and is not. The address half asks the
 path a plain `GET` can reach, not the upgrade: see `demo_session_route`. Each is a fact with an
 artefact behind it, and a wrong tag is a command that fails rather than a wording that lies. See
-`PUBLISHED_IMAGE`, `DEMO_ORIGIN`, `RELAY_DISCLOSURE`, `PUBLISHED_EXTENSION` and
+`PUBLISHED_IMAGE`, `DEMO_ORIGIN`, `RELAY_DISCLOSURE`, `FSL_DISCLOSURE`, `PUBLISHED_EXTENSION` and
 `check_wire_binding` below.
 
 Each entry below pairs a phrase the page must not carry with the reason it must not, and with a
@@ -205,6 +206,38 @@ RELAY_DISCLOSURE = (
     (
         "the sizes and timing of what moves",
         re.compile(r"\bsizes?\b[^.]{0,32}\btiming\b", re.IGNORECASE),
+    ),
+)
+# The disclosure the page owes a reader of the server's licence, required the way the relay's is:
+# the `open source` entry forbids one false wording, and this holds the page to the truth a reader
+# must meet instead. Each part is a pattern of its own, so a rewrite that keeps the facts passes
+# and a page that drops or contradicts a part fails. The identifier bound to `selvaged`, the
+# source-available term, the OSI denial, the grant for non-competing use and the MIT conversion
+# are read together from one page: the disclosure is one claim, and a page that states four of
+# its five parts has not stated it.
+FSL_DISCLOSURE = (
+    (
+        "that `selvaged` is FSL-1.1-MIT",
+        re.compile(
+            r"\bselvaged\b[^.]{0,64}\bFSL-1\.1-MIT\b|\bFSL-1\.1-MIT\b[^.]{0,64}\bselvaged\b",
+            re.IGNORECASE,
+        ),
+    ),
+    (
+        "that it is source-available",
+        re.compile(r"\bsource[-\s]available\b", re.IGNORECASE),
+    ),
+    (
+        "that it is not OSI-approved",
+        re.compile(r"\bnot\b[^.]{0,40}\bOSI[-\s]?approved\b", re.IGNORECASE),
+    ),
+    (
+        "that it is free for non-competing use",
+        re.compile(r"\bfree\b[^.]{0,64}\bnon[-\s]?competing\b", re.IGNORECASE),
+    ),
+    (
+        "that it converts to MIT two years after each release",
+        re.compile(r"\bMIT\b[^.]{0,64}\b(?:two|2)\s+years\b", re.IGNORECASE),
     ),
 )
 # Every count the page shows for the corpus, and the file that pins each of them: the wire
@@ -996,6 +1029,37 @@ FORBIDDEN: list[Phrase] = [
         "the specification draft",
     ),
     Phrase(
+        # The specification is a draft, and the phrase list already forbids selling the demo with a
+        # `live` status; this is the same completion claim made of the protocol itself. The `1.0`
+        # entry above catches a version claim, but `finished`, `released` and `stable` are titles
+        # the draft has not reached, and a page could carry one with nothing else to say so.
+        #
+        # The copula is required between the subject and the word, and a `not` may not sit
+        # between them, so an honest sentence — "the specification is a draft", "the specification
+        # is not stable" — stays clean while a claim of completion does not. `released` is about
+        # the protocol's own status and not about a release of an artefact, which the page states
+        # elsewhere.
+        r"\b(?:specification|protocol|session (?:layer|protocol))\b[^.]{0,32}"
+        r"\b(?:is|are|was|were|has been|have been)\b(?:(?!\bnot\b)[^.]){0,12}"
+        r"\b(?:finished|done|complete[d]?|finali[sz]ed|final|frozen|released|shipped|ratified|stable)\b",
+        "The specification is finished.",
+        (
+            "the specification is a draft: the wire version is `selvage/2`, no shape is frozen and "
+            "the corpus is still growing, so a page that calls the specification finished, released "
+            "or stable claims a status the project has not reached"
+        ),
+        (
+            "the specifi<!-- -->cation is finished",
+            "The protocol has been released.",
+        ),
+        (
+            "The specification is a draft.",
+            "The specification is not stable.",
+            "The release publishes the extension under `selvage-protocol.selvage`.",
+            "The protocol is written down as a specification.",
+        ),
+    ),
+    Phrase(
         r"\bsign[ -]?in\b|\bsign[ -]?up\b|\bget started\b|\bdownload\b|\bpricing\b",
         "Sign in to get started, then download the app.",
         "no accounts exist, so nothing can be signed into; no package exists to download and "
@@ -1716,6 +1780,36 @@ def check_relay_disclosure(pages: list[Scanned]) -> int:
     return 1
 
 
+def check_fsl_disclosure(pages: list[Scanned]) -> int:
+    """The server's licence disclosure, required rather than permitted.
+
+    The page owes a reader of `selvaged` the terms it is under, and a phrase list can only forbid
+    the false wording (`open source`): it can never require the true one. So each part of the
+    disclosure is a required fact of its own, read from the page's visible text, and a rewrite
+    that keeps the facts passes while a page that drops or contradicts one fails. The parts are
+    the `FSL-1.1-MIT` identifier beside `selvaged`, source-available, not OSI-approved, free for
+    non-competing use, and the conversion to MIT two years after each release.
+
+    Returns 0 when a scanned page states every part and 1 when none does; it asks no network.
+    """
+    page, failures = first_page_stating(pages, FSL_DISCLOSURE)
+    if page is not None:
+        print(
+            "check-claims: the page discloses the server's licence — `selvaged` is FSL-1.1-MIT: "
+            "source-available, not OSI-approved, free for non-competing use, and MIT two years "
+            "after each release"
+        )
+        return 0
+    for where, absent in failures:
+        print(
+            f"check-claims: {where} does not disclose the server's licence: it is missing "
+            f"{', '.join(absent)}. A reader is owed the terms `selvaged` is under, and a page "
+            "that states some of them reads as if it stated all",
+            file=sys.stderr,
+        )
+    return 1
+
+
 def window_with_following_sentence(text: str, start: int, end: int) -> str:
     """The sentence a hit sits in and the one after it, from the visible text.
 
@@ -1880,17 +1974,33 @@ def check_published_extension(pages: list[Scanned]) -> int:
 
 # The card the page offers and does not have: a hosted tier the project would run for the reader.
 # Its parts are one claim — the card, the status on it, the sentence saying who would run it, and
-# the row that is a plan rather than a control — and each is a pattern of its own, so a rewrite
-# that keeps the fact passes and one that drops it fails.
-HOSTED_TIER = (
+# the row that is a plan rather than a control — and each is a required fact of its own, so a
+# rewrite that keeps the fact passes and a card that drops it fails.
+#
+# The status is stated once, in either of two spellings: the pill says the tier is not available
+# yet and the row calls it planned. The pattern reads both rather than requiring both, because a
+# card that states the same fact twice is the redundancy this replaced; a card that states it
+# neither way is the absent status the check still catches. The facts are read from the card's own
+# markup, not the page's text, so a `planned` word elsewhere on the page — the grid's own plan —
+# cannot stand in for the status the card owes.
+HOSTED_CARD_CLASS = "try-card-planned"
+HOSTED_TIER_FACTS = (
     ("the card that offers it", re.compile(r"Rent a server", re.IGNORECASE)),
-    ("that it is not available yet", re.compile(r"\bNot available yet\b", re.IGNORECASE)),
-    ("who would run it", re.compile(r"\bWe run the server\b", re.IGNORECASE)),
     (
-        "and that its row is a plan rather than a control",
-        re.compile(r"Hosted servers\s*planned", re.IGNORECASE),
+        "that it is not available yet",
+        # The note is drawn at the row's right edge by CSS, so its word joins the label in the
+        # flattened text (`Hosted serversplanned`); the pattern reads the word without a leading
+        # boundary for that reason, which is safe inside the card's own small region.
+        re.compile(r"\bNot available yet\b|planned", re.IGNORECASE),
     ),
+    ("who would run it", re.compile(r"\bWe run the server\b", re.IGNORECASE)),
 )
+# The row is where the card would offer a room the project cannot hand over, and the half a phrase
+# cannot reach is the element it is written on: drawn on an anchor or a button, it reads as a
+# control, and a reader who presses it asks for a room nobody can give them.
+HOSTED_ROW_CLASS = "planned-row"
+HOSTED_ROW_TEXT = re.compile(r"Hosted servers", re.IGNORECASE)
+CONTROL_TAG = re.compile(r"<\s*(?:a|button)\b", re.IGNORECASE)
 
 # The repository grid's rows are read from the page rather than listed here. The clients are
 # the page's own list (`lib/clients.ts`), and a second hand-maintained list of names in this file
@@ -2060,6 +2170,65 @@ def install_panel_text(raw: str, panel: str) -> str | None:
     return None
 
 
+def element_by_class(raw: str, class_name: str) -> tuple[str, str] | None:
+    """The first element whose `class` names `class_name`: its tag and its whole markup.
+
+    The element is read to its own closer rather than the first inner one, so a card that holds a
+    head, a body and a row ends where the card ends and not at its first `</div>`. A tag the
+    markup never closes answers None rather than a fragment, so an element that cannot be read
+    fails where one is required rather than passing quietly.
+    """
+    opening = re.compile(
+        rf"<(?P<tag>[a-z][\w-]*)\b[^>]*\bclass=\"[^\"]*\b{re.escape(class_name)}\b[^\"]*\"[^>]*>",
+        re.IGNORECASE,
+    )
+    match = opening.search(raw)
+    if match is None:
+        return None
+    name = match.group("tag")
+    scanner = re.compile(rf"<\s*(?P<close>/?)\s*{re.escape(name)}(?=[\s>/])", re.IGNORECASE)
+    depth = 1
+    pos = match.end()
+    while depth and pos < len(raw):
+        found = scanner.search(raw, pos)
+        if found is None:
+            return None
+        end = _tag_end(raw, found.start())
+        if end == -1:
+            return None
+        if found.group("close"):
+            depth -= 1
+        elif not raw[found.start():end + 1].rstrip().endswith("/>"):
+            depth += 1
+        pos = end + 1
+    return name, raw[match.start():pos]
+
+
+def hosted_card_region(page: Scanned) -> str:
+    """The hosted tier's card text, the only region its facts are required to be stated in."""
+    card = element_by_class(page.raw, HOSTED_CARD_CLASS)
+    return normalise(card[1])[0] if card is not None else ""
+
+
+def hosted_row_problem(card: str) -> str | None:
+    """What is wrong with the hosted tier's row, or None when it is the plan the card draws.
+
+    The row is where the card would offer a room the project cannot hand over, so what is required
+    is that it is drawn on an element a reader cannot press and that it still names the tier. The
+    control may be the row's own tag or an anchor wrapped around it, so the whole card is read for
+    one; the page's flattened text cannot tell a plan from a link at all.
+    """
+    found = element_by_class(card, HOSTED_ROW_CLASS)
+    if found is None:
+        return "its row is gone, so the card no longer draws the tier it offers"
+    _tag, row = found
+    if not HOSTED_ROW_TEXT.search(row):
+        return "its row no longer names the tier it is a plan for"
+    if CONTROL_TAG.search(card):
+        return "it draws a control, so it offers a room the project does not run"
+    return None
+
+
 def check_hosted_tier(pages: list[Scanned]) -> int:
     """The hosted tier the page offers and does not run yet.
 
@@ -2067,15 +2236,29 @@ def check_hosted_tier(pages: list[Scanned]) -> int:
     what it says is read as a whole: it offers a server the project would run, it says that is
     not available yet, and the row under it is a plan rather than a control. Required rather than
     permitted, for the reason the disclosure is: a `clean` fixture proves a pattern does not
-    reject a sentence, never that the page carries one. The phrase list's `now available` entry
-    can only catch the opposite direction — a page that dropped the status would read as an offer
-    with nothing saying it cannot be taken, and nothing else here would notice.
+    reject a sentence, never that the page carries one. The status is read in either of its two
+    spellings and from the card's own markup, so a card that states it once passes, one that
+    states it nowhere fails, and one whose row is a control fails on the element the row is
+    written on. The phrase list's `now available` entry can only catch the opposite direction — a
+    page that dropped the status would read as an offer with nothing saying it cannot be taken,
+    and nothing else here would notice.
 
     Returns 0 when a scanned page carries every part of the card and 1 when none does; it asks no
     network.
     """
-    page, failures = first_page_stating(pages, HOSTED_TIER)
+    root = root_of_this_checkout()
+    page, failures = first_page_stating(pages, HOSTED_TIER_FACTS, hosted_card_region)
     if page is not None:
+        card = element_by_class(page.raw, HOSTED_CARD_CLASS)
+        problem = hosted_row_problem(card[1]) if card is not None else None
+        if problem is not None:
+            print(
+                f"check-claims: {os.path.relpath(page.path, root)} offers a hosted tier and "
+                f"{problem}. The card is where a reader can ask for a server the project does "
+                "not run yet, so its row has to stay a plan rather than a control",
+                file=sys.stderr,
+            )
+            return 1
         print(
             "check-claims: the page offers a hosted tier and says it is not available yet — the "
             "card, its status, who would run it, and the row that is a plan rather than a control"
@@ -2567,6 +2750,7 @@ def main() -> int:
 
     for check in (
         check_relay_disclosure,
+        check_fsl_disclosure,
         check_corpus_citation,
         check_published_extension,
         check_hosted_tier,
