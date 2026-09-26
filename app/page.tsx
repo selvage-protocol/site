@@ -454,6 +454,9 @@ export default function Home() {
                         href={`https://github.com/selvage-protocol/${repo.name}`}
                       >
                         {row}
+                        {/* Linked rows only: the row that is a plan has nowhere to go, so it
+                            carries no mark either. */}
+                        <ArrowUpRight className="repo-go icon-14" aria-hidden="true" />
                       </a>
                     )}
                   </li>

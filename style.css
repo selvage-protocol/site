@@ -848,6 +848,32 @@ section[id],
   background: var(--code-bg);
 }
 
+/* Four tabs and their icons are wider than a phone's panel, so the strip scrolls. The mark of
+   that is drawn beside the scroller rather than in it: an overlay inside it would travel with
+   the tabs and sit over the last one at the end of the scroll. */
+.tab-strip {
+  position: relative;
+}
+
+.tab-fade {
+  position: absolute;
+  /* The strip's own bottom rule stays whole under the fade. */
+  top: 0;
+  bottom: 1px;
+  width: 34px;
+  pointer-events: none;
+}
+
+.tab-fade-left {
+  left: 0;
+  background: linear-gradient(to right, var(--code-bg) 12%, transparent);
+}
+
+.tab-fade-right {
+  right: 0;
+  background: linear-gradient(to left, var(--code-bg) 12%, transparent);
+}
+
 .tab {
   display: flex;
   align-items: center;
@@ -885,7 +911,13 @@ section[id],
 
 .term-output {
   position: relative;
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  /* The block is as tall as the panels beside the terminal, and a tab's lines fill a third of
+     it: they sit in the middle of that height, so the slack reads as the block's own margins.
+     On a phone the block is as tall as its lines, so nothing moves. */
+  justify-content: center;
   min-height: 150px;
   padding: 18px 18px 20px;
   font-family: var(--mono);
@@ -1409,6 +1441,12 @@ section[id],
 .repo-pill {
   margin-left: auto;
   white-space: nowrap;
+}
+
+/* The mark a linked row wears at rest, in the tone the row's leading icon wears. The row that
+   is a plan carries none: it is not a link, and nothing on it should say otherwise. */
+.repo-go {
+  color: var(--color-overlay2);
 }
 
 /* The footer: the terms, the page's own promise and the address to write to. */

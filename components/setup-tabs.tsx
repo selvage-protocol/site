@@ -1,7 +1,7 @@
 "use client";
 
 import type { KeyboardEvent } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowUpRight,
   Code,
@@ -72,13 +72,16 @@ const TABS: Tab[] = [
     label: "Neovim",
     Icon: Terminal,
     lines: [
-      { text: "-- add this line to your plugin manager", comment: true },
+      { text: "-- lazy.nvim: add this line to your spec", comment: true },
       { text: NEOVIM_PLUGIN_LINE },
-      { prompt: ":", text: NEOVIM_COMMAND },
+      /* `:SelvageHost` is the whole command, colon included: this row's prompt gutter stays
+         empty so the line reads as one colon, and the command lines up with the rows that
+         draw a prompt of their own. */
+      { text: NEOVIM_COMMAND },
     ],
     copy: NEOVIM_PLUGIN_LINE,
     announce: "Neovim plugin line",
-    note: "Works with any plugin manager.",
+    note: "Works with any plugin manager; the spec above is the lazy.nvim form.",
     source: "https://github.com/selvage-protocol/nvim_client",
   },
   {
@@ -88,7 +91,7 @@ const TABS: Tab[] = [
     lines: [
       { text: `# point an editor at wss://${DEMO}`, comment: true },
       { prompt: "›", text: DEMO },
-      { text: "# the invite it copies opens in the page", comment: true },
+      { text: "# the invite a host sends opens in the page", comment: true },
     ],
     copy: DEMO,
     announce: "Browser address",
@@ -99,7 +102,46 @@ const TABS: Tab[] = [
 
 export function SetupTerminal() {
   const [active, setActive] = useState(TABS[0].id);
+  /* Which edge of the strip has a tab past it. Four tabs are wider than a phone's panel, and
+     this is what says so: the clipped label on its own reads as a mistake. */
+  const [edges, setEdges] = useState({ left: false, right: false });
+  const strip = useRef<HTMLDivElement>(null);
   const { copied, copy } = useCopy<string>();
+
+  useEffect(() => {
+    const el = strip.current;
+    if (!el) return;
+    let live = true;
+    const measure = () => {
+      if (!live) return;
+      const left = el.scrollLeft > 1;
+      const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+      setEdges((was) =>
+        was.left === left && was.right === right ? was : { left, right },
+      );
+    };
+    measure();
+    el.addEventListener("scroll", measure, { passive: true });
+    /* A rotation or a wider panel moves the strip's own box, and the labels' face arrives
+       after the first paint, so the row is measured again when it is in. */
+    const watched = new ResizeObserver(measure);
+    watched.observe(el);
+    document.fonts?.ready.then(measure, () => {});
+    return () => {
+      live = false;
+      el.removeEventListener("scroll", measure);
+      watched.disconnect();
+    };
+  }, []);
+
+  /* The tab a reader picks has to be the one in view: the strip is wider than its panel on a
+     phone, so the tab at either end sits clipped at the edge until it is scrolled to. */
+  function select(id: string) {
+    setActive(id);
+    const tab = document.getElementById(`install-tab-${id}`);
+    tab?.scrollIntoView({ inline: "nearest", block: "nearest" });
+    return tab;
+  }
 
   /* The strip is one tab stop: arrows move between tabs, Home and End go to the
      ends, and the tab that becomes selected is the one the focus follows. */
@@ -113,34 +155,38 @@ export function SetupTerminal() {
     else if (event.key === "End") next = last;
     if (next < 0) return;
     event.preventDefault();
-    setActive(TABS[next].id);
-    document.getElementById(`install-tab-${TABS[next].id}`)?.focus();
+    select(TABS[next].id)?.focus();
   }
 
   return (
     <div className="terminal">
-      <div
-        className="tabs"
-        role="tablist"
-        aria-label="Install routes"
-        onKeyDown={onKeyDown}
-      >
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            id={`install-tab-${tab.id}`}
-            aria-selected={tab.id === active}
-            aria-controls={`install-panel-${tab.id}`}
-            tabIndex={tab.id === active ? 0 : -1}
-            className="tab"
-            onClick={() => setActive(tab.id)}
-          >
-            <tab.Icon className="tab-icon" aria-hidden="true" />
-            {tab.label}
-          </button>
-        ))}
+      <div className="tab-strip">
+        {edges.left && <span className="tab-fade tab-fade-left" aria-hidden="true" />}
+        <div
+          className="tabs"
+          role="tablist"
+          aria-label="Install routes"
+          ref={strip}
+          onKeyDown={onKeyDown}
+        >
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              id={`install-tab-${tab.id}`}
+              aria-selected={tab.id === active}
+              aria-controls={`install-panel-${tab.id}`}
+              tabIndex={tab.id === active ? 0 : -1}
+              className="tab"
+              onClick={() => select(tab.id)}
+            >
+              <tab.Icon className="tab-icon" aria-hidden="true" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        {edges.right && <span className="tab-fade tab-fade-right" aria-hidden="true" />}
       </div>
       {TABS.map((tab) => (
         <div
