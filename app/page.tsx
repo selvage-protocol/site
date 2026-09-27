@@ -261,19 +261,30 @@ export default function Home() {
                   </div>
                   <p className="try-body">
                     Two containers: the server that holds the room, and the page that
-                    reaches it. Open http://127.0.0.1:8080/ once both are up. Rooms live
-                    in memory, so a restart ends them. The line under the command stops
-                    and removes both containers.
+                    reaches it. Open http://127.0.0.1:8080/ once both are up; if it does
+                    not answer, docker ps shows which of the two is still running and
+                    docker logs selvage-web prints what the page said. A container that
+                    stops is removed with its logs. Rooms live in memory, so a restart
+                    ends them. The teardown under the command is a second action: it
+                    stops and removes both containers and the network they share.
                   </p>
-                  <div className="command">
-                    <p className="command-line">
-                      <span className="command-prompt">$ </span>
-                      {COMMAND}
-                    </p>
-                    <p className="command-line">
-                      <span className="command-prompt">$ </span>
-                      {TEARDOWN}
-                    </p>
+                  <div className="command-group">
+                    <p className="command-label">Run both containers</p>
+                    <div className="command">
+                      <p className="command-line">
+                        <span className="command-prompt">$ </span>
+                        {COMMAND}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="command-group">
+                    <p className="command-label">Stop and remove them</p>
+                    <div className="command">
+                      <p className="command-line">
+                        <span className="command-prompt">$ </span>
+                        {TEARDOWN}
+                      </p>
+                    </div>
                   </div>
                   <a className="try-link" href="#run">
                     Set up the server and your editor
