@@ -178,7 +178,7 @@ the reader can name.
 | Part | Its job |
 |---|---|
 | Hero | the promise, two CTAs, four one-word facts, and the room window beside them: the host's folder down the side, the file the room has open, the line one of them is typing, and the invite link that put them there. The CTAs come **above** the facts because of the fold: four facts, a CTA row and the version line of the order the page carried put the primary button at y≈823 on a 1280×633 screen and nothing but the header's small link in the first one, so a reader met evidence and no action. The CTAs lead with the demo — the fastest thing a stranger can do, with nothing installed — then running it in the editor, which is where the commands are; the header's own CTA points at the demo for the same reason. The specification is not a third button: it is the link that closes *Why a spec*, and nothing on the page presents a link as a disabled-looking control. The four facts are one row of one-word chips — *Sealed*, *Specified*, *Path-scoped*, *No account* — and a check mark each. They were four sentences, and three of those arguments are made below in any case: the relay's disclosure is the panel beside the terminal in *Get it working*, the specification has its own section, and the granted paths are the third card of *See it working*. *No account* is the one the page carries nowhere else, and that is the reason the row is kept rather than deleted: the fact goes with it. The relay's chip leads because what the relay reads and does not read is the claim a reader has to be able to take before the others are worth anything, and it is read against the panel below, where the detail lives — the gate reads the panel, not the chip, for exactly that reason |
-| Try → Run | the ways in, in the order they cost. *01 Try* is the one card the page draws a live border around: the demo, and the host a reader pastes into a client, with those two controls as the card's last element so they sit on its bottom edge. *02 Run* is the two published images as one chained `docker run` — the server on a network of its own and the page container published on this machine's loopback, both detached and named — under a label of its own, with the teardown in a second labelled block below it: the teardown is a second action and not part of the run, so a reader who selects one block never pastes both, and the card says in as many words to paste it on its own; one who pastes the run twice gets a working pair rather than a name collision. The prompt in front of each block and the label above it are kept out of a selection, so a triple-click takes the command and not the `$ ` a shell would refuse, and a drag from one block across the other takes two commands and no label. The teardown removes both containers before the network they are still attached to and then the network, and the card says what a reader can run to see the state: `docker ps` for which of the two is still running, `docker logs selvaged` for what the server said while that container is there, `docker ps` naming only the page as the sign of a server that stopped after the page was up (the page keeps serving, and `--rm` took the server's logs with it) and pasting the run again as what brings both back, because the page container holds the address it resolved when it started and a restarted server alone is a 502, and, when `--rm` has taken both containers with their logs, the server on its own without `-d`. *03 Rent* is the tier the project does not run yet: the card offers it, the pill on it says it is not available, and the row under it is a plan rather than a control, so nothing on the page offers a hosted room and nothing presents a row as a disabled-looking button |
+| Try → Run | the ways in, in the order they cost. *01 Try* is the one card the page draws a live border around: the demo, and the host a reader pastes into a client, with those two controls as the card's last element so they sit on its bottom edge. *02 Run* is the two published images as one chained `docker run` — the server on a network of its own and the page container published on this machine's loopback, both detached and named — under a label of its own, with the teardown in a second labelled block below it: the teardown is a second action and not part of the run, so a reader who selects one block never pastes both, and the card says in as many words to paste it on its own; one who pastes the run twice gets a working pair rather than a name collision. The prompt in front of each block and the label above it are kept out of a selection, so a triple-click takes the command and not the `$ ` a shell would refuse, and a drag from one block across the other takes two commands and no label. The teardown removes both containers before the network they are still attached to and then the network, and the card says what a reader can run to see the state: `docker ps` for which of the two is still running, `docker logs selvaged` for what the server said while that container is there, `docker ps` naming only the page as the sign of a server that stopped after the page was up (the page keeps serving, and `--rm` took the server's logs with it) and pasting the run again as what brings both back, because the page container holds the address it resolved when it started: a server that comes back at a new address leaves the page's relay answering 502 until the page container restarts, which the run does — nginx resolves its upstream once, when it loads its configuration, as `web_client`'s README says — and, when `--rm` has taken both containers with their logs, the server on its own without `-d`. *03 Rent* is the tier the project does not run yet: the card offers it, the pill on it says it is not available, and the row under it is a plan rather than a control, so nothing on the page offers a hosted room and nothing presents a row as a disabled-looking button |
 | Get it working | one server, any client: the install routes in one tabbed terminal — VS Code, Neovim, Browser — each with the command it copies, the note a reader needs before running it, and the repository it comes from. The strip is the ARIA tabs pattern (the arrow keys move between them, and every panel is in the document, so the page carries every route without scripting), and the routes are the client list's own install data: a client the project has not written has no route and so no tab. The routes carry the facts a reader installs by: the extension's published identity (`selvage-protocol.selvage`) and the two registries it is on; the Neovim plugin-manager line and `:SelvageHost`; and the demo's address an editor hosts on. The command that runs both containers, `selvaged` and the page in front of it, sits in the *Run* card of *Try → Run*: the page container is the one that publishes a port, on `127.0.0.1:8080`, and the server has none on the host, so the card says which address a reader opens rather than leaving it to the command. Beside the terminal the two panels say what the wire seals and what the relay still sees and still does, and that the host is a peer's signed claim rather than a server fact. The manual a reader wants next — the corpus check, the vector replay, each client's full command list — is the specification link and each repository's README, not a fold on this page; the per-client settings and the hosting routes were cut for the same reason |
 | See it working | four cards, each with a drawing of the thing it claims: anyone with the link is in, the carets of three peers in one file, the paths a guest sees, multiple clients on one engine |
 | How it works | the four moves in order (host a folder, send the invite, type in the same file, close the window), under its own one-line summary of the workflow. They are the sequence rather than the argument: the grant, the sealed material and the host's signed claim are all made in the sections above, where a reader meets the thing they are about. The fourth move says whose window ends the room and what a dropped connection can still do: the host's window ends it after a short countdown, and a connection that only drops can rejoin before the countdown runs out. That a guest who closes their window leaves the others in the room is not on the page: it is what a reader expects, and the step is kept to the two facts a reader would otherwise get wrong |
@@ -537,9 +537,11 @@ is the shape rather than a run — every container the command names is force-cl
 -f`) before the run reaches it, because a plain `docker rm` refuses a container a previous paste
 left running, and the error it prints is one the card discards; each of those names is read as a
 whole name, so a removal of `selvage-net` is not read as a removal of `selvage`, and a near miss
-does not stand in for the name the run uses — in every place a name is compared, which is the
-container in the run's own clearing and in the teardown, and the network in the teardown's ordering
-and in the rule that reports it left behind; every run has to be detached, because one that is not
+does not stand in for the name the run uses — in all **five** places a container or network name is
+compared, which are the container in the run's own clearing, the container in the teardown, the
+container in the teardown's ordering, the network in the teardown's ordering, and the network in the
+rule that reports it left behind (this paragraph and the commit before it both said four, each
+leaving out a different one of the five); every run has to be detached, because one that is not
 holds the line at that clause and the containers below it — the page the reader is told to open
 among them — never start; the network is looked for
 (`docker network inspect`) before it is created **and under the same name the creation uses**, so
@@ -553,19 +555,36 @@ opens — read in either form the page image accepts, `http://selvaged:8080` or 
 the reference the page publishes for it, the run a reader opens the page image and the run beside
 it the server's, so a command with the two swapped is refused rather than passed; the server's run
 publishes no port, because the page's own `-p` would collide with it and the page would never
-start; the host port the command publishes is the address the card prints for a reader, read out of
-the card's own text rather than the page — `http://127.0.0.1:8080/` in the copy and
-`-p 127.0.0.1:8080:8080` in the command
-under it are one fact printed twice, and a command publishing anything else sends every reader to
-an address its own card says answers; and the teardown is a block of
+start; the address the command publishes is the address the card prints for a reader — its **host
+port**, and the host its mapping names when it names one — read out of the card's own text rather
+than the page, because `http://127.0.0.1:8080/` in the copy and `-p 127.0.0.1:8080:8080` in the
+command under it are one fact printed twice: a command publishing another port, or publishing that
+port on `192.168.1.5` or on `::1`, sends every reader to an address its own card says answers. A
+mapping that names no host (`-p 8080:8080`) passes, because what is read is the address a mapping
+carries and not the one docker picks when it carries none, and the mapping's **container** port is
+not compared either, so `-p 8080:80` passes on its port; and the teardown is a block of
 its own that removes those names with `-f` **before the network they are still attached to**, and
 then that network, because a network removed first is left holding active endpoints. It reads one
 way of writing each part, so a command that is correct in other words fails it and a broken one
 that keeps those words can pass — the limit every assertion here has, and the reverse of the one
 this paragraph used to state. Every one of those rules carries a fixture in the check itself: a
 command of its own with the defect written into it, run before the scan, pinning the fragment the
-rule emits, so a rule deleted is a rule the check fails on rather than one nothing reads. What
-carries none is what is not a command — the pin below that holds the `$ ` prompt and the labels
+rule emits, so a rule deleted is a rule the check fails on rather than one nothing reads. Holding a
+rule is not holding the *reading* inside it, and that is the other half: the five name comparisons
+and the published host port are each named in the check, and before it scans anything it swaps each
+one in turn for the weaker reading a later edit would leave in its place — a `\b{name}\b` search for
+a name, the mapping's container port for the host port — and fails unless a fixture goes red. That
+is what the run's own clearing lacked: the fixtures around it named a container plainly, so the
+search left them all green and a card clearing `selvaged-old` passed a check that reads a clearing
+of `selvaged`; the port reading was the same shape, with every mapping a fixture carried written
+`8080:8080`, where the two fields are one number; and the host a mapping names is held the ordinary
+way rather than by a swap, by the two fixtures a command that names `192.168.1.5` or `::1` has to
+be reported as. What that guarantees is exact, and so is what it
+does not: a reading that *is* one of those named places cannot be weakened to a search without the
+check failing on its own fixtures, and a place a fixture never tells the two readings apart at, or
+one the rules stop reading, fails with it — while a comparison written around that naming is one
+nothing swaps and nothing notices, and a fixture a rule passes is not a proof the rule is complete.
+What carries none is what is not a command — the pin below that holds the `$ ` prompt and the labels
 to the stylesheet, and the refusal to pass when no scanned page carries a block: those read a
 served page and the build it was served from, so their fixture would be a page and a build rather
 than a line. The pin that closes the card's last hole is not a phrase or a
@@ -852,7 +871,8 @@ the command names is force-cleared before the run reaches it, the network is che
 same name it is created with and a creation that fails stops the line, the page container is
 pointed at the server container on the network both are on and is the one that publishes a port,
 with the page image on that run and the server's on the other, which publishes none, and the
-address the card prints for a reader is the host port that run publishes, and the card prints a
+address the card prints for a reader is the host port that run publishes, with the host its mapping
+names where it names one, and the card prints a
 teardown block of its own that removes those names with `-f` before the network they are still
 attached to and then that network — and reads the `$ ` prompt and the
 labels the card prints against the stylesheet the served page loads, requiring a rule that names
