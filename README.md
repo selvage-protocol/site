@@ -367,27 +367,14 @@ advertises anything, but should that change the plan question returns with it:
 
 ### Releasing it
 
-A release here is a tag and a GitHub Release, and nothing else: there is no release artefact to
-build or attach, no image and no registry, and Vercel serves the page from `main` without reading
-tags. The deployment does build — `next build`, on Vercel, from `main` — but that build is the
-deployment and not a release.
+The page is not a released artefact: there is nothing to build or attach, no image and no
+registry, no tag and no GitHub Release, and no release workflow. Vercel deploys it from `main` on
+every push and reads no tag. The deployment does build — `next build`, on Vercel, from `main` — but
+that build is the deployment and not a release.
 
-So there is no release workflow. One would only be `git tag` and `gh release create` behind a
-button, and the version assertion the other repositories' release workflows carry would have
-nothing to protect here: `package.json`'s version is a private, unpublished manifest that no
-deployment consumes.
-
-The tag is `package.json`'s version with a `v`, and an annotated tag is what the other
-repositories' release runs create, so it is made the same way by hand:
-
-```console
-$ git tag -a v0.4.5 -m v0.4.5
-$ git push origin v0.4.5
-$ gh release create v0.4.5 --title v0.4.5 --generate-notes
-```
-
-The tag is a marker on the page's history rather than an input to anything. Other repositories tag
-what they build and attach it to the release; this one has nothing to attach.
+`package.json`'s version is a private, unpublished manifest that no deployment consumes, so the
+version assertion the other repositories' release workflows carry would have nothing to protect
+here.
 
 ## The Content-Security-Policy
 
