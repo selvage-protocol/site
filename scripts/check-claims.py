@@ -249,7 +249,14 @@ RUN_CARD_SHAPES: tuple[tuple[str, int, str, str, str], ...] = (
         1,
         RUN_CARD_FIXTURE_TEARDOWN[0],
         "docker network rm room; docker rm -f server page",
-        "before the containers still attached",
+        "removes room before page, server, still attached to it",
+    ),
+    (
+        "a teardown that removes the network between the containers",
+        1,
+        RUN_CARD_FIXTURE_TEARDOWN[0],
+        "docker rm -f server; docker network rm room; docker rm -f page",
+        "removes room before page, still attached to it",
     ),
     (
         "a teardown that does not force the containers",
@@ -1949,7 +1956,9 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
             )
 
     # A network cannot be removed while a container is still attached to it, so the block that
-    # removes it has to remove those containers first or docker refuses the removal with active
+    # removes it has to remove *every* container the command names first, not just one of them:
+    # `docker rm -f server; docker network rm room; docker rm -f page` removes a container before
+    # the network and leaves another one attached, and docker refuses the removal with active
     # endpoints and the network survives the teardown.
     for block in blocks:
         if network is None:
@@ -1962,16 +1971,21 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
         ]
         if not removing_the_network:
             continue
-        removing_a_container = [
-            index
-            for index, (clause, _end) in enumerate(clauses_here)
-            if DOCKER_REMOVE.search(clause) is not None
-            and any(re.search(rf"\b{re.escape(name)}\b", clause) for name in names)
+        first_network = min(removing_the_network)
+        still_attached = [
+            name
+            for name in names
+            if not any(
+                index < first_network
+                and DOCKER_REMOVE.search(clause) is not None
+                and re.search(rf"\b{re.escape(name)}\b", clause) is not None
+                for index, (clause, _end) in enumerate(clauses_here)
+            )
         ]
-        if not removing_a_container or min(removing_a_container) > min(removing_the_network):
+        if still_attached:
             problems.append(
-                f"removes {network} before the containers still attached to it, so docker "
-                "refuses the removal with active endpoints and the network survives"
+                f"removes {network} before {', '.join(still_attached)}, still attached to it, "
+                "so docker refuses the removal with active endpoints and the network survives"
             )
     return problems
 
@@ -2071,7 +2085,20 @@ def served_stylesheets(page: Scanned) -> tuple[list[str], str]:
                 f"checkout's own build under {BUILD_PREFIX}, so the rule that keeps the card's "
                 "prompt and labels out of a copy is not the one this build produced"
             )
-        path = os.path.join(root, ".next", href[len(BUILD_PREFIX) :])
+        # The page names the file with the build's own root-relative href, so what is opened is
+        # the build's file and nothing else: the path is resolved, and a page whose href walks out
+        # of the build (`.next/../style.css`) is refused rather than read from the source tree a
+        # rule this check exists to keep out of it was written in.
+        build = os.path.realpath(os.path.join(root, ".next"))
+        path = os.path.realpath(
+            os.path.join(build, href[len(BUILD_PREFIX) :].split("?", 1)[0])
+        )
+        if os.path.commonpath([build, path]) != build:
+            return [], (
+                f"the served page loads the stylesheet {href!r}, which resolves to {path}, "
+                f"outside this checkout's build at {build}; a stylesheet the build did not "
+                "produce is not the one the page loads"
+            )
         try:
             with open(path, encoding="utf-8") as handle:
                 sheets.append(handle.read())
