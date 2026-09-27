@@ -19,7 +19,7 @@ install is and is not. The address half asks the
 path a plain `GET` can reach, not the upgrade: see `demo_session_route`. Each is a fact with an
 artefact behind it, and a wrong tag is a command that fails rather than a wording that lies. See
 `PUBLISHED_IMAGES`, `DEMO_ORIGIN`, `RELAY_DISCLOSURE`, `FSL_DISCLOSURE`, `PUBLISHED_EXTENSION`,
-`check_rerunnable_command` and `check_wire_binding` below.
+`check_rerunnable_command`, `check_command_prompt_selection` and `check_wire_binding` below.
 
 Each entry below pairs a phrase the page must not carry with the reason it must not, and with a
 sample that has to match it. The reasons are not this script's opinion: every one of them is a
@@ -131,16 +131,18 @@ REQUEST_TIMEOUT_SECONDS = 20
 
 # The Run card hands a reader a command they will paste more than once, and this host has no
 # Docker, so what is read is the shape that makes a second paste work rather than the run itself:
-# the network is looked for before it is created, so a network the first paste made is not an
-# error the second one stops at; that creation keeps its own error and nothing that tolerates a
-# failure stands between it and the run, so a creation that really fails stops the line where a
-# reader can see it instead of surfacing below as a container that cannot find its network;
-# every container name the run uses is cleared before the run reaches it; the address the page
-# container is given names the server container, on the network both are attached to; and the
-# card prints a block of its own that removes those names and that network. The command the card
-# carried before this is the defect it holds — `docker network create selvage && docker run …`
-# stopped at an error on the second paste, and its detached server kept its name for the next
-# one.
+# the network is looked for before it is created, and the clause that looks for it names the same
+# network the creation does, so a network the first paste made is not an error the second one
+# stops at; that creation keeps its own error and nothing that tolerates a failure stands between
+# it and the run, so a creation that really fails stops the line where a reader can see it instead
+# of surfacing below as a container that cannot find its network; every container name the run
+# uses is forced away before the run reaches it, because a container the first paste left running
+# is one a plain `docker rm` refuses; the address the page container is given names the server
+# container, on the network both are attached to, and sits on the container the reader opens; and
+# the card prints a block of its own that removes those names before the network they are still
+# attached to, and that network. The command the card carried before this is the defect it holds —
+# `docker network create selvage && docker run …` stopped at an error on the second paste, and its
+# detached server kept its name for the next one.
 RUN_CARD_CLASS = "command"
 # The card's printed blocks, in the order the page puts them: the run and the teardown are one
 # block each, so a reader who selects one does not take the other with it. The class is matched
@@ -164,17 +166,127 @@ NETWORK_FLAG = re.compile(r"--network[=\s]+(?P<name>[^\s;|&]+)")
 # The address a container is pointed at its server with. The host in it is a claim of its own:
 # the command has to give some container that name, on the network they share.
 SERVER_ADDRESS = re.compile(r"-e\s+SELVAGE_SERVER=(?P<url>[^\s;|&]+)")
+# The container a reader opens, which is the one that address belongs on: the page image serves
+# that port and relays through it, so an address the command gives to another container is one
+# the page never sees.
+PUBLISHED_PORT = re.compile(r"(?:\s|^)(?:-p|--publish)[=\s]")
 # Where one command in the chain ends and the next begins. `||` is deliberately not one: it is
 # what makes a clause's failure tolerable rather than fatal, which is the property read here.
 COMMAND_SEPARATOR = re.compile(r";|&&")
 TOLERATED_FAILURE = re.compile(r"\|\|")
 DOCKER_RUN = re.compile(r"\bdocker\s+run\b")
 # A removal clause, and the name it has to carry for the container the run is about to use.
-DOCKER_REMOVE = r"\bdocker\s+(?:container\s+)?rm\b[^;|&]*"
+DOCKER_REMOVE = re.compile(r"\bdocker\s+(?:container\s+)?rm\b[^;|&]*")
+# The force a removal of a container that is still running needs, alone or among bundled short
+# flags. Without it docker refuses the container, the refusal is what the discarded stderr hides,
+# and the run below stops on the name the container still holds.
+FORCED_REMOVE = re.compile(r"(?:\s|^)(?:-\w*f\w*|--force)(?=\s|$)")
 # A removal clause of either kind, the network's included: read to tell a run's own block from
 # the block that ends it.
 REMOVAL = re.compile(r"\bdocker\s+(?:(?:container|network)\s+)?rm\b")
 NETWORK_REMOVE = r"\bdocker\s+network\s+rm\b[^;|&]*"
+
+# The card prints two kinds of text that are not the command: the `$ ` prompt in front of a
+# block's command, and the label above the block. Both sit inside the selection a reader makes
+# over the card, so both have to be out of it — a `$ ` or a label pasted into a shell is a
+# command that does not exist — and that is a property of the stylesheet the served page loads
+# rather than of its markup: the prompt is drawn by a rule, and deleting the rule brings the
+# pasted prompt back with nothing else in the tree to say so. The prompt's class is read out of
+# the page's own markup, so a card that renames the prompt and its rule together still passes;
+# the label's is named here, the way `command-line` is.
+RUN_CARD_LABEL_CLASS = "command-label"
+# An element that carries a class, with the names read as whole words, or `command-line` would
+# answer for `command-label`.
+CLASSED_ELEMENT = re.compile(
+    r'<(?P<tag>[a-z][\w-]*)\b[^>]*\bclass="(?P<classes>[^"]*)"[^>]*>', re.IGNORECASE
+)
+# The innermost elements of a markup, with their attributes and their own text: the prompt is the
+# element whose whole text is the `$ ` the card prints.
+INNER_ELEMENT = re.compile(
+    r'<(?P<tag>[a-z][\w-]*)\b(?P<attrs>[^>]*)>(?P<text>[^<]*)</(?P=tag)>', re.IGNORECASE
+)
+CLASS_ATTRIBUTE = re.compile(r'\bclass="(?P<classes>[^"]*)"', re.IGNORECASE)
+# The stylesheet the served page loads, named in the page's own markup: the `rel` and the `href`
+# of a `link` element. `next start` answers the `_next` prefix out of the build's own `_next`
+# directory, which is the path the check reads the rule from.
+STYLESHEET_LINK = re.compile(r"<link\b[^>]*>", re.IGNORECASE)
+STYLESHEET_REL = re.compile(r"\brel=\"(?P<rel>[^\"]*)\"", re.IGNORECASE)
+STYLESHEET_HREF = re.compile(r"\bhref=\"(?P<href>[^\"]*)\"", re.IGNORECASE)
+BUILD_PREFIX = "/_next/"
+# The declaration that keeps an element out of a selection, and the rule that has to carry it:
+# the selector is read too, so a rule taking some other element out of a selection does not
+# stand in for the class the page actually prints.
+USER_SELECT_NONE = re.compile(r"(?:^|[\s;{])user-select\s*:\s*none\b", re.IGNORECASE)
+CSS_RULE = re.compile(r"(?P<selectors>[^{}@]+)\{(?P<body>[^{}]*)\}", re.DOTALL)
+
+# The card's command is read as a shape, and a shape read by matching is worth no more than what
+# it is matched against, so the rules below carry their own fixtures: one command in the shape the
+# card prints, and one variant per defect a reader's second paste meets. They are written with
+# names of their own rather than with the page's, so they are the shapes and not a second copy of
+# the card, and `main` runs them before it scans anything: a rule that stops finding its shape, or
+# that starts failing the correct one, fails the check itself rather than reporting a page clean.
+RUN_CARD_FIXTURE_RUN = (
+    "docker rm -f server page 2>/dev/null; docker network inspect room >/dev/null 2>&1"
+    " || docker network create room"
+    " && docker run -d --rm --name server --network room example/server:1"
+    " && docker run -d --rm --name page --network room"
+    " -p 127.0.0.1:8080:8080 -e SELVAGE_SERVER=http://server:8080 example/page:1",
+)
+RUN_CARD_FIXTURE_TEARDOWN = ("docker rm -f server page; docker network rm room",)
+# `(what, the block to change, what it replaces, what replaces it, the problem it has to be
+# reported as)`. The last entry is the address written the way the two READMEs document it, which
+# is the same command and has to come back clean, and every other one is a defect.
+RUN_CARD_SHAPES: tuple[tuple[str, int, str, str, str], ...] = (
+    (
+        "a clearing that does not force the containers",
+        0,
+        "docker rm -f server page",
+        "docker rm server page",
+        "without `-f`",
+    ),
+    (
+        "a teardown that removes the network first",
+        1,
+        RUN_CARD_FIXTURE_TEARDOWN[0],
+        "docker network rm room; docker rm -f server page",
+        "removes room before page, server, still attached to it",
+    ),
+    (
+        "a teardown that removes the network between the containers",
+        1,
+        RUN_CARD_FIXTURE_TEARDOWN[0],
+        "docker rm -f server; docker network rm room; docker rm -f page",
+        "removes room before page, still attached to it",
+    ),
+    (
+        "a teardown that does not force the containers",
+        1,
+        "docker rm -f server page",
+        "docker rm server page",
+        "without `-f`",
+    ),
+    (
+        "a network looked for under another name than the one created",
+        0,
+        "docker network inspect room",
+        "docker network inspect other",
+        "creates room",
+    ),
+    (
+        "a command that gives no container the relay address",
+        0,
+        " -e SELVAGE_SERVER=http://server:8080",
+        "",
+        "`-e SELVAGE_SERVER`",
+    ),
+    (
+        "the same command with the address in the bare form the READMEs document",
+        0,
+        "SELVAGE_SERVER=http://server:8080",
+        "SELVAGE_SERVER=server:8080",
+        "",
+    ),
+)
 
 # The wire version this protocol has, and which wire each artefact the page hands a reader speaks.
 # The page hands a reader artefacts whose wire is a fact about them, not a wording: under this
@@ -1572,29 +1684,34 @@ def check_published_image(pages: list[Scanned]) -> int:
     return 0
 
 
-def command_blocks(page: Scanned) -> list[list[str]]:
-    """The Run card's blocks of printed commands, one list of lines each, in the order the page
-    puts them.
+def command_block_markups(page: Scanned) -> list[str]:
+    """The Run card's printed blocks, as markup, in the order the page puts them.
 
     Answers [] for a page that carries no such block, which is a failure where the block is
     required rather than a quiet pass: a scan that reaches no command is not checking one. The
     run and the teardown are read as the blocks they are printed in, because a reader selects a
     block, and the two actions are not one selection.
     """
-    blocks: list[list[str]] = []
+    markups: list[str] = []
     at = 0
     while True:
         match = COMMAND_BLOCK.search(page.raw, at)
         if match is None:
-            return blocks
+            return markups
         found = element_from(page.raw, match)
         if found is None:
-            return blocks
+            return markups
         _tag, markup = found
-        blocks.append(
-            [normalise(line.group("line"))[0] for line in RUN_CARD_LINE.finditer(markup)]
-        )
+        markups.append(markup)
         at = match.start() + len(markup)
+
+
+def command_blocks(page: Scanned) -> list[list[str]]:
+    """Those blocks' printed lines, one list each: what the command is read out of."""
+    return [
+        [normalise(line.group("line"))[0] for line in RUN_CARD_LINE.finditer(markup)]
+        for markup in command_block_markups(page)
+    ]
 
 
 def clauses_with_offsets(command: str) -> list[tuple[str, int]]:
@@ -1631,18 +1748,69 @@ def network_named_in(clause: str, verb: re.Match[str]) -> str | None:
     return named[-1] if named else None
 
 
+def forced_removal_clauses(where: str, name: str) -> list[str]:
+    """The clauses of `where` that remove a container named `name`, forced or not.
+
+    Every clause is read, not the first one that matches: a command that removes the name twice
+    and forces it in one of those places does remove it, and the caller asks separately whether
+    any of them forces it.
+    """
+    return [
+        clause
+        for clause, _end in clauses_with_offsets(where)
+        if DOCKER_REMOVE.search(clause) is not None
+        and re.search(rf"\b{re.escape(name)}\b", clause) is not None
+    ]
+
+
+def server_address_host(address: str) -> str:
+    """The host an address names, in either form the page image accepts.
+
+    `http://selvaged:8080` is a URL and is read as one. A bare `selvaged:8080` is not: as a URL
+    its scheme is `selvaged`, which has no host at all, so the bare form — the one
+    `web_client`'s README documents and `reference_server`'s README uses — is read as a host and
+    an optional port instead. Answering '' for what names no host is what the caller fails on.
+    """
+    if "://" in address:
+        return urlsplit(address).hostname or ""
+    host = address.split("/", 1)[0]
+    if host.startswith("["):
+        return host[1:].split("]", 1)[0]
+    name, _, port = host.rpartition(":")
+    return name if name and port.isdigit() else host
+
+
+def classed_elements(raw: str, wanted: str) -> list[str]:
+    """The markup of every element of `raw` whose class list carries `wanted`.
+
+    The class is read as a whole name out of the class attribute's own tokens, so `command-line`
+    does not answer for `command-label`. An element the scan cannot follow to its own closer is
+    left out rather than guessed at.
+    """
+    found: list[str] = []
+    for match in CLASSED_ELEMENT.finditer(raw):
+        if wanted not in match.group("classes").split():
+            continue
+        element = element_from(raw, match)
+        if element is not None:
+            found.append(element[1])
+    return found
+
+
 def run_card_problems(blocks: list[list[str]]) -> list[str]:
     """What a reader's second paste of the card's command would meet, one problem each.
 
     The names the run gives its containers are what a leftover pair holds, so they are what most
-    of this reads: the clearing that has to come before the run reaches them, and the teardown
-    that removes them and the network with them. The network's creation is read as its own
-    clause, and what keeps a network that is already there from being an error the chain stops
-    at is a check for it in that clause rather than a failure the chain is told to tolerate: the
-    creation keeps its own error, and nothing that tolerates a failure may stand between it and
-    the run. The address the page container is given is read as a claim about another container:
-    some run in the command has to give that host a name, on the network the two are attached to,
-    or the page asks for a server nothing answers for.
+    of this reads: the forced clearing that has to come before the run reaches them, and the
+    teardown that removes them before the network they are still attached to and that network.
+    The network's creation is read as its own clause, and what keeps a network that is already
+    there from being an error the chain stops at is a check for that same network in that clause
+    rather than a failure the chain is told to tolerate: the creation keeps its own error, and
+    nothing that tolerates a failure may stand between it and the run. The address the page
+    container is given is read as two claims about the other containers: some run has to give
+    that host a name on the network the two are attached to, and the run carrying the address has
+    to be the one that publishes the port a reader opens, or the page asks for a server nothing
+    answers for.
     """
     lines = [line for block in blocks for line in block]
     command = " ".join(lines)
@@ -1663,9 +1831,6 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
     if not names:
         problems.append("gives no container a name, so there is nothing to clear or remove")
 
-    def removes(where: str, name: str) -> bool:
-        return re.search(rf"{DOCKER_REMOVE}\b{re.escape(name)}\b", where) is not None
-
     clauses = clauses_with_offsets(command)
     network: str | None = None
     creation_end = 0
@@ -1679,10 +1844,17 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
         creation_end = end
         tail = clause[created.end() :]
         checked = NETWORK_INSPECT.search(clause)
+        looked_for = network_named_in(clause, checked) if checked is not None else None
         if checked is None or checked.start() > created.start():
             problems.append(
                 "creates the network without checking whether one is already there, so a "
                 "second paste stops at an error"
+            )
+        elif looked_for != network:
+            problems.append(
+                f"checks for a network named {looked_for} and creates {network}, so the check "
+                "passes over the one network that exists and the creation refuses the second "
+                "paste"
             )
         elif TOLERATED_FAILURE.search(tail) or ">" in tail:
             problems.append(
@@ -1698,10 +1870,16 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
     else:
         head = command[: run.start()]
         for name in names:
-            if not removes(head, name):
+            clearing = forced_removal_clauses(head, name)
+            if not clearing:
                 problems.append(
                     f"leaves a container named {name} where a previous paste left one, so "
                     "the run stops on a name collision"
+                )
+            elif not any(FORCED_REMOVE.search(clause) for clause in clearing):
+                problems.append(
+                    f"clears a container named {name} without `-f`, so the container a "
+                    "previous paste left running is refused and the run stops on the name anyway"
                 )
         if created_at and ";" in command[creation_end : run.start()]:
             problems.append(
@@ -1730,31 +1908,84 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
                 "page cannot reach its server by the name it is given"
             )
 
+    addressed = 0
     for _name, _attached, clause in started:
         address = SERVER_ADDRESS.search(clause)
         if address is None:
             continue
-        host = urlsplit(address.group("url")).hostname or ""
+        addressed += 1
+        host = server_address_host(address.group("url"))
         elsewhere = [one for one, _network, other in started if one == host and other != clause]
         if not elsewhere:
             problems.append(
                 f"points a container at {address.group('url')} and gives no other container "
                 f"the name {host!r}, so that address reaches nothing"
             )
+        elif PUBLISHED_PORT.search(clause) is None:
+            problems.append(
+                f"gives {address.group('url')} to a container that publishes no port, so the "
+                "page a reader opens is not the one that relays to the server"
+            )
+    if not addressed:
+        problems.append(
+            "gives no container `-e SELVAGE_SERVER`, so the page image it publishes has no "
+            "server to relay to"
+        )
 
     teardown = " ; ".join(lines[1:])
     if len(lines) < 2:
         problems.append("prints no teardown, so the card offers no way to end the run")
     else:
         for name in names:
-            if not any(removes(line, name) for line in lines[1:]):
+            removals = [
+                clause for line in lines[1:] for clause in forced_removal_clauses(line, name)
+            ]
+            if not removals:
                 problems.append(f"its teardown removes no container named {name}")
+            elif not any(FORCED_REMOVE.search(clause) for clause in removals):
+                problems.append(
+                    f"its teardown removes a running container named {name} without `-f`, so "
+                    "nothing is removed and the line exits non-zero"
+                )
         if network is not None and not re.search(
             rf"{NETWORK_REMOVE}\b{re.escape(network)}\b", teardown
         ):
             problems.append(
                 f"leaves {network}, the network it created, behind, and its teardown is the "
                 "only cleanup the card offers"
+            )
+
+    # A network cannot be removed while a container is still attached to it, so the block that
+    # removes it has to remove *every* container the command names first, not just one of them:
+    # `docker rm -f server; docker network rm room; docker rm -f page` removes a container before
+    # the network and leaves another one attached, and docker refuses the removal with active
+    # endpoints and the network survives the teardown.
+    for block in blocks:
+        if network is None:
+            continue
+        clauses_here = clauses_with_offsets(" ".join(block))
+        removing_the_network = [
+            index
+            for index, (clause, _end) in enumerate(clauses_here)
+            if re.search(rf"{NETWORK_REMOVE}\b{re.escape(network)}\b", clause) is not None
+        ]
+        if not removing_the_network:
+            continue
+        first_network = min(removing_the_network)
+        still_attached = [
+            name
+            for name in names
+            if not any(
+                index < first_network
+                and DOCKER_REMOVE.search(clause) is not None
+                and re.search(rf"\b{re.escape(name)}\b", clause) is not None
+                for index, (clause, _end) in enumerate(clauses_here)
+            )
+        ]
+        if still_attached:
+            problems.append(
+                f"removes {network} before {', '.join(still_attached)}, still attached to it, "
+                "so docker refuses the removal with active endpoints and the network survives"
             )
     return problems
 
@@ -1766,15 +1997,19 @@ def check_rerunnable_command(pages: list[Scanned]) -> int:
     may already have one of its containers or its network. The defect it carried was invisible to
     every other check here — an unguarded `docker network create` stopped the second paste at an
     error, and the detached server kept its name for the next one, with nothing on the card to
-    remove it. What is required instead is that the network is checked for before it is created,
-    that a creation which really fails is what the reader sees rather than the run below it, that
-    the names the run uses are cleared before it reaches them, that the address the page is given
-    names the container its server runs in on the network both are on, and that the card prints a
-    block of its own that removes those names and that network. The teardown is a second action:
-    a reader who selects one block must not paste both.
+    remove it. What is required instead is that the network is checked for before it is created
+    and under the same name the creation uses, that a creation which really fails is what the
+    reader sees rather than the run below it, that the names the run uses are forced away before
+    it reaches them, that the address the page is given names the container its server runs in on
+    the network both are on and sits on the container a reader opens, and that the card prints a
+    block of its own that removes those names before the network they are still attached to and
+    that network. The teardown is a second action: a reader who selects one block must not paste
+    both.
 
-    This host has no Docker, so this reads a shape and not a run: a command that keeps the
-    reader out of the defect in words this does not know passes it.
+    This host has no Docker, so this reads a shape and not a run, and it knows one way of writing
+    each part of it: a command that is correct but spells one of them differently fails here, and
+    a broken one that keeps these words together passes it. That is the limit of the reading, and
+    it runs the other way from the one an earlier message here claimed.
     Returns 0 when a scanned page's card carries all of it, 1 when one part is missing, and 2
     when no scanned page carries the block at all.
     """
@@ -1808,12 +2043,198 @@ def check_rerunnable_command(pages: list[Scanned]) -> int:
         )
         return 2
     print(
-        "check-claims: the Run card's command clears the container names it is about to use, "
-        "checks for its network before creating it and keeps a creation that really fails to "
-        "itself, points the page at the server container on the network both are on, and prints "
-        "a block of its own that removes both containers and that network. This reads the shape "
-        "of the command and not a run: this host has no Docker, so a command that keeps a reader "
-        "out of the defect in words the check does not know passes it"
+        "check-claims: the Run card's command force-clears the container names it is about to "
+        "use, checks for its network under the name it creates it with, keeps a creation that "
+        "really fails to itself, points the container a reader opens at the server container on "
+        "the network both are on, and prints a block of its own that removes both containers "
+        "before the network they are attached to and that network. This reads the shape of the "
+        "command and not a run, and it knows one way of writing each part of it: a correct "
+        "command in other words fails here, and a broken one that keeps these words can pass"
+    )
+    return 0
+
+
+def served_stylesheets(page: Scanned) -> tuple[list[str], str]:
+    """The CSS the served page loads, and why it could not be read, one of the two empty.
+
+    The page names its own stylesheet, and `next start` answers the `_next` prefix out of the
+    build this checkout made, so the bytes are read there rather than out of the source tree: a
+    rule the build pipeline drops or rewrites is not in what a reader's browser gets, and what is
+    pinned here is what the page loads.
+    """
+    root = root_of_this_checkout()
+    hrefs: list[str] = []
+    for link in STYLESHEET_LINK.finditer(page.raw):
+        rel = STYLESHEET_REL.search(link.group(0))
+        if rel is None or "stylesheet" not in rel.group("rel").split():
+            continue
+        href = STYLESHEET_HREF.search(link.group(0))
+        if href is not None:
+            hrefs.append(href.group("href"))
+    if not hrefs:
+        return [], (
+            "the served page names no stylesheet, so the rule that keeps the card's prompt and "
+            "labels out of a copy was not reached; a page whose stylesheet cannot be read is not "
+            "a page whose selection behaviour was checked"
+        )
+    sheets: list[str] = []
+    for href in hrefs:
+        if not href.startswith(BUILD_PREFIX):
+            return [], (
+                f"the served page loads a stylesheet from {href!r}, which is not this "
+                f"checkout's own build under {BUILD_PREFIX}, so the rule that keeps the card's "
+                "prompt and labels out of a copy is not the one this build produced"
+            )
+        # The page names the file with the build's own root-relative href, so what is opened is
+        # the build's file and nothing else: the path is resolved, and a page whose href walks out
+        # of the build (`.next/../style.css`) is refused rather than read from the source tree a
+        # rule this check exists to keep out of it was written in.
+        build = os.path.realpath(os.path.join(root, ".next"))
+        path = os.path.realpath(
+            os.path.join(build, href[len(BUILD_PREFIX) :].split("?", 1)[0])
+        )
+        if os.path.commonpath([build, path]) != build:
+            return [], (
+                f"the served page loads the stylesheet {href!r}, which resolves to {path}, "
+                f"outside this checkout's build at {build}; a stylesheet the build did not "
+                "produce is not the one the page loads"
+            )
+        try:
+            with open(path, encoding="utf-8") as handle:
+                sheets.append(handle.read())
+        except OSError as error:
+            return [], (
+                f"the served page loads the stylesheet {href!r} and {path} does not carry it "
+                f"({error}); the page was not served by this checkout's build"
+            )
+    return sheets, ""
+
+
+def neutralised(sheets: list[str], class_name: str) -> bool:
+    """Whether a rule in one of `sheets` takes elements classed `class_name` out of a selection.
+
+    The rule is read as a rule: the declaration has to sit in a block whose selector names that
+    class, so a stylesheet that excludes some other element from the selection does not stand in
+    for the one the page prints.
+    """
+    if not class_name:
+        return False
+    selector = re.compile(rf"(?:^|[^\w-])\.{re.escape(class_name)}(?![\w-])")
+    for sheet in sheets:
+        for rule in CSS_RULE.finditer(sheet):
+            if USER_SELECT_NONE.search(rule.group("body")) and selector.search(
+                rule.group("selectors")
+            ):
+                return True
+    return False
+
+
+def prompt_classes(markup: str) -> list[list[str]]:
+    """The class tokens of every element of `markup` whose whole visible text is the `$ ` prompt.
+
+    Read out of the card's own markup rather than off a class name of this file's choosing, so a
+    card that renames the prompt and its rule together still passes: what is required is that the
+    rule the stylesheet carries names the element the page prints.
+    """
+    found: list[list[str]] = []
+    for match in INNER_ELEMENT.finditer(markup):
+        if normalise(match.group("text"))[0].strip() != "$":
+            continue
+        classes = CLASS_ATTRIBUTE.search(match.group("attrs"))
+        found.append(classes.group("classes").split() if classes is not None else [])
+    return found
+
+
+def check_command_prompt_selection(pages: list[Scanned]) -> int:
+    """The card's `$ ` prompt and its labels, against the stylesheet the served page loads.
+
+    The card prints each command under a `$ ` prompt, and the prompt is not part of the command:
+    a triple-click takes the whole line, and a `$ ` pasted into a shell is `command not found` on
+    the first clause of it. The labels above the blocks are the same kind of text with the same
+    consequence, and a selection that reaches across two blocks takes both. What keeps them out
+    of a copy is a rule in the stylesheet the page loads — `user-select: none` — so this reads
+    that rule out of the built stylesheet the server is serving and requires it to name the class
+    the page prints. Removing the declaration brings the pasted prompt back with nothing else in
+    the tree to say so, which is the hole this closes.
+
+    A command line whose visible text begins with `$` but which carries no prompt element is the
+    same defect written into the command's own text, and fails here.
+
+    Returns 0 when every prompt and label the card prints is out of the selection, 1 when one is
+    in it, and 2 when the check cannot reach what it has to read: a card that prints no prompt
+    element at all, or a stylesheet this checkout's build does not carry.
+    """
+    root = root_of_this_checkout()
+    failures: list[tuple[str, list[str]]] = []
+    promptless: list[str] = []
+    reached = 0
+    for page in pages:
+        markups = command_block_markups(page)
+        if not markups:
+            continue
+        reached += 1
+        where = os.path.relpath(page.path, root)
+        problems: list[str] = []
+        sheets, why = served_stylesheets(page)
+        if not sheets:
+            print(f"check-claims: {why}", file=sys.stderr)
+            return 2
+        chrome: list[tuple[str, list[str]]] = []
+        for markup in markups:
+            for line in RUN_CARD_LINE.finditer(markup):
+                inner = line.group("line")
+                prompts = prompt_classes(inner)
+                if not prompts and normalise(inner)[0].startswith("$"):
+                    problems.append(
+                        "prints a `$ ` prompt as the command's own text, so a copy takes the "
+                        "prompt with it and a shell refuses the first clause"
+                    )
+                for tokens in prompts:
+                    chrome.append(("a `$ ` prompt", tokens))
+        if not any(what == "a `$ ` prompt" for what, _tokens in chrome):
+            promptless.append(where)
+        for label in classed_elements(page.raw, RUN_CARD_LABEL_CLASS):
+            chrome.append((f"the label {normalise(label)[0].strip()!r}", [RUN_CARD_LABEL_CLASS]))
+        for what, tokens in chrome:
+            if not tokens:
+                problems.append(
+                    f"prints {what} carrying no class, so no rule can keep it out of a copy"
+                )
+            elif not any(neutralised(sheets, token) for token in tokens):
+                problems.append(
+                    f"prints {what} and no rule in the stylesheet the page loads keeps it out "
+                    "of a copy, so a reader's selection takes it"
+                )
+        if problems:
+            failures.append((where, problems))
+    if failures:
+        for where, problems in failures:
+            for problem in problems:
+                print(
+                    f"check-claims: the Run card at {where} {problem}; a `$ ` or a label "
+                    "pasted into a shell is a command that does not exist",
+                    file=sys.stderr,
+                )
+        return 1
+    if promptless:
+        print(
+            f"check-claims: the Run card at {', '.join(promptless)} prints no prompt element, "
+            "and the card's design prints a `$ ` in front of each block; a pin that reaches no "
+            "prompt is not checking one",
+            file=sys.stderr,
+        )
+        return 2
+    if not reached:
+        print(
+            f"check-claims: none of {len(pages)} scanned file(s) carries the Run card's "
+            "command block, so no prompt or label of it was read",
+            file=sys.stderr,
+        )
+        return 2
+    print(
+        "check-claims: every `$ ` prompt and label the Run card prints is named by a rule in "
+        "the stylesheet the served page loads that takes it out of a selection, so a reader's "
+        "copy of the command does not carry the prompt or the labels"
     )
     return 0
 
@@ -3096,6 +3517,34 @@ def main() -> int:
                 return 2
         compiled.append((phrase, pattern, permits, voiding))
 
+    for what, block, before, after, expected in RUN_CARD_SHAPES:
+        lines = [list(shape) for shape in (RUN_CARD_FIXTURE_RUN, RUN_CARD_FIXTURE_TEARDOWN)]
+        if not any(before in line for line in lines[block]):
+            print(
+                f"check-claims: the Run card fixture {what!r} does not apply to the shape it "
+                f"names, so it is not reading what it says it is",
+                file=sys.stderr,
+            )
+            return 2
+        lines[block] = [line.replace(before, after) for line in lines[block]]
+        problems = run_card_problems(lines)
+        if expected and not any(expected in problem for problem in problems):
+            print(
+                f"check-claims: the Run card fixture {what!r} is the defect {expected!r} "
+                "names and is not reported as one; a rule that stops matching the shape it was "
+                "written for passes everything",
+                file=sys.stderr,
+            )
+            return 2
+        if not expected and problems:
+            print(
+                f"check-claims: the Run card fixture {what!r} is a correct command and is "
+                f"reported as {'; '.join(problems)}, so the rule that reads it fails a page "
+                "that is right",
+                file=sys.stderr,
+            )
+            return 2
+
     root = root_of_this_checkout()
     os.chdir(root)
     targets = sys.argv[1:] or ["."]
@@ -3148,6 +3597,7 @@ def main() -> int:
         check_repository_grid,
         check_published_image,
         check_rerunnable_command,
+        check_command_prompt_selection,
         check_demo_instance,
         check_wire_binding,
     ):

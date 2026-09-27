@@ -263,10 +263,12 @@ export default function Home() {
                     Two containers: the server that holds the room, and the page that
                     reaches it. Open http://127.0.0.1:8080/ once both are up; if it does
                     not answer, docker ps shows which of the two is still running and
-                    docker logs selvage-web prints what the page said. A container that
-                    stops is removed with its logs. Rooms live in memory, so a restart
-                    ends them. The teardown under the command is a second action: it
-                    stops and removes both containers and the network they share.
+                    docker logs selvaged prints what the server said. A container that
+                    stops is removed with its logs, so when neither is left at all, run
+                    the server on its own without -d and watch it start. Rooms live in
+                    memory, so a restart ends them. The teardown under the command is a
+                    second action: paste it on its own when you are done. It stops and
+                    removes both containers and the network they share.
                   </p>
                   <div className="command-group">
                     <p className="command-label">Run both containers</p>
