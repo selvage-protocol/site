@@ -183,10 +183,16 @@ PUBLISHED_PORT = re.compile(r"(?:\s|^)(?:-p|--publish)[=\s]")
 # on the host: `-p 8080` publishes the container's port on one docker picks, which is not an
 # address a page can tell a reader to open.
 PUBLISHED_MAPPING = re.compile(r"(?:\s|^)(?:-p|--publish)[=\s](?P<mapping>[^\s;|&]+)")
-# The address the card tells a reader to open, read out of the page rather than off the command:
-# the run's `-e SELVAGE_SERVER` is the address the page container relays to, and this is the one a
-# browser opens. They are two copies of one fact, which is why they are compared.
-CARD_OPENED_AT = re.compile(r"http://(?:127\.0\.0\.1|localhost)(?::(?P<port>\d+))?(?:[/?#]|$)")
+# The address the card tells a reader to open, read out of the card's own text rather than off the
+# command: the run's `-e SELVAGE_SERVER` is the address the page container relays to, and this is
+# the one a browser opens. They are two copies of one fact, which is why they are compared. The
+# lookahead is where the address ends rather than a character to consume — a slash, a space or a
+# full stop after it is the prose around it, while a colon or a word character means what matched
+# is not the address — so what the rule is handed is the address itself and not the space after it.
+CARD_OPENED_AT = re.compile(r"http://(?:127\.0\.0\.1|localhost)(?::(?P<port>\d+))?(?![\w:])")
+# Where the Run card is drawn. All three cards of that section carry this class and only the Run
+# card carries a command in it, so the region is found by that rather than by a class of its own.
+RUN_CARD_REGION_CLASS = "try-card"
 # Where one command in the chain ends and the next begins. `||` is deliberately not one: it is
 # what makes a clause's failure tolerable rather than fatal, which is the property read here.
 COMMAND_SEPARATOR = re.compile(r";|&&")
@@ -512,6 +518,18 @@ RUN_CARD_FIXTURES: tuple[tuple[str, tuple[str, ...] | None, str], ...] = (
             blocks=RUN_CARD_FIXTURE_NAMED,
         ),
         "publishes a port on the run carrying the server image",
+    ),
+    (
+        "a run whose option carries the other image's reference",
+        run_card_fixture(
+            (
+                0,
+                f"--name server --network room {SERVER_REFERENCE}",
+                f"--name server --network room --label note={PAGE_REFERENCE} {SERVER_REFERENCE}",
+            ),
+            blocks=RUN_CARD_FIXTURE_NAMED,
+        ),
+        "",
     ),
     (
         "the same command with the address in the bare form the READMEs document",
@@ -2086,6 +2104,23 @@ def published_host_port(clause: str) -> int | None:
     return int(fields[-2])
 
 
+def run_image_operand(clause: str) -> str:
+    """The reference a run names as its image, or '' when it names none.
+
+    Docker's grammar puts the image after the options, so the reference read is the first token
+    that is one of the project's references and nothing else, and a token that is an option or
+    carries one (`--label note=ghcr.io/…`, `-v ghcr.io/…:/data`) is not it: read as `search`
+    would, a reference in an option's value classifies the run as the image that value names, and
+    a command with the two images in each other's place would pass.
+    """
+    for token in clause.split():
+        if token.startswith("-") or "=" in token:
+            continue
+        if IMAGE_REFERENCE.fullmatch(token):
+            return token
+    return ""
+
+
 def classed_elements(raw: str, wanted: str) -> list[str]:
     """The markup of every element of `raw` whose class list carries `wanted`.
 
@@ -2262,8 +2297,7 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
     # is a collision that leaves the page container never starting.
     named_runs: list[tuple[str, str]] = []
     for _name, _attached, clause in started:
-        named = IMAGE_REFERENCE.search(clause)
-        named_runs.append((clause, named.group(0) if named is not None else ""))
+        named_runs.append((clause, run_image_operand(clause)))
     if any(reference for _clause, reference in named_runs):
         for clause, reference in named_runs:
             given = SERVER_ADDRESS.search(clause) is not None
@@ -2345,6 +2379,20 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
     return problems
 
 
+def run_card_region(page: Scanned) -> str:
+    """The Run card's own text, the region the address it prints for a reader is read out of.
+
+    The card prints the address and the command that publishes it inside one element, and the
+    section's other two cards carry the same class, so the region is the card holding a command
+    rather than a class of the Run card's own. A card whose markup cannot be followed to its closer
+    answers '' rather than a fragment, which is a page this check refuses to pass.
+    """
+    for markup in classed_elements(page.raw, RUN_CARD_REGION_CLASS):
+        if any(RUN_CARD_LINE.finditer(markup)):
+            return normalise(markup)[0]
+    return ""
+
+
 def run_card_opened_at_problems(opened_at: str, blocks: list[list[str]]) -> list[str]:
     """The address the card prints against the host port its command publishes, one problem each.
 
@@ -2388,15 +2436,15 @@ def check_run_card_address(pages: list[Scanned]) -> int:
     `-p 127.0.0.1:9090:8080` sends every reader it has to an address nothing answers on, and the
     check that reads the command's shape cannot see it, because the command is a correct command.
 
-    The address is read out of the page, not off the command: what the run's `-e SELVAGE_SERVER`
-    names is the address the page container relays to, which is a different address on a different
-    network. The card prints one address; every loopback address the page prints is read, because
-    a reader can open any of them and a second one the command does not publish is a second dead
-    address, whichever of the two the card meant.
+    The address is read out of the card's own text, not off the command: what the run's
+    `-e SELVAGE_SERVER` names is the address the page container relays to, which is a different
+    address on a different network. It is read out of that one region for the same reason: an
+    address another part of the page prints is a different fact, and a card whose own copy and
+    command agree is a card that is right.
 
     Returns 0 when the address the card prints is the port its command publishes, 1 when it is not,
-    and 2 when no scanned page prints a loopback address to read: an address the check cannot find
-    is not an address it checked.
+    and 2 when no scanned page prints a loopback address inside the card that carries a command:
+    an address the check cannot find is not an address it checked.
     """
     root = root_of_this_checkout()
     failures: list[tuple[str, list[str]]] = []
@@ -2405,7 +2453,8 @@ def check_run_card_address(pages: list[Scanned]) -> int:
         blocks = command_blocks(page)
         if not any(blocks):
             continue
-        addresses = sorted({match.group(0) for match in CARD_OPENED_AT.finditer(page.text)})
+        region = run_card_region(page)
+        addresses = sorted({match.group(0) for match in CARD_OPENED_AT.finditer(region)})
         if not addresses:
             continue
         reached += 1
@@ -2429,8 +2478,8 @@ def check_run_card_address(pages: list[Scanned]) -> int:
     if not reached:
         print(
             f"check-claims: none of {len(pages)} scanned file(s) carries the address the Run card "
-            "tells a reader to open, and the card prints one beside the command it hands over, so "
-            "a scan that reads no address is not checking one",
+            "tells a reader to open inside the card that prints the command beside it, and that "
+            "card prints one, so a scan that reads no address is not checking one",
             file=sys.stderr,
         )
         return 2

@@ -554,7 +554,8 @@ the reference the page publishes for it, the run a reader opens the page image a
 it the server's, so a command with the two swapped is refused rather than passed; the server's run
 publishes no port, because the page's own `-p` would collide with it and the page would never
 start; the host port the command publishes is the address the card prints for a reader, read out of
-the page itself — `http://127.0.0.1:8080/` in the copy and `-p 127.0.0.1:8080:8080` in the command
+the card's own text rather than the page — `http://127.0.0.1:8080/` in the copy and
+`-p 127.0.0.1:8080:8080` in the command
 under it are one fact printed twice, and a command publishing anything else sends every reader to
 an address its own card says answers; and the teardown is a block of
 its own that removes those names with `-f` **before the network they are still attached to**, and
