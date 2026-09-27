@@ -63,6 +63,7 @@ import re
 import sys
 import urllib.error
 import urllib.request
+from collections.abc import Callable
 from dataclasses import dataclass
 from urllib.parse import urlsplit
 
@@ -177,12 +178,18 @@ SERVER_ADDRESS = re.compile(r"-e\s+SELVAGE_SERVER=(?P<url>[^\s;|&]+)")
 # that port and relays through it, so an address the command gives to another container is one
 # the page never sees.
 PUBLISHED_PORT = re.compile(r"(?:\s|^)(?:-p|--publish)[=\s]")
-# The mapping that flag publishes, so the port on this machine can be read out of it and compared
-# with the address the card prints. Docker's form is
+# The mapping that flag publishes, so the address on this machine can be read out of it and
+# compared with the address the card prints. Docker's form is
 # `[host-ip:][host-port:]container-port[/proto]`, and only the field before the last colon is a port
 # on the host: `-p 8080` publishes the container's port on one docker picks, which is not an
-# address a page can tell a reader to open.
+# address a page can tell a reader to open. The host it names is read beside the port, because the
+# card's own address is a claim about both: `-p 192.168.1.5:8080:8080` publishes the page where a
+# browser sent to `http://127.0.0.1:8080/` never reaches it.
 PUBLISHED_MAPPING = re.compile(r"(?:\s|^)(?:-p|--publish)[=\s](?P<mapping>[^\s;|&]+)")
+# The loopback the card's own address may name, in the two spellings `CARD_OPENED_AT` accepts. A
+# mapping that names one of these on its host side publishes where the address the card prints
+# reaches; a mapping that names no host at all is left to docker and is read as naming none.
+LOOPBACK_NAMES = ("127.0.0.1", "localhost")
 # The address the card tells a reader to open, read out of the card's own text rather than off the
 # command: the run's `-e SELVAGE_SERVER` is the address the page container relays to, and this is
 # the one a browser opens. They are two copies of one fact, which is why they are compared. The
@@ -324,6 +331,17 @@ RUN_CARD_FIXTURES: tuple[tuple[str, tuple[str, ...] | None, str], ...] = (
         "a clearing that does not force the containers",
         run_card_fixture((0, "docker rm -f server page", "docker rm server page")),
         "clears a container named page without `-f`",
+    ),
+    (
+        "a clearing that removes only a container whose name starts with the run's own",
+        run_card_fixture(
+            (
+                0,
+                "docker rm -f server page 2>/dev/null",
+                "docker rm -f server-old page 2>/dev/null",
+            )
+        ),
+        "leaves a container named server where a previous paste left one",
     ),
     (
         "a network looked for under another name than the one created",
@@ -538,14 +556,27 @@ RUN_CARD_FIXTURES: tuple[tuple[str, tuple[str, ...] | None, str], ...] = (
         ),
         "",
     ),
+    (
+        "a third run the card publishes no image for",
+        run_card_fixture(
+            (
+                0,
+                f"-e SELVAGE_SERVER=http://server:8080 {PAGE_REFERENCE}",
+                f"-e SELVAGE_SERVER=http://server:8080 {PAGE_REFERENCE}"
+                " && docker run -d --rm --name other --network room example/other:1",
+            ),
+            blocks=RUN_CARD_FIXTURE_NAMED,
+        ),
+        "is given no `-e SELVAGE_SERVER`, and the card hands a reader two runs",
+    ),
 )
 
-# The address the card tells a reader to open and the port its command publishes are two copies of
-# one fact, and nothing compared them: the card prints `http://127.0.0.1:8080/`, the command maps
-# `-p 127.0.0.1:8080:8080`, and a command that publishes something else sends the reader to an
-# address its own card says answers. `(what, the address the card prints, the blocks it prints
-# beside it, the fragment of the rule that pair has to be reported as)`, the fragment empty for the
-# pair that agrees.
+# The address the card tells a reader to open and the address its command publishes on are two
+# copies of one fact, and nothing compared them: the card prints `http://127.0.0.1:8080/`, the
+# command maps `-p 127.0.0.1:8080:8080`, and a command that publishes something else — another
+# port, or the same port on another address — sends the reader to an address its own card says
+# answers. `(what, the address the card prints, the blocks it prints beside it, the fragment of the
+# rule that pair has to be reported as)`, the fragment empty for the pair that agrees.
 RUN_CARD_OPENED_AT_FIXTURES: tuple[tuple[str, str, tuple[str, ...] | None, str], ...] = (
     (
         "a card whose command publishes another port than the one it prints",
@@ -565,8 +596,36 @@ RUN_CARD_OPENED_AT_FIXTURES: tuple[tuple[str, str, tuple[str, ...] | None, str],
         run_card_fixture((0, "-p 127.0.0.1:8080:8080", "-p 8080")),
         "publishes no port on the host",
     ),
+    # The host and the container port of a mapping are the two readings this check found
+    # unfixtured: every fixture it had mapped `8080:8080`, where the field before the colon and the
+    # one after it are the same number, so a reading of the container port answered for the host
+    # port and a card over a mapping those two fields disagree in was never read.
     (
-        "the card's own address against the port its own command publishes",
+        "a command that publishes the host port on a container port of its own",
+        "http://127.0.0.1:9090/",
+        run_card_fixture((0, "-p 127.0.0.1:8080:8080", "-p 127.0.0.1:9090:8080")),
+        "",
+    ),
+    (
+        "a command that publishes the page on another address than the card prints",
+        "http://127.0.0.1:8080/",
+        run_card_fixture((0, "-p 127.0.0.1:8080:8080", "-p 192.168.1.5:8080:8080")),
+        "publishes on 192.168.1.5 and the card tells the reader to open http://127.0.0.1:8080/",
+    ),
+    (
+        "a command that publishes the page on the other loopback",
+        "http://127.0.0.1:8080/",
+        run_card_fixture((0, "-p 127.0.0.1:8080:8080", "-p [::1]:8080:8080")),
+        "publishes on ::1 and the card tells the reader to open http://127.0.0.1:8080/",
+    ),
+    (
+        "a command that names the card's own loopback on a host port of its own",
+        "http://localhost:9090/",
+        run_card_fixture((0, "-p 127.0.0.1:8080:8080", "-p 127.0.0.1:9090:9090")),
+        "",
+    ),
+    (
+        "the card's own address against the address its own command publishes on",
         "http://127.0.0.1:8080/",
         RUN_CARD_FIXTURE_BLOCKS,
         "",
@@ -2050,17 +2109,94 @@ def network_removed_in(clause: str) -> str | None:
     return network_named_in(clause, verb) if verb is not None else None
 
 
-def forced_removal_clauses(where: str, name: str) -> list[str]:
+# The places the rules compare a container or network name, each named because a name read as a
+# search is what a fixture has to hold: `selvage-net` is a different name from `selvage`, a `\b`
+# boundary does not say so because a hyphen is one, and read as a search a clearing of
+# `selvaged-old` stands in for a clearing of `selvaged`, which is a card that clears nothing the run
+# needs. Every one of these places reads through `reads_the_name`, and `run_card_reading_problems`
+# swaps one place at a time for the search and requires a fixture to go red, so a place no fixture
+# distinguishes is reported rather than left in place.
+#
+# The clearing the run meets and the teardown that ends it are two places and not one, even though
+# both read a container's name the same way: `docker rm -f server-old page` before the run is a card
+# that does not clear the server, and the same clause in the teardown is a card that removes
+# something else, so a fixture that holds one of them says nothing about the other.
+READING_RUN_CLEARING = "the run's own clearing"
+READING_TEARDOWN = "the teardown's containers"
+READING_TEARDOWN_ORDER = "the teardown's ordering, the containers"
+READING_TEARDOWN_ORDER_NETWORK = "the teardown's ordering, the network"
+READING_TEARDOWN_NETWORK = "the network the teardown leaves behind"
+
+
+def names_the_word_as_a_search(clause: str, name: str) -> bool:
+    """The reading `names_the_word` is written to refuse: what a `\b{name}\b` search answers."""
+    return re.search(rf"\b{re.escape(name)}\b", clause) is not None
+
+
+def removes_the_network(clause: str, network: str) -> bool:
+    """Whether `clause` is a network removal that removes exactly `network`."""
+    return network_removed_in(clause) == network
+
+
+def removes_the_network_as_a_search(clause: str, network: str) -> bool:
+    """`removes_the_network` with its name comparison weakened: `room-old` reads as `room`."""
+    return NETWORK_REMOVE.search(clause) is not None and names_the_word_as_a_search(
+        clause, network
+    )
+
+
+# `(the reading the place does, the search it must not be)`.
+RUN_CARD_NAME_READINGS: dict[
+    str, tuple[Callable[[str, str], bool], Callable[[str, str], bool]]
+] = {
+    READING_RUN_CLEARING: (names_the_word, names_the_word_as_a_search),
+    READING_TEARDOWN: (names_the_word, names_the_word_as_a_search),
+    READING_TEARDOWN_ORDER: (names_the_word, names_the_word_as_a_search),
+    READING_TEARDOWN_ORDER_NETWORK: (
+        removes_the_network,
+        removes_the_network_as_a_search,
+    ),
+    READING_TEARDOWN_NETWORK: (removes_the_network, removes_the_network_as_a_search),
+}
+
+# Which places the fixtures reached, which of them read a name the search would read differently,
+# and which of them the harness has swapped for the search. A place nothing reached is a place the
+# rules no longer read; a place reached without a disagreement is one no fixture tells the search
+# apart at; a place that disagreed without reddening a fixture is one where the difference never
+# reaches a rule's answer.
+name_readings_reached: set[str] = set()
+name_readings_disagreed: set[str] = set()
+swapped_name_readings: set[str] = set()
+
+
+def reads_the_name(site: str, clause: str, name: str) -> bool:
+    """Whether `clause` reads as carrying `name`, read the way the place `site` reads a name.
+
+    The place is passed by its caller rather than inferred from the clause, because it is what the
+    fixture harness swaps: one place weakened at a time is what says a fixture holds *that* place,
+    where a reading weakened everywhere would be held by whichever fixture noticed it first.
+    """
+    name_readings_reached.add(site)
+    reading, weakened = RUN_CARD_NAME_READINGS[site]
+    if site not in swapped_name_readings:
+        return reading(clause, name)
+    if reading(clause, name) != weakened(clause, name):
+        name_readings_disagreed.add(site)
+    return weakened(clause, name)
+
+
+def forced_removal_clauses(where: str, name: str, site: str) -> list[str]:
     """The clauses of `where` that remove a container named `name`, forced or not.
 
     Every clause is read, not the first one that matches: a command that removes the name twice
     and forces it in one of those places does remove it, and the caller asks separately whether
-    any of them forces it.
+    any of them forces it. `site` is the place the name is read at, for the fixture harness.
     """
     return [
         clause
         for clause, _end in clauses_with_offsets(where)
-        if DOCKER_REMOVE.search(clause) is not None and names_the_word(clause, name)
+        if DOCKER_REMOVE.search(clause) is not None
+        and reads_the_name(site, clause, name)
     ]
 
 
@@ -2089,19 +2225,76 @@ def port_named_by(address: str) -> int | None:
     return int(match.group("port"))
 
 
-def published_host_port(clause: str) -> int | None:
-    """The host port a clause publishes, or None when it publishes none.
+def mapping_fields(mapping: str) -> tuple[str, str, str]:
+    """Docker's `-p` value as `(the host it names, its host port, its container port)`.
 
-    The field before the last colon of the mapping is the host port; `-p 8080` maps the container's
-    port and leaves the host's to docker, which is a port the card's address cannot name.
+    The form is `[host-ip:][host-port:]container-port[/proto]`, and each of the first two may be
+    absent. The host may be an IPv6 address, which is bracketed because it carries colons of its
+    own, so it is read before the rest is split on them: `[::1]:8080:8080` is the host `::1` with
+    the two ports after it, not five fields.
     """
+    body = mapping.split("/", 1)[0]
+    host = ""
+    if body.startswith("["):
+        host, _, body = body[1:].partition("]")
+        body = body.removeprefix(":")
+    fields = body.split(":")
+    if len(fields) >= 3:
+        return fields[0], fields[-2], fields[-1]
+    if len(fields) == 2:
+        return host, fields[0], fields[1]
+    return host, "", fields[0]
+
+
+def host_port_of_mapping(mapping: str) -> int | None:
+    """The port a mapping publishes on the host, or None when it publishes none.
+
+    Only the field before the last colon is a port on the host: `-p 8080` publishes the container's
+    port on one docker picks, which is not a port the card's address can name.
+    """
+    host_port = mapping_fields(mapping)[1]
+    return int(host_port) if host_port.isdigit() else None
+
+
+def container_port_of_mapping(mapping: str) -> int | None:
+    """The published port read as the mapping's last field: the edit this file has to refuse.
+
+    Docker's last field is the container's port, and the guard above is left where it is: a mapping
+    that names no host port is still read as naming none, and only the field the port comes out of
+    moves. That is the shape a later hand reaches for — `fields[-1]` in place of `fields[-2]` — and
+    every mapping a fixture carried was `8080:8080`, where the two fields are one number, so it
+    answered for the host port with every fixture green. The fixture that refuses it is a mapping
+    whose two fields differ.
+    """
+    host_port, container_port = mapping_fields(mapping)[1:]
+    if not host_port.isdigit() or not container_port.isdigit():
+        return None
+    return int(container_port)
+
+
+# The mapping reading the fixture harness swaps, and the one it swaps in.
+published_port_reading: Callable[[str], int | None] = host_port_of_mapping
+
+
+def published_host_port(clause: str) -> int | None:
+    """The host port a clause publishes, or None when it publishes none."""
     found = PUBLISHED_MAPPING.search(clause)
     if found is None:
         return None
-    fields = found.group("mapping").split("/", 1)[0].split(":")
-    if len(fields) < 2 or not fields[-2].isdigit():
-        return None
-    return int(fields[-2])
+    return published_port_reading(found.group("mapping"))
+
+
+def published_host_address(clause: str) -> str:
+    """The host address a clause publishes on, '' when its mapping names none.
+
+    Docker leaves the host to itself when the mapping names none, and what is read here is the
+    mapping and not docker's choice: an address nobody wrote is not one the card's own address can
+    be held to, and the fixture that holds this reading is a mapping that names another one.
+    """
+    found = PUBLISHED_MAPPING.search(clause)
+    if found is None:
+        return ""
+    return mapping_fields(found.group("mapping"))[0]
 
 
 def run_image_operand(clause: str) -> str:
@@ -2161,6 +2354,10 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
 
     Every rule here carries a fixture in `RUN_CARD_FIXTURES`, and each fixture pins the fragment
     its rule emits, so a rule removed is a rule this file fails on rather than one nothing reads.
+    Every name comparison goes through `reads_the_name` with one of the places named at the top of
+    this file, and it is a fixture rather than the code that says each place is held:
+    `run_card_reading_problems` swaps each place in turn for the search it must not be and requires
+    a fixture to go red, so a place whose fixtures all stay green is a reading nobody holds.
     """
     lines = [line for block in blocks for line in block]
     command = " ".join(lines)
@@ -2220,7 +2417,7 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
     else:
         head = command[: run.start()]
         for name in names:
-            clearing = forced_removal_clauses(head, name)
+            clearing = forced_removal_clauses(head, name, READING_RUN_CLEARING)
             if not clearing:
                 problems.append(
                     f"leaves a container named {name} where a previous paste left one, so "
@@ -2308,10 +2505,17 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
                     f"belongs on the page image {PAGE_REFERENCE}: the container that publishes "
                     "the port a reader opens is the server's own"
                 )
-            if not given and reference != SERVER_REFERENCE:
+            if not given and reference and reference != SERVER_REFERENCE:
                 problems.append(
                     f"runs {shown} on the container that is given no `-e SELVAGE_SERVER`, which "
                     f"is the container the server's image belongs on, {SERVER_REFERENCE}"
+                )
+            elif not given and not reference:
+                problems.append(
+                    "runs a container this project publishes no image for on the container that "
+                    "is given no `-e SELVAGE_SERVER`, and the card hands a reader two runs: the "
+                    f"page image {PAGE_REFERENCE} on the one the address is given to and the "
+                    f"server's {SERVER_REFERENCE} beside it"
                 )
             if reference == SERVER_REFERENCE and PUBLISHED_PORT.search(clause) is not None:
                 problems.append(
@@ -2325,7 +2529,9 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
     else:
         for name in names:
             removals = [
-                clause for line in lines[1:] for clause in forced_removal_clauses(line, name)
+                clause
+                for line in lines[1:]
+                for clause in forced_removal_clauses(line, name, READING_TEARDOWN)
             ]
             if not removals:
                 problems.append(f"its teardown removes no container named {name}")
@@ -2335,7 +2541,7 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
                     "nothing is removed and the line exits non-zero"
                 )
         if network is not None and not any(
-            network_removed_in(clause) == network
+            reads_the_name(READING_TEARDOWN_NETWORK, clause, network)
             for line in lines[1:]
             for clause, _end in clauses_with_offsets(line)
         ):
@@ -2356,7 +2562,7 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
         removing_the_network = [
             index
             for index, (clause, _end) in enumerate(clauses_here)
-            if network_removed_in(clause) == network
+            if reads_the_name(READING_TEARDOWN_ORDER_NETWORK, clause, network)
         ]
         if not removing_the_network:
             continue
@@ -2367,7 +2573,7 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
             if not any(
                 index < first_network
                 and DOCKER_REMOVE.search(clause) is not None
-                and names_the_word(clause, name)
+                and reads_the_name(READING_TEARDOWN_ORDER, clause, name)
                 for index, (clause, _end) in enumerate(clauses_here)
             )
         ]
@@ -2394,14 +2600,19 @@ def run_card_region(page: Scanned) -> str:
 
 
 def run_card_opened_at_problems(opened_at: str, blocks: list[list[str]]) -> list[str]:
-    """The address the card prints against the host port its command publishes, one problem each.
+    """The address the card prints against the address its command publishes on, one problem each.
 
-    The reader is told to open an address and the command maps a port, and those are two copies of
-    one fact: `http://127.0.0.1:8080/` in the card's own copy and `-p 127.0.0.1:8080:8080` in the
+    The reader is told to open an address and the command maps one, and those are two copies of one
+    fact: `http://127.0.0.1:8080/` in the card's own copy and `-p 127.0.0.1:8080:8080` in the
     command under it. A command that publishes another port, or only the container's port on one
     this machine picks, sends the reader to an address nothing answers on while the copy beside it
-    says it does, and an address that names no port is one no command can publish to. The run the
-    address is given to is the one read, because that is the container the reader opens.
+    says it does; an address that names no port is one no command can publish to; and a mapping
+    that names a host other than the loopback the card prints — `-p 192.168.1.5:8080:8080`,
+    `-p [::1]:8080:8080` — publishes the page where a browser sent to the card's own address never
+    reaches it. A mapping that names no host at all is left to docker, which publishes it on every
+    interface the machine has, and passes: what is read here is the address a mapping carries and
+    not the one docker picks. The run the address is given to is the one read, because that is the
+    container the reader opens.
     """
     port = port_named_by(opened_at)
     if port is None:
@@ -2425,16 +2636,26 @@ def run_card_opened_at_problems(opened_at: str, blocks: list[list[str]]) -> list
                     f"publishes {published} and the card tells the reader to open {opened_at}, "
                     "so the address it prints is on a port its own command does not serve"
                 )
+            bound = published_host_address(clause)
+            if bound and bound not in LOOPBACK_NAMES:
+                problems.append(
+                    f"publishes on {bound} and the card tells the reader to open {opened_at}, "
+                    "so the address it prints is not one its own command serves"
+                )
     return problems
 
 
 def check_run_card_address(pages: list[Scanned]) -> int:
-    """The address the Run card tells a reader to open, against the port its command publishes.
+    """The address the Run card tells a reader to open, against the address its command publishes.
 
-    The card prints one address and its command publishes one port, and those are two copies of one
+    The card prints one address and its command publishes one, and those are two copies of one
     fact that nothing compared: a page saying `http://127.0.0.1:8080/` over a command publishing
     `-p 127.0.0.1:9090:8080` sends every reader it has to an address nothing answers on, and the
     check that reads the command's shape cannot see it, because the command is a correct command.
+    The mapping's host is read the same way: `-p 192.168.1.5:8080:8080` publishes the page where
+    the card's own loopback address reaches nothing, and a page that says its container is
+    published on this machine's loopback while its command puts the page on a LAN address or on
+    `::1` is one whose copy and command are two different facts.
 
     The address is read out of the card's own text, not off the command: what the run's
     `-e SELVAGE_SERVER` names is the address the page container relays to, which is a different
@@ -2442,9 +2663,10 @@ def check_run_card_address(pages: list[Scanned]) -> int:
     address another part of the page prints is a different fact, and a card whose own copy and
     command agree is a card that is right.
 
-    Returns 0 when the address the card prints is the port its command publishes, 1 when it is not,
-    and 2 when no scanned page prints a loopback address inside the card that carries a command:
-    an address the check cannot find is not an address it checked.
+    Returns 0 when the address the card prints is the address its command publishes — its host
+    port, and the host that mapping names where it names one — 1 when it is not, and 2 when no
+    scanned page prints a loopback address inside the card that carries a command: an address the
+    check cannot find is not an address it checked.
     """
     root = root_of_this_checkout()
     failures: list[tuple[str, list[str]]] = []
@@ -2484,9 +2706,9 @@ def check_run_card_address(pages: list[Scanned]) -> int:
         )
         return 2
     print(
-        "check-claims: the address the Run card tells a reader to open is the host port its "
-        "command publishes, so the port the page sends a browser to is the one the run beside it "
-        "maps"
+        "check-claims: the address the Run card tells a reader to open is the address its command "
+        "publishes, its host port and the loopback its mapping names where it names one, so the "
+        "address the page sends a browser to is one the run beside it serves"
     )
     return 0
 
@@ -4013,6 +4235,91 @@ def fixture_failure(what: str, problems: list[str], expected: str) -> str:
     return ""
 
 
+def reddened_run_card_fixtures() -> list[str]:
+    """The Run card fixtures the rules as they now stand report, by name."""
+    reddened: list[str] = []
+    for what, shape, expected in RUN_CARD_FIXTURES:
+        if shape is None:
+            continue
+        problems = run_card_problems([[line] for line in shape])
+        if fixture_failure(what, problems, expected):
+            reddened.append(what)
+    return reddened
+
+
+def reddened_run_card_address_fixtures() -> list[str]:
+    """The Run card address fixtures the rules as they now stand report, by name."""
+    reddened: list[str] = []
+    for what, opened_at, shape, expected in RUN_CARD_OPENED_AT_FIXTURES:
+        if shape is None:
+            continue
+        problems = run_card_opened_at_problems(opened_at, [[line] for line in shape])
+        if fixture_failure(what, problems, expected):
+            reddened.append(what)
+    return reddened
+
+
+def run_card_reading_problems() -> list[str]:
+    """Every reading the card's rules do, against the fixture that has to hold it.
+
+    A fixture holds a rule when it pins the fragment the rule emits; it holds a *reading* when
+    swapping that reading for the weaker one a later edit would leave in its place turns a fixture
+    red, and those are two different things. The run's own clearing was reported as covered and was
+    not: every fixture naming a container named it plainly, so reverting that place to a
+    `\b{name}\b` search left every one of them green — and the card's own clearing of
+    `selvaged-old` then passed a check that reads a clearing of `selvaged`. The published host port
+    was the same shape: every mapping a fixture carried was `8080:8080`, where the field before the
+    last colon and the one after it are one number, so reading the container port answered for the
+    host port and no fixture said otherwise.
+
+    So each place is swapped on its own — one place at a time, so the fixture that reddens is the
+    one holding *that* place and not a fixture some other place reddened — and a reading which
+    leaves every fixture green is reported here rather than left in place. The three ways that
+    happens are told apart: a place the rules no longer read, a place no fixture clause tells the
+    two readings apart at, and a place whose difference never reaches a rule's answer.
+    """
+    problems: list[str] = []
+    for site in RUN_CARD_NAME_READINGS:
+        swapped_name_readings.add(site)
+        try:
+            reddened = reddened_run_card_fixtures()
+        finally:
+            swapped_name_readings.discard(site)
+        if reddened:
+            continue
+        if site not in name_readings_reached:
+            problems.append(
+                f"the name reading {site!r} is a place the rules no longer read, so the table "
+                "names a comparison nothing makes"
+            )
+        elif site not in name_readings_disagreed:
+            problems.append(
+                f"the name reading {site!r} can be replaced with a `\\b{{name}}\\b` search with "
+                "every Run card fixture still green, and no fixture reaches a clause there where "
+                "the two readings differ: a reading no fixture tells apart is a reading nothing "
+                "holds"
+            )
+        else:
+            problems.append(
+                f"the name reading {site!r} can be replaced with a `\\b{{name}}\\b` search with "
+                "every Run card fixture still green although a fixture reads a name there the two "
+                "readings differ on: the difference never reaches a rule's answer"
+            )
+    global published_port_reading
+    published_port_reading = container_port_of_mapping
+    try:
+        reddened = reddened_run_card_address_fixtures()
+    finally:
+        published_port_reading = host_port_of_mapping
+    if not reddened:
+        problems.append(
+            "the published host port can be read as the mapping's container port with every Run "
+            "card address fixture still green: no fixture publishes the host port and the "
+            "container port as two different numbers"
+        )
+    return problems
+
+
 def main() -> int:
     compiled: list[
         tuple[Phrase, re.Pattern[str], list[re.Pattern[str]], tuple[re.Pattern[str], ...]]
@@ -4075,6 +4382,15 @@ def main() -> int:
         if failure:
             print(f"check-claims: {failure}", file=sys.stderr)
             return 2
+
+    # The fixtures above say the rules read the right commands; this says they read them the right
+    # way, which is the half that was missing: a reading can be swapped for a weaker one with every
+    # fixture still green, and then the fixtures hold a rule and not the reading inside it.
+    reading_problems = run_card_reading_problems()
+    if reading_problems:
+        for problem in reading_problems:
+            print(f"check-claims: {problem}", file=sys.stderr)
+        return 2
 
     root = root_of_this_checkout()
     os.chdir(root)
