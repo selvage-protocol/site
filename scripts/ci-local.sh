@@ -22,9 +22,11 @@
 # A phrase wrapped across lines or encoded as entities in the served bytes is still one phrase
 # to the check. The refused words are the filter half; the step also holds the page to the claims
 # that have an artefact behind them — the tag its `docker run` names against the registry, the
-# demo instance against the box, the relay disclosure, the corpus counts against the file that
-# pins them — and each of those fails rather than passes when it cannot be checked. A filter, not
-# a proof: see scripts/check-claims.py.
+# shape that makes a second paste of that command work, the `$ ` prompt and the labels the Run
+# card prints against the stylesheet the served page loads (read out of the build the server is
+# serving, not out of `style.css`), the demo instance against the box, the relay disclosure, the
+# corpus counts against the file that pins them — and each of those fails rather than passes when
+# it cannot be checked. A filter, not a proof: see scripts/check-claims.py.
 #
 # The CSP step reads the same rendered HTML and the policy out of `vercel.json`, and fails when
 # the policy would refuse a script, stylesheet, image or font the page carries. That is the defect
