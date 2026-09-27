@@ -161,12 +161,13 @@ WIRE_VERSION = re.compile(r"\bselvage/\d+\b")
 # registry, as the tag the `docker run` hands a reader.
 DEMO_HOST = "selvage-demo.dontblameme.dev"
 DEMO_ORIGIN = "https://" + DEMO_HOST
-# Every reference the page may carry to that host: the instance's own origin, and its terms page.
-# The session address is the origin as well, with no path. The clients append the endpoint path
-# themselves (`sessionUrl` in the engines both clients vendor), so the two forms are not
-# interchangeable: an address already carrying the path gets a second one appended and the socket
-# is refused, which is why the full form is not an allowed reference.
-DEMO_REFERENCES = (DEMO_ORIGIN, DEMO_ORIGIN + "/terms", "wss://" + DEMO_HOST)
+# Every reference the page may carry to that host: the instance's own origin. The `/terms` page the
+# instance served is gone, so a link to it would 404 for a reader; the origin is the only address on
+# that host the page may hand a reader. The session address is the origin as well, with no path. The
+# clients append the endpoint path themselves (`sessionUrl` in the engines both clients vendor), so
+# the two forms are not interchangeable: an address already carrying the path gets a second one
+# appended and the socket is refused, which is why the full form is not an allowed reference.
+DEMO_REFERENCES = (DEMO_ORIGIN, "wss://" + DEMO_HOST)
 DEMO_URL = re.compile(r"(?:https?|wss?)://[^\s\"'<>)]+")
 # The endpoint path the clients append to whatever server address they are given, so the address
 # the page hands a reader names this path's parent.
@@ -860,9 +861,8 @@ FORBIDDEN: list[Phrase] = [
         r"|\b(?:at scale|(?:your|a|our|the) team)\b[^.]{0,32}\bdemo\b",
         "try the free demo, it is always up and your rooms are saved",
         "the demo is one small box with in-memory rooms: a restart ends every one of them, it "
-        "keeps no work, nothing promises it is up, and it is not sized for a team. The terms "
-        "also gate it to personal and evaluation use, so the shape of a free tier of a service "
-        "is a claim about a product that does not exist",
+        "keeps no work, nothing promises it is up, and it is not sized for a team, so the shape "
+        "of a free tier of a service is a claim about a product that does not exist",
         (
             "the free demo never goes down",
             "the demo persists your rooms",
@@ -876,26 +876,33 @@ FORBIDDEN: list[Phrase] = [
         ),
     ),
     Phrase(
-        # The instance carries a non-commercial term and the software does not. The workspace
-        # and clients are MIT OR Apache-2.0, `crates/selvaged` is FSL-1.1-MIT, and the
-        # specification's prose, schema and vectors are CC-BY-4.0, so moving the instance's
-        # term onto the software claims a licence nobody granted.
+        # The project states nothing about how the instance may be used: the repository licences
+        # are the whole of it, and the non-commercial notice and `/terms` page the instance served
+        # were its own prose, retired on 2026-09-27. The licences are not a non-commercial one
+        # either — the workspace and clients are MIT OR Apache-2.0, `crates/selvaged` is
+        # FSL-1.1-MIT, and the specification's prose, schema and vectors are CC-BY-4.0 — so a
+        # non-commercial term asserted of the software, or of the instance, claims a restriction
+        # nobody wrote.
         r"\bnon-?commercial licen[cs]e\b"
-        r"|\b(?:licen[cs]e|software|project|selvage|selvaged|workspace|clients?|source)\b"
+        r"|\b(?:licen[cs]e|software|project|selvage|selvaged|workspace|clients?|source"
+        r"|instance|demo|server|box)\b"
         r"[^.]{0,12}\b(?:is|are|stays?|remains?|becomes?)\b[^.]{0,8}\bnon-?commercial\b",
         "the non-commercial licence covers the project",
-        "the demo instance's terms are non-commercial and the software's licences are not: the "
-        "workspace and the clients are MIT OR Apache-2.0, `crates/selvaged` is FSL-1.1-MIT, "
-        "which reserves commercial hosting for its licensor, and the specification's prose, "
-        "schema and vectors are CC-BY-4.0",
+        "the project's licences are not non-commercial: the workspace and the clients are "
+        "MIT OR Apache-2.0, `crates/selvaged` is FSL-1.1-MIT, which reserves commercial hosting "
+        "for its licensor, and the specification's prose, schema and vectors are CC-BY-4.0. The "
+        "instance carries no term of its own either — the repository licences are the whole of "
+        "what the project states about use — so naming the software or the instance "
+        "non-commercial claims a restriction nobody wrote",
         (
             "Selvage is non-commercial software",
             "the project is non-commercial",
             "selvaged has a non-commercial licence",
+            "The demo instance is non-commercial and for personal and evaluation use.",
         ),
         (
-            "The demo instance is non-commercial and for personal and evaluation use.",
-            "Those terms cover the demo's one box, not the software.",
+            "The demo instance carries no non-commercial term of its own.",
+            "The project states no non-commercial restriction on the instance.",
         ),
     ),
     Phrase(

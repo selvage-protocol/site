@@ -236,11 +236,12 @@ The must-not-say table below still binds every line. Three rows moved with what 
   truth fails the gate.
 - **The demo instance.** It runs, so "try the live demo" and the install-free page are truth and
   the entry that denied the instance is replaced by the overclaim that came with one: a demo
-  described as a service. Its rooms are in memory on one small box, it keeps no work, and its terms
-  gate it to personal and evaluation use. A second entry, new with the demo, holds the mistake the
-  section makes easy: the instance is non-commercial and the software is not
-  (`MIT OR Apache-2.0`, `FSL-1.1-MIT`, `CC-BY-4.0`), so a "non-commercial licence" sentence is a
-  licence nobody granted.
+  described as a service. Its rooms are in memory on one small box and it keeps no work. A second
+  entry holds the mistake the section makes easy: reaching for a non-commercial term. The instance
+  carries no term of its own — its non-commercial notice and `/terms` page were its own prose,
+  retired on 2026-09-27 — and the software's licences are `MIT OR Apache-2.0`, `FSL-1.1-MIT` and
+  `CC-BY-4.0`, none of them non-commercial, so the sentence claims a licence nobody granted about
+  whichever it names.
 - **The corpus counts.** Still exactly the numbers `specification/schema/validate.py` pins, and the
   two layers are pinned apart because they are two corpora: the wire layer's 24 vectors, 33,760
   frame checks and 8,387 assertions, and the peer layer's 26 vectors, 221 checks and 74 assertions.
@@ -528,12 +529,12 @@ arm64, and `selvaged:0.1.1` proved the difference by publishing both legs around
 every layer digest identical across the two. `0.1.0` carries the same defect and `0.1.2` is the
 fix; neither broken tag will be retagged or removed. That proof runs per package, so the page
 half of the command is held to it too. The second is the
-demo instance: the page points at one host, every reference to that host has to be one of the three
+demo instance: the page points at one host, every reference to that host has to be one of the two
 the page may carry, a link has to point at the instance itself, and `https://selvage-demo.dontblameme.dev/meta`
 has to report a `selvaged` server. The references are read
 from the visible text *and* from the links' destinations, because a label and the place it goes
 are two claims: an anchor labelled with the demo host whose `href` points elsewhere passes a
-text-only scan. The allowed references are the origin, its `/terms`, and the `wss://` origin with
+text-only scan. The allowed references are the origin and the `wss://` origin with
 **no path**, because both clients append `/session` to whatever address they are given (`sessionUrl`
 in the engine they vendor), so the page naming `wss://…/session` would hand a reader an address that
 gets a second `/session` appended and is refused. The check asserts that path separately, by
@@ -691,9 +692,9 @@ no network either.
 | "the extension is unpublished", or a registry it is not published on | The extension is published as `selvage-protocol.selvage` on the VS Code Marketplace and on Open VSX, which are the two publish steps in `vscode_client/.github/workflows/release.yml`. The entry this replaces said publishing was a non-goal until the extension worked with a friend (`DESIGN.md` §11); the owner retired it, and the rule that replaced it is narrower and runs the other way: both registry names are required on the page, every registry-shaped word that is not one of them fails the gate (a third-party marketplace, "the extension gallery" named without saying which), and so does a link to a listing the release does not produce. The retired ID's listing is live and linkable by mistake, which is what the destination half is for |
 | "guests are read-only" or "view-only" | The design inverts it: read-only scopes the host's filesystem, never the shared buffer, and every holder of the invite edits the session CRDT. Saying otherwise would be a lie about the product's central idea |
 | "your code never leaves your machine" | Document payloads travel through the server to the peers that ask for them, and they are sealed in `selvage/2` but still leave the machine. What is bounded is the grant: the paths the host enumerates, and the reads it serves from inside the granted root. "Only the people in the room" is false whatever the version: whoever holds the link can read the room, its fragment included |
-| invented proof: screenshots, testimonials, user counts, a production deployment, a demo dressed as a service | There is no recording, no user count, and no commercial deployment behind the demo: it is one small box with in-memory rooms, gated to personal and evaluation use, and the site's own origin is a deploy of this page rather than of the protocol. The demo is named as what it is, which the entry on it enforces: no "free demo", no room that persists, no team-sized instance. The one image the page carries is the project's own site mark (see above), not proof of anything |
+| invented proof: screenshots, testimonials, user counts, a production deployment, a demo dressed as a service | There is no recording, no user count, and no commercial deployment behind the demo: it is one small box with in-memory rooms, and the site's own origin is a deploy of this page rather than of the protocol. The demo is named as what it is, which the entry on it enforces: no "free demo", no room that persists, no team-sized instance. The one image the page carries is the project's own site mark (see above), not proof of anything |
 | a claim of priority ("the first protocol to specify …") | The design record surveys prior art (Eclipse Open Collaboration Tools and others). The project's claim is that the session layer is unspecified, not that this is first |
-| a non-commercial licence, or software described as non-commercial | The instance's terms are non-commercial; the software's licences are not. The workspace and the clients are `MIT OR Apache-2.0`, `crates/selvaged` is `FSL-1.1-MIT` (which forbids offering it to others as a competing commercial product or service), and the specification's prose, schema and vectors are `CC-BY-4.0`, so a sentence that moves the instance's term onto the software claims a licence nobody granted. The page names the licences it does grant in the footer |
+| a non-commercial licence, or the software or the instance described as non-commercial | The software's licences are not non-commercial: the workspace and the clients are `MIT OR Apache-2.0`, `crates/selvaged` is `FSL-1.1-MIT` (which forbids offering it to others as a competing commercial product or service), and the specification's prose, schema and vectors are `CC-BY-4.0`. The instance carries no term of its own either — its non-commercial notice and `/terms` page were its own prose, retired on 2026-09-27 — and the repository licences are the whole of what the project states about use, so a sentence that names either the software or the instance non-commercial claims a restriction nobody wrote. The page names the licences it does grant in the footer |
 | a corpus number other than the pinned one | The counts are constants in `specification/schema/validate.py`, layer by layer: the wire corpus's 24 vectors, 33,760 frame checks and 8,387 assertions, and the peer corpus's 26 vectors, 221 checks and 74 assertions. Any other number is a claim the corpus disproves, and each number is pinned against its own layer's constant, so neither layer's count can be paid by the other's |
 | a third party seeing the room | The relay is sealed, so the operator and the network path can see the room's existence and shape, and not its text, its file names or its roles. Only the page's own weak reading (no third party's cloud holding the room) is backed |
 | a bare "no cloud", qualified or not ("no cloud in between" included) | A self-hosted server can itself run on a cloud VM, so only the weak reading is backed: no third party's cloud holding the room. The backed reading is the hero's own "No third party's cloud holds the room", which names whose cloud it is about |
