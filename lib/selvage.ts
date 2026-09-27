@@ -27,10 +27,10 @@ const REMOVE_CONTAINERS = `docker rm -f ${SERVER_HOST} ${PAGE_CONTAINER}`;
     loopback; the server has no port on it, and the address the page is given names the server
     on the network the two share.
 
-    Pasting it twice leaves a working pair rather than an error: the network is created only when
-    it is missing, and the run clears the two names first, which is what a `docker run --name`
-    refuses to do on its own. Both containers run detached, so neither one is left behind by the
-    other being stopped. */
+    Pasting it twice leaves a working pair rather than an error: the network's creation is allowed
+    to fail, so the network the first paste made is not an error the second one stops at, and the
+    run clears the two names first, which is what a `docker run --name` refuses to do on its own.
+    Both containers run detached, so neither one is left behind by the other being stopped. */
 export const COMMAND =
   `docker network create selvage 2>/dev/null || true` +
   `; ${REMOVE_CONTAINERS} 2>/dev/null` +
