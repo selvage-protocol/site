@@ -583,16 +583,21 @@ FORBIDDEN: list[Phrase] = [
         # file or service unit existed. All three exist today, so those wordings are truth and
         # the pattern was enforcing the opposite of it. What it holds now is the denial those
         # artefacts refute, which is the sentence the page carried until this was corrected:
-        # `reference_server/Dockerfile`, `reference_server/compose.yaml`,
-        # `reference_server/packaging/systemd/selvaged.service` and the anonymously pullable
-        # `ghcr.io/selvage-protocol/selvaged:0.2.0` are all in the repositories.
+        # `reference_server/Dockerfile` builds the anonymously pullable
+        # `ghcr.io/selvage-protocol/selvaged:latest`, `reference_server/compose.yaml` runs it,
+        # and the systemd unit the repositories carry is
+        # `reference_server/deploy/selvage-update.service`, which the demo box installs to
+        # `/etc/systemd/system/` to pull and apply the images. The unit this comment used to
+        # cite, `packaging/systemd/selvaged.service`, went with `packaging/` when it became
+        # `deploy/`, and the denial of a systemd unit is false either way: the unit above is
+        # one.
         r"\bno (?:image|container) to pull\b|\bnothing to install on the server\b"
         r"|\bno compose (?:file|configuration)\b|\bno systemd (?:service|unit)\b",
         "there is no image to pull and no service unit to install in any repository yet",
-        "the server image is published (`ghcr.io/selvage-protocol/selvaged:0.2.0`) and pulls "
+        "the server image is published (`ghcr.io/selvage-protocol/selvaged:latest`) and pulls "
         "with no account, `reference_server/compose.yaml` runs it, and "
-        "`reference_server/packaging/systemd/selvaged.service` installs the binary: a page "
-        "saying none of that exists states the opposite of the truth",
+        "`reference_server/deploy/selvage-update.service` is the systemd unit the demo box "
+        "installs: a page saying none of that exists states the opposite of the truth",
         ("there is no im<!-- -->age to pull", "no conta<span></span>iner to pull",
          "there is no comp<!-- -->ose file", "there is no systemd <span>u</span>nit"),
         ("the published image pulls with no account and no login",
