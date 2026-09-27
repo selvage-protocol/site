@@ -17,9 +17,13 @@ const SERVER_HOST = "selvaged";
 /** The name the page container runs under, for the same reason. */
 const PAGE_CONTAINER = "selvage-web";
 
+/** The network the two containers share, which is how the page reaches the server by name
+    rather than over this machine's loopback. */
+const NETWORK = "selvage";
+
 /** The one command that stops and removes both containers: the run below clears a pair left by a
-    previous paste with it, and the card prints it as the teardown, so the two cannot drift
-    apart. */
+    previous paste with it, and the card prints it as the first half of the teardown, so the two
+    cannot drift apart. */
 const REMOVE_CONTAINERS = `docker rm -f ${SERVER_HOST} ${PAGE_CONTAINER}`;
 
 /** The one command the page hands a reader, built from the images above so the command and the
@@ -27,20 +31,25 @@ const REMOVE_CONTAINERS = `docker rm -f ${SERVER_HOST} ${PAGE_CONTAINER}`;
     loopback; the server has no port on it, and the address the page is given names the server
     on the network the two share.
 
-    Pasting it twice leaves a working pair rather than an error: the network's creation is allowed
-    to fail, so the network the first paste made is not an error the second one stops at, and the
-    run clears the two names first, which is what a `docker run --name` refuses to do on its own.
-    Both containers run detached, so neither one is left behind by the other being stopped. */
+    Pasting it twice leaves a working pair rather than an error: the run clears the two names
+    first, and the network is looked for before it is created, so a network the first paste made
+    is not an error the second one stops at. The creation is not silenced and nothing but `&&`
+    follows it, so a creation that really fails stops the line where the reader can see it
+    instead of surfacing below as a container that cannot find its network. Both containers run
+    detached, which is what returns the reader's prompt; what ends the pair is the teardown, which
+    names both containers and their network. */
 export const COMMAND =
-  `docker network create selvage 2>/dev/null || true` +
-  `; ${REMOVE_CONTAINERS} 2>/dev/null` +
-  `; docker run -d --rm --name ${SERVER_HOST} --network selvage ${SERVER_IMAGE}` +
-  ` && docker run -d --rm --name ${PAGE_CONTAINER} --network selvage` +
+  `${REMOVE_CONTAINERS} 2>/dev/null` +
+  `; docker network inspect ${NETWORK} >/dev/null 2>&1` +
+  ` || docker network create ${NETWORK}` +
+  ` && docker run -d --rm --name ${SERVER_HOST} --network ${NETWORK} ${SERVER_IMAGE}` +
+  ` && docker run -d --rm --name ${PAGE_CONTAINER} --network ${NETWORK}` +
   ` -p 127.0.0.1:8080:8080 -e SELVAGE_SERVER=http://${SERVER_HOST}:8080 ${PAGE_IMAGE}`;
 
-/** What the card prints beside the command to end the run, as the same string the command above
-    clears a previous pair with. */
-export const TEARDOWN = REMOVE_CONTAINERS;
+/** What the card prints beside the command to end the run: both containers, then the network the
+    run made. The network is not part of the command's own clearing above, which has to work while
+    the containers holding it are still there. */
+export const TEARDOWN = `${REMOVE_CONTAINERS}; docker network rm ${NETWORK}`;
 
 /** The demo instance: the origin a guest opens, and the address an editor hosts on. */
 export const DEMO = "selvage-demo.dontblameme.dev";
