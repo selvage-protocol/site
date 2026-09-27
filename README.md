@@ -381,9 +381,9 @@ The tag is `package.json`'s version with a `v`, and an annotated tag is what the
 repositories' release runs create, so it is made the same way by hand:
 
 ```console
-$ git tag -a v0.4.5 -m v0.4.5
-$ git push origin v0.4.5
-$ gh release create v0.4.5 --title v0.4.5 --generate-notes
+$ git tag -a v0.5.1 -m v0.5.1
+$ git push origin v0.5.1
+$ gh release create v0.5.1 --title v0.5.1 --generate-notes
 ```
 
 The tag is a marker on the page's history rather than an input to anything. Other repositories tag
@@ -576,7 +576,7 @@ answer at all, and exits 1 when the instance answers something that disproves a 
 The next positive assertion binds the page's sealing claim to the one wire version, and it exists
 because the paragraph that makes that claim sits directly under a `docker run`: a reader can take
 the claim and the command together and get a server that carries the room through it in the clear.
-The page no longer names a version, and the check no longer requires it to. What it holds instead is
+The page names no wire version, and the check does not require it to. What it holds instead is
 the two artefacts against each other, which are still both on the page: the wire the tag speaks,
 read from `IMAGE_WIRE_BY_TAG`, because no registry says what wire version a binary speaks, has to be
 one the address beside it reaches, measured from `/meta`, where no wording can forge it. A reader

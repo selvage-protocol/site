@@ -90,10 +90,10 @@ DASHES = re.compile("[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]")
 # enumerate. It is therefore a *required* claim, pinned once here and asserted twice: every
 # reference the rendered page carries must name this tag, and the registry must serve it.
 #
-# The tag is one the release publishes rather than a version, because a version written into a
-# reader's command goes stale the moment the page's copy of it does. `latest` resolves to a built
-# artefact all the same, which is what the registry half reaches, and any other tag on the page
-# fails the first half rather than passing as a live command.
+# The tag is the release's own version, so a reader's command resolves to the artefact this
+# release names. A version the registry does not carry yet is a red run rather than a wording to
+# soften: the site is deployed after the image and the gate is re-run once it is. Any other tag on
+# the page fails the first half rather than passing as a live command.
 #
 # The registry half is the one that reaches the artefact, and it holds the distinction that
 # matters: a platform entry in an image index proves only that a slot is *labelled* arm64.
@@ -103,7 +103,7 @@ DASHES = re.compile("[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]")
 # looks like, and it pulls them with no credential in the request, because no account is the
 # point of the command the page hands over.
 PUBLISHED_IMAGE = "ghcr.io/selvage-protocol/selvaged"
-PUBLISHED_IMAGE_TAG = "latest"
+PUBLISHED_IMAGE_TAG = "0.5.1"
 IMAGE_REFERENCE = re.compile(r"ghcr\.io/selvage-protocol/selvaged(?::([\w][\w.+-]*))?")
 REGISTRY_HOST = "ghcr.io"
 REGISTRY_REPOSITORY = PUBLISHED_IMAGE.split("/", 1)[1]
@@ -119,12 +119,12 @@ REQUEST_TIMEOUT_SECONDS = 20
 # in the same wave — this map, `PUBLISHED_IMAGE_TAG` and the page's sentence about it move
 # together, and `check_wire_binding` is what holds the last of the three to the first two.
 #
-# The entry is keyed by the tag, not by a version, and the tag is a moving name: the protocol has
-# one wire version, so every release that tag can resolve to speaks it, and what the entry refuses
-# is a tag whose wire nobody has declared rather than a tag that has moved.
+# The entry is keyed by the tag the page hands a reader, which is this release's version: the
+# protocol has one wire version, so the entry declares that the artefact behind that tag speaks it,
+# and what it refuses is a tag whose wire nobody has declared.
 WIRE = "selvage/2"
 IMAGE_WIRE_BY_TAG = {
-    "latest": WIRE,
+    "0.5.1": WIRE,
 }
 WIRE_VERSION = re.compile(r"\bselvage/\d+\b")
 
@@ -607,9 +607,9 @@ FORBIDDEN: list[Phrase] = [
         # The lookbehind is what keeps a version-inside-a-version out of a pattern about a 1.0
         # claim: a tag like `2.1.0` carries `1.0` as a substring, and naming a tag that happens
         # to contain it is describing an artefact, not claiming a frozen release. The tag the
-        # page carries is `latest`, which carries no `1.0` substring at all, so the fixture below
-        # is synthetic rather than the live tag; the lookbehind still has to hold for whatever
-        # tag a future release publishes under. A 1.0 that stands on its own still matches.
+        # page carries has no `1.0` substring, so the fixture below is synthetic rather than the
+        # live tag; the lookbehind still has to hold for a tag that does. A 1.0 that stands on
+        # its own still matches.
         r"(?<![\d.])v?1\.0\b|production[- ]ready|production[- ]grade|battle[- ]tested|stable release",
         "the stable release, version 1.0",
         "the wire version is `selvage/2`; no shape is frozen, and a release tag is a version of "
