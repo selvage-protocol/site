@@ -221,7 +221,7 @@ export default function Home() {
                 </h2>
                 <p className="lede">
                   Every room runs on a server. The demo is one; the Run card starts the
-                  same server on a machine you control.
+                  same server, and the page in front of it, on a machine you control.
                 </p>
               </div>
               <div className="try-grid">
@@ -256,11 +256,13 @@ export default function Home() {
                       <span className="try-title">Run</span>
                     </p>
                     <Badge variant="pill" className="bg-green/12 text-green">
-                      selvaged
+                      selvaged + selvage-web
                     </Badge>
                   </div>
                   <p className="try-body">
-                    One Docker command. Rooms live in memory, so a restart ends them.
+                    Two containers: the server that holds the room, and the page that
+                    reaches it. Open http://127.0.0.1:8080/ once both are up. Rooms live
+                    in memory, so a restart ends them.
                   </p>
                   <div className="command">
                     <p className="command-line">
