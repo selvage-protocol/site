@@ -8,7 +8,8 @@ worth having: those known wordings do not appear, even when the page wraps them 
 encodes the characters as HTML entities.
 
 Facts are asserted in the positive instead, because a phrase list cannot reach them: the image tags
-in the `docker run` the page hands a reader, the instance the demo section points at — the address
+in the `docker run` the page hands a reader and the shape that makes a second paste of it work, the
+instance the demo section points at — the address
 it gives an editor and the page a guest is sent to — the wire the tags and that address each speak,
 held together and to no version this protocol does not have, the disclosures the page owes a reader
 of what the sealed relay still sees and of the terms `selvaged` is under, and the identity the
@@ -17,8 +18,8 @@ registries the release publishes it to and what an
 install is and is not. The address half asks the
 path a plain `GET` can reach, not the upgrade: see `demo_session_route`. Each is a fact with an
 artefact behind it, and a wrong tag is a command that fails rather than a wording that lies. See
-`PUBLISHED_IMAGES`, `DEMO_ORIGIN`, `RELAY_DISCLOSURE`, `FSL_DISCLOSURE`, `PUBLISHED_EXTENSION` and
-`check_wire_binding` below.
+`PUBLISHED_IMAGES`, `DEMO_ORIGIN`, `RELAY_DISCLOSURE`, `FSL_DISCLOSURE`, `PUBLISHED_EXTENSION`,
+`check_rerunnable_command` and `check_wire_binding` below.
 
 Each entry below pairs a phrase the page must not carry with the reason it must not, and with a
 sample that has to match it. The reasons are not this script's opinion: every one of them is a
@@ -126,6 +127,30 @@ IMAGE_REFERENCE = re.compile(
 )
 REGISTRY_HOST = "ghcr.io"
 REQUEST_TIMEOUT_SECONDS = 20
+
+# The Run card hands a reader a command they will paste more than once, and this host has no
+# Docker, so what is read is the shape that makes a second paste work rather than the run
+# itself: the network is created in a clause whose failure the chain
+# tolerates, every container name the run uses is cleared before the run reaches it, and the
+# card prints a line that removes those same names. The command the card carried before this
+# is the defect it holds — `docker network create selvage && docker run …`, which stopped at
+# an error on the second paste, and whose detached server kept its name for the next one.
+RUN_CARD_CLASS = "command"
+# One printed line of that block. The card puts the command and the teardown on a line each, so
+# the teardown is a line a reader can copy on its own rather than a sentence about one.
+RUN_CARD_LINE = re.compile(
+    r'<p\b[^>]*\bclass="[^"]*\bcommand-line\b[^"]*"[^>]*>(?P<line>.*?)</p>',
+    re.IGNORECASE | re.DOTALL,
+)
+CONTAINER_NAME = re.compile(r"--name[=\s]+(?P<name>[^\s;|&]+)")
+NETWORK_CREATE = re.compile(r"\bdocker\s+network\s+create\b")
+# Where one command in the chain ends and the next begins. `||` is deliberately not one: it is
+# what makes a clause's failure tolerable rather than fatal, which is the property read here.
+COMMAND_SEPARATOR = re.compile(r";|&&")
+TOLERATED_FAILURE = re.compile(r"\|\|")
+DOCKER_RUN = re.compile(r"\bdocker\s+run\b")
+# A removal clause, and the name it has to carry for the container the run is about to use.
+DOCKER_REMOVE = r"\bdocker\s+(?:container\s+)?rm\b[^;|&]*"
 
 # The wire version this protocol has, and which wire each artefact the page hands a reader speaks.
 # The page hands a reader artefacts whose wire is a fact about them, not a wording: under this
@@ -1523,6 +1548,128 @@ def check_published_image(pages: list[Scanned]) -> int:
     return 0
 
 
+def run_card_lines(page: Scanned) -> list[str]:
+    """The Run card's command block, one normalised string per printed line.
+
+    Answers [] for a page that carries no such block, which is a failure where the block is
+    required rather than a quiet pass: a scan that reaches no command is not checking one.
+    """
+    block = element_by_class(page.raw, RUN_CARD_CLASS)
+    if block is None:
+        return []
+    return [normalise(match.group("line"))[0] for match in RUN_CARD_LINE.finditer(block[1])]
+
+
+def clauses_of(command: str) -> list[str]:
+    """One command of the chain each, split where a failure would stop the rest of it."""
+    start = 0
+    found: list[str] = []
+    for separator in COMMAND_SEPARATOR.finditer(command):
+        found.append(command[start : separator.start()])
+        start = separator.end()
+    found.append(command[start:])
+    return found
+
+
+def run_card_problems(lines: list[str]) -> list[str]:
+    """What a reader's second paste of the card's command would meet, one problem each.
+
+    The names the run gives its containers are what a leftover pair holds, so they are what
+    every part of this reads: the removal that has to come before the run reaches them, and the
+    teardown line the card prints. The network's creation is read as its own clause, because
+    what makes it a no-op is that its failure is tolerated there rather than fatal to the
+    chain.
+    """
+    command = " ".join(lines)
+    problems: list[str] = []
+    names = sorted({match.group("name") for match in CONTAINER_NAME.finditer(command)})
+    if not names:
+        problems.append("gives no container a name, so there is nothing to clear or remove")
+
+    def removes(where: str, name: str) -> bool:
+        return re.search(rf"{DOCKER_REMOVE}\b{re.escape(name)}\b", where) is not None
+
+    if NETWORK_CREATE.search(command) is None:
+        problems.append("does not create the network the two containers share")
+    elif not any(
+        TOLERATED_FAILURE.search(clause)
+        for clause in clauses_of(command)
+        if NETWORK_CREATE.search(clause)
+    ):
+        problems.append("stops the chain at its network creation when the network exists")
+
+    run = DOCKER_RUN.search(command)
+    if run is None:
+        problems.append("runs no container")
+    else:
+        head = command[: run.start()]
+        for name in names:
+            if not removes(head, name):
+                problems.append(
+                    f"leaves a container named {name} where a previous paste left one, so "
+                    "the run stops on a name collision"
+                )
+
+    if len(lines) < 2:
+        problems.append("prints no teardown, so the card offers no way to end the run")
+    else:
+        for name in names:
+            if not any(removes(line, name) for line in lines[1:]):
+                problems.append(f"its teardown removes no container named {name}")
+    return problems
+
+
+def check_rerunnable_command(pages: list[Scanned]) -> int:
+    """The Run card's command, against a reader pasting it a second time.
+
+    The card's happy path is not only the images it pulls: it is a command run on a machine that
+    may already have one of its containers. The defect it carried was invisible to every other
+    check here — an unguarded `docker network create` stopped the second paste at an error, and
+    the detached server kept its name for the next one, with nothing on the card to remove it.
+    What is required instead is that the network's creation cannot stop the chain, that the
+    names the run uses are cleared before it reaches them, and that the card prints the teardown
+    that removes them.
+
+    This host has no Docker, so this reads a shape and not a run: a command that keeps the
+    reader out of the defect in words this does not know passes it.
+    Returns 0 when a scanned page's card carries all of it, 1 when one part is missing, and 2
+    when no scanned page carries the block at all.
+    """
+    root = root_of_this_checkout()
+    failures: list[tuple[str, list[str]]] = []
+    for page in pages:
+        lines = run_card_lines(page)
+        if not lines:
+            continue
+        problems = run_card_problems(lines)
+        if problems:
+            failures.append((os.path.relpath(page.path, root), problems))
+    if failures:
+        for where, problems in failures:
+            for problem in problems:
+                print(
+                    f"check-claims: the Run card's command at {where} {problem}; the card "
+                    "hands it to a reader who will paste it more than once, and the second "
+                    "paste has to leave a working pair",
+                    file=sys.stderr,
+                )
+        return 1
+    if not any(run_card_lines(page) for page in pages):
+        print(
+            f"check-claims: none of {len(pages)} scanned file(s) carries the Run card's "
+            "command block, and that block is where the project hands a reader two containers "
+            "to run, so a scan that reaches no command is not checking one",
+            file=sys.stderr,
+        )
+        return 2
+    print(
+        "check-claims: the Run card's command cannot be stopped by its own network creation "
+        "failing, clears the container names it is about to use, and prints the teardown that "
+        "removes them, so a second paste leaves a working pair"
+    )
+    return 0
+
+
 def demo_host_of(reference: str) -> str:
     """The host of a URL, with any userinfo, port and path dropped; "" for one that names none.
 
@@ -2852,6 +2999,7 @@ def main() -> int:
         check_hosted_tier,
         check_repository_grid,
         check_published_image,
+        check_rerunnable_command,
         check_demo_instance,
         check_wire_binding,
     ):

@@ -26,7 +26,7 @@ import {
   InviteChip,
   TreeFigure,
 } from "@/components/room-visuals";
-import { COMMAND, DEMO } from "@/lib/selvage";
+import { COMMAND, DEMO, TEARDOWN } from "@/lib/selvage";
 import { CLIENTS, repositoryUrl } from "@/lib/clients";
 
 const DEMO_ORIGIN = `https://${DEMO}`;
@@ -262,12 +262,17 @@ export default function Home() {
                   <p className="try-body">
                     Two containers: the server that holds the room, and the page that
                     reaches it. Open http://127.0.0.1:8080/ once both are up. Rooms live
-                    in memory, so a restart ends them.
+                    in memory, so a restart ends them. The line under the command stops
+                    and removes both containers.
                   </p>
                   <div className="command">
                     <p className="command-line">
                       <span className="command-prompt">$ </span>
                       {COMMAND}
+                    </p>
+                    <p className="command-line">
+                      <span className="command-prompt">$ </span>
+                      {TEARDOWN}
                     </p>
                   </div>
                   <a className="try-link" href="#run">
