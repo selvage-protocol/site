@@ -1577,8 +1577,8 @@ def run_card_problems(lines: list[str]) -> list[str]:
     The names the run gives its containers are what a leftover pair holds, so they are what
     every part of this reads: the removal that has to come before the run reaches them, and the
     teardown line the card prints. The network's creation is read as its own clause, because
-    what makes it a no-op is that its failure is tolerated there rather than fatal to the
-    chain.
+    what keeps a network that is already there from being an error the chain stops at is that
+    its failure is tolerated in that clause rather than fatal to the chain.
     """
     command = " ".join(lines)
     problems: list[str] = []
