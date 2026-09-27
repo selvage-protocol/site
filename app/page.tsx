@@ -266,11 +266,13 @@ export default function Home() {
                     docker logs selvaged prints what the server said for as long as its
                     container is there. A container that stops is removed with its logs, so
                     a server that goes leaves the page up with nothing left to print:
-                    docker ps naming only the page is that case, and when neither is left
-                    at all, run the server on its own without -d and watch it start. Rooms
-                    live in memory, so a restart ends them. The teardown under the command
-                    is a second action: paste it on its own when you are done. It stops and
-                    removes both containers and the network they share.
+                    docker ps naming only the page is that case, and pasting the run again is
+                    what brings both back, since the page keeps the address it resolved at
+                    startup. When neither is left at all, run the server on its own without
+                    -d and watch it start. Rooms live in memory, so a restart ends them. The
+                    teardown under the command is a second action: paste it on its own when
+                    you are done. It stops and removes both containers and the network they
+                    share.
                   </p>
                   <div className="command-group">
                     <p className="command-label">Run both containers</p>
