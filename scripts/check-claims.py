@@ -137,7 +137,10 @@ REQUEST_TIMEOUT_SECONDS = 20
 # it and the run, so a creation that really fails stops the line where a reader can see it instead
 # of surfacing below as a container that cannot find its network; every container name the run
 # uses is forced away before the run reaches it, because a container the first paste left running
-# is one a plain `docker rm` refuses; the address the page container is given names the server
+# is one a plain `docker rm` refuses, and a name is read as a whole word, so a removal of
+# `selvage-net` is not a removal of `selvage`; every run is detached, because one that is not
+# holds the chain at that clause and the containers below it never start; the address the page
+# container is given names the server
 # container, on the network both are attached to, and sits on the container the reader opens; and
 # the card prints a block of its own that removes those names before the network they are still
 # attached to, and that network. The command the card carried before this is the defect it holds —
@@ -181,10 +184,16 @@ DOCKER_REMOVE = re.compile(r"\bdocker\s+(?:container\s+)?rm\b[^;|&]*")
 # flags. Without it docker refuses the container, the refusal is what the discarded stderr hides,
 # and the run below stops on the name the container still holds.
 FORCED_REMOVE = re.compile(r"(?:\s|^)(?:-\w*f\w*|--force)(?=\s|$)")
+# The detachment a run needs, alone or among bundled short flags. Without it the run holds the
+# chain at that clause and every container below it in the line never starts, so the page a
+# reader is told to open is never started by the command that was supposed to start it.
+DETACHED = re.compile(r"(?:\s|^)(?:-\w*d\w*|--detach)(?=\s|$)")
 # A removal clause of either kind, the network's included: read to tell a run's own block from
 # the block that ends it.
 REMOVAL = re.compile(r"\bdocker\s+(?:(?:container|network)\s+)?rm\b")
-NETWORK_REMOVE = r"\bdocker\s+network\s+rm\b[^;|&]*"
+# A `docker network rm` clause's own verb, so the network it removes can be read out of it and
+# compared with the one the run created rather than matched inside a longer name.
+NETWORK_REMOVE = re.compile(r"\bdocker\s+network\s+rm\b")
 
 # The card prints two kinds of text that are not the command: the `$ ` prompt in front of a
 # block's command, and the label above the block. Both sit inside the selection a reader makes
@@ -207,12 +216,13 @@ INNER_ELEMENT = re.compile(
 )
 CLASS_ATTRIBUTE = re.compile(r'\bclass="(?P<classes>[^"]*)"', re.IGNORECASE)
 # The stylesheet the served page loads, named in the page's own markup: the `rel` and the `href`
-# of a `link` element. `next start` answers the `_next` prefix out of the build's own `_next`
-# directory, which is the path the check reads the rule from.
+# of a `link` element. The build puts the files a browser is served under `static/`, which
+# `next start` answers under the `/_next/static/` prefix, so that is the part of the build this
+# reads and the part a page naming anything else is refused for.
 STYLESHEET_LINK = re.compile(r"<link\b[^>]*>", re.IGNORECASE)
 STYLESHEET_REL = re.compile(r"\brel=\"(?P<rel>[^\"]*)\"", re.IGNORECASE)
 STYLESHEET_HREF = re.compile(r"\bhref=\"(?P<href>[^\"]*)\"", re.IGNORECASE)
-BUILD_PREFIX = "/_next/"
+BUILD_PREFIX = "/_next/static/"
 # The declaration that keeps an element out of a selection, and the rule that has to carry it:
 # the selector is read too, so a rule taking some other element out of a selection does not
 # stand in for the class the page actually prints.
@@ -220,70 +230,215 @@ USER_SELECT_NONE = re.compile(r"(?:^|[\s;{])user-select\s*:\s*none\b", re.IGNORE
 CSS_RULE = re.compile(r"(?P<selectors>[^{}@]+)\{(?P<body>[^{}]*)\}", re.DOTALL)
 
 # The card's command is read as a shape, and a shape read by matching is worth no more than what
-# it is matched against, so the rules below carry their own fixtures: one command in the shape the
-# card prints, and one variant per defect a reader's second paste meets. They are written with
-# names of their own rather than with the page's, so they are the shapes and not a second copy of
-# the card, and `main` runs them before it scans anything: a rule that stops finding its shape, or
-# that starts failing the correct one, fails the check itself rather than reporting a page clean.
+# it is matched against, so every rule below carries its own fixture: one command in the shape the
+# card prints, and a variant per rule `run_card_problems` can report, each pinning the fragment
+# that rule emits so deleting the rule reddens the loop rather than leaving one nothing reads.
+# They are written with names of their own rather than with the page's, so they are the shapes and
+# not a second copy of the card, and `main` runs them before it scans anything: a rule that stops
+# finding its shape, or that starts failing the correct one, fails the check itself rather than
+# reporting a page clean.
+#
+# What is not fixtured this way is what is not a command string: the `$ ` prompt and label pin and
+# the refusal to pass when a scanned page carries no Run card block read a served page and the
+# stylesheet its build produced, so their fixture would be a page and a build rather than a line.
 RUN_CARD_FIXTURE_RUN = (
     "docker rm -f server page 2>/dev/null; docker network inspect room >/dev/null 2>&1"
     " || docker network create room"
     " && docker run -d --rm --name server --network room example/server:1"
     " && docker run -d --rm --name page --network room"
-    " -p 127.0.0.1:8080:8080 -e SELVAGE_SERVER=http://server:8080 example/page:1",
+    " -p 127.0.0.1:8080:8080 -e SELVAGE_SERVER=http://server:8080 example/page:1"
 )
-RUN_CARD_FIXTURE_TEARDOWN = ("docker rm -f server page; docker network rm room",)
-# `(what, the block to change, what it replaces, what replaces it, the problem it has to be
-# reported as)`. The last entry is the address written the way the two READMEs document it, which
-# is the same command and has to come back clean, and every other one is a defect.
-RUN_CARD_SHAPES: tuple[tuple[str, int, str, str, str], ...] = (
+RUN_CARD_FIXTURE_TEARDOWN = "docker rm -f server page; docker network rm room"
+RUN_CARD_FIXTURE_BLOCKS = (RUN_CARD_FIXTURE_RUN, RUN_CARD_FIXTURE_TEARDOWN)
+
+
+def run_card_fixture(
+    *edits: tuple[int, str, str], dropped: tuple[int, ...] = ()
+) -> tuple[str, ...] | None:
+    """The correct command with `edits` written into it, or None when one of them does not apply.
+
+    An edit names a block, the text it replaces in it and what replaces it. The text has to be
+    there: a fixture that no longer names the shape it is a variant of is reported rather than
+    quietly becoming the correct command, which is how a rule stops being read. `dropped` leaves a
+    whole block out, for the defects that are a block that should not be there.
+    """
+    lines = list(RUN_CARD_FIXTURE_BLOCKS)
+    for block, before, after in edits:
+        if block >= len(lines) or before not in lines[block]:
+            return None
+        lines[block] = lines[block].replace(before, after)
+    return tuple(line for index, line in enumerate(lines) if index not in dropped)
+
+
+# `(what, the blocks it runs, the fragment of the rule it has to be reported as)`, the fragment
+# empty for the variants that are a correct command and have to come back clean.
+RUN_CARD_FIXTURES: tuple[tuple[str, tuple[str, ...] | None, str], ...] = (
+    (
+        "a run that reaches a name a previous paste left",
+        run_card_fixture((0, "docker rm -f server page 2>/dev/null; ", "")),
+        "leaves a container named page where a previous paste left one",
+    ),
     (
         "a clearing that does not force the containers",
-        0,
-        "docker rm -f server page",
-        "docker rm server page",
-        "without `-f`",
+        run_card_fixture((0, "docker rm -f server page", "docker rm server page")),
+        "clears a container named page without `-f`",
+    ),
+    (
+        "a network looked for under another name than the one created",
+        run_card_fixture((0, "docker network inspect room", "docker network inspect other")),
+        "checks for a network named other and creates room",
+    ),
+    (
+        "a network created without being looked for first",
+        run_card_fixture(
+            (
+                0,
+                "docker network inspect room >/dev/null 2>&1 || docker network create room",
+                "docker network create room",
+            )
+        ),
+        "creates the network without checking whether one is already there",
+    ),
+    (
+        "a network creation whose own error is discarded",
+        run_card_fixture(
+            (0, "docker network create room", "docker network create room 2>/dev/null")
+        ),
+        "discards the network creation's own error",
+    ),
+    (
+        "a command that creates no network for the two containers",
+        run_card_fixture(
+            (
+                0,
+                "docker network inspect room >/dev/null 2>&1 || docker network create room",
+                "docker network inspect room >/dev/null 2>&1",
+            )
+        ),
+        "does not create the network the two containers share",
+    ),
+    (
+        "a run that carries on past a clause which may have failed",
+        run_card_fixture((0, "room && docker run", "room; docker run")),
+        "carries on to the run past a clause that may have failed",
+    ),
+    (
+        "a server container left in the foreground",
+        run_card_fixture(
+            (0, "docker run -d --rm --name server", "docker run --rm --name server")
+        ),
+        "runs a container without `-d`",
+    ),
+    (
+        "a page container left off the network the server is on",
+        run_card_fixture((0, "--name page --network room", "--name page --network other")),
+        "runs a container that is not on room",
+    ),
+    (
+        "a command that gives no container the relay address",
+        run_card_fixture((0, " -e SELVAGE_SERVER=http://server:8080", "")),
+        "gives no container `-e SELVAGE_SERVER`",
+    ),
+    (
+        "an address that names a container nothing else is named",
+        run_card_fixture(
+            (0, "SELVAGE_SERVER=http://server:8080", "SELVAGE_SERVER=http://other:8080")
+        ),
+        "gives no other container the name 'other'",
+    ),
+    (
+        "an address on a container that publishes no port",
+        run_card_fixture((0, " -p 127.0.0.1:8080:8080", "")),
+        "to a container that publishes no port",
+    ),
+    (
+        "a command that names no container",
+        run_card_fixture(
+            (0, "--name server --network room ", ""),
+            (0, "--name page --network room", "--network room"),
+        ),
+        "gives no container a name",
+    ),
+    (
+        "a command that runs no container",
+        run_card_fixture(
+            (0, " && docker run -d --rm --name server --network room example/server:1", ""),
+            (
+                0,
+                " && docker run -d --rm --name page --network room -p 127.0.0.1:8080:8080"
+                " -e SELVAGE_SERVER=http://server:8080 example/page:1",
+                "",
+            ),
+        ),
+        "runs no container",
+    ),
+    (
+        "a run printed with its own teardown in one block",
+        run_card_fixture(
+            (0, RUN_CARD_FIXTURE_RUN, f"{RUN_CARD_FIXTURE_RUN}; {RUN_CARD_FIXTURE_TEARDOWN}"),
+            dropped=(1,),
+        ),
+        "prints the run and its teardown as one block",
+    ),
+    (
+        "a command with no teardown block",
+        run_card_fixture(dropped=(1,)),
+        "prints no teardown",
     ),
     (
         "a teardown that removes the network first",
-        1,
-        RUN_CARD_FIXTURE_TEARDOWN[0],
-        "docker network rm room; docker rm -f server page",
+        run_card_fixture(
+            (1, RUN_CARD_FIXTURE_TEARDOWN, "docker network rm room; docker rm -f server page")
+        ),
         "removes room before page, server, still attached to it",
     ),
     (
         "a teardown that removes the network between the containers",
-        1,
-        RUN_CARD_FIXTURE_TEARDOWN[0],
-        "docker rm -f server; docker network rm room; docker rm -f page",
+        run_card_fixture(
+            (
+                1,
+                RUN_CARD_FIXTURE_TEARDOWN,
+                "docker rm -f server; docker network rm room; docker rm -f page",
+            )
+        ),
         "removes room before page, still attached to it",
     ),
     (
+        "a teardown that removes no container the run names",
+        run_card_fixture((1, RUN_CARD_FIXTURE_TEARDOWN, "docker network rm room")),
+        "its teardown removes no container named page",
+    ),
+    (
+        "a teardown that leaves the network it created behind",
+        run_card_fixture((1, RUN_CARD_FIXTURE_TEARDOWN, "docker rm -f server page")),
+        "leaves room, the network it created, behind",
+    ),
+    (
         "a teardown that does not force the containers",
-        1,
-        "docker rm -f server page",
-        "docker rm server page",
-        "without `-f`",
+        run_card_fixture((1, "docker rm -f server page", "docker rm server page")),
+        "its teardown removes a running container named page without `-f`",
     ),
     (
-        "a network looked for under another name than the one created",
-        0,
-        "docker network inspect room",
-        "docker network inspect other",
-        "creates room",
+        "a teardown that removes only a container whose name starts with the run's own",
+        run_card_fixture((1, "docker rm -f server page", "docker rm -f server-old page")),
+        "its teardown removes no container named server",
     ),
     (
-        "a command that gives no container the relay address",
-        0,
-        " -e SELVAGE_SERVER=http://server:8080",
+        "a teardown that removes only a network whose name starts with the run's own",
+        run_card_fixture(
+            (
+                1,
+                RUN_CARD_FIXTURE_TEARDOWN,
+                "docker network rm room-old; docker rm -f server page; docker network rm room",
+            )
+        ),
         "",
-        "`-e SELVAGE_SERVER`",
     ),
     (
         "the same command with the address in the bare form the READMEs document",
-        0,
-        "SELVAGE_SERVER=http://server:8080",
-        "SELVAGE_SERVER=server:8080",
+        run_card_fixture(
+            (0, "SELVAGE_SERVER=http://server:8080", "SELVAGE_SERVER=server:8080")
+        ),
         "",
     ),
 )
@@ -1748,6 +1903,23 @@ def network_named_in(clause: str, verb: re.Match[str]) -> str | None:
     return named[-1] if named else None
 
 
+def names_the_word(clause: str, name: str) -> bool:
+    """Whether `clause` carries `name` as a word of its own.
+
+    A name is read as a word rather than as a stretch inside one: `selvage-net` is a different
+    name from `selvage`, and a `\\b` boundary does not say so, because a hyphen is one. Reading
+    the two as the same name reports a removal that removes nothing, and lets a removal of a name
+    merely starting with the one the run needs stand in for removing that one.
+    """
+    return name in clause.split()
+
+
+def network_removed_in(clause: str) -> str | None:
+    """The network a `docker network rm` clause removes, or None when the clause removes none."""
+    verb = NETWORK_REMOVE.search(clause)
+    return network_named_in(clause, verb) if verb is not None else None
+
+
 def forced_removal_clauses(where: str, name: str) -> list[str]:
     """The clauses of `where` that remove a container named `name`, forced or not.
 
@@ -1758,8 +1930,7 @@ def forced_removal_clauses(where: str, name: str) -> list[str]:
     return [
         clause
         for clause, _end in clauses_with_offsets(where)
-        if DOCKER_REMOVE.search(clause) is not None
-        and re.search(rf"\b{re.escape(name)}\b", clause) is not None
+        if DOCKER_REMOVE.search(clause) is not None and names_the_word(clause, name)
     ]
 
 
@@ -1803,7 +1974,10 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
     The names the run gives its containers are what a leftover pair holds, so they are what most
     of this reads: the forced clearing that has to come before the run reaches them, and the
     teardown that removes them before the network they are still attached to and that network.
-    The network's creation is read as its own clause, and what keeps a network that is already
+    Every one of those names is read as a whole word, so a removal of `selvage-net` is not read as
+    a removal of `selvage`, and every run has to be detached, because a run that is not holds the
+    chain at that clause and the containers below it never start. The network's creation is read
+    as its own clause, and what keeps a network that is already
     there from being an error the chain stops at is a check for that same network in that clause
     rather than a failure the chain is told to tolerate: the creation keeps its own error, and
     nothing that tolerates a failure may stand between it and the run. The address the page
@@ -1811,6 +1985,9 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
     that host a name on the network the two are attached to, and the run carrying the address has
     to be the one that publishes the port a reader opens, or the page asks for a server nothing
     answers for.
+
+    Every rule here carries a fixture in `RUN_CARD_FIXTURES`, and each fixture pins the fragment
+    its rule emits, so a rule removed is a rule this file fails on rather than one nothing reads.
     """
     lines = [line for block in blocks for line in block]
     command = " ".join(lines)
@@ -1902,6 +2079,11 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
                 clause,
             )
         )
+        if DETACHED.search(clause) is None:
+            problems.append(
+                "runs a container without `-d`, so the run holds the chain at that clause and "
+                "the containers below it in the line never start"
+            )
         if network is not None and (attached is None or attached.group("name") != network):
             problems.append(
                 f"runs a container that is not on {network}, the network it creates, so the "
@@ -1932,7 +2114,6 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
             "server to relay to"
         )
 
-    teardown = " ; ".join(lines[1:])
     if len(lines) < 2:
         problems.append("prints no teardown, so the card offers no way to end the run")
     else:
@@ -1947,8 +2128,10 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
                     f"its teardown removes a running container named {name} without `-f`, so "
                     "nothing is removed and the line exits non-zero"
                 )
-        if network is not None and not re.search(
-            rf"{NETWORK_REMOVE}\b{re.escape(network)}\b", teardown
+        if network is not None and not any(
+            network_removed_in(clause) == network
+            for line in lines[1:]
+            for clause, _end in clauses_with_offsets(line)
         ):
             problems.append(
                 f"leaves {network}, the network it created, behind, and its teardown is the "
@@ -1967,7 +2150,7 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
         removing_the_network = [
             index
             for index, (clause, _end) in enumerate(clauses_here)
-            if re.search(rf"{NETWORK_REMOVE}\b{re.escape(network)}\b", clause) is not None
+            if network_removed_in(clause) == network
         ]
         if not removing_the_network:
             continue
@@ -1978,7 +2161,7 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
             if not any(
                 index < first_network
                 and DOCKER_REMOVE.search(clause) is not None
-                and re.search(rf"\b{re.escape(name)}\b", clause) is not None
+                and names_the_word(clause, name)
                 for index, (clause, _end) in enumerate(clauses_here)
             )
         ]
@@ -2000,7 +2183,9 @@ def check_rerunnable_command(pages: list[Scanned]) -> int:
     remove it. What is required instead is that the network is checked for before it is created
     and under the same name the creation uses, that a creation which really fails is what the
     reader sees rather than the run below it, that the names the run uses are forced away before
-    it reaches them, that the address the page is given names the container its server runs in on
+    it reaches them and read as whole names rather than as stretches of longer ones, that every
+    run is detached so the containers below it on the line start, that the address the page is
+    given names the container its server runs in on
     the network both are on and sits on the container a reader opens, and that the card prints a
     block of its own that removes those names before the network they are still attached to and
     that network. The teardown is a second action: a reader who selects one block must not paste
@@ -2044,8 +2229,10 @@ def check_rerunnable_command(pages: list[Scanned]) -> int:
         return 2
     print(
         "check-claims: the Run card's command force-clears the container names it is about to "
-        "use, checks for its network under the name it creates it with, keeps a creation that "
-        "really fails to itself, points the container a reader opens at the server container on "
+        "use, each read as a whole name, checks for its network under the name it creates it "
+        "with, keeps a creation that "
+        "really fails to itself, runs every container detached, points the container a reader "
+        "opens at the server container on "
         "the network both are on, and prints a block of its own that removes both containers "
         "before the network they are attached to and that network. This reads the shape of the "
         "command and not a run, and it knows one way of writing each part of it: a correct "
@@ -2057,10 +2244,11 @@ def check_rerunnable_command(pages: list[Scanned]) -> int:
 def served_stylesheets(page: Scanned) -> tuple[list[str], str]:
     """The CSS the served page loads, and why it could not be read, one of the two empty.
 
-    The page names its own stylesheet, and `next start` answers the `_next` prefix out of the
-    build this checkout made, so the bytes are read there rather than out of the source tree: a
+    The page names its own stylesheet, and `next start` answers the `_next/static/` prefix out of
+    the build this checkout made, so the bytes are read there rather than out of the source tree: a
     rule the build pipeline drops or rewrites is not in what a reader's browser gets, and what is
-    pinned here is what the page loads.
+    pinned here is what the page loads. Nothing outside that prefix is read, because nothing
+    outside it is served.
     """
     root = root_of_this_checkout()
     hrefs: list[str] = []
@@ -2086,10 +2274,11 @@ def served_stylesheets(page: Scanned) -> tuple[list[str], str]:
                 "prompt and labels out of a copy is not the one this build produced"
             )
         # The page names the file with the build's own root-relative href, so what is opened is
-        # the build's file and nothing else: the path is resolved, and a page whose href walks out
-        # of the build (`.next/../style.css`) is refused rather than read from the source tree a
-        # rule this check exists to keep out of it was written in.
-        build = os.path.realpath(os.path.join(root, ".next"))
+        # the file the server serves and nothing else: the path is resolved, and a page whose
+        # href walks out of the served part of the build (`.next/../style.css`, or a query string
+        # trying to) is refused rather than read from the source tree a rule this check exists to
+        # keep out of it was written in.
+        build = os.path.realpath(os.path.join(root, ".next", "static"))
         path = os.path.realpath(
             os.path.join(build, href[len(BUILD_PREFIX) :].split("?", 1)[0])
         )
@@ -3517,17 +3706,15 @@ def main() -> int:
                 return 2
         compiled.append((phrase, pattern, permits, voiding))
 
-    for what, block, before, after, expected in RUN_CARD_SHAPES:
-        lines = [list(shape) for shape in (RUN_CARD_FIXTURE_RUN, RUN_CARD_FIXTURE_TEARDOWN)]
-        if not any(before in line for line in lines[block]):
+    for what, shape, expected in RUN_CARD_FIXTURES:
+        if shape is None:
             print(
                 f"check-claims: the Run card fixture {what!r} does not apply to the shape it "
                 f"names, so it is not reading what it says it is",
                 file=sys.stderr,
             )
             return 2
-        lines[block] = [line.replace(before, after) for line in lines[block]]
-        problems = run_card_problems(lines)
+        problems = run_card_problems([[line] for line in shape])
         if expected and not any(expected in problem for problem in problems):
             print(
                 f"check-claims: the Run card fixture {what!r} is the defect {expected!r} "
