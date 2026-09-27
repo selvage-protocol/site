@@ -2257,9 +2257,19 @@ def host_port_of_mapping(mapping: str) -> int | None:
 
 
 def container_port_of_mapping(mapping: str) -> int | None:
-    """The port a mapping publishes in the container — not the port the card's address reaches."""
-    container_port = mapping_fields(mapping)[2]
-    return int(container_port) if container_port.isdigit() else None
+    """The published port read as the mapping's last field: the edit this file has to refuse.
+
+    Docker's last field is the container's port, and the guard above is left where it is: a mapping
+    that names no host port is still read as naming none, and only the field the port comes out of
+    moves. That is the shape a later hand reaches for — `fields[-1]` in place of `fields[-2]` — and
+    every mapping a fixture carried was `8080:8080`, where the two fields are one number, so it
+    answered for the host port with every fixture green. The fixture that refuses it is a mapping
+    whose two fields differ.
+    """
+    host_port, container_port = mapping_fields(mapping)[1:]
+    if not host_port.isdigit() or not container_port.isdigit():
+        return None
+    return int(container_port)
 
 
 # The mapping reading the fixture harness swaps, and the one it swaps in.
