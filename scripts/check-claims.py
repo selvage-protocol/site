@@ -191,8 +191,9 @@ NETWORK_REMOVE = r"\bdocker\s+network\s+rm\b[^;|&]*"
 # over the card, so both have to be out of it — a `$ ` or a label pasted into a shell is a
 # command that does not exist — and that is a property of the stylesheet the served page loads
 # rather than of its markup: the prompt is drawn by a rule, and deleting the rule brings the
-# pasted prompt back with nothing else in the tree to say so.
-RUN_CARD_PROMPT_CLASS = "command-prompt"
+# pasted prompt back with nothing else in the tree to say so. The prompt's class is read out of
+# the page's own markup, so a card that renames the prompt and its rule together still passes;
+# the label's is named here, the way `command-line` is.
 RUN_CARD_LABEL_CLASS = "command-label"
 # An element that carries a class, with the names read as whole words, or `command-line` would
 # answer for `command-label`.
@@ -271,7 +272,13 @@ RUN_CARD_SHAPES: tuple[tuple[str, int, str, str, str], ...] = (
         "",
         "`-e SELVAGE_SERVER`",
     ),
-    ("the same command with the address in the bare form the READMEs document", 0, "SELVAGE_SERVER=http://server:8080", "SELVAGE_SERVER=server:8080", ""),
+    (
+        "the same command with the address in the bare form the READMEs document",
+        0,
+        "SELVAGE_SERVER=http://server:8080",
+        "SELVAGE_SERVER=server:8080",
+        "",
+    ),
 )
 
 # The wire version this protocol has, and which wire each artefact the page hands a reader speaks.
