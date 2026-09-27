@@ -7,9 +7,9 @@ sentence that is merely unbacked all pass it. What it does guarantee is narrower
 worth having: those known wordings do not appear, even when the page wraps them across lines or
 encodes the characters as HTML entities.
 
-Facts are asserted in the positive instead, because a phrase list cannot reach them: the image tag
+Facts are asserted in the positive instead, because a phrase list cannot reach them: the image tags
 in the `docker run` the page hands a reader, the instance the demo section points at — the address
-it gives an editor and the page a guest is sent to — the wire the tag and that address each speak,
+it gives an editor and the page a guest is sent to — the wire the tags and that address each speak,
 held together and to no version this protocol does not have, the disclosures the page owes a reader
 of what the sealed relay still sees and of the terms `selvaged` is under, and the identity the
 extension is published under with the two
@@ -17,7 +17,7 @@ registries the release publishes it to and what an
 install is and is not. The address half asks the
 path a plain `GET` can reach, not the upgrade: see `demo_session_route`. Each is a fact with an
 artefact behind it, and a wrong tag is a command that fails rather than a wording that lies. See
-`PUBLISHED_IMAGE`, `DEMO_ORIGIN`, `RELAY_DISCLOSURE`, `FSL_DISCLOSURE`, `PUBLISHED_EXTENSION` and
+`PUBLISHED_IMAGES`, `DEMO_ORIGIN`, `RELAY_DISCLOSURE`, `FSL_DISCLOSURE`, `PUBLISHED_EXTENSION` and
 `check_wire_binding` below.
 
 Each entry below pairs a phrase the page must not carry with the reason it must not, and with a
@@ -88,7 +88,13 @@ DASHES = re.compile("[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]")
 # The page's happy path is a `docker run` a reader pastes, so the tag in it is a claim with an
 # artefact behind it: a wrong tag is `manifest unknown`, not a wording a phrase list can
 # enumerate. It is therefore a *required* claim, pinned once here and asserted twice: every
-# reference the rendered page carries must name this tag, and the registry must serve it.
+# reference the rendered page carries must be one of the two below, and the registry must serve
+# it.
+#
+# Two packages are involved, and a reader needs both: the server is the room, and the page image
+# is the browser client, which reaches that room across the network the two containers share. Each
+# has a tag of its own, so a page that names one of the two where the other belongs fails on the
+# reference that is missing rather than passing on the one it got right.
 #
 # The tag is one the release publishes rather than a version, because a version written into a
 # reader's command goes stale the moment the page's copy of it does. `latest` resolves to a built
@@ -101,30 +107,44 @@ DASHES = re.compile("[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]")
 # digest identical across the two per-platform manifests, the same defect `0.1.0` carries. The check
 # compares those digests and fails when they are the same set, which is what a mislabelled leg
 # looks like, and it pulls them with no credential in the request, because no account is the
-# point of the command the page hands over.
-PUBLISHED_IMAGE = "ghcr.io/selvage-protocol/selvaged"
+# point of the command the page hands over. It runs per package, so the page half of the command
+# is held to the same proof as the server half.
+PUBLISHED_IMAGES = (
+    "ghcr.io/selvage-protocol/selvaged",
+    "ghcr.io/selvage-protocol/selvage-web",
+)
 PUBLISHED_IMAGE_TAG = "latest"
-IMAGE_REFERENCE = re.compile(r"ghcr\.io/selvage-protocol/selvaged(?::([\w][\w.+-]*))?")
+# The two references the page may print, in the order its command names them. `SERVER_IMAGE` is
+# the artefact the demo instance reports from `/meta`; `PAGE_IMAGE` is the one that relays to it.
+SERVER_IMAGE, PAGE_IMAGE = PUBLISHED_IMAGES
+IMAGE_REFERENCES = tuple(f"{image}:{PUBLISHED_IMAGE_TAG}" for image in PUBLISHED_IMAGES)
+# Every reference under the project's own namespace, so a typo, another tag or a package the
+# project does not publish is read and refused rather than passed over for naming nothing. The
+# tag cannot end on a dot, which is how a sentence ends.
+IMAGE_REFERENCE = re.compile(
+    r"ghcr\.io/selvage-protocol/[\w-]+(?:\.[\w-]+)*(?::[\w](?:[\w.+-]*[\w+-])?)?"
+)
 REGISTRY_HOST = "ghcr.io"
-REGISTRY_REPOSITORY = PUBLISHED_IMAGE.split("/", 1)[1]
 REQUEST_TIMEOUT_SECONDS = 20
 
-# The wire version this protocol has, and which wire the tag the page hands a reader speaks. The
-# page hands a reader an artefact whose wire is a fact about the artefact, not a wording: under this
+# The wire version this protocol has, and which wire each artefact the page hands a reader speaks.
+# The page hands a reader artefacts whose wire is a fact about them, not a wording: under this
 # version the room's bytes reach the server sealed, so a page that puts the sealing claim over a
 # command yielding a relay that cannot seal is a silent downgrade. The map is a constant rather
 # than a measurement because nothing on a registry answers what wire version a binary speaks: an
-# index will say `linux/arm64` and nothing about the frames inside. A tag with no entry fails the
-# check instead of defaulting, so a release that points a tag at a different wire has to declare it
-# in the same wave — this map, `PUBLISHED_IMAGE_TAG` and the page's sentence about it move
+# index will say `linux/arm64` and nothing about the frames inside. A reference with no entry fails
+# the check instead of defaulting, so a release that points one at a different wire has to declare
+# it in the same wave — this map, `PUBLISHED_IMAGE_TAG` and the page's sentence about it move
 # together, and `check_wire_binding` is what holds the last of the three to the first two.
 #
-# The entry is keyed by the tag, not by a version, and the tag is a moving name: the protocol has
-# one wire version, so every release that tag can resolve to speaks it, and what the entry refuses
-# is a tag whose wire nobody has declared rather than a tag that has moved.
+# The entry is keyed by the full reference rather than by the tag, because two packages carry that
+# tag now: the tag is a moving name, and what the entry refuses is a reference whose wire nobody
+# has declared rather than a tag that has moved. Both packages speak the one wire version — the
+# server seats it, and the page image carries the client that reaches it, so a page image built
+# from a client speaking another wire would be refused by the server the command puts beside it.
 WIRE = "selvage/2"
-IMAGE_WIRE_BY_TAG = {
-    "latest": WIRE,
+IMAGE_WIRE_BY_REFERENCE = {
+    reference: WIRE for reference in IMAGE_REFERENCES
 }
 WIRE_VERSION = re.compile(r"\bselvage/\d+\b")
 
@@ -584,8 +604,9 @@ FORBIDDEN: list[Phrase] = [
         # the pattern was enforcing the opposite of it. What it holds now is the denial those
         # artefacts refute, which is the sentence the page carried until this was corrected:
         # `reference_server/Dockerfile` builds the anonymously pullable
-        # `ghcr.io/selvage-protocol/selvaged:latest`, `reference_server/compose.yaml` runs it,
-        # and the systemd unit the repositories carry is
+        # `ghcr.io/selvage-protocol/selvaged:latest`, `web_client/Dockerfile` builds
+        # `ghcr.io/selvage-protocol/selvage-web:latest`, `reference_server/compose.yaml` runs
+        # the server, and the systemd unit the repositories carry is
         # `reference_server/deploy/selvage-update.service`, which the demo box installs to
         # `/etc/systemd/system/` to pull and apply the images. The unit this comment used to
         # cite, `packaging/systemd/selvaged.service`, went with `packaging/` when it became
@@ -594,8 +615,9 @@ FORBIDDEN: list[Phrase] = [
         r"\bno (?:image|container) to pull\b|\bnothing to install on the server\b"
         r"|\bno compose (?:file|configuration)\b|\bno systemd (?:service|unit)\b",
         "there is no image to pull and no service unit to install in any repository yet",
-        "the server image is published (`ghcr.io/selvage-protocol/selvaged:latest`) and pulls "
-        "with no account, `reference_server/compose.yaml` runs it, and "
+        "the images are published (`ghcr.io/selvage-protocol/selvaged:latest` and "
+        "`ghcr.io/selvage-protocol/selvage-web:latest`) and pull with no account, "
+        "`reference_server/compose.yaml` runs the server, and "
         "`reference_server/deploy/selvage-update.service` is the systemd unit the demo box "
         "installs: a page saying none of that exists states the opposite of the truth",
         ("there is no im<!-- -->age to pull", "no conta<span></span>iner to pull",
@@ -1367,73 +1389,47 @@ def _registry_json(path: str, token: str | None = None) -> dict:
         return json.loads(response.read())
 
 
-def anonymous_pull_token() -> str:
+def anonymous_pull_token(repository: str) -> str:
     """The token a `docker pull` gets with no credentials: ghcr mints one to a bare GET."""
     with urllib.request.urlopen(
-        f"https://{REGISTRY_HOST}/token?scope=repository:{REGISTRY_REPOSITORY}:pull"
+        f"https://{REGISTRY_HOST}/token?scope=repository:{repository}:pull"
         f"&service={REGISTRY_HOST}",
         timeout=REQUEST_TIMEOUT_SECONDS,
     ) as response:
         return json.loads(response.read())["token"]
 
 
-def published_tag_legs() -> dict[str, tuple[str, ...]]:
-    """{platform: layer digests} for the tag the page hands a reader, from the per-platform
-    manifests.
+def published_tag_legs(repository: str) -> dict[str, tuple[str, ...]]:
+    """{platform: layer digests} for one package's tag, from the per-platform manifests.
 
     The tag's own document is an index that points at those; the layers live in the manifests
     it names, which is why the index alone cannot answer what this asks. Attestation entries
     carry `platform: unknown/unknown` and are skipped by the `os` filter.
     """
-    token = anonymous_pull_token()
-    index = _registry_json(f"{REGISTRY_REPOSITORY}/manifests/{PUBLISHED_IMAGE_TAG}", token)
+    token = anonymous_pull_token(repository)
+    index = _registry_json(f"{repository}/manifests/{PUBLISHED_IMAGE_TAG}", token)
     legs: dict[str, tuple[str, ...]] = {}
     for entry in index.get("manifests", []):
         platform = entry.get("platform", {})
         if platform.get("os") != "linux":
             continue
-        manifest = _registry_json(f"{REGISTRY_REPOSITORY}/manifests/{entry['digest']}", token)
+        manifest = _registry_json(f"{repository}/manifests/{entry['digest']}", token)
         layers = tuple(layer["digest"] for layer in manifest.get("layers", []))
         if layers:
             legs[f"linux/{platform.get('architecture')}"] = layers
     return legs
 
 
-def check_published_image(pages: list[Scanned]) -> int:
-    """The page's tag against the tag it may hand a reader, and that tag against the registry.
+def check_published_tag(reference: str) -> int:
+    """One pinned reference against the registry its tag names.
 
-    Returns 0 when both hold, 1 when either does not, 2 when the registry cannot be asked.
+    Returns 0 when the tag pulls anonymously and carries two builds, 1 when it does not, 2 when
+    the registry cannot be asked.
     """
-    root = root_of_this_checkout()
-    reference = f"{PUBLISHED_IMAGE}:{PUBLISHED_IMAGE_TAG}"
-    named = 0
-    wrong: list[str] = []
-    for page in pages:
-        for match in IMAGE_REFERENCE.finditer(page.text):
-            named += 1
-            if match.group(0) != reference:
-                where = os.path.relpath(page.path, root)
-                wrong.append(f"{where}:{page.line_of[match.start()]}: {match.group(0)!r}")
-    if not named:
-        print(
-            f"check-claims: none of {len(pages)} scanned file(s) carries a {PUBLISHED_IMAGE} "
-            f"reference, and the tag the page may hand a reader is {reference!r}: the page's "
-            "happy path is where it is handed over, so a scan that never reaches it is not "
-            "checking the tag",
-            file=sys.stderr,
-        )
-        return 1
-    if wrong:
-        for where in wrong:
-            print(
-                f"check-claims: the page hands a reader {where}, and the image it may name is "
-                f"{reference!r}",
-                file=sys.stderr,
-            )
-        return 1
-
+    # The reference without its registry host and its tag: what a pull token is scoped to.
+    repository = reference.split("/", 1)[1].rsplit(":", 1)[0]
     try:
-        legs = published_tag_legs()
+        legs = published_tag_legs(repository)
     except (urllib.error.URLError, OSError, ValueError, KeyError) as error:
         print(
             f"check-claims: cannot ask {REGISTRY_HOST} for {reference} ({error}); the tag "
@@ -1456,16 +1452,68 @@ def check_published_image(pages: list[Scanned]) -> int:
         print(
             f"check-claims: the amd64 and arm64 manifests of {reference} carry identical "
             f"layers ({' '.join(amd64)}). A platform entry only labels a slot: an arm64 leg "
-            "holding the other architecture's binary is the defect this asserts against",
+            "holding the other platform's build is the defect this asserts against",
             file=sys.stderr,
         )
         return 1
     print(
-        f"check-claims: the published image {reference} pulls anonymously and is not one "
-        f"binary twice — amd64 {' '.join(amd64)}, arm64 {' '.join(arm64)}"
+        f"check-claims: the published image {reference} pulls anonymously and carries two "
+        f"builds — amd64 {' '.join(d.removeprefix('sha256:')[:12] for d in amd64)}, "
+        f"arm64 {' '.join(d.removeprefix('sha256:')[:12] for d in arm64)}"
     )
     return 0
 
+
+def check_published_image(pages: list[Scanned]) -> int:
+    """The page's image references against the two the project publishes, and each against the
+    registry its tag names.
+
+    Returns 0 when all of that holds, 1 when the page names something else or names only one of
+    the two, 2 when the registry cannot be asked.
+    """
+    root = root_of_this_checkout()
+    named: list[str] = []
+    wrong: list[str] = []
+    for page in pages:
+        for match in IMAGE_REFERENCE.finditer(page.text):
+            named.append(match.group(0))
+            if match.group(0) not in IMAGE_REFERENCES:
+                where = os.path.relpath(page.path, root)
+                wrong.append(f"{where}:{page.line_of[match.start()]}: {match.group(0)!r}")
+    if wrong:
+        for where in wrong:
+            print(
+                f"check-claims: the page hands a reader {where}, and the references it may "
+                f"name are {', '.join(repr(one) for one in IMAGE_REFERENCES)}",
+                file=sys.stderr,
+            )
+        return 1
+    if not named:
+        print(
+            f"check-claims: none of {len(pages)} scanned file(s) carries a reference to an "
+            f"image this project publishes, and the references the page may hand a reader are "
+            f"{', '.join(repr(one) for one in IMAGE_REFERENCES)}: the page's happy path is "
+            "where they are handed over, so a scan that never reaches them is not checking "
+            "the tags",
+            file=sys.stderr,
+        )
+        return 1
+    absent = [reference for reference in IMAGE_REFERENCES if reference not in named]
+    if absent:
+        print(
+            f"check-claims: the page names {', '.join(sorted(set(named)))} and not "
+            f"{', '.join(absent)}; the command it hands a reader runs both containers, so one "
+            "of the two packages standing in for the other is a command that pulls an image "
+            "the page is not about",
+            file=sys.stderr,
+        )
+        return 1
+
+    for reference in IMAGE_REFERENCES:
+        status = check_published_tag(reference)
+        if status != 0:
+            return status
+    return 0
 
 
 def demo_host_of(reference: str) -> str:
@@ -1666,7 +1714,7 @@ def check_demo_instance(pages: list[Scanned]) -> int:
         print(
             f"check-claims: {DEMO_ORIGIN}/meta reports {reported!r} and the page says an "
             f"instance of the server runs there; the server the page's own `docker run` pulls "
-            f"is {PUBLISHED_IMAGE.rsplit('/', 1)[-1]}, so this is a different thing answering "
+            f"is {SERVER_IMAGE.rsplit('/', 1)[-1]}, so this is a different thing answering "
             "on that host",
             file=sys.stderr,
         )
@@ -1767,9 +1815,10 @@ def check_relay_disclosure(pages: list[Scanned]) -> int:
     """
     if not any(IMAGE_REFERENCE.search(page.text) for page in pages):
         print(
-            f"check-claims: none of {len(pages)} scanned file(s) carries a {PUBLISHED_IMAGE} "
-            "reference, and what the relay still sees is read from the page's own `docker run` "
-            "onwards: without that command the panel has nowhere its place puts it",
+            f"check-claims: none of {len(pages)} scanned file(s) carries a reference to "
+            f"{' or '.join(PUBLISHED_IMAGES)}, and what the relay still sees is read from "
+            "the page's own `docker run` onwards: without that command the panel has "
+            "nowhere its place puts it",
             file=sys.stderr,
         )
         return 1
@@ -2576,7 +2625,7 @@ def check_repository_grid(pages: list[Scanned]) -> int:
 
 
 def wire_binding_problems(
-    page: Scanned, offered: tuple[str, ...], image_wire: str
+    page: Scanned, offered: tuple[str, ...], image_wires: dict[str, str]
 ) -> list[str]:
     """What this page says about the wire that the artefacts behind it do not support.
 
@@ -2586,11 +2635,15 @@ def wire_binding_problems(
     """
     problems: list[str] = []
     image = WIRE_OF_IMAGE.search(page.text)
-    if image is not None and image.group(1) != image_wire:
-        problems.append(
-            f"it says the image under the `docker run` speaks {image.group(1)!r}, and the "
-            f"tag {PUBLISHED_IMAGE_TAG} speaks {image_wire}"
-        )
+    if image is not None:
+        # The command pulls two images, so a sentence about the wire of "the image" is held to
+        # every reference the page hands over rather than to one of them.
+        for reference, wire in sorted(image_wires.items()):
+            if image.group(1) != wire:
+                problems.append(
+                    f"it says the images under the `docker run` speak {image.group(1)!r}, and "
+                    f"{reference} speaks {wire}"
+                )
     demo = WIRE_OF_DEMO.search(page.text)
     if demo is not None and demo.group(1) not in offered:
         problems.append(
@@ -2609,8 +2662,9 @@ def wire_binding_problems(
     unreleased = WIRE_UNRELEASED.search(page.text)
     if unreleased is not None:
         problems.append(
-            f"it calls the wire unreleased ({unreleased.group(0)!r}), and the tag the page "
-            f"hands a reader ({PUBLISHED_IMAGE_TAG}) speaks it (`IMAGE_WIRE_BY_TAG`)"
+            f"it calls the wire unreleased ({unreleased.group(0)!r}), and the references the "
+            f"page hands a reader ({', '.join(IMAGE_REFERENCES)}) speak it "
+            "(`IMAGE_WIRE_BY_REFERENCE`)"
         )
     return problems
 
@@ -2620,28 +2674,38 @@ def check_wire_binding(pages: list[Scanned]) -> int:
 
     The page hands a reader one `docker run` and one instance address, there is one wire version,
     and it is the sealed one. It no longer has to say which: what is read here is what it says
-    about the wire, and behind that the two artefacts against each other, which is the fact the
-    sentence used to carry. The wire the tag speaks is read from `IMAGE_WIRE_BY_TAG`, because no
-    registry answers what wire a binary speaks and a tag the map does not name has to declare its
-    wire in the same wave; the instance's half is measured, from `/meta`, where no wording can
-    forge it. A tag the instance does not offer, or a version the page names that this protocol
-    does not have, is a reader pasting the command under the sealing paragraph and getting a
-    server that carries the room through it in the clear — the failure a confidentiality feature
-    cannot have, and the one the pairing of the command and the paragraph is for.
+    about the wire, and behind that the artefacts against each other, which is the fact the
+    sentence used to carry. The wire each reference speaks is read from `IMAGE_WIRE_BY_REFERENCE`,
+    because no registry answers what wire a binary or a bundle speaks and a reference the map does
+    not name has to declare its wire in the same wave; the instance's half is measured, from
+    `/meta`, where no wording can forge it. A reference the instance does not offer, or a version
+    the page names that this protocol does not have, is a reader pasting the command under the
+    sealing paragraph and getting a server that carries the room through it in the clear — the
+    failure a confidentiality feature cannot have, and the one the pairing of the command and the
+    paragraph is for.
 
     Returns 0, 1 when a page says something the artefacts disprove, 2 when the instance cannot
-    be asked or this file cannot say what the tag speaks.
+    be asked or this file cannot say what a reference speaks.
     """
     root = root_of_this_checkout()
-    if PUBLISHED_IMAGE_TAG not in IMAGE_WIRE_BY_TAG:
+    undeclared = [
+        reference
+        for reference in IMAGE_REFERENCES
+        if reference not in IMAGE_WIRE_BY_REFERENCE
+    ]
+    if undeclared:
         print(
-            f"check-claims: the page hands a reader the tag {PUBLISHED_IMAGE_TAG} and nothing "
-            "here says which wire version that tag speaks (see `IMAGE_WIRE_BY_TAG`); a tag "
-            "whose wire is unknown cannot be held to what the page hands over beside it",
+            f"check-claims: the page hands a reader {', '.join(undeclared)} and nothing here "
+            "says which wire version that reference speaks (see `IMAGE_WIRE_BY_REFERENCE`); a "
+            "reference whose wire is unknown cannot be held to what the page hands over "
+            "beside it",
             file=sys.stderr,
         )
         return 2
-    image_wire = IMAGE_WIRE_BY_TAG[PUBLISHED_IMAGE_TAG]
+    image_wires = {
+        reference: IMAGE_WIRE_BY_REFERENCE[reference]
+        for reference in IMAGE_REFERENCES
+    }
     try:
         offered = demo_meta()[1]
     except (urllib.error.URLError, OSError, ValueError, KeyError) as error:
@@ -2657,19 +2721,20 @@ def check_wire_binding(pages: list[Scanned]) -> int:
     # sentence that does not depend on the page saying it: the command a reader pastes and the
     # address a reader points an editor at have to deliver the same wire, or the page's own happy
     # path ends in a server the reader's client refuses.
-    if image_wire not in offered:
+    unreachable = sorted({wire for wire in image_wires.values() if wire not in offered})
+    if unreachable:
         print(
-            f"check-claims: the page hands a reader the tag {PUBLISHED_IMAGE_TAG}, which speaks "
-            f"{image_wire}, and {DEMO_ORIGIN}/meta offers {', '.join(offered)}: the command and "
-            "the address on the page are not the same protocol, so a reader who follows both "
-            "meets a version one of the two does not have",
+            f"check-claims: the page hands a reader {', '.join(IMAGE_REFERENCES)}, which speak "
+            f"{', '.join(unreachable)}, and {DEMO_ORIGIN}/meta offers {', '.join(offered)}: the "
+            "command and the address on the page are not the same protocol, so a reader who "
+            "follows both meets a version one of the two does not have",
             file=sys.stderr,
         )
         return 1
 
     failed: list[tuple[str, list[str]]] = []
     for page in pages:
-        problems = wire_binding_problems(page, offered, image_wire)
+        problems = wire_binding_problems(page, offered, image_wires)
         if problems:
             failed.append((os.path.relpath(page.path, root), problems))
     if failed:
@@ -2686,8 +2751,9 @@ def check_wire_binding(pages: list[Scanned]) -> int:
     print(
         "check-claims: "
         + (f"the page names {', '.join(named)}" if named else "the page names no wire version")
-        + f"; the tag {PUBLISHED_IMAGE_TAG} speaks {image_wire} and {DEMO_ORIGIN}/meta offers "
-        f"{', '.join(offered)}, so the two artefacts the page hands a reader speak the same "
+        + f"; the references the page hands a reader ({', '.join(IMAGE_REFERENCES)}) speak "
+        f"{', '.join(sorted(set(image_wires.values())))} and {DEMO_ORIGIN}/meta offers "
+        f"{', '.join(offered)}, so the artefacts the page hands a reader speak the same "
         "version, and nothing here names another one or calls the wire unreleased"
     )
     return 0
