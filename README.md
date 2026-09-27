@@ -367,27 +367,14 @@ advertises anything, but should that change the plan question returns with it:
 
 ### Releasing it
 
-A release here is a tag and a GitHub Release, and nothing else: there is no release artefact to
-build or attach, no image and no registry, and Vercel serves the page from `main` without reading
-tags. The deployment does build — `next build`, on Vercel, from `main` — but that build is the
-deployment and not a release.
+The page is not a released artefact: there is nothing to build or attach, no image and no
+registry, no tag and no GitHub Release, and no release workflow. Vercel deploys it from `main` on
+every push and reads no tag. The deployment does build — `next build`, on Vercel, from `main` — but
+that build is the deployment and not a release.
 
-So there is no release workflow. One would only be `git tag` and `gh release create` behind a
-button, and the version assertion the other repositories' release workflows carry would have
-nothing to protect here: `package.json`'s version is a private, unpublished manifest that no
-deployment consumes.
-
-The tag is `package.json`'s version with a `v`, and an annotated tag is what the other
-repositories' release runs create, so it is made the same way by hand:
-
-```console
-$ git tag -a v0.4.5 -m v0.4.5
-$ git push origin v0.4.5
-$ gh release create v0.4.5 --title v0.4.5 --generate-notes
-```
-
-The tag is a marker on the page's history rather than an input to anything. Other repositories tag
-what they build and attach it to the release; this one has nothing to attach.
+`package.json`'s version is a private, unpublished manifest that no deployment consumes, so the
+version assertion the other repositories' release workflows carry would have nothing to protect
+here.
 
 ## The Content-Security-Policy
 
@@ -693,7 +680,7 @@ no network either.
 | "the server cannot read" (unqualified) / "the server cannot read the room" / "the text never reaches the server" / the host reading, and the membership one with it | The relay is sealed, not omniscient: it reads no text, no cursor, no file name and no role, and it cannot forge, mis-attribute or replay a frame, but it still reads a room's existence, its membership, the display names and the sizes and timing of what moves, and it can drop, delay, reorder or refuse frames and end any room. A claim about named, sealed material is specific and backed — the same sentence has to name it, which is what the pattern reads rather than the determiners in front of the verb — and unqualified it must not appear, nor may the room itself or the membership be the object. A sentence that names sealed material and claims *everything* is not specific either: "the server cannot see anything, not even your text" carries a permitted noun and the widest object there is, and the permit is cancelled for it. "It cannot tell who is host" is forbidden too, and the reason is a measurement rather than a reading: `CANONICAL.md` §6.1 puts `kind` in the clear and `PROTOCOL.md` §7.1 makes `kind = 1` the host's own frame, so a relay that routes a room reads one clear byte and knows. What the page may say is what the threat model supports — the host is a peer's signed claim, and the server cannot seat a host, prove one or take the role |
 | hosting from a page in any browser, a room with no invite, the project's own site as a client | The browser client is published and it hosts: on Chrome or Edge a page the room's own server serves starts a session from a folder the person picks, which is the demo's shape. The page does not make that claim itself: the demo card opens the demo and says guests join from the invite link, and the Browser route says guests need nothing installed and points an editor at the instance's address. What is not true: hosting in any browser (Firefox and Safari have no `showDirectoryPicker` and can join but cannot host), a page no Selvage server serves offering it (the client says why instead of offering a control that could only refuse), joining without the invite link a host copies, and the project's own site as a place to join a room (it is a landing page). The stale denial "nothing runs in a web page" stays caught too, and so does the unqualified "host a session in the browser", which is the shape that overclaim takes |
 | file create, rename or delete | The room carries no file mutations: nothing on the wire adds, renames or removes a path, and the only write to the host's working copy is the host's own. A guest's keystroke reaches the folder through the host's client, which is what writes out the text the room settled on, and a Neovim guest's mirror materialises the granted paths |
-| the server route denied: no image to pull, nothing to install on the server | The reason this entry used to give — that no Dockerfile, compose file or service unit exists in any repository — is false now. `ghcr.io/selvage-protocol/selvaged:latest` is published and pulls anonymously, `reference_server/compose.yaml` runs it, and `reference_server/packaging/systemd/selvaged.service` installs the binary. The pattern used to forbid the word `docker` itself, on that stale reason; it holds the denial of those artefacts instead, which is the sentence the page carried |
+| the server route denied: no image to pull, nothing to install on the server | The reason this entry used to give — that no Dockerfile, compose file or service unit exists in any repository — is false now. `ghcr.io/selvage-protocol/selvaged:latest` is published and pulls anonymously, `reference_server/Dockerfile` builds it, `reference_server/compose.yaml` runs it, and the systemd unit the repositories carry is `reference_server/deploy/selvage-update.service`, which the demo box installs to pull and apply the images. The unit this row used to cite, `packaging/systemd/selvaged.service`, was deleted with `packaging/` when it became `deploy/`, so the reason names the unit that still exists rather than the one that does not; a bare denial of a systemd unit stays false either way. The pattern used to forbid the word `docker` itself, on that stale reason; it holds the denial of those artefacts instead, which is the sentence the page carried |
 | a stable 1.0 | The wire version is `selvage/2`, and the releases are 0.x. No corpus line puts the design at 0.x. The pattern's lookbehind keeps a number inside a tag out of it: `2.1.0` carries `1.0` as a substring, and naming a tag is describing an artefact rather than claiming that 1.0 exists |
 | a second implementation, or interoperability | There is none. The Neovim client drives a byte-identical copy of the same engine, so nothing yet shows a client built from the prose alone agreeing byte for byte with the Rust one |
 | "the extension is unpublished", or a registry it is not published on | The extension is published as `selvage-protocol.selvage` on the VS Code Marketplace and on Open VSX, which are the two publish steps in `vscode_client/.github/workflows/release.yml`. The entry this replaces said publishing was a non-goal until the extension worked with a friend (`DESIGN.md` §11); the owner retired it, and the rule that replaced it is narrower and runs the other way: both registry names are required on the page, every registry-shaped word that is not one of them fails the gate (a third-party marketplace, "the extension gallery" named without saying which), and so does a link to a listing the release does not produce. The retired ID's listing is live and linkable by mistake, which is what the destination half is for |
