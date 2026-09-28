@@ -4937,33 +4937,46 @@ def only_asks_whether_it_matches(call: ast.Call, parents: dict[int, ast.AST]) ->
     match away: no name is read there, so a helper that answers that way is not a read this scan
     has anything to say about, and refusing it as one that reads "a name or a reference … without
     reading it as a `ParsedName`" describes code that does not exist. What tells the two apart is
-    the context the call stands in — a comparison against `None`, a truth test, or a `bool(…)`,
-    `any(…)` or `all(…)` around it. Everything else keeps the match: a return, a binding, a
-    `.group(…)` off it, an iteration over it, a call built from it.
+    the context the call stands in. A comparison against `None`, a `not`, a truth test, and a
+    `bool(…)`, `any(…)` or `all(…)` around it all answer with a yes or a no whatever else happens
+    to that answer, so the match itself cannot escape them. A match handed on as one of those is
+    not the one the question is about: `PATTERN.search(c) if flag else None` and
+    `PATTERN.search(c) or None` answer with the match, so they are walked out to whatever holds
+    them, and only a truth test above them makes the match a thing nobody kept. Everything else —
+    a return, a binding, a `.group(…)` off it, an iteration over it, a call built from it — keeps
+    it.
     """
-    parent = parents.get(id(call))
-    if isinstance(parent, ast.Compare):
-        # What stands beside the match: `… is not None` asks whether there is one, and a
-        # comparison against anything else is a comparison of the match itself.
-        beside = [
-            side
-            for side in [parent.left, *parent.comparators]
-            if side is not call
-        ]
-        return bool(beside) and all(
-            isinstance(side, ast.Constant) and side.value is None for side in beside
-        )
-    if isinstance(parent, ast.UnaryOp) and isinstance(parent.op, ast.Not):
-        return True
-    if isinstance(parent, (ast.BoolOp, ast.If, ast.While, ast.IfExp, ast.Assert)):
-        return True
-    if (
-        isinstance(parent, ast.Call)
-        and isinstance(parent.func, ast.Name)
-        and parent.func.id in PRESENCE_CALLS
-    ):
-        return True
-    return isinstance(parent, ast.Expr)
+    node: ast.AST = call
+    while True:
+        parent = parents.get(id(node))
+        if isinstance(parent, ast.Compare):
+            beside = [
+                side
+                for side in [parent.left, *parent.comparators]
+                if side is not node
+            ]
+            return bool(beside) and all(
+                isinstance(side, ast.Constant) and side.value is None for side in beside
+            )
+        if isinstance(parent, ast.UnaryOp) and isinstance(parent.op, ast.Not):
+            return True
+        if isinstance(parent, (ast.If, ast.While, ast.Assert)):
+            return True
+        if isinstance(parent, ast.IfExp) and parent.test is not node:
+            # A branch answers with itself; a test is only asked whether it is true.
+            node = parent
+            continue
+        if isinstance(parent, (ast.IfExp, ast.BoolOp)):
+            # The test of a conditional, and an operand of `and`/`or` whose own value nothing keeps.
+            node = parent
+            continue
+        if (
+            isinstance(parent, ast.Call)
+            and isinstance(parent.func, ast.Name)
+            and parent.func.id in PRESENCE_CALLS
+        ):
+            return True
+        return isinstance(parent, ast.Expr)
 
 
 def kept_field_matches(function: ast.FunctionDef) -> list[ast.Call]:
