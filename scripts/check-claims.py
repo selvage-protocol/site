@@ -686,6 +686,15 @@ RUN_CARD_OPENED_AT_FIXTURES: tuple[tuple[str, str, tuple[str, ...] | None, str],
         run_card_fixture((0, "-p 127.0.0.1:8080:8080", "-p [::1]:8080:8080")),
         "publishes on ::1 and the card tells the reader to open http://127.0.0.1:8080/",
     ),
+    # Every interface is not the loopback the card prints, and this is what the host half of the
+    # comparison does with it: `0.0.0.0` is a host a mapping names, so it is compared and refused,
+    # where a mapping that names none is left to docker and passes.
+    (
+        "a command that publishes the page on every interface",
+        "http://127.0.0.1:8080/",
+        run_card_fixture((0, "-p 127.0.0.1:8080:8080", "-p 0.0.0.0:8080:8080")),
+        "publishes on 0.0.0.0 and the card tells the reader to open http://127.0.0.1:8080/",
+    ),
     (
         "a command that names the card's own loopback on a host port of its own",
         "http://localhost:9090/",
