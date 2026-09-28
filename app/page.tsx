@@ -26,7 +26,7 @@ import {
   InviteChip,
   TreeFigure,
 } from "@/components/room-visuals";
-import { COMMAND, DEMO, TEARDOWN } from "@/lib/selvage";
+import { DEMO, OPEN_AT, RUN_STEPS } from "@/lib/selvage";
 import { CLIENTS, repositoryUrl } from "@/lib/clients";
 
 const DEMO_ORIGIN = `https://${DEMO}`;
@@ -261,37 +261,20 @@ export default function Home() {
                   </div>
                   <p className="try-body">
                     Two containers: the server that holds the room, and the page that
-                    reaches it. Open http://127.0.0.1:8080/ once both are up; if it does
-                    not answer, docker ps shows which of the two is still running, and
-                    docker logs selvaged prints what the server said for as long as its
-                    container is there. A container that stops is removed with its logs, so
-                    a server that goes leaves the page up with nothing left to print:
-                    docker ps naming only the page is that case, and pasting the run again is
-                    what brings both back, since the page keeps the address it resolved at
-                    startup. When neither is left at all, run the server on its own without
-                    -d and watch it start. Rooms live in memory, so a restart ends them. The
-                    teardown under the command is a second action: paste it on its own when
-                    you are done. It stops and removes both containers and the network they
-                    share.
+                    reaches it. Open {OPEN_AT} once both are up; rooms live in memory, so a
+                    restart ends them.
                   </p>
-                  <div className="command-group">
-                    <p className="command-label">Run both containers</p>
-                    <div className="command">
-                      <p className="command-line">
-                        <span className="command-prompt">$ </span>
-                        {COMMAND}
-                      </p>
+                  {RUN_STEPS.map((step) => (
+                    <div className="command-group" key={step.label}>
+                      <p className="command-label">{step.label}</p>
+                      <div className="command">
+                        <p className="command-line">
+                          <span className="command-prompt">$ </span>
+                          {step.command}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="command-group">
-                    <p className="command-label">Stop and remove them</p>
-                    <div className="command">
-                      <p className="command-line">
-                        <span className="command-prompt">$ </span>
-                        {TEARDOWN}
-                      </p>
-                    </div>
-                  </div>
+                  ))}
                   <a className="try-link" href="#run">
                     Set up the server and your editor
                     <ArrowDown className="icon-14" aria-hidden="true" />
