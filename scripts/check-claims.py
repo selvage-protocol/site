@@ -2213,13 +2213,17 @@ class ParsedName(str):
 
 
 def container_names_in(command: str) -> list[ParsedName]:
-    """Every name the command gives a container, read as a name, once each and in name order."""
-    return sorted(
-        ParsedName(text)
-        for text in dict.fromkeys(
-            match.group("name") for match in CONTAINER_NAME.finditer(command)
-        )
-    )
+    """Every name the command gives a container, read as a name, once each and in name order.
+
+    Each name is read as a `ParsedName` where the pattern reads it. What is deduplicated is the
+    plain text of those names, which is bookkeeping and not a claim about two of them: the question
+    is which names the command uses, not whether one name is another. The text comes from the name
+    itself, so no field is read twice and none is read as text.
+    """
+    minted = [ParsedName(match.group("name")) for match in CONTAINER_NAME.finditer(command)]
+    # `str()` of a `ParsedName` is the text it was read from: the keys are plain strings, so a
+    # duplicate is found without comparing two names.
+    return sorted({str(name): name for name in minted}.values())
 
 
 def container_name_in(clause: str) -> ParsedName | None:
@@ -4557,20 +4561,40 @@ def reads_a_field_pattern(node: ast.AST | None) -> bool:
     )
 
 
+def bound_names(target: ast.AST) -> set[str]:
+    """Every name an assignment, a loop, a comprehension or a walrus binds."""
+    if isinstance(target, ast.Name):
+        return {target.id}
+    if isinstance(target, (ast.Tuple, ast.List)):
+        return {name for element in target.elts for name in bound_names(element)}
+    return set()
+
+
 def field_match_names(function: ast.FunctionDef) -> set[str]:
-    """The names `function` binds to a match of one of the field patterns."""
+    """The names `function` binds to a match of one of the field patterns.
+
+    Every place a name can be bound is read: an assignment, an annotated one, a loop, a
+    comprehension and a walrus. A tuple target is read for all of its names, so a shape this does
+    not tell apart is one it reads as a field rather than one it misses.
+    """
     matches: set[str] = set()
     for node in ast.walk(function):
         target: ast.AST | None = None
         source: ast.AST | None = None
-        if isinstance(node, ast.Assign) and len(node.targets) == 1:
-            target, source = node.targets[0], node.value
-        elif isinstance(node, ast.AnnAssign):
+        if isinstance(node, ast.Assign):
+            targets = node.targets
+            source = node.value
+            if reads_a_field_pattern(source):
+                matches |= {name for one in targets for name in bound_names(one)}
+            continue
+        if isinstance(node, ast.AnnAssign):
             target, source = node.target, node.value
-        elif isinstance(node, ast.For):
+        elif isinstance(node, (ast.For, ast.comprehension)):
             target, source = node.target, node.iter
-        if isinstance(target, ast.Name) and reads_a_field_pattern(source):
-            matches.add(target.id)
+        elif isinstance(node, ast.NamedExpr):
+            target, source = node.target, node.value
+        if target is not None and reads_a_field_pattern(source):
+            matches |= bound_names(target)
     return matches
 
 
