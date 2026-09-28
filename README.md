@@ -552,8 +552,10 @@ a check that passes over one network while the creation refuses another is the s
 step in front of it; the creation keeps its own error and nothing but `&&` follows it, so a
 creation that really fails is what the reader sees rather than a container below it that cannot
 find its network; the address the page container is given names the container the server runs in,
-on the network both are attached to, and sits on the container that publishes the port a reader
-opens — read in either form the page image accepts, `http://selvaged:8080` or the bare
+on the network both are attached to — and a host that is the empty name is refused rather than
+read as the empty name a run given no `--name` answers, which is the pair that passed this rule —
+and sits on the container that publishes the port a reader opens — read in either form the page
+image accepts, `http://selvaged:8080` or the bare
 `selvaged:8080`, which is the form `web_client`'s README documents; each of the two runs carries
 the reference the page publishes for it, the run a reader opens the page image and the run beside
 it the server's, so a command with the two swapped is refused rather than passed; the server's run
@@ -564,8 +566,16 @@ than the page, because `http://127.0.0.1:8080/` in the copy and `-p 127.0.0.1:80
 command under it are one fact printed twice: a command publishing another port, or publishing that
 port on `192.168.1.5` or on `::1`, sends every reader to an address its own card says answers. A
 mapping that names no host (`-p 8080:8080`) passes, because what is read is the address a mapping
-carries and not the one docker picks when it carries none, and the mapping's **container** port is
-not compared either, so `-p 8080:80` passes on its port; and the teardown is a block of
+carries and not the one docker picks when it carries none — while a mapping that writes the wildcard
+down (`-p 0.0.0.0:8080:8080`) is **refused**, because `0.0.0.0` is a host a mapping names and it is
+neither loopback the card's own address may print, so the form that leaves the host out passes and
+the form that spells every interface out fails; and the mapping's **container** port is
+not compared either, so `-p 8080:80` passes on its port. The host is compared against the two
+loopback names the card's own address may print, `127.0.0.1` and `localhost`, and it is not
+validated as an address: docker's own reference calls that field an IP address, writes one in every
+example and never writes the name `localhost` as a value of it, and this check has no docker to ask,
+so `-p localhost:8080:8080` passes here as one of the two loopback names and whether docker accepts
+it was not settled. And the teardown is a block of
 its own that removes those names with `-f` **before the network they are still attached to**, and
 then that network, because a network removed first is left holding active endpoints. It reads one
 way of writing each part, so a command that is correct in other words fails it and a broken one
@@ -576,8 +586,8 @@ rule emits, so a rule deleted is a rule the check fails on rather than one nothi
 rule is not holding the *reading* inside it, and that is the other half: the ten comparisons and the
 published host port are each named in the check, and before it scans anything it swaps each one in
 turn for the weaker reading a later edit would leave in its place — a `\b{name}\b` search for a name,
-one name being the start of the other for a pair of them, the mapping's container port for the host
-port — and fails unless a fixture goes red. That is what the run's own clearing lacked: the fixtures
+one name inside the other either way round for a pair of them, the mapping's container port for the
+host port — and fails unless a fixture goes red. That is what the run's own clearing lacked: the fixtures
 around it named a container plainly, so the search left them all green and a card clearing
 `selvaged-old` passed a check that reads a clearing of `selvaged`. The port reading was the same shape,
 with every mapping a fixture carried written `8080:8080`, where the two fields are one number. The
@@ -590,28 +600,53 @@ run looks for, so `--network selvage-net` beside `docker network create selvage`
 address names, so a run named `server-net` under an address naming `server` passed; and every
 reference a fixture carried was one the project publishes, neither of the two inside the other, so a
 run carrying `selvaged:latest-extra` passed. The host a mapping names is held the ordinary way rather
-than by a swap, by the two fixtures a command that names `192.168.1.5` or `::1` has to be reported as.
+than by a swap, by the three fixtures a command that names `192.168.1.5`, `::1` or `0.0.0.0` has to be
+reported as; and the empty name is held the same way, by the fixtures an address that names no host
+and an address that names no host beside a run given no `--name` have to be reported as, which is what
+the rule that compares an address's host against the containers the command names reads first.
 
 What that guarantees is exact, and so is what it does not. Of the table: a reading that *is* one of
 those named places cannot be weakened to a search without the check failing on its own fixtures, and a
 place a fixture never tells the two readings apart at, or one the rules stop reading, fails with it. A
 table holds what someone remembered, though, so a comparison written *around* it is closed by
 construction instead of by another entry: every container name, network name and image reference the
-card's rules touch is read as a `ParsedName`, and one of those answers only inside `reads_the_name`.
-`attached.group("name") != network`, the comparison that read `--network selvage-net` as `selvage`,
-therefore fails where it is written rather than passing the page, and the check exits **2** naming the
-line it was written on. The other half is a scan of the check's own syntax tree
-(`unseamed_field_problems`): it walks the functions the card's rules can reach and reads the three
-patterns those rules match a command with — `CONTAINER_NAME`, `NETWORK_FLAG` and `IMAGE_REFERENCE`,
-which are where a container name, a network name and an image reference come from — and fails when a
-`.group(…)` read taken off a match of one of them, however that match was bound (an assignment, a
-loop, a comprehension, a walrus or a tuple target), is not the expression a `ParsedName` is made
-from, or when a function it reaches reads one of those patterns and makes no `ParsedName` at all.
-What it does not catch, and this check cannot: a comparison of the *text* a name was read from — a
+card's rules touch is read as a `ParsedName`, and one of those answers only inside `reads_the_name`
+— for the forms Python hands a subclass: `==`, `!=`, `in`, `startswith`, `endswith`, `find`,
+`index` and `count` where the name is the object they are called on or the `str` they search, and
+the four orderings, which answer for a plain receiver too because a subclass's reflected method is
+tried first. `attached.group("name") != network`, the comparison that read `--network selvage-net` as
+`selvage`, therefore fails where it is written rather than passing the page, and the check exits
+**2** naming the line it was written on. Those refusals are one method each, so they are evaluated
+rather than trusted: `seam_problems` runs every one of them outside the seam, where it has to raise,
+and one through `reads_the_name`, where it has to answer, and fails the check when a method that
+refuses no longer does. The other half is a scan of the check's own syntax tree
+(`unseamed_field_problems`): it walks the functions the card's rules can reach — by a bare call,
+and out from the function values `RUN_CARD_READINGS` and `published_port_reading` hold, which are
+called through a table or a variable and are never written as a call, so the ten readings and their
+weakened twins are walked too — and reads the three patterns those rules match a command with —
+`CONTAINER_NAME`, `NETWORK_FLAG` and `IMAGE_REFERENCE`, which are where a container name, a network
+name and an image reference come from — and fails when a `.group(…)` read taken off a match of one
+of them, however that match was bound (an assignment, a loop, a comprehension, a walrus, a tuple
+target, or any value that names one of the patterns anywhere inside it, which is what catches a
+match bound through a conditional expression, an `or`, a `list(…)`, an `enumerate(…)` or a
+`re.search(PATTERN, …)`), is neither the expression a `ParsedName` is made from where it is read nor
+the plain name that expression is bound to, or when a function it reaches keeps a match of one of
+those patterns and mints no `ParsedName` at all.
+What it does not catch, and this check cannot: the forms a `str` receiver answers for on its own,
+which no method of a `ParsedName` can reach. `name in clause`, `clause.split().count(name)` and
+`"-" + name` put the name on the right of a `str` and answer with its text;
+`clause.startswith(name)` and `clause.find(name)` put the text there; and
+`name.lower().strip() == other` leaves the `ParsedName` behind at the first method call, with the
+text it was read from compared in its place. Each of those answers outside
+`reads_the_name`, each is what a later hand reaches for, and each is closed by reading the value as
+a `ParsedName` at the comparison rather than by the class — which is also why they are limits rather
+than entries in the table. Then a comparison of the *text* a name was read from — a
 `.split()` of the clause, a pattern matched against the name, `str()` of one — because that value is
 a `str` with no record of where it came from; a read of a match that is not `.group(…)` (`match[0]`,
-`match.expand()`), or a match bound by `with … as`; a name read with a pattern of the rule's own
-rather than one of the three; and any function the card's rules do not call, `check_published_image`
+`match.expand()`) inside a function that mints a `ParsedName` somewhere else, which is the one
+surviving way past the second shape above, or a match bound by `with … as`; a name read with a
+pattern of the rule's own rather than one of the three; and any function the card's rules do not
+reach, `check_published_image`
 among them, which compares the references the whole page carries against the two the project
 publishes and is held by the served page rather than by a fixture. A fixture a rule passes is not a
 proof the rule is complete, either.

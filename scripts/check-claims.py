@@ -65,7 +65,7 @@ import sys
 import traceback
 import urllib.error
 import urllib.request
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from urllib.parse import urlsplit
 
@@ -427,6 +427,37 @@ RUN_CARD_FIXTURES: tuple[tuple[str, tuple[str, ...] | None, str], ...] = (
         ),
         "gives no other container the name 'server'",
     ),
+    # The empty name is what both readings answer when there is nothing to read, and two of those
+    # compared equal: the address `http://:8080` names no host and a run given no `--name` names no
+    # container, so this page passed a rule whose whole question is whether the address reaches a
+    # container. Each half is fixtured, and the two together are the shape that passed.
+    (
+        "an address that names no host",
+        run_card_fixture(
+            (0, "SELVAGE_SERVER=http://server:8080", "SELVAGE_SERVER=http://:8080")
+        ),
+        "names no host in it",
+    ),
+    (
+        "an address in the bare form that names no host",
+        run_card_fixture(
+            (0, "SELVAGE_SERVER=http://server:8080", "SELVAGE_SERVER=:8080")
+        ),
+        "gives no other container the name ':8080'",
+    ),
+    (
+        "an address that names no host beside a run that gives its container no name",
+        run_card_fixture(
+            (0, "--name server --network room", "--network room"),
+            (0, "SELVAGE_SERVER=http://server:8080", "SELVAGE_SERVER=http://:8080"),
+        ),
+        "names no host in it",
+    ),
+    (
+        "an address that names a container no run is named",
+        run_card_fixture((0, "--name server --network room", "--network room")),
+        "gives no other container the name 'server'",
+    ),
     (
         "an address on a container that publishes no port",
         run_card_fixture((0, " -p 127.0.0.1:8080:8080", "")),
@@ -654,6 +685,15 @@ RUN_CARD_OPENED_AT_FIXTURES: tuple[tuple[str, str, tuple[str, ...] | None, str],
         "http://127.0.0.1:8080/",
         run_card_fixture((0, "-p 127.0.0.1:8080:8080", "-p [::1]:8080:8080")),
         "publishes on ::1 and the card tells the reader to open http://127.0.0.1:8080/",
+    ),
+    # Every interface is not the loopback the card prints, and this is what the host half of the
+    # comparison does with it: `0.0.0.0` is a host a mapping names, so it is compared and refused,
+    # where a mapping that names none is left to docker and passes.
+    (
+        "a command that publishes the page on every interface",
+        "http://127.0.0.1:8080/",
+        run_card_fixture((0, "-p 127.0.0.1:8080:8080", "-p 0.0.0.0:8080:8080")),
+        "publishes on 0.0.0.0 and the card tells the reader to open http://127.0.0.1:8080/",
     ),
     (
         "a command that names the card's own loopback on a host port of its own",
@@ -2168,13 +2208,26 @@ class ParsedName(str):
     wrote them otherwise, so a comparison written where no fixture can hold it fails the check
     rather than passing the page.
 
-    Holding the text this way costs nothing a rule needs. The value still formats, sorts and prints
-    as the string it was read from, so every message a rule emits is unchanged.
+    Holding the text this way costs nothing a rule needs. The value still formats and prints as the
+    string it was read from, so every message a rule emits is unchanged. Ordering one of these is a
+    comparison like any other and is refused with the rest, so a rule that sorts them sorts their
+    text instead — `container_names_in` does, and says why there.
 
-    What it does not close is a comparison of the text a name was read from — a `.split()` of the
-    clause, a fresh pattern matched against it — because that value is not one of these and carries
-    no record of where it came from. `unseamed_field_problems` scans this file for the reads that
-    would produce one, and the reach of both halves is written out in `README.md`.
+    A `str` this is, so what it can refuse is bounded by which side does the answering. The
+    operators and methods below are the ones Python hands the subclass: `==`, `!=` and the four
+    orderings answer for a `plain` receiver too, because a subclass's reflected method is tried
+    first, and `in` is refused where this is the `str` it searches and `startswith`, `endswith`,
+    `find`, `index` and `count` where this is the object they are called on. A plain receiver
+    answers for the rest — `name in plain_text`, `plain.startswith(name)`, `plain.find(name)`, and
+    the `str` side of any operator that answers with plain text, `"-" + name` among them — and so
+    does any method that answers with plain text, `name.lower()` and `name.strip()` among them.
+    `README.md` writes that limit out with the edit that defeats each, and `seam_problems` fails
+    this check when one of the refusals goes.
+
+    What it does not close either is a comparison of the text a name was read from — a `.split()` of
+    the clause, a fresh pattern matched against it — because that value is not one of these and
+    carries no record of where it came from. `unseamed_field_problems` scans this file for the
+    reads that would produce one, and the reach of both halves is written out in `README.md`.
     """
 
     __hash__ = str.__hash__
@@ -2203,6 +2256,22 @@ class ParsedName(str):
         self._through_the_seam_alone()
         return str.__contains__(self, other)
 
+    def __lt__(self, other: object) -> bool:
+        self._through_the_seam_alone()
+        return str.__lt__(self, other)
+
+    def __le__(self, other: object) -> bool:
+        self._through_the_seam_alone()
+        return str.__le__(self, other)
+
+    def __gt__(self, other: object) -> bool:
+        self._through_the_seam_alone()
+        return str.__gt__(self, other)
+
+    def __ge__(self, other: object) -> bool:
+        self._through_the_seam_alone()
+        return str.__ge__(self, other)
+
     def startswith(self, prefix: str | tuple[str, ...], *rest: int) -> bool:
         self._through_the_seam_alone()
         return str.startswith(self, prefix, *rest)
@@ -2211,19 +2280,34 @@ class ParsedName(str):
         self._through_the_seam_alone()
         return str.endswith(self, suffix, *rest)
 
+    def find(self, sub: str, *rest: int) -> int:
+        self._through_the_seam_alone()
+        return str.find(self, sub, *rest)
+
+    def index(self, sub: str, *rest: int) -> int:
+        self._through_the_seam_alone()
+        return str.index(self, sub, *rest)
+
+    def count(self, sub: str, *rest: int) -> int:
+        self._through_the_seam_alone()
+        return str.count(self, sub, *rest)
+
 
 def container_names_in(command: str) -> list[ParsedName]:
     """Every name the command gives a container, read as a name, once each and in name order.
 
-    Each name is read as a `ParsedName` where the pattern reads it. What is deduplicated is the
-    plain text of those names, which is bookkeeping and not a claim about two of them: the question
-    is which names the command uses, not whether one name is another. The text comes from the name
-    itself, so no field is read twice and none is read as text.
+    Each name is read as a `ParsedName` where the pattern reads it. What is deduplicated and
+    ordered is the plain text of those names, which is bookkeeping and not a claim about two of
+    them: the question is which names the command uses, not whether one name is another. The text
+    comes from the name itself, so no field is read twice and none is read as text — and the sort
+    is over the text rather than over the names, because ordering two of those is a comparison the
+    seam refuses like any other.
     """
     minted = [ParsedName(match.group("name")) for match in CONTAINER_NAME.finditer(command)]
     # `str()` of a `ParsedName` is the text it was read from: the keys are plain strings, so a
-    # duplicate is found without comparing two names.
-    return sorted({str(name): name for name in minted}.values())
+    # duplicate is found and the order is taken without comparing two names.
+    by_text = {str(name): name for name in minted}
+    return [by_text[text] for text in sorted(by_text)]
 
 
 def container_name_in(clause: str) -> ParsedName | None:
@@ -2313,6 +2397,19 @@ def the_same_name_as_a_search(one: str, other: str) -> bool:
     return one in other or other in one
 
 
+def names_something(name: ParsedName) -> bool:
+    """Whether a name read out of the card names anything at all.
+
+    The empty name is what a reading answers when there was nothing to read: a run that gives its
+    container no name, an address whose host is missing. Two of those are not two names that are
+    the same, and a rule that read them as one passed a card whose page container is pointed at
+    `http://:8080` beside a server run it gives no name to — a pair that relays to nothing, read
+    as satisfied by the very emptiness that is the defect. So the rule that compares a host against
+    the containers the command names asks this of both, and an empty name is never evidence.
+    """
+    return str.__len__(name) > 0
+
+
 # `(the reading the place does, the search it must not be)`.
 RUN_CARD_READINGS: dict[str, tuple[Callable[[str, str], bool], Callable[[str, str], bool]]] = {
     READING_RUN_CLEARING: (names_the_word, names_the_word_as_a_search),
@@ -2383,13 +2480,102 @@ def forced_removal_clauses(where: str, name: str, site: str) -> list[str]:
     ]
 
 
+# The comparisons `ParsedName` has to refuse when they are written outside the seam, in the forms
+# Python hands a subclass: the operands and the methods called on one of these. Every one of them
+# answers for a plain `str` receiver — that is the limit the class's docstring writes out — so the
+# list is the refusal half alone, one entry per operator a later edit could drop.
+def unseamed_comparisons(
+    one: ParsedName, two: ParsedName, plain: str
+) -> tuple[tuple[str, Callable[..., object]], ...]:
+    """Each comparison of a name read out of a command that the seam has to refuse, by shape."""
+    return (
+        ("`one == two`", lambda: one == two),
+        ("`one != two`", lambda: one != two),
+        ("`plain == one`", lambda: plain == one),
+        ("`plain != one`", lambda: plain != one),
+        ("`plain in one`", lambda: plain in one),
+        ("`one.startswith(…)`", lambda: one.startswith("sel")),
+        ("`one.endswith(…)`", lambda: one.endswith("ge")),
+        ("`one < two`", lambda: one < two),
+        ("`one <= two`", lambda: one <= two),
+        ("`one > two`", lambda: one > two),
+        ("`one >= two`", lambda: one >= two),
+        ("`plain < one`", lambda: plain < one),
+        ("`plain <= one`", lambda: plain <= one),
+        ("`plain > one`", lambda: plain > one),
+        ("`plain >= one`", lambda: plain >= one),
+        ("`one.find(…)`", lambda: one.find("age")),
+        ("`one.index(…)`", lambda: one.index("age")),
+        ("`one.count(…)`", lambda: one.count("e")),
+        ("`sorted([one, two])`", lambda: sorted([one, two])),
+    )
+
+
+def seam_problems() -> list[str]:
+    """Every comparison the seam has to refuse, evaluated, against the one place it answers.
+
+    The refusal is the whole guard on a name read out of a command, and it is one line per
+    operator: delete `__lt__` and the class still reads exactly as it does now, the fixtures still
+    pass, and a rule that orders two names is compared as plain text. So each shape is evaluated
+    here, outside the seam where it has to name the line it was written on, and one comparison is
+    evaluated through `reads_the_name` where it has to answer — a refusal that refuses everything
+    would take the table's readings with it.
+
+    What is not here is the other half of the class's limit, the forms a `str` receiver answers for
+    on its own: `name in plain_text`, `plain.startswith(name)`, `plain.find(name)`, and the methods
+    that answer with plain text, `name.lower()` among them. No evaluation can hold a shape that
+    answers, and `README.md` writes each of those out with the edit that defeats it.
+
+    This runs after the fixture harness, because the comparison it makes inside the seam goes
+    through `reads_the_name` and that records the place it read: the harness's answer about which
+    places the rules still reach is finished by then, and this is not part of it.
+    """
+    one = ParsedName("selvage")
+    two = ParsedName("selvage-net")
+    plain = "selvage-net"
+    problems: list[str] = []
+    for what, comparison in unseamed_comparisons(one, two, plain):
+        try:
+            comparison()
+        except UnseamedComparison:
+            continue
+        except Exception as thrown:
+            problems.append(
+                f"the seam refuses {what} with {type(thrown).__name__} rather than naming the "
+                "line it was written on, so a comparison written outside `reads_the_name` is "
+                "reported as something else"
+            )
+        else:
+            problems.append(
+                f"the seam answers {what}, a comparison of a name read out of a command written "
+                "outside `reads_the_name`: the method that refuses it no longer does, so a "
+                "fixture's reading can be replaced by this and nothing notices"
+            )
+    try:
+        inside = reads_the_name(READING_RUN_NETWORK_CHECK, one, two)
+    except UnseamedComparison:
+        problems.append(
+            "the seam refuses `reads_the_name`, the one place a comparison of two names is "
+            "asked to answer, so every reading in the table is refused where it is made"
+        )
+    else:
+        if inside is not False:
+            problems.append(
+                f"`reads_the_name` answers {inside!r} for two names that are not the same, so "
+                "the place that reads a pair is not reading them"
+            )
+    return problems
+
+
 def server_address_host(address: str) -> ParsedName:
     """The host an address names, in either form the page image accepts.
 
     `http://selvaged:8080` is a URL and is read as one. A bare `selvaged:8080` is not: as a URL
     its scheme is `selvaged`, which has no host at all, so the bare form — the one
     `web_client`'s README documents and `reference_server`'s README uses — is read as a host and
-    an optional port instead. Answering '' for what names no host is what the caller fails on.
+    an optional port instead. An address that names no host answers '' here, and '' names nothing:
+    the rule that compares this against the containers the command names fails on it, because
+    `names_something` says an empty name is not a host any container can be.
 
     The parameter is the address as text, and the host is the one thing read out of it that is a
     name: a rule compares that against the names the command gives its containers, and it is read
@@ -2534,7 +2720,10 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
     container is given is read as two claims about the other containers: some run has to give
     that host a name on the network the two are attached to, and the run carrying the address has
     to be the one that publishes the port a reader opens, or the page asks for a server nothing
-    answers for. The address is also read against the two references the page publishes: the run a
+    answers for. Neither side of that first claim may be the empty name — an address whose host is
+    empty names no container, a run given no `--name` names none — because the two of those are
+    equal and a card that relays to nothing would read as satisfied. The address is also read
+    against the two references the page publishes: the run a
     reader opens carries the page image and the run beside it the server's, so the two swapped is a
     reader sent to the server's port for a page, and the server's run publishes nothing, because a
     port there collides with the page's own.
@@ -2655,12 +2844,25 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
             continue
         addressed += 1
         host = server_address_host(address)
+        # A name that names nothing is not a name: `http://:8080` gives the page container no host
+        # and a run given no `--name` gives it no container, and the two compared equal, so this
+        # rule read a card whose page relays to nothing as satisfied. Both sides are asked here
+        # rather than leaving it to the reading, because `reads_the_name` is the place a fixture
+        # harness swaps for a weaker one, and a weaker reading is what `''` slips through.
         elsewhere = [
             one
             for one, _network, other in started
-            if reads_the_name(READING_ADDRESSED_CONTAINER, one, host) and other != clause
+            if names_something(one)
+            and names_something(host)
+            and reads_the_name(READING_ADDRESSED_CONTAINER, one, host)
+            and other != clause
         ]
-        if not elsewhere:
+        if not names_something(host):
+            problems.append(
+                f"points a container at {address} and names no host in it, so that address "
+                "reaches nothing"
+            )
+        elif not elsewhere:
             problems.append(
                 f"points a container at {address} and gives no other container "
                 f"the name {host!r}, so that address reaches nothing"
@@ -4525,8 +4727,9 @@ def run_card_reading_problems() -> list[str]:
 FIELD_PATTERNS = frozenset({"CONTAINER_NAME", "NETWORK_FLAG", "IMAGE_REFERENCE"})
 MINTED_FIELD = "ParsedName"
 
-# The two entries the scan walks out from. What they can reach is what the scan reads, so a function
-# a rule calls is a function the scan covers.
+# The entries the scan walks out from, and the values it walks out from beside them. What these
+# reach is what the scan reads, so a function the rules call is a function the scan covers — and so
+# is one the rules reach through a table or a variable rather than by calling it.
 RULE_ENTRY_POINTS = ("run_card_problems", "run_card_opened_at_problems")
 
 
@@ -4539,10 +4742,43 @@ def called_names(node: ast.AST) -> set[str]:
     }
 
 
-def reached_functions(root: str, functions: dict[str, ast.FunctionDef]) -> set[str]:
-    """Every function of this file `root` calls, by name, transitively."""
-    reached = {root}
-    pending = [root]
+def named_function_values(tree: ast.Module, functions: dict[str, ast.FunctionDef]) -> set[str]:
+    """Every function of this file a module-level value of it *is*, rather than a call it is in.
+
+    `called_names` follows a bare call, and the rules do not reach every function that way: the ten
+    places a name is compared sit in `RUN_CARD_READINGS` and are called through the table, and the
+    mapping reading the fixture harness swaps sits in a variable, so `the_same_name`,
+    `names_the_word`, `removes_the_network`, their weakened twins and the published-port reading
+    were never walked — and a weakened reading written *inside* one of them was outside the reach
+    the prose claimed. What is read is a value that is one of these functions, or a collection of
+    them: the table and the variable, and not a function handed to another call.
+    `first_page_stating(pages, RELAY_DISCLOSURE, disclosure_region)` names one too, and that one
+    reads the page's image reference rather than a name out of the card.
+    """
+    named: set[str] = set()
+    for node in tree.body:
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+            continue
+        value = node.value
+        if value is None:
+            continue
+        collected = (
+            list(ast.walk(value))
+            if isinstance(value, (ast.Dict, ast.Tuple, ast.List, ast.Set))
+            else [value]
+        )
+        named |= {
+            inner.id
+            for inner in collected
+            if isinstance(inner, ast.Name) and inner.id in functions
+        }
+    return named
+
+
+def reached_functions(roots: Iterable[str], functions: dict[str, ast.FunctionDef]) -> set[str]:
+    """Every function of this file `roots` reach, by name, transitively."""
+    reached = {root for root in roots if root in functions}
+    pending = list(reached)
     while pending:
         for name in called_names(functions[pending.pop()]):
             if name in functions and name not in reached:
@@ -4552,12 +4788,18 @@ def reached_functions(root: str, functions: dict[str, ast.FunctionDef]) -> set[s
 
 
 def reads_a_field_pattern(node: ast.AST | None) -> bool:
-    """Whether the expression reads a match out of one of the field patterns."""
-    return (
-        isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Attribute)
-        and isinstance(node.func.value, ast.Name)
-        and node.func.value.id in FIELD_PATTERNS
+    """Whether `node` reads a match out of one of the field patterns, however it is written.
+
+    The whole value is walked rather than its outer call alone. A match bound through a conditional
+    expression, an `or`, a `list(…)`, an `enumerate(…)` or a `re.search(PATTERN, …)` is the same
+    read a direct `PATTERN.search(…)` is, and following only the direct spelling left the other
+    bindings unread: a name taken out of one of them and compared with a stretch search or a
+    `.startswith` on the text passed the scan written to refuse exactly that.
+    """
+    if node is None:
+        return False
+    return any(
+        isinstance(inner, ast.Name) and inner.id in FIELD_PATTERNS for inner in ast.walk(node)
     )
 
 
@@ -4575,7 +4817,9 @@ def field_match_names(function: ast.FunctionDef) -> set[str]:
 
     Every place a name can be bound is read: an assignment, an annotated one, a loop, a
     comprehension and a walrus. A tuple target is read for all of its names, so a shape this does
-    not tell apart is one it reads as a field rather than one it misses.
+    not tell apart is one it reads as a field rather than one it misses. What is bound is any value
+    that names one of the patterns anywhere inside it, for the reason `reads_a_field_pattern`
+    gives.
     """
     matches: set[str] = set()
     for node in ast.walk(function):
@@ -4598,24 +4842,54 @@ def field_match_names(function: ast.FunctionDef) -> set[str]:
     return matches
 
 
-def field_group_reads(function: ast.FunctionDef) -> list[ast.Call]:
-    """Every `.group(…)` read in `function` taken off a match of one of the field patterns."""
+def carried_by_names(function: ast.FunctionDef) -> dict[int, set[str]]:
+    """The plain names each expression of `function` is assigned to, by identity."""
+    bindings: dict[int, set[str]] = {}
+    for node in ast.walk(function):
+        targets: list[ast.AST] = []
+        value: ast.AST | None = None
+        if isinstance(node, ast.Assign):
+            targets, value = list(node.targets), node.value
+        elif isinstance(node, ast.AnnAssign):
+            targets, value = [node.target], node.value
+        elif isinstance(node, ast.NamedExpr):
+            targets, value = [node.target], node.value
+        else:
+            continue
+        if value is None:
+            continue
+        for target in targets:
+            for name in bound_names(target):
+                bindings.setdefault(id(value), set()).add(name)
+    return bindings
+
+
+def field_group_reads(function: ast.FunctionDef) -> list[tuple[ast.Call, set[str]]]:
+    """Every `.group(…)` read off a match of a field pattern, and the names carrying that read.
+
+    A read bound to a plain name and handed to `ParsedName(…)` a line later is the same read as one
+    minted where it is read, so the names it is bound to travel with it: without that,
+    `name = found.group("name"); return ParsedName(name)` was refused as a function that "hands back
+    the text it matched", which it does not.
+    """
     matches = field_match_names(function)
-    return [
-        node
-        for node in ast.walk(function)
-        if isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Attribute)
-        and node.func.attr == "group"
-        and (
-            reads_a_field_pattern(node.func.value)
-            or any(
-                isinstance(inner, ast.Name) and inner.id in FIELD_PATTERNS
-                for inner in ast.walk(node.func.value)
-            )
-            or (isinstance(node.func.value, ast.Name) and node.func.value.id in matches)
-        )
-    ]
+    carried = carried_by_names(function)
+    reads: list[tuple[ast.Call, set[str]]] = []
+    for node in ast.walk(function):
+        if not (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "group"
+        ):
+            continue
+        receiver = node.func.value
+        if not (
+            reads_a_field_pattern(receiver)
+            or (isinstance(receiver, ast.Name) and receiver.id in matches)
+        ):
+            continue
+        reads.append((node, carried.get(id(node), set())))
+    return reads
 
 
 def minted_arguments(function: ast.FunctionDef) -> set[int]:
@@ -4630,6 +4904,93 @@ def minted_arguments(function: ast.FunctionDef) -> set[int]:
     }
 
 
+def minted_field_names(function: ast.FunctionDef) -> set[str]:
+    """The plain names `function` hands to `ParsedName(…)`, which carries a read minted a line on."""
+    return {
+        argument.id
+        for call in ast.walk(function)
+        if isinstance(call, ast.Call)
+        and isinstance(call.func, ast.Name)
+        and call.func.id == MINTED_FIELD
+        for argument in call.args
+        if isinstance(argument, ast.Name)
+    }
+
+
+# The three calls that want a yes or a no out of a match rather than the match itself.
+PRESENCE_CALLS = frozenset({"bool", "any", "all"})
+
+
+def parent_nodes(function: ast.FunctionDef) -> dict[int, ast.AST]:
+    """Every node of `function` under its parent, by identity."""
+    parents: dict[int, ast.AST] = {}
+    for node in ast.walk(function):
+        for child in ast.iter_child_nodes(node):
+            parents[id(child)] = node
+    return parents
+
+
+def only_asks_whether_it_matches(call: ast.Call, parents: dict[int, ast.AST]) -> bool:
+    """Whether the match `call` answers is only asked about, or kept.
+
+    `CONTAINER_NAME.search(clause) is not None` asks whether the pattern matches and throws the
+    match away: no name is read there, so a helper that answers that way is not a read this scan
+    has anything to say about, and refusing it as one that reads "a name or a reference … without
+    reading it as a `ParsedName`" describes code that does not exist. What tells the two apart is
+    the context the call stands in. A comparison against `None`, a `not`, a truth test, and a
+    `bool(…)`, `any(…)` or `all(…)` around it all answer with a yes or a no whatever else happens
+    to that answer, so the match itself cannot escape them. A match handed on as one of those is
+    not the one the question is about: `PATTERN.search(c) if flag else None` and
+    `PATTERN.search(c) or None` answer with the match, so they are walked out to whatever holds
+    them, and only a truth test above them makes the match a thing nobody kept. Everything else —
+    a return, a binding, a `.group(…)` off it, an iteration over it, a call built from it — keeps
+    it.
+    """
+    node: ast.AST = call
+    while True:
+        parent = parents.get(id(node))
+        if isinstance(parent, ast.Compare):
+            beside = [
+                side
+                for side in [parent.left, *parent.comparators]
+                if side is not node
+            ]
+            return bool(beside) and all(
+                isinstance(side, ast.Constant) and side.value is None for side in beside
+            )
+        if isinstance(parent, ast.UnaryOp) and isinstance(parent.op, ast.Not):
+            return True
+        if isinstance(parent, (ast.If, ast.While, ast.Assert)):
+            return True
+        if isinstance(parent, ast.IfExp) and parent.test is not node:
+            # A branch answers with itself; a test is only asked whether it is true.
+            node = parent
+            continue
+        if isinstance(parent, (ast.IfExp, ast.BoolOp)):
+            # The test of a conditional, and an operand of `and`/`or` whose own value nothing keeps.
+            node = parent
+            continue
+        if (
+            isinstance(parent, ast.Call)
+            and isinstance(parent.func, ast.Name)
+            and parent.func.id in PRESENCE_CALLS
+        ):
+            return True
+        return isinstance(parent, ast.Expr)
+
+
+def kept_field_matches(function: ast.FunctionDef) -> list[ast.Call]:
+    """Every call in `function` that reads one of the field patterns and keeps what it answers."""
+    parents = parent_nodes(function)
+    return [
+        node
+        for node in ast.walk(function)
+        if isinstance(node, ast.Call)
+        and reads_a_field_pattern(node)
+        and not only_asks_whether_it_matches(node, parents)
+    ]
+
+
 def unseamed_field_problems() -> list[str]:
     """Every read of a name or a reference the card's rules reach that does not mint a `ParsedName`.
 
@@ -4639,18 +5000,24 @@ def unseamed_field_problems() -> list[str]:
     create selvage` answered for `--network selvage-net`. What closed that was the name arriving as
     a `ParsedName`; this is the other half, and it is what makes the closure stick rather than hold
     until the next edit. It walks this file's own syntax tree, out from the functions the card's
-    rules are built from, and fails on two shapes:
+    rules are built from and out from the function values those rules reach through a table or a
+    variable, and fails on two shapes:
 
-    - a `.group(…)` read taken off a match of one of the three patterns, which is not the expression
-      a `ParsedName` is made from where it is read; and
-    - a function that reads one of those patterns and makes no `ParsedName` at all.
+    - a `.group(…)` read taken off a match of one of the three patterns, which is neither the
+      expression a `ParsedName` is made from where it is read nor the plain name such an expression
+      is bound to; and
+    - a function that keeps a match of one of those patterns and makes no `ParsedName` at all.
 
-    A return annotation naming the type does not satisfy either; only minting the value does.
+    A return annotation naming the type does not satisfy either; only minting the value does. A read
+    that only asks whether the pattern matches — `CONTAINER_NAME.search(clause) is not None` — reads
+    no name and is not one of these shapes.
 
-    What it does not see: a function the rules do not call (`check_published_image` compares the
+    What it does not see: a function the rules do not reach (`check_published_image` compares the
     references the whole page carries, and that is not one of the card's rules), a name read with a
-    pattern of the rule's own rather than one of those three, and a comparison of the text a
-    `ParsedName` was read from — that value is a `str` and carries no record of where it came from.
+    pattern of the rule's own rather than one of those three, a function that mints a `ParsedName`
+    and keeps a match of one of those patterns without a `.group(…)` read off it, and a comparison
+    of the text a `ParsedName` was read from — that value is a `str` and carries no record of where
+    it came from.
     """
     with open(__file__, encoding="utf-8") as handle:
         tree = ast.parse(handle.read(), filename=__file__)
@@ -4658,15 +5025,29 @@ def unseamed_field_problems() -> list[str]:
         node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)
     }
     problems: list[str] = []
-    reached: set[str] = set()
-    for entry in RULE_ENTRY_POINTS:
-        if entry not in functions:
+    roots = set(RULE_ENTRY_POINTS) | named_function_values(tree, functions)
+    for root in sorted(roots):
+        if root not in functions:
             problems.append(
-                f"the scan's entry point {entry!r} is not a function of this file, so what the "
-                "card's rules are built from is not what this reads"
+                f"the scan's root {root!r} is not a function of this file, so what the card's "
+                "rules are built from is not what this reads"
             )
-            continue
-        reached |= reached_functions(entry, functions)
+    reached = reached_functions(roots, functions)
+    # A pin must reach what it claims to cover, and this half of the scan claims the functions the
+    # rules reach: a reading the table names but the walk does not is one a weakened edit inside it
+    # is invisible in, which is what the table-shaped readings were.
+    for place, readings in RUN_CARD_READINGS.items():
+        for reading in readings:
+            if reading.__name__ not in reached:
+                problems.append(
+                    f"the name reading {place!r} is read through {reading.__name__}, which the "
+                    "scan does not reach, so a comparison written inside it is one nothing reads"
+                )
+    if published_port_reading.__name__ not in reached:
+        problems.append(
+            f"the published port reading is {published_port_reading.__name__}, which the scan "
+            "does not reach, so a comparison written inside it is one nothing reads"
+        )
     readers = 0
     for name in sorted(reached):
         function = functions[name]
@@ -4678,19 +5059,21 @@ def unseamed_field_problems() -> list[str]:
         readers += 1
         reads = field_group_reads(function)
         minted = minted_arguments(function)
-        for read in reads:
-            if id(read) not in minted:
-                problems.append(
-                    f"the function {name} reads a container or network name out of a command "
-                    f"through {', '.join(sorted(mentioned))} and hands back the text it matched: "
-                    "a comparison of it is one no fixture can hold, so read it as a `ParsedName` "
-                    "where the field is read"
-                )
-        if not reads and not minted:
+        minted_names = minted_field_names(function)
+        for read, carrying in reads:
+            if id(read) in minted or carrying & minted_names:
+                continue
             problems.append(
-                f"the function {name} reads a name or a reference out of a command through "
-                f"{', '.join(sorted(mentioned))} without reading it as a `ParsedName`, so a "
-                "comparison of it is one no fixture can hold"
+                f"the function {name} reads a container or network name out of a command "
+                f"through {', '.join(sorted(mentioned))} and hands back the text it matched: "
+                "a comparison of it is one no fixture can hold, so read it as a `ParsedName` "
+                "where the field is read"
+            )
+        if not reads and not minted and kept_field_matches(function):
+            problems.append(
+                f"the function {name} keeps a match of {', '.join(sorted(mentioned))} and reads "
+                "no `ParsedName` out of it, so whatever it takes from that match — a `groupdict`, "
+                "a `findall`, a subscript — is compared as plain text, which no fixture can hold"
             )
     if not readers:
         problems.append(
@@ -4766,7 +5149,7 @@ def scan(targets: list[str]) -> int:
     # The fixtures above say the rules read the right commands; this says they read them the right
     # way, which is the half that was missing: a reading can be swapped for a weaker one with every
     # fixture still green, and then the fixtures hold a rule and not the reading inside it.
-    reading_problems = run_card_reading_problems() + unseamed_field_problems()
+    reading_problems = run_card_reading_problems() + unseamed_field_problems() + seam_problems()
     if reading_problems:
         for problem in reading_problems:
             print(f"check-claims: {problem}", file=sys.stderr)
