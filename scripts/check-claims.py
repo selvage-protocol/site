@@ -153,7 +153,8 @@ REQUEST_TIMEOUT_SECONDS = 20
 
 # The Run card hands a reader three commands, one line each, and this host has no Docker, so what
 # is read is the shape of those commands rather than the run itself: the network the two containers
-# share is created in one, the server and the page are started in the others; every run is detached,
+# share is created in the first, before either run names it, and the server and the page are started
+# in the others; every run is detached,
 # because one that is not holds the reader's terminal instead of returning their prompt; every run
 # joins the network the first command creates, read as a whole name, because that is how the page
 # reaches its server; the address the page container is given names the server container on that
@@ -351,6 +352,15 @@ RUN_CARD_FIXTURES: tuple[tuple[str, tuple[str, ...] | None, str], ...] = (
         "a command that creates no network for the two containers",
         run_card_fixture((0, "docker network create room", "docker network inspect room")),
         "does not create the network the two containers share",
+    ),
+    (
+        "a command that creates the network after the runs that join it",
+        (
+            RUN_CARD_FIXTURE_SERVER,
+            RUN_CARD_FIXTURE_PAGE,
+            RUN_CARD_FIXTURE_NETWORK,
+        ),
+        "runs a container before the command that creates room",
     ),
     (
         "a command that gives no container the relay address",
@@ -2484,7 +2494,8 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
     """What the card's commands have to be, one problem each.
 
     The card hands a reader three lines: the network the two containers share, the server that
-    holds the room, and the page that reaches it. The first has to create that network, every run
+    holds the room, and the page that reaches it. The first has to create that network before
+    either run names it, every run
     has to join it, every run has to be detached, and the address the page container is given is
     read as two claims about the others: some run has to give that host a name on the network the
     two are attached to, and the run carrying the address has to be the one that publishes a port,
@@ -2516,13 +2527,24 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
     ]
 
     network: ParsedName | None = None
-    for clause in clauses:
+    created_at: int | None = None
+    first_run: int | None = None
+    for index, clause in enumerate(clauses):
+        if first_run is None and DOCKER_RUN.search(clause) is not None:
+            first_run = index
         created = NETWORK_CREATE.search(clause)
-        if created is not None:
+        if created is not None and network is None:
             network = network_named_in(clause, created)
-            break
+            created_at = index
     if network is None:
         problems.append("does not create the network the two containers share")
+    elif created_at is not None and first_run is not None and first_run < created_at:
+        # The first command is the network's: a run that names a network nothing has created yet
+        # fails where the reader pastes it, so the creation has to stand before every run.
+        problems.append(
+            f"runs a container before the command that creates {network}, so the run reaches "
+            "a network nothing has made yet"
+        )
 
     # The containers the runs start: the name each runs under, the network it is attached to, and
     # the clause itself, so the address one of them carries can be read against the others.
@@ -2814,7 +2836,8 @@ def check_run_card_command(pages: list[Scanned]) -> int:
         )
         return 2
     print(
-        "check-claims: the Run card creates the network the two containers share, runs every "
+        "check-claims: the Run card creates the network the two containers share before the runs "
+        "that name it, runs every "
         "container detached and on that network, points the page container at the server "
         "container, gives the address to the run carrying the page image, and publishes nothing "
         "on the run carrying the server's. This reads the shape of the commands and not a run, "
