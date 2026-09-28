@@ -1,9 +1,9 @@
 # The public landing page
 
-The public landing page for **Selvage** (the project) and the **Selvage Session Protocol** (the
-protocol it publishes), served at **https://selvage.dontblameme.dev**. It is one Next.js App Router
-project: the route `/` carries the page, and `app/not-found.tsx` is the route beside it. The
-canonical material lives in the other repositories:
+The landing page for **Selvage** (the project) and the **Selvage Session Protocol** (the protocol it
+publishes), served at **https://selvage.dontblameme.dev**. It is one Next.js App Router project: the
+route `/` carries the page, and `app/not-found.tsx` is the route beside it. The canonical material
+lives in the other repositories:
 [`selvage-protocol/specification`](https://github.com/selvage-protocol/specification) for the
 protocol, prose and vectors, [`selvage-protocol/reference_server`](https://github.com/selvage-protocol/reference_server)
 for the server and client library, and [`selvage-protocol/vscode_client`](https://github.com/selvage-protocol/vscode_client)
@@ -57,8 +57,6 @@ $ scripts/ci-local.sh weight       # every image the page body fetches, against 
 $ scripts/ci-local.sh links        # serve production, lychee over the rendered page, the README and the docs tree
 $ scripts/ci-local.sh lint         # actionlint over the workflows (nix; the workflow pins a release)
 ```
-
-What each step reads and what it fails on is in [the gate](docs/gate.md).
 
 ## More
 
