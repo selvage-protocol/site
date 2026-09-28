@@ -6,8 +6,9 @@
 // cannot see whether a browser enforces it the way the model assumes — and the defect this file
 // exists for was exactly that: `default-src 'none'` with no `script-src` refused all seven
 // chunks and all fifteen inline scripts, `window.__next_f` stayed undefined, the page never
-// hydrated, and SiteHeader's hide-on-scroll did nothing while the README described it working.
-// Nothing in the gate noticed, because nothing ran a browser. A refused font is the same defect
+// hydrated, and SiteHeader's hide-on-scroll did nothing while the accessibility floor described it
+// working — `docs/content-security-policy.md` writes this out. Nothing in the gate noticed, because
+// nothing ran a browser. A refused font is the same defect
 // with a quieter failure: the model decides `font-src` against the preloads the page carries, and
 // only a run like this one can say the glyph files came back rather than the fallback stack.
 //

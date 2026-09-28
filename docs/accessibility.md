@@ -39,7 +39,7 @@ instead of waiting for a look. Measured today:
 | focus outline against the page | 8.07:1 | 3.0:1 |
 | window text on the window, over the ground the hero figure is drawn on | 12.02:1 (muted 7.81:1) | 4.5:1 |
 | hero figure text on the figure's own ground (the figure sits on the page, so its ground is `--bg`) | 11.34:1 (muted 7.37:1) | 4.5:1 |
-| the nav mark's median ink pixel on the header's ground (the owner's artwork, a logotype and so exempt from WCAG 1.4.11's non-text floor; its own pixels read out of `public/mark-header.png` and composited over `--bg`) | 1.88:1 | 1.5:1 |
+| the nav mark's median ink pixel on the header's ground (the owner's artwork, a decorative logotype: 1.4.11 measures graphical objects *required to understand the content*, which a mark with `alt=""` beside the link's own `Selvage` label is not, and the standard's logotype clause — text that is part of a logo or brand name has no contrast requirement — is SC 1.4.3's rather than 1.4.11's; its own pixels read out of `public/mark-header.png` and composited over `--bg`) | 1.88:1 | 1.5:1 |
 
 WCAG 1.4.1 is the one criterion measured the other way round, because both of its floors cannot hold
 at once here. It asks for 3.0:1 between a link and the text beside it when colour is the only thing

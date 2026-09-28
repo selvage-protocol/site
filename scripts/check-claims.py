@@ -2071,13 +2071,14 @@ class ParsedName(str):
     answers for the rest — `name in plain_text`, `plain.startswith(name)`, `plain.find(name)`, and
     the `str` side of any operator that answers with plain text, `"-" + name` among them — and so
     does any method that answers with plain text, `name.lower()` and `name.strip()` among them.
-    `README.md` writes that limit out with the edit that defeats each, and `seam_problems` fails
-    this check when one of the refusals goes.
+    `docs/claim-filter.md` writes that limit out with the edit that defeats each, and
+    `seam_problems` fails this check when one of the refusals goes.
 
     What it does not close either is a comparison of the text a name was read from — a `.split()` of
     the clause, a fresh pattern matched against it — because that value is not one of these and
     carries no record of where it came from. `unseamed_field_problems` scans this file for the
-    reads that would produce one, and the reach of both halves is written out in `README.md`.
+    reads that would produce one, and the reach of both halves is written out in
+    `docs/claim-filter.md`.
     """
 
     __hash__ = str.__hash__
@@ -2305,7 +2306,7 @@ def seam_problems() -> list[str]:
     What is not here is the other half of the class's limit, the forms a `str` receiver answers for
     on its own: `name in plain_text`, `plain.startswith(name)`, `plain.find(name)`, and the methods
     that answer with plain text, `name.lower()` among them. No evaluation can hold a shape that
-    answers, and `README.md` writes each of those out with the edit that defeats it.
+    answers, and `docs/claim-filter.md` writes each of those out with the edit that defeats it.
 
     This runs after the fixture harness, because the comparison it makes inside the seam goes
     through `reads_the_name` and that records the place it read: the harness's answer about which
