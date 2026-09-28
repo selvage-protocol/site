@@ -11,10 +11,11 @@ name: ci
 # and the workflow lint. The claim step
 # matches known wordings only — a green run is not a proof that every sentence is true, so the
 # page's claims are still read against the corpus by a person. The claims it does assert
-# positively are the ones with artefacts behind them. The image tag the page's happy path hands a
-# reader: it asks `ghcr.io` for the tag the page names, requires a leg per architecture, and compares
+# positively are the ones with artefacts behind them. The images the page's happy path hands a
+# reader: it asks `ghcr.io` for the tag the page names — a bare repository is read as its `:latest` —
+# requires a leg per architecture, and compares
 # the per-platform manifests' layer digests, because a platform entry only labels a slot. The
-# Run card's own command is read for the shape that makes a second paste of it work, and its `$ `
+# Run card's own commands are read for which of the two images sits on which run, and its `$ `
 # prompt and the labels above its blocks are read against the stylesheet the served page loads, so
 # a rule that keeps a pasted prompt or label out of a copy cannot be deleted quietly. The
 # demo instance the page points at: it requires every reference to that host to be one of the

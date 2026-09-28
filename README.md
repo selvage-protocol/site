@@ -48,14 +48,14 @@ browser proof the runner cannot run, and nothing else.
 | `components/demo-endpoint.tsx` | the demo's host, with the one control the card needs: the address an editor is pointed at, on the clipboard |
 | `lib/use-copy.ts` | the copy state one or more controls share, and the clipboard write with the textarea fallback an origin without the async clipboard needs |
 | `lib/clients.ts` | the one list of clients: each one's key, the repository it lives in, the name and description the grid's row shows, its icon, whether it is available or a plan, the label it wears as a chip and as its install route's tab, and the route itself where it has one. The grid, the chips figure and the terminal all derive from it, so a client is one entry and appears on every surface at once — and each surface carries the client's key, which is what lets `scripts/check-claims.py` read the three against each other without a list of names of its own |
-| `lib/selvage.ts` | the two published images' references, the one command built from them, the network the two containers share and the teardown that removes both of them and it, so the `docker run`, the tags inside it and the cleanup cannot drift apart, and the demo's host |
+| `lib/selvage.ts` | the two published images' references, the three commands built from them — the network the two containers share, the server and the page — so the `docker run`s and the images inside them cannot drift apart, the address the card tells a reader to open, and the demo's host |
 | `lib/utils.ts` | the one shared helper (`cn`: `clsx` + `tailwind-merge`) |
 | `package.json` / `package-lock.json` | the only dependencies: `next`, `react`, `react-dom`, `tailwindcss` (+ its PostCSS plugin), `clsx`, `tailwind-merge`, `class-variance-authority` and `lucide-react` for icons, `typescript` and `@types/*`. No Radix, no component library, nothing else without a written reason |
 | `.nvmrc` | the pinned Node version for local work and CI (`nvm use` reads it); `package.json` `engines` carries the major (`24.x`), because Vercel only deploys major versions |
 | `.gitignore` | what the repository does not carry: the build output, `node_modules`, `.tmp` (the gate's artefacts, its `TMPDIR` included), the generated `next-env.d.ts`, TypeScript's build info, Python's caches, and the sibling worktrees a parallel piece of work builds in |
 | `LICENSE-MIT` / `LICENSE-APACHE` | the licence pair the repository is under, `MIT OR Apache-2.0` (see "Licence") |
 | `README.md` | this file: what the page is and says, what it must never say, what the gate checks, and the accessibility floor it holds itself to |
-| `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason, and the facts it asserts in the positive — the image tags, the shape that makes a second paste of the run command work, the `$ ` prompt and the labels the Run card prints against the stylesheet the served page loads, the demo instance, the wire version each artefact speaks, the disclosures a reader is owed of what the relay still sees and of the terms `selvaged` is under, the file the page cites for the corpus's counts, the identity the extension is published under with the two registries it is on, the hosted tier the page offers and does not run yet, and the agreement between the grid, the chips figure and the terminal's install routes |
+| `scripts/check-claims.py` | the claim check: the phrases the page must not carry, each with its reason, and the facts it asserts in the positive — the images the card's runs name, which of the two runs carries which, the `$ ` prompt and the labels the Run card prints against the stylesheet the served page loads, the demo instance, the wire version each artefact speaks, the disclosures a reader is owed of what the relay still sees and of the terms `selvaged` is under, the file the page cites for the corpus's counts, the identity the extension is published under with the two registries it is on, the hosted tier the page offers and does not run yet, and the agreement between the grid, the chips figure and the terminal's install routes |
 | `scripts/check-button-props.tsx` | the button check: renders the button and anchor variants and asserts their props reach the DOM (run by `npm run check:button` inside the gate) |
 | `scripts/tsconfig.button-check.json` | the button check's own project, which extends the site's: the same strict settings with `noEmit` off, CommonJS as the module, and the output in `.tmp/button-check`, so the component can be rendered on its own and the check can import what it transpiled |
 | `scripts/check-contrast.py` | the contrast check: parses the theme tokens out of `style.css` — including the sample's `selvage-mocha` token colours, the ground the code figure draws them on, and the alpha a peer's selection fill is drawn at — reads the colours the page's own rules paint where a pair is not a token (the window's line numbers, the not-yet-available card, the repository descriptions) out of the same file, reads the token a selection fill sits under out of `components/room-visuals.tsx` and the fills and labels of the button variants out of `components/ui/button.tsx`, reads the nav mark's own pixels out of `public/mark-header.png` (a logotype, exempt from the non-text floor and held only to being visible on its ground), and asserts the rendered pairs sit at or above their floors, with measured ratios (run by `scripts/ci-local.sh contrast` inside the gate) |
@@ -178,7 +178,7 @@ the reader can name.
 | Part | Its job |
 |---|---|
 | Hero | the promise, two CTAs, four one-word facts, and the room window beside them: the host's folder down the side, the file the room has open, the line one of them is typing, and the invite link that put them there. The CTAs come **above** the facts because of the fold: four facts, a CTA row and the version line of the order the page carried put the primary button at y≈823 on a 1280×633 screen and nothing but the header's small link in the first one, so a reader met evidence and no action. The CTAs lead with the demo — the fastest thing a stranger can do, with nothing installed — then running it in the editor, which is where the commands are; the header's own CTA points at the demo for the same reason. The specification is not a third button: it is the link that closes *Why a spec*, and nothing on the page presents a link as a disabled-looking control. The four facts are one row of one-word chips — *Sealed*, *Specified*, *Path-scoped*, *No account* — and a check mark each. They were four sentences, and three of those arguments are made below in any case: the relay's disclosure is the panel beside the terminal in *Get it working*, the specification has its own section, and the granted paths are the third card of *See it working*. *No account* is the one the page carries nowhere else, and that is the reason the row is kept rather than deleted: the fact goes with it. The relay's chip leads because what the relay reads and does not read is the claim a reader has to be able to take before the others are worth anything, and it is read against the panel below, where the detail lives — the gate reads the panel, not the chip, for exactly that reason |
-| Try → Run | the ways in, in the order they cost. *01 Try* is the one card the page draws a live border around: the demo, and the host a reader pastes into a client, with those two controls as the card's last element so they sit on its bottom edge. *02 Run* is the two published images as one chained `docker run` — the server on a network of its own and the page container published on this machine's loopback, both detached and named — under a label of its own, with the teardown in a second labelled block below it: the teardown is a second action and not part of the run, so a reader who selects one block never pastes both, and the card says in as many words to paste it on its own; one who pastes the run twice gets a working pair rather than a name collision. The prompt in front of each block and the label above it are kept out of a selection, so a triple-click takes the command and not the `$ ` a shell would refuse, and a drag from one block across the other takes two commands and no label. The teardown removes both containers before the network they are still attached to and then the network, and the card says what a reader can run to see the state: `docker ps` for which of the two is still running, `docker logs selvaged` for what the server said while that container is there, `docker ps` naming only the page as the sign of a server that stopped after the page was up (the page keeps serving, and `--rm` took the server's logs with it) and pasting the run again as what brings both back, because the page container holds the address it resolved when it started: a server that comes back at a new address leaves the page's relay answering 502 until the page container restarts, which the run does — nginx resolves its upstream once, when it loads its configuration, as `web_client`'s README says — and, when `--rm` has taken both containers with their logs, the server on its own without `-d`. *03 Rent* is the tier the project does not run yet: the card offers it, the pill on it says it is not available, and the row under it is a plan rather than a control, so nothing on the page offers a hosted room and nothing presents a row as a disabled-looking button |
+| Try → Run | the ways in, in the order they cost. *01 Try* is the one card the page draws a live border around: the demo, and the host a reader pastes into a client, with those two controls as the card's last element so they sit on its bottom edge. *02 Run* is the two published images as three labelled commands — the network the two containers share, the server on it and the page container published on this machine's loopback, all detached and named, the images printed as bare repositories rather than with the `:latest` docker reads them as — so a reader takes one step at a time and a selection never carries two: the prompt in front of each block and the label above it are kept out of a selection, so a triple-click takes the command and not the `$ ` a shell would refuse, and a drag from one block across another takes two commands and no label. The prose above them is two sentences: where to open the browser editor once both containers are up, and that rooms live in memory so a restart ends them. Nothing on the card clears a name or looks a network up first, and pasting a line twice is docker's error to report: the card is the happy path, and a reader who is done stops the pair with `docker stop` or `docker rm -f`. *03 Rent* is the tier the project does not run yet: the card offers it, the pill on it says it is not available, and the row under it is a plan rather than a control, so nothing on the page offers a hosted room and nothing presents a row as a disabled-looking button |
 | Get it working | one server, any client: the install routes in one tabbed terminal — VS Code, Neovim, Browser — each with the command it copies, the note a reader needs before running it, and the repository it comes from. The strip is the ARIA tabs pattern (the arrow keys move between them, and every panel is in the document, so the page carries every route without scripting), and the routes are the client list's own install data: a client the project has not written has no route and so no tab. The routes carry the facts a reader installs by: the extension's published identity (`selvage-protocol.selvage`) and the two registries it is on; the Neovim plugin-manager line and `:SelvageHost`; and the demo's address an editor hosts on. The command that runs both containers, `selvaged` and the page in front of it, sits in the *Run* card of *Try → Run*: the page container is the one that publishes a port, on `127.0.0.1:8080`, and the server has none on the host, so the card says which address a reader opens rather than leaving it to the command. Beside the terminal the two panels say what the wire seals and what the relay still sees and still does, and that the host is a peer's signed claim rather than a server fact. The manual a reader wants next — the corpus check, the vector replay, each client's full command list — is the specification link and each repository's README, not a fold on this page; the per-client settings and the hosting routes were cut for the same reason |
 | See it working | four cards, each with a drawing of the thing it claims: anyone with the link is in, the carets of three peers in one file, the paths a guest sees, multiple clients on one engine |
 | How it works | the four moves in order (host a folder, send the invite, type in the same file, close the window), under its own one-line summary of the workflow. They are the sequence rather than the argument: the grant, the sealed material and the host's signed claim are all made in the sections above, where a reader meets the thing they are about. The fourth move says whose window ends the room and what a dropped connection can still do: the host's window ends it after a short countdown, and a connection that only drops can rejoin before the countdown runs out. That a guest who closes their window leaves the others in the room is not on the page: it is what a reader expects, and the step is kept to the two facts a reader would otherwise get wrong |
@@ -506,8 +506,8 @@ the prose the page carries in its `meta` attributes — `description`, `og:*`, `
 beside the visible text, because a link unfurl prints that prose verbatim and the tags themselves
 are stripped from the body: five planted overclaims in `og:description` used to pass the scan
 unseen, on the surface a person deciding whether to paste a link meets first. It also
-asserts facts in the positive — the image tags, the shape that makes a second paste of the
-command those tags sit in work and the teardown that ends it, the demo instance, the one wire version those
+asserts facts in the positive — the images the card's commands name, which of the two runs
+carries which, the demo instance, the one wire version those
 artefacts speak, two disclosures (what the relay still sees, and the terms `selvaged` is under),
 the file the corpus counts are pinned in, the identity
 the extension is published under with the two registries it is on, that the hosted tier the page
@@ -522,49 +522,44 @@ summarised here so that the constraint survives without the file that produced i
 them. The first is the image tags the happy path hands a reader: the check pins
 `ghcr.io/selvage-protocol/selvaged` and `ghcr.io/selvage-protocol/selvage-web` to one version,
 requires every reference the rendered page carries to be one of the two and both of them to be
-there — a command that names one where the other belongs pulls an image the page is not about —
+there — a command that names one where the other belongs pulls an image the page is not about, and
+a reference printed as a bare repository is read as the `:latest` tag docker reads it as, which is
+the tag the card prints —
 and then asks the registry for each tag — anonymously, with no credential in
 the request, because no account is the point of the command. It compares the **per-platform
 manifests' layer digests**, not the index: a platform entry only states that a slot is *labelled*
 arm64, and `selvaged:0.1.1` proved the difference by publishing both legs around the amd64 binary,
 every layer digest identical across the two. `0.1.0` carries the same defect and `0.1.2` is the
 fix; neither broken tag will be retagged or removed. That proof runs per package, so the page
-half of the command is held to it too. The same command is read for the shape that makes a second
-paste of it work, which is what it lacked: `docker network create` chained with `&&` stopped the
+half of the command is held to it too. The card's commands are then read as the three steps they
+are, one per line, and the promise the single chained command used to carry is gone with it:
+`docker network create` chained with `&&` stopped the
 second paste at an error, and the detached server kept its name for the next one with nothing on
-the card to remove it. This host has no Docker, so what is asserted
-is the shape rather than a run — every container the command names is force-cleared (`docker rm
--f`) before the run reaches it, because a plain `docker rm` refuses a container a previous paste
-left running, and the error it prints is one the card discards; each of those names is read as a
-whole name, so a removal of `selvage-net` is not read as a removal of `selvage`, and a near miss
-does not stand in for the name the run uses — in all **ten** places two names are compared, which are
-the container in the run's own clearing, the container in the teardown, the container in the
-teardown's ordering, the network in the teardown's ordering, the network in the rule that reports it
-left behind, the network the run looks for against the one it creates, the network each run attaches
-its container to, the container the server's address names, and the two references the card's runs
-carry (this paragraph and the commit before it both said four, each leaving out a different one of
-the five they knew about, and the five after that were the comparisons nobody had named at all);
-every run has to be detached, because one that is not
-holds the line at that clause and the containers below it — the page the reader is told to open
-among them — never start; the network is looked for
-(`docker network inspect`) before it is created **and under the same name the creation uses**, so
-a check that passes over one network while the creation refuses another is the same defect with a
-step in front of it; the creation keeps its own error and nothing but `&&` follows it, so a
-creation that really fails is what the reader sees rather than a container below it that cannot
-find its network; the address the page container is given names the container the server runs in,
+the card to remove it, so everything that read that promise went too and the check has no shape
+for a second paste at all. This host has no Docker, so
+what is asserted is the shape rather than a run: the first command creates the network the two
+containers share, and it stands before every run that names it, because a run reaches a network
+nothing has made yet; every run is detached, because one that is not holds the reader's terminal
+instead of returning their prompt; every run joins that network, read as a whole name, so a
+`--network selvage-net` is not read as the `selvage` the first command creates; the address the
+page container is given names the container the server runs in,
 on the network both are attached to — and a host that is the empty name is refused rather than
 read as the empty name a run given no `--name` answers, which is the pair that passed this rule —
 and sits on the container that publishes the port a reader opens — read in either form the page
 image accepts, `http://selvaged:8080` or the bare
 `selvaged:8080`, which is the form `web_client`'s README documents; each of the two runs carries
 the reference the page publishes for it, the run a reader opens the page image and the run beside
-it the server's, so a command with the two swapped is refused rather than passed; the server's run
+it the server's, so a command with the two swapped is refused rather than passed, and the card
+prints those references as bare repositories, which the check reads as the `:latest` tag docker
+gives a bare repository; the server's run
 publishes no port, because the page's own `-p` would collide with it and the page would never
 start; the address the command publishes is the address the card prints for a reader — its **host
 port**, and the host its mapping names when it names one — read out of the card's own text rather
 than the page, because `http://127.0.0.1:8080/` in the copy and `-p 127.0.0.1:8080:8080` in the
-command under it are one fact printed twice: a command publishing another port, or publishing that
-port on `192.168.1.5` or on `::1`, sends every reader to an address its own card says answers. A
+command are one fact printed twice: a command publishing another port, or publishing that
+port on `192.168.1.5` or on `::1`, sends every reader to an address its own card says answers. The
+address is read wherever the card states it in its own element, and the run it belongs to is looked
+for in whichever of the three commands carries `SELVAGE_SERVER`. A
 mapping that names no host (`-p 8080:8080`) passes, because what is read is the address a mapping
 carries and not the one docker picks when it carries none — while a mapping that writes the wildcard
 down (`-p 0.0.0.0:8080:8080`) is **refused**, because `0.0.0.0` is a host a mapping names and it is
@@ -575,31 +570,24 @@ loopback names the card's own address may print, `127.0.0.1` and `localhost`, an
 validated as an address: docker's own reference calls that field an IP address, writes one in every
 example and never writes the name `localhost` as a value of it, and this check has no docker to ask,
 so `-p localhost:8080:8080` passes here as one of the two loopback names and whether docker accepts
-it was not settled. And the teardown is a block of
-its own that removes those names with `-f` **before the network they are still attached to**, and
-then that network, because a network removed first is left holding active endpoints. It reads one
+it was not settled. It reads one
 way of writing each part, so a command that is correct in other words fails it and a broken one
 that keeps those words can pass — the limit every assertion here has, and the reverse of the one
 this paragraph used to state. Every one of those rules carries a fixture in the check itself: a
 command of its own with the defect written into it, run before the scan, pinning the fragment the
 rule emits, so a rule deleted is a rule the check fails on rather than one nothing reads. Holding a
-rule is not holding the *reading* inside it, and that is the other half: the ten comparisons and the
+rule is not holding the *reading* inside it, and that is the other half: the four comparisons and the
 published host port are each named in the check, and before it scans anything it swaps each one in
-turn for the weaker reading a later edit would leave in its place — a `\b{name}\b` search for a name,
-one name inside the other either way round for a pair of them, the mapping's container port for the
-host port — and fails unless a fixture goes red. That is what the run's own clearing lacked: the fixtures
-around it named a container plainly, so the search left them all green and a card clearing
-`selvaged-old` passed a check that reads a clearing of `selvaged`. The port reading was the same shape,
-with every mapping a fixture carried written `8080:8080`, where the two fields are one number. The
-five comparisons added with this one — the network the run looks for, the network each run attaches
-to, the container the address names, and the two references the runs carry — had failed the same way,
-and for one reason: no fixture told the two readings apart in any of them. Every fixture that named a
-network named the one the run creates, in the run's `--network`, in the teardown and in the name the
-run looks for, so `--network selvage-net` beside `docker network create selvage` passed and so did
-`docker network inspect selvage-net`; no fixture named a container whose name starts with the host its
-address names, so a run named `server-net` under an address naming `server` passed; and every
-reference a fixture carried was one the project publishes, neither of the two inside the other, so a
-run carrying `selvaged:latest-extra` passed. The host a mapping names is held the ordinary way rather
+turn for the weaker reading a later edit would leave in its place — a `\b{name}\b` search for a name
+or one name inside the other either way round for a pair of them, the mapping's container port for
+the host port — and fails unless a fixture goes red. The port reading is the shape that failure used
+to have: with every mapping a fixture carried written `8080:8080`, where the two fields are one
+number, reading the container port answered for the host port and no fixture said otherwise, so the
+fixture that holds it is a mapping whose two numbers differ. Each of the four comparisons is held
+the same way: the network every run attaches to, by a fixture writing `--network room-net` beside
+`docker network create room`; the container the address names, by one naming `server-net` under an
+address naming `server`; and the two references, by one whose run carries `selvaged:latest-extra`.
+The host a mapping names is held the ordinary way rather
 than by a swap, by the three fixtures a command that names `192.168.1.5`, `::1` or `0.0.0.0` has to be
 reported as; and the empty name is held the same way, by the fixtures an address that names no host
 and an address that names no host beside a run given no `--name` have to be reported as, which is what
@@ -622,7 +610,7 @@ and one through `reads_the_name`, where it has to answer, and fails the check wh
 refuses no longer does. The other half is a scan of the check's own syntax tree
 (`unseamed_field_problems`): it walks the functions the card's rules can reach — by a bare call,
 and out from the function values `RUN_CARD_READINGS` and `published_port_reading` hold, which are
-called through a table or a variable and are never written as a call, so the ten readings and their
+called through a table or a variable and are never written as a call, so the four readings and their
 weakened twins are walked too — and reads the three patterns those rules match a command with —
 `CONTAINER_NAME`, `NETWORK_FLAG` and `IMAGE_REFERENCE`, which are where a container name, a network
 name and an image reference come from — and fails when a `.group(…)` read taken off a match of one
@@ -931,16 +919,14 @@ repository the page links is one the grid links, so `jetbrains_client` cannot co
 repository that is not there, and the grid's client rows, the chips figure and the terminal's install
 routes have to name the same clients, so a client written onto one surface and not the others fails
 the gate. It then reads the page's image references, holds each to
-the tag `scripts/check-claims.py` carries on its package, and asks `ghcr.io` for both of them;
-reads the Run card's command for the shape that makes a second paste of it work — every container
-the command names is force-cleared before the run reaches it, the network is checked for under the
-same name it is created with and a creation that fails stops the line, the page container is
+the tag `scripts/check-claims.py` carries on its package — a bare repository being that tag — and
+asks `ghcr.io` for both of them;
+reads the Run card's three commands — the first creates the network, every run is detached and on
+it, the page container is
 pointed at the server container on the network both are on and is the one that publishes a port,
 with the page image on that run and the server's on the other, which publishes none, and the
 address the card prints for a reader is the host port that run publishes, with the host its mapping
-names where it names one, and the card prints a
-teardown block of its own that removes those names with `-f` before the network they are still
-attached to and then that network — and reads the `$ ` prompt and the
+names where it names one — and reads the `$ ` prompt and the
 labels the card prints against the stylesheet the served page loads, requiring a rule that names
 their class and takes it out of a selection, read from the build the server is serving rather than
 from `style.css`, which this host having no Docker makes a shape and not a run, read in one way
