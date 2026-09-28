@@ -10,7 +10,7 @@
 #   scripts/ci-local.sh claims     # build, serve production, fetch / and scan the rendered HTML (forbidden wordings and the artefact-backed claims)
 #   scripts/ci-local.sh csp        # the CSP in vercel.json over the served page and its not-found route: no script, stylesheet, image or font either carries is refused
 #   scripts/ci-local.sh weight     # every image the page body fetches is within its byte budget
-#   scripts/ci-local.sh links      # serve production, lychee over the rendered page and the README
+#   scripts/ci-local.sh links      # serve production, lychee over the rendered page, the README and the docs tree
 #   scripts/ci-local.sh lint       # actionlint over the workflow files
 #   scripts/ci-local.sh all        # typecheck + build + button + contrast + mark + claims + csp + weight + links + lint
 #
@@ -206,14 +206,14 @@ scan_csp() {
 }
 
 all_served() {
-  fetch_and_scan && fetch_not_found && scan_csp && scan_weight && run_lychee --config lychee.toml --no-progress "$BASE/" README.md
+  fetch_and_scan && fetch_not_found && scan_csp && scan_weight && run_lychee --config lychee.toml --no-progress "$BASE/" README.md docs
 }
 
 job_links() {
-  say "links: lychee over the rendered page and the README"
+  say "links: lychee over the rendered page, the README and the docs tree"
   # Always rebuilt, so the check can never pass on a stale page.
   npm run build >/dev/null
-  with_server run_lychee --config lychee.toml --no-progress "$BASE/" README.md
+  with_server run_lychee --config lychee.toml --no-progress "$BASE/" README.md docs
 }
 
 job_weight() {
