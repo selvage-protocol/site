@@ -8,7 +8,7 @@ would draw a visible chip inside it, so the transparent glyphs are the ones that
 
 | Surface | File | Why |
 |---|---|---|
-| Nav header on dark Mocha | `public/mark-header.png` | the bar is translucent Mocha over the page; the opaque export's baked `#1e1e2e` base would draw a visible box against it, while the transparent glyphs sit straight on the bar. The bar paints it at 30 CSS px, which is what the file is sized for (see below). The export's glyphs are dark — a shaded wordmark whose dark stroke is faint on a dark ground — and the mark is a logotype, which WCAG 1.4.11 exempts from the non-text floor, so this derivative carries the owner's own tones unchanged; `scripts/check-contrast.py` reads the file's pixels and holds its median to a visibility floor instead |
+| Nav header on dark Mocha | `public/mark-header.png` | the bar is translucent Mocha over the page; the opaque export's baked `#1e1e2e` base would draw a visible box against it, while the transparent glyphs sit straight on the bar. The bar paints it at 30 CSS px, which is what the file is sized for (see below). The export's glyphs are dark — a shaded wordmark whose dark stroke is faint on a dark ground — and the mark is a decorative logotype — 1.4.11 measures graphical objects *required to understand the content*, which a mark with `alt=""` beside the link's own `Selvage` label is not, and the standard's logotype clause is SC 1.4.3's rather than 1.4.11's — so this derivative carries the owner's own tones unchanged; `scripts/check-contrast.py` reads the file's pixels and holds its median to a visibility floor instead |
 | Favicon and social card | `app/icon1.png` / `app/icon.png` / `app/icon2.png` / `app/apple-icon.png` / `app/opengraph-image.png` | tab bars and link unfurls crop unpredictably, so these stay opaque: the four favicon sizes are the opaque export resized, the social card the full-size opaque export |
 
 The hero panel used to be the second surface. It is now a figure of the product itself (see [the
@@ -62,11 +62,14 @@ everything else. 128 covers a device pixel ratio to 4. The master is 60,595 byte
 was 26% of everything the page transferred, and a browser resampled it silently. The export is a
 shaded wordmark whose glyph tones sit between `#2d111e` and `#7cc9c0`, so on `#1e1e2e` the
 derivative's median ink pixel measures **1.88:1**: the wordmark's dark stroke is faint on a dark
-bar. Nothing is done about that here. The mark is a logotype, and WCAG 1.4.11 — whose 3.0:1 non-text
-floor this page asserts on every mark drawn from a token — exempts logotypes, so lifting the
-derivative to clear a floor the artwork is exempt from would be recolouring the owner's own work to
-pass a rule that does not apply to it. A lighter plate behind the mark is the change that would keep
-both the artwork's colours and a 3.0:1 mark. The file is 7,948 bytes. `scripts/check-contrast.py`
+bar. Nothing is done about that here. WCAG 1.4.11's 3.0:1 non-text floor is asserted on every mark
+this page draws from a token, and it does not reach the nav mark: it measures graphical objects
+*required to understand the content*, and this one is `alt=""` beside the link's own `Selvage`
+label. The standard's logotype clause — text that is part of a logo or brand name has no contrast
+requirement — is SC 1.4.3's, not 1.4.11's, and it is where a wordmark's own tones are excused, so
+lifting the derivative to clear a floor that does not apply to it would be recolouring the owner's
+own work to pass a rule that is not the one in question. A lighter plate behind the mark is the
+change that would keep both the artwork's colours and a 3.0:1 mark. The file is 7,948 bytes. `scripts/check-contrast.py`
 composites its own pixels over `--bg` and holds the median to a visibility floor of **1.5:1** — the
 floor below which a reader cannot see it, and not a WCAG threshold — printing the measured 1.88:1,
 so a derivative recoloured darker until it is a smudge on the bar fails the gate.

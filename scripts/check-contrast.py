@@ -18,7 +18,7 @@ and `ghost` pairs are the primitive's, because the page renders neither, and the
 (`border-surface1`). That boundary is drawn at the design's
 own 1.80:1, below the 3.0:1 a boundary that *identifies* a control would need and above
 the floor at which a reader loses it; it is held to the latter and named, the same way
-the README argues the decorative `--color-surface1` borders. The ground a code sample
+`docs/accessibility.md` argues the decorative `--color-surface1` borders. The ground a code sample
 is drawn on is parsed the same way: the
 figure's own fill over the card's, rather than a constant that would measure a
 surface nobody renders. Thresholds are WCAG 2.2 AA: 4.5:1 for normal text,
@@ -35,7 +35,7 @@ fails the build. A quarter-alpha tint cannot also clear the non-text floor (see
 
 This is a floor, not an audit. It cannot see layout: touch-target sizes,
 keyboard reachability, focus visibility and reduced-motion handling are read
-against the code by a person (see the README's accessibility notes), because
+against the code by a person (see `docs/accessibility.md`), because
 no ratio proves a link can be tabbed to.
 
 The one pair the floor cannot hold on this palette is the link against the body text
@@ -55,14 +55,16 @@ pairs below threshold. Exit 2 means the check itself cannot run (a token it
 needs is missing or unparsable): that is a failure, not a pass.
 
 The nav mark is the one mark on the page that is not a token: it is the owner's artwork, served
-as pixels. It is a logotype, and WCAG 1.4.11 exempts logotypes from its 3.0:1 non-text
-requirement, so the check does not hold it there: that floor is what had the derivative levelled
-away from the owner's colours, and a mark the standard exempts should not have to change to clear
-it. What the check does hold is the property the exemption leaves — the mark is ink, so its
-typical pixel must be no darker than the ground the bar shows it on (`MARK_MIN`, the floor below
-which no reader can see it). It reads `public/mark-header.png` itself, composites its own pixels
-over that ground, and prints the measured ratio: 1.88:1 for the owner's own tones. A derivative
-recoloured darker until it is a smudge on the bar fails here.
+as pixels. It is a decorative logotype — `alt=""` beside the link's own `Selvage` label — and
+WCAG 1.4.11's 3.0:1 non-text floor reaches only graphical objects *required to understand the
+content*, while the standard's logotype clause (*text that is part of a logo or brand name has no
+contrast requirement*) is SC 1.4.3's, not 1.4.11's. So the check does not hold the mark there:
+that floor is what had the derivative levelled away from the owner's colours, and a mark no floor
+applies to should not have to change. What the check does hold is the property that is left — the
+mark is ink, so its typical pixel must be no darker than the ground the bar shows it on
+(`MARK_MIN`, the floor below which no reader can see it). It reads `public/mark-header.png` itself,
+composites its own pixels over that ground, and prints the measured ratio: 1.88:1 for the owner's
+own tones. A derivative recoloured darker until it is a smudge on the bar fails here.
 
 `STYLE_CSS` overrides the stylesheet under test, `BUTTON_TSX` the button
 component, `ROOM_TSX` the figure component and `MARK_PNG` the nav mark, so a probe
@@ -102,20 +104,21 @@ PNG_CHANNELS = {2: 3, 6: 4}
 # non-text floor is their caret bar, opaque, asserted at 3.0:1 below.
 TINT_MIN = 1.5
 
-# A boundary drawn in `--color-surface1` is the page's decorative hairline, the same case the
-# README argues for its panel and card borders: it measures 1.80:1 on the page, below the 3.0:1
-# a boundary that *identifies* a control would need, and the control it belongs to — the outline
-# hero button — is identified by its label. It is held to the floor below which a reader cannot
-# see it at all rather than to the non-text floor it does not meet, so a border dimmed into the
-# page fails here while the design's own tone does not.
+# A boundary drawn in `--color-surface1` is the page's decorative hairline, the same case
+# `docs/accessibility.md` argues for its panel and card borders: it measures 1.80:1 on the page,
+# below the 3.0:1 a boundary that *identifies* a control would need, and the control it belongs to
+# — the outline hero button — is identified by its label. It is held to the floor below which a
+# reader cannot see it at all rather than to the non-text floor it does not meet, so a border
+# dimmed into the page fails here while the design's own tone does not.
 DECORATIVE_MIN = 1.5
 
-# The nav mark is a logotype, and WCAG 1.4.11 (Non-text Contrast) exempts logotypes from its
-# 3.0:1 requirement for graphical objects, so this check does not hold the owner's monogram to
-# `NON_TEXT_MIN`. It holds it to the floor a reader can still see it at — the same one the
-# selection tint gets, and not a WCAG threshold — because the mark is ink drawn on a dark bar,
-# and a mark darkened into that bar is the defect worth failing. The owner's own tones measure
-# 1.88:1 there.
+# The nav mark is a decorative logotype, and WCAG 1.4.11 (Non-text Contrast) reaches only
+# graphical objects *required to understand the content*, which a mark with `alt=""` beside the
+# link's own `Selvage` label is not — the standard's logotype clause is SC 1.4.3's. So this check
+# does not hold the owner's monogram to `NON_TEXT_MIN`. It holds it to the floor a reader can
+# still see it at — the same one the selection tint gets, and not a WCAG threshold — because the
+# mark is ink drawn on a dark bar, and a mark darkened into that bar is the defect worth failing.
+# The owner's own tones measure 1.88:1 there.
 MARK_MIN = 1.5
 
 
@@ -821,9 +824,10 @@ def main() -> int:
                     )
                 )
     # The nav mark is the one surface that paints the owner's artwork as pixels rather than as a
-    # token, so it is measured from the file the page fetches. It is a logotype, which WCAG 1.4.11
-    # exempts, so it is held to `MARK_MIN` (a reader can see it at all) and not to the non-text
-    # floor every token-drawn mark gets; the measured ratio is printed with the pair. Two things
+    # token, so it is measured from the file the page fetches. It is a decorative logotype, which
+    # 1.4.11's own scope does not reach, so it is held to `MARK_MIN` (a reader can see it at all)
+    # and not to the non-text floor every token-drawn mark gets; the measured ratio is printed
+    # with the pair. Two things
     # make this pair the bar's own: the bar is `bg-base/85` over a page whose ground is the same
     # `bg-base`, so a translucent bar over it composites to that colour exactly; and the mark in
     # the HTML is `h-[30px] w-auto`, 30 CSS px of a 128 px file, which resampling does not change

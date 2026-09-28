@@ -57,13 +57,14 @@ SIZE = 128
 #
 # The derivative used to be lifted to clear the 3.0:1 non-text floor `scripts/check-contrast.py`
 # asserted on it, and that floor does not apply: WCAG 1.4.11 asks for 3.0:1 from graphical
-# objects a reader needs to understand the content, and it exempts logotypes, which is what this
-# monogram is. Unlevelled the derivative carries the owner's own tones: on the `#1e1e2e` bar its
-# median ink pixel measures 1.88:1 — the dark stroke of a shaded wordmark on a dark ground,
-# visible but faint. Levelling it brighter to reach 3.0:1 recolours the owner's work to satisfy a
-# requirement that exempts it. A light plate behind the mark would keep both the artwork's tones
-# and a 3.0:1 mark, and that is a change to the surface, not one this producer makes. Re-derive
-# with this script after changing the number.
+# objects a reader needs to understand the content, which this decorative monogram — `alt=""`
+# beside the link's own `Selvage` label — is not, and the standard's logotype clause is SC
+# 1.4.3's rather than 1.4.11's. Unlevelled the derivative carries the owner's own tones: on the
+# `#1e1e2e` bar its median ink pixel measures 1.88:1 — the dark stroke of a shaded wordmark on a
+# dark ground, visible but faint. Levelling it brighter to reach 3.0:1 recolours the owner's work
+# to satisfy a rule that does not apply to it. A light plate behind the mark would keep both the
+# artwork's tones and a 3.0:1 mark, and that is a change to the surface, not one this producer
+# makes. Re-derive with this script after changing the number.
 MARK_GAMMA = 1.0
 
 HERE = os.path.dirname(os.path.abspath(__file__))
