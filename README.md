@@ -579,7 +579,7 @@ turn for the weaker reading a later edit would leave in its place — a `\b{name
 one name being the start of the other for a pair of them, the mapping's container port for the host
 port — and fails unless a fixture goes red. That is what the run's own clearing lacked: the fixtures
 around it named a container plainly, so the search left them all green and a card clearing
-`selvaged-old` passed a check that reads a clearing of `selvage`. The port reading was the same shape,
+`selvaged-old` passed a check that reads a clearing of `selvaged`. The port reading was the same shape,
 with every mapping a fixture carried written `8080:8080`, where the two fields are one number. The
 five comparisons added with this one — the network the run looks for, the network each run attaches
 to, the container the address names, and the two references the runs carry — had failed the same way,
@@ -601,16 +601,20 @@ card's rules touch is read as a `ParsedName`, and one of those answers only insi
 `attached.group("name") != network`, the comparison that read `--network selvage-net` as `selvage`,
 therefore fails where it is written rather than passing the page, and the check exits **2** naming the
 line it was written on. The other half is a scan of the check's own syntax tree
-(`unseamed_field_problems`): it walks the functions the card's rules can reach and fails when a
-`.group(…)` read taken off a match of one of the three patterns a container name, a network name or a
-reference is read out of is not the expression a `ParsedName` is made from, or when a function it
-reaches reads one of those patterns and makes no `ParsedName` at all. What it does not catch, and this
-check cannot: a comparison of the *text* a name was read from — a `.split()` of the clause, a pattern
-matched against the name, `str()` of one — because that value is a `str` with no record of where it
-came from; a name read with a pattern of the rule's own rather than one of the three; and any function
-the card's rules do not call, `check_published_image` among them, which compares the references the
-whole page carries against the two the project publishes and is held by the served page rather than by
-a fixture. A fixture a rule passes is not a proof the rule is complete, either.
+(`unseamed_field_problems`): it walks the functions the card's rules can reach and reads the three
+patterns those rules match a command with — `CONTAINER_NAME`, `NETWORK_FLAG` and `IMAGE_REFERENCE`,
+which are where a container name, a network name and an image reference come from — and fails when a
+`.group(…)` read taken off a match of one of them, however that match was bound (an assignment, a
+loop, a comprehension, a walrus or a tuple target), is not the expression a `ParsedName` is made
+from, or when a function it reaches reads one of those patterns and makes no `ParsedName` at all.
+What it does not catch, and this check cannot: a comparison of the *text* a name was read from — a
+`.split()` of the clause, a pattern matched against the name, `str()` of one — because that value is
+a `str` with no record of where it came from; a read of a match that is not `.group(…)` (`match[0]`,
+`match.expand()`), or a match bound by `with … as`; a name read with a pattern of the rule's own
+rather than one of the three; and any function the card's rules do not call, `check_published_image`
+among them, which compares the references the whole page carries against the two the project
+publishes and is held by the served page rather than by a fixture. A fixture a rule passes is not a
+proof the rule is complete, either.
 What carries none is what is not a command — the pin below that holds the `$ ` prompt and the labels
 to the stylesheet, and the refusal to pass when no scanned page carries a block: those read a
 served page and the build it was served from, so their fixture would be a page and a build rather
