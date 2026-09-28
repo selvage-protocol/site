@@ -6,8 +6,8 @@ name: ci
 # master,
 # the claim filter over the rendered page, the Content-Security-Policy
 # in vercel.json over the same rendered page and the site's own not-found route, the weight and
-# declared size of every image the page body fetches, the link check over the rendered page and
-# the README,
+# declared size of every image the page body fetches, the link check over the rendered page, the
+# README and the docs tree,
 # and the workflow lint. The claim step
 # matches known wordings only — a green run is not a proof that every sentence is true, so the
 # page's claims are still read against the corpus by a person. The claims it does assert
@@ -131,7 +131,7 @@ jobs:
       - name: every image the page fetches is within its budget and declares its own pixel size
         run: scripts/ci-local.sh weight
 
-      - name: links over the rendered page and the README
+      - name: links over the rendered page, the README and the docs tree
         run: scripts/ci-local.sh links
 
       - name: lint the workflow
