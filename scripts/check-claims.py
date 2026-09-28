@@ -56,11 +56,13 @@ answer).
 
 from __future__ import annotations
 
+import ast
 import html
 import json
 import os
 import re
 import sys
+import traceback
 import urllib.error
 import urllib.request
 from collections.abc import Callable
@@ -349,6 +351,11 @@ RUN_CARD_FIXTURES: tuple[tuple[str, tuple[str, ...] | None, str], ...] = (
         "checks for a network named other and creates room",
     ),
     (
+        "a network looked for under a name the one created starts with",
+        run_card_fixture((0, "docker network inspect room", "docker network inspect room-net")),
+        "checks for a network named room-net and creates room",
+    ),
+    (
         "a network created without being looked for first",
         run_card_fixture(
             (
@@ -395,6 +402,11 @@ RUN_CARD_FIXTURES: tuple[tuple[str, tuple[str, ...] | None, str], ...] = (
         "runs a container that is not on room",
     ),
     (
+        "a page container on a network the one the run creates starts with",
+        run_card_fixture((0, "--name page --network room", "--name page --network room-net")),
+        "runs a container that is not on room",
+    ),
+    (
         "a command that gives no container the relay address",
         run_card_fixture((0, " -e SELVAGE_SERVER=http://server:8080", "")),
         "gives no container `-e SELVAGE_SERVER`",
@@ -405,6 +417,15 @@ RUN_CARD_FIXTURES: tuple[tuple[str, tuple[str, ...] | None, str], ...] = (
             (0, "SELVAGE_SERVER=http://server:8080", "SELVAGE_SERVER=http://other:8080")
         ),
         "gives no other container the name 'other'",
+    ),
+    (
+        "an address whose host is the start of a container the run does name",
+        run_card_fixture(
+            (0, "--name server --network room", "--name server-net --network room"),
+            (0, "docker rm -f server page", "docker rm -f server-net page"),
+            (1, "docker rm -f server page", "docker rm -f server-net page"),
+        ),
+        "gives no other container the name 'server'",
     ),
     (
         "an address on a container that publishes no port",
@@ -521,6 +542,22 @@ RUN_CARD_FIXTURES: tuple[tuple[str, tuple[str, ...] | None, str], ...] = (
         "the page image on the run the address is not given to",
         run_card_fixture(
             (0, f"--network room {SERVER_REFERENCE}", f"--network room {PAGE_REFERENCE}"),
+            blocks=RUN_CARD_FIXTURE_NAMED,
+        ),
+        "is the container the server's image belongs on",
+    ),
+    (
+        "the addressed run carrying a reference the page image's is the start of",
+        run_card_fixture(
+            (0, PAGE_REFERENCE, f"{PAGE_REFERENCE}-extra"),
+            blocks=RUN_CARD_FIXTURE_NAMED,
+        ),
+        "the address belongs on the page image",
+    ),
+    (
+        "a run carrying a reference the server image's is the start of",
+        run_card_fixture(
+            (0, SERVER_REFERENCE, f"{SERVER_REFERENCE}-extra"),
             blocks=RUN_CARD_FIXTURE_NAMED,
         ),
         "is the container the server's image belongs on",
@@ -2075,7 +2112,7 @@ def clauses_with_offsets(command: str) -> list[tuple[str, int]]:
     return clauses
 
 
-def network_named_in(clause: str, verb: re.Match[str]) -> str | None:
+def network_named_in(clause: str, verb: re.Match[str]) -> ParsedName | None:
     """The network a `docker network …` clause names, or None when it names none.
 
     Read from the clause's own words rather than from a spelling of its own: a flag is not a name,
@@ -2089,7 +2126,7 @@ def network_named_in(clause: str, verb: re.Match[str]) -> str | None:
         for word in tail.split()
         if not word.startswith("-") and re.search(r"[A-Za-z]", word) is not None
     ]
-    return named[-1] if named else None
+    return ParsedName(named[-1]) if named else None
 
 
 def names_the_word(clause: str, name: str) -> bool:
@@ -2103,19 +2140,126 @@ def names_the_word(clause: str, name: str) -> bool:
     return name in clause.split()
 
 
-def network_removed_in(clause: str) -> str | None:
+def network_removed_in(clause: str) -> ParsedName | None:
     """The network a `docker network rm` clause removes, or None when the clause removes none."""
     verb = NETWORK_REMOVE.search(clause)
     return network_named_in(clause, verb) if verb is not None else None
 
 
-# The places the rules compare a container or network name, each named because a name read as a
-# search is what a fixture has to hold: `selvage-net` is a different name from `selvage`, a `\b`
-# boundary does not say so because a hyphen is one, and read as a search a clearing of
-# `selvaged-old` stands in for a clearing of `selvaged`, which is a card that clears nothing the run
-# needs. Every one of these places reads through `reads_the_name`, and `run_card_reading_problems`
-# swaps one place at a time for the search and requires a fixture to go red, so a place no fixture
-# distinguishes is reported rather than left in place.
+class UnseamedComparison(Exception):
+    """A name read out of a command, compared outside the seam that holds the reading."""
+
+
+# Set while `reads_the_name` is comparing, and only then: a reading is swappable there, so that is
+# the one place a comparison of two names is allowed to answer.
+reading_a_name = False
+
+
+class ParsedName(str):
+    """A container name, a network name or an image reference, read out of a command.
+
+    Comparing two of these is a claim that two readings name the same thing, and every such claim
+    has to be one the fixture harness can swap for the weaker reading a later edit would leave in
+    its place: `selvage-net` is a different name from `selvage`, a `\b` search does not say so
+    because a hyphen is one, and a comparison written around `reads_the_name` is one nothing swaps
+    and nothing notices — which is how the rule that reports a container off its network read as
+    satisfied while `--network selvage-net` stood beside `docker network create selvage`. That is
+    what this class closes: the operators below answer inside the seam alone and name the line that
+    wrote them otherwise, so a comparison written where no fixture can hold it fails the check
+    rather than passing the page.
+
+    Holding the text this way costs nothing a rule needs. The value still formats, sorts and prints
+    as the string it was read from, so every message a rule emits is unchanged.
+
+    What it does not close is a comparison of the text a name was read from — a `.split()` of the
+    clause, a fresh pattern matched against it — because that value is not one of these and carries
+    no record of where it came from. `unseamed_field_problems` scans this file for the reads that
+    would produce one, and the reach of both halves is written out in `README.md`.
+    """
+
+    __hash__ = str.__hash__
+
+    def _through_the_seam_alone(self) -> None:
+        if not reading_a_name:
+            # The third frame up is the line that wrote the comparison: this method, the operator
+            # that called it, and the rule body.
+            written = traceback.extract_stack()[-3]
+            raise UnseamedComparison(
+                f"{self!r} is a name read out of a command and is compared outside "
+                f"`reads_the_name` at {written.filename}:{written.lineno}, where no fixture can "
+                "hold the reading: name the place in `RUN_CARD_READINGS` and compare through the "
+                "seam"
+            )
+
+    def __eq__(self, other: object) -> bool:
+        self._through_the_seam_alone()
+        return str.__eq__(self, other)
+
+    def __ne__(self, other: object) -> bool:
+        self._through_the_seam_alone()
+        return str.__ne__(self, other)
+
+    def __contains__(self, other: object) -> bool:
+        self._through_the_seam_alone()
+        return str.__contains__(self, other)
+
+    def startswith(self, prefix: str | tuple[str, ...], *rest: int) -> bool:
+        self._through_the_seam_alone()
+        return str.startswith(self, prefix, *rest)
+
+    def endswith(self, suffix: str | tuple[str, ...], *rest: int) -> bool:
+        self._through_the_seam_alone()
+        return str.endswith(self, suffix, *rest)
+
+
+def container_names_in(command: str) -> list[ParsedName]:
+    """Every name the command gives a container, read as a name, once each and in name order.
+
+    Each name is read as a `ParsedName` where the pattern reads it. What is deduplicated is the
+    plain text of those names, which is bookkeeping and not a claim about two of them: the question
+    is which names the command uses, not whether one name is another. The text comes from the name
+    itself, so no field is read twice and none is read as text.
+    """
+    minted = [ParsedName(match.group("name")) for match in CONTAINER_NAME.finditer(command)]
+    # `str()` of a `ParsedName` is the text it was read from: the keys are plain strings, so a
+    # duplicate is found without comparing two names.
+    return sorted({str(name): name for name in minted}.values())
+
+
+def container_name_in(clause: str) -> ParsedName | None:
+    """The name a clause gives its container, or None when it gives it none."""
+    found = CONTAINER_NAME.search(clause)
+    return ParsedName(found.group("name")) if found is not None else None
+
+
+def network_attached_in(clause: str) -> ParsedName | None:
+    """The network a clause attaches its container to, or None when it attaches it to none."""
+    found = NETWORK_FLAG.search(clause)
+    return ParsedName(found.group("name")) if found is not None else None
+
+
+def server_address_in(clause: str) -> str | None:
+    """The address a clause points its container at its server with, as the card prints it, or None.
+
+    The address is text a rule prints and reads a host out of, not a name two rules are about: the
+    *host* is the name a rule compares against the containers the command gives names to, and
+    `server_address_host` is what reads that out as one.
+    """
+    found = SERVER_ADDRESS.search(clause)
+    return found.group("url") if found is not None else None
+
+
+# The places the rules compare two names, each named because a name read as a search is what a
+# fixture has to hold: `selvage-net` is a different name from `selvage`, a `\b` boundary does not
+# say so because a hyphen is one, and read as a search a clearing of `selvaged-old` stands in for a
+# clearing of `selvaged`, which is a card that clears nothing the run needs. The same shape reaches
+# the network a run is attached to, the network it looks for, the container its address names and
+# the references its two runs carry: `selvage-net` read as `selvage` is a page container off the
+# network its server is on, `selvaged:latest-extra` read as `selvaged:latest` is a run this project
+# publishes no image for. Every one of these places reads through `reads_the_name`,
+# `run_card_reading_problems` swaps one place at a time for the search and requires a fixture to go
+# red, and a comparison written outside it is refused where it is written — so a place no fixture
+# distinguishes is reported rather than left in place, and a place nobody named is not silent.
 #
 # The clearing the run meets and the teardown that ends it are two places and not one, even though
 # both read a container's name the same way: `docker rm -f server-old page` before the run is a card
@@ -2126,6 +2270,11 @@ READING_TEARDOWN = "the teardown's containers"
 READING_TEARDOWN_ORDER = "the teardown's ordering, the containers"
 READING_TEARDOWN_ORDER_NETWORK = "the teardown's ordering, the network"
 READING_TEARDOWN_NETWORK = "the network the teardown leaves behind"
+READING_RUN_NETWORK_CHECK = "the network the run looks for and the one it creates"
+READING_CONTAINER_NETWORK = "the network each run attaches its container to"
+READING_ADDRESSED_CONTAINER = "the container the server's address names"
+READING_PAGE_IMAGE_RUN = "the page image on the run the address is given to"
+READING_SERVER_IMAGE_RUN = "the server image on the run beside it"
 
 
 def names_the_word_as_a_search(clause: str, name: str) -> bool:
@@ -2145,10 +2294,27 @@ def removes_the_network_as_a_search(clause: str, network: str) -> bool:
     )
 
 
+def the_same_name(one: str, other: str) -> bool:
+    """Whether the whole of `one` is the whole of `other`, which is what a name claim reads.
+
+    The two are the pair the place compares: two container names, two network names, a container
+    against a network, or a reference the command carries against the one it has to be. An empty
+    name — a run that gives no container a name — is not the whole of any name but itself.
+    """
+    return one == other
+
+
+def the_same_name_as_a_search(one: str, other: str) -> bool:
+    """`the_same_name` weakened the way a search weakens a name: one inside the other reads as it.
+
+    That is the reading a later edit reaches for — `selvage` inside `selvage-net`, `selvaged:latest`
+    inside `selvaged:latest-extra` — and it is what these places are written to refuse.
+    """
+    return one in other or other in one
+
+
 # `(the reading the place does, the search it must not be)`.
-RUN_CARD_NAME_READINGS: dict[
-    str, tuple[Callable[[str, str], bool], Callable[[str, str], bool]]
-] = {
+RUN_CARD_READINGS: dict[str, tuple[Callable[[str, str], bool], Callable[[str, str], bool]]] = {
     READING_RUN_CLEARING: (names_the_word, names_the_word_as_a_search),
     READING_TEARDOWN: (names_the_word, names_the_word_as_a_search),
     READING_TEARDOWN_ORDER: (names_the_word, names_the_word_as_a_search),
@@ -2157,6 +2323,11 @@ RUN_CARD_NAME_READINGS: dict[
         removes_the_network_as_a_search,
     ),
     READING_TEARDOWN_NETWORK: (removes_the_network, removes_the_network_as_a_search),
+    READING_RUN_NETWORK_CHECK: (the_same_name, the_same_name_as_a_search),
+    READING_CONTAINER_NETWORK: (the_same_name, the_same_name_as_a_search),
+    READING_ADDRESSED_CONTAINER: (the_same_name, the_same_name_as_a_search),
+    READING_PAGE_IMAGE_RUN: (the_same_name, the_same_name_as_a_search),
+    READING_SERVER_IMAGE_RUN: (the_same_name, the_same_name_as_a_search),
 }
 
 # Which places the fixtures reached, which of them read a name the search would read differently,
@@ -2164,25 +2335,37 @@ RUN_CARD_NAME_READINGS: dict[
 # rules no longer read; a place reached without a disagreement is one no fixture tells the search
 # apart at; a place that disagreed without reddening a fixture is one where the difference never
 # reaches a rule's answer.
-name_readings_reached: set[str] = set()
-name_readings_disagreed: set[str] = set()
-swapped_name_readings: set[str] = set()
+readings_reached: set[str] = set()
+readings_disagreed: set[str] = set()
+swapped_readings: set[str] = set()
 
 
-def reads_the_name(site: str, clause: str, name: str) -> bool:
-    """Whether `clause` reads as carrying `name`, read the way the place `site` reads a name.
+def reads_the_name(site: str, one: str, other: str) -> bool:
+    """Whether the field `one` reads as the field `other`, the way the place `site` reads a pair.
 
-    The place is passed by its caller rather than inferred from the clause, because it is what the
-    fixture harness swaps: one place weakened at a time is what says a fixture holds *that* place,
-    where a reading weakened everywhere would be held by whichever fixture noticed it first.
+    The two are the pair the place compares, in the order its reading documents them: a clause and
+    the name it has to carry, or two names a rule is about to call the same. The place is passed by
+    its caller rather than inferred from the fields, because it is what the fixture harness swaps:
+    one place weakened at a time is what says a fixture holds *that* place, where a reading weakened
+    everywhere would be held by whichever fixture noticed it first.
+
+    A `ParsedName` answers nowhere else. That is what keeps a claim about two names inside the table
+    of places a fixture can hold, and it is why the flag below is set here and unset everywhere
+    else.
     """
-    name_readings_reached.add(site)
-    reading, weakened = RUN_CARD_NAME_READINGS[site]
-    if site not in swapped_name_readings:
-        return reading(clause, name)
-    if reading(clause, name) != weakened(clause, name):
-        name_readings_disagreed.add(site)
-    return weakened(clause, name)
+    global reading_a_name
+    readings_reached.add(site)
+    reading, weakened = RUN_CARD_READINGS[site]
+    was_reading = reading_a_name
+    reading_a_name = True
+    try:
+        if site not in swapped_readings:
+            return reading(one, other)
+        if reading(one, other) != weakened(one, other):
+            readings_disagreed.add(site)
+        return weakened(one, other)
+    finally:
+        reading_a_name = was_reading
 
 
 def forced_removal_clauses(where: str, name: str, site: str) -> list[str]:
@@ -2200,21 +2383,25 @@ def forced_removal_clauses(where: str, name: str, site: str) -> list[str]:
     ]
 
 
-def server_address_host(address: str) -> str:
+def server_address_host(address: str) -> ParsedName:
     """The host an address names, in either form the page image accepts.
 
     `http://selvaged:8080` is a URL and is read as one. A bare `selvaged:8080` is not: as a URL
     its scheme is `selvaged`, which has no host at all, so the bare form — the one
     `web_client`'s README documents and `reference_server`'s README uses — is read as a host and
     an optional port instead. Answering '' for what names no host is what the caller fails on.
+
+    The parameter is the address as text, and the host is the one thing read out of it that is a
+    name: a rule compares that against the names the command gives its containers, and it is read
+    as a `ParsedName` here so that comparison goes through the seam like any other.
     """
     if "://" in address:
-        return urlsplit(address).hostname or ""
+        return ParsedName(urlsplit(address).hostname or "")
     host = address.split("/", 1)[0]
     if host.startswith("["):
-        return host[1:].split("]", 1)[0]
+        return ParsedName(host[1:].split("]", 1)[0])
     name, _, port = host.rpartition(":")
-    return name if name and port.isdigit() else host
+    return ParsedName(name if name and port.isdigit() else host)
 
 
 def port_named_by(address: str) -> int | None:
@@ -2297,7 +2484,7 @@ def published_host_address(clause: str) -> str:
     return mapping_fields(found.group("mapping"))[0]
 
 
-def run_image_operand(clause: str) -> str:
+def run_image_operand(clause: str) -> ParsedName:
     """The reference a run names as its image, or '' when it names none.
 
     Docker's grammar puts the image after the options, so the reference read is the first token
@@ -2310,8 +2497,8 @@ def run_image_operand(clause: str) -> str:
         if token.startswith("-") or "=" in token:
             continue
         if IMAGE_REFERENCE.fullmatch(token):
-            return token
-    return ""
+            return ParsedName(token)
+    return ParsedName("")
 
 
 def classed_elements(raw: str, wanted: str) -> list[str]:
@@ -2354,10 +2541,12 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
 
     Every rule here carries a fixture in `RUN_CARD_FIXTURES`, and each fixture pins the fragment
     its rule emits, so a rule removed is a rule this file fails on rather than one nothing reads.
-    Every name comparison goes through `reads_the_name` with one of the places named at the top of
-    this file, and it is a fixture rather than the code that says each place is held:
+    Every comparison of two names goes through `reads_the_name` with one of the places named at the
+    top of this file, and it is a fixture rather than the code that says each place is held:
     `run_card_reading_problems` swaps each place in turn for the search it must not be and requires
-    a fixture to go red, so a place whose fixtures all stay green is a reading nobody holds.
+    a fixture to go red, so a place whose fixtures all stay green is a reading nobody holds. A
+    comparison written straight into this body instead is refused where it is written, because the
+    names here are `ParsedName` and only the seam answers for one of those.
     """
     lines = [line for block in blocks for line in block]
     command = " ".join(lines)
@@ -2374,7 +2563,7 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
                 "pastes a run that removes itself"
             )
 
-    names = sorted({match.group("name") for match in CONTAINER_NAME.finditer(command)})
+    names = container_names_in(command)
     if not names:
         problems.append("gives no container a name, so there is nothing to clear or remove")
 
@@ -2397,7 +2586,9 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
                 "creates the network without checking whether one is already there, so a "
                 "second paste stops at an error"
             )
-        elif looked_for != network:
+        elif looked_for is None or not reads_the_name(
+            READING_RUN_NETWORK_CHECK, looked_for, network
+        ):
             problems.append(
                 f"checks for a network named {looked_for} and creates {network}, so the check "
                 "passes over the one network that exists and the creation refuses the second "
@@ -2436,25 +2627,22 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
 
     # The containers the run starts: the name each runs under, the network it is attached to, and
     # the clause itself, so the address one of them carries can be read against the others.
-    started: list[tuple[str, str | None, str]] = []
+    started: list[tuple[ParsedName, ParsedName | None, str]] = []
     for clause, _end in clauses:
         if DOCKER_RUN.search(clause) is None:
             continue
-        named = CONTAINER_NAME.search(clause)
-        attached = NETWORK_FLAG.search(clause)
-        started.append(
-            (
-                named.group("name") if named is not None else "",
-                attached.group("name") if attached is not None else None,
-                clause,
-            )
-        )
+        named = container_name_in(clause)
+        attached = network_attached_in(clause)
+        started.append((named if named is not None else ParsedName(""), attached, clause))
         if DETACHED.search(clause) is None:
             problems.append(
                 "runs a container without `-d`, so the run holds the chain at that clause and "
                 "the containers below it in the line never start"
             )
-        if network is not None and (attached is None or attached.group("name") != network):
+        if network is not None and not (
+            attached is not None
+            and reads_the_name(READING_CONTAINER_NETWORK, attached, network)
+        ):
             problems.append(
                 f"runs a container that is not on {network}, the network it creates, so the "
                 "page cannot reach its server by the name it is given"
@@ -2462,20 +2650,24 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
 
     addressed = 0
     for _name, _attached, clause in started:
-        address = SERVER_ADDRESS.search(clause)
+        address = server_address_in(clause)
         if address is None:
             continue
         addressed += 1
-        host = server_address_host(address.group("url"))
-        elsewhere = [one for one, _network, other in started if one == host and other != clause]
+        host = server_address_host(address)
+        elsewhere = [
+            one
+            for one, _network, other in started
+            if reads_the_name(READING_ADDRESSED_CONTAINER, one, host) and other != clause
+        ]
         if not elsewhere:
             problems.append(
-                f"points a container at {address.group('url')} and gives no other container "
+                f"points a container at {address} and gives no other container "
                 f"the name {host!r}, so that address reaches nothing"
             )
         elif PUBLISHED_PORT.search(clause) is None:
             problems.append(
-                f"gives {address.group('url')} to a container that publishes no port, so the "
+                f"gives {address} to a container that publishes no port, so the "
                 "page a reader opens is not the one that relays to the server"
             )
     if not addressed:
@@ -2492,20 +2684,23 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
     # the server's run is one sent to a container that serves no page. The server's run publishes
     # nothing, because the page container is the only one the card publishes: a second `-p` there
     # is a collision that leaves the page container never starting.
-    named_runs: list[tuple[str, str]] = []
+    named_runs: list[tuple[str, ParsedName]] = []
     for _name, _attached, clause in started:
         named_runs.append((clause, run_image_operand(clause)))
     if any(reference for _clause, reference in named_runs):
         for clause, reference in named_runs:
             given = SERVER_ADDRESS.search(clause) is not None
             shown = reference or "a container this project publishes no image for"
-            if given and reference != PAGE_REFERENCE:
+            if given and not reads_the_name(READING_PAGE_IMAGE_RUN, reference, PAGE_REFERENCE):
                 problems.append(
                     f"gives `-e SELVAGE_SERVER` to the run carrying {shown}, and the address "
                     f"belongs on the page image {PAGE_REFERENCE}: the container that publishes "
                     "the port a reader opens is the server's own"
                 )
-            if not given and reference and reference != SERVER_REFERENCE:
+            on_the_server = reads_the_name(
+                READING_SERVER_IMAGE_RUN, reference, SERVER_REFERENCE
+            )
+            if not given and reference and not on_the_server:
                 problems.append(
                     f"runs {shown} on the container that is given no `-e SELVAGE_SERVER`, which "
                     f"is the container the server's image belongs on, {SERVER_REFERENCE}"
@@ -2517,7 +2712,7 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
                     f"page image {PAGE_REFERENCE} on the one the address is given to and the "
                     f"server's {SERVER_REFERENCE} beside it"
                 )
-            if reference == SERVER_REFERENCE and PUBLISHED_PORT.search(clause) is not None:
+            if on_the_server and PUBLISHED_PORT.search(clause) is not None:
                 problems.append(
                     f"publishes a port on the run carrying the server image {SERVER_REFERENCE}, "
                     "and the server has none on the host: a server that takes 8080 leaves the "
@@ -4270,7 +4465,10 @@ def run_card_reading_problems() -> list[str]:
     `selvaged-old` then passed a check that reads a clearing of `selvaged`. The published host port
     was the same shape: every mapping a fixture carried was `8080:8080`, where the field before the
     last colon and the one after it are one number, so reading the container port answered for the
-    host port and no fixture said otherwise.
+    host port and no fixture said otherwise. The network a run attaches its container to was the
+    same shape once more: every fixture naming a network named the one the run creates, so
+    `--network selvage-net` beside `docker network create selvage` — a page container the server's
+    name cannot reach — passed a check whose comparison read as a search.
 
     So each place is swapped on its own — one place at a time, so the fixture that reddens is the
     one holding *that* place and not a fixture some other place reddened — and a reading which
@@ -4279,20 +4477,20 @@ def run_card_reading_problems() -> list[str]:
     two readings apart at, and a place whose difference never reaches a rule's answer.
     """
     problems: list[str] = []
-    for site in RUN_CARD_NAME_READINGS:
-        swapped_name_readings.add(site)
+    for site in RUN_CARD_READINGS:
+        swapped_readings.add(site)
         try:
             reddened = reddened_run_card_fixtures()
         finally:
-            swapped_name_readings.discard(site)
+            swapped_readings.discard(site)
         if reddened:
             continue
-        if site not in name_readings_reached:
+        if site not in readings_reached:
             problems.append(
                 f"the name reading {site!r} is a place the rules no longer read, so the table "
                 "names a comparison nothing makes"
             )
-        elif site not in name_readings_disagreed:
+        elif site not in readings_disagreed:
             problems.append(
                 f"the name reading {site!r} can be replaced with a `\\b{{name}}\\b` search with "
                 "every Run card fixture still green, and no fixture reaches a clause there where "
@@ -4305,6 +4503,7 @@ def run_card_reading_problems() -> list[str]:
                 "every Run card fixture still green although a fixture reads a name there the two "
                 "readings differ on: the difference never reaches a rule's answer"
             )
+
     global published_port_reading
     published_port_reading = container_port_of_mapping
     try:
@@ -4320,7 +4519,188 @@ def run_card_reading_problems() -> list[str]:
     return problems
 
 
-def main() -> int:
+# The patterns a container name, a network name or an image reference is read out of, and the name
+# a field read out of one has to be read as. The address's `url` group is deliberately not here: it
+# is a URL a rule prints and reads a host out of, and the host is what `server_address_host` mints.
+FIELD_PATTERNS = frozenset({"CONTAINER_NAME", "NETWORK_FLAG", "IMAGE_REFERENCE"})
+MINTED_FIELD = "ParsedName"
+
+# The two entries the scan walks out from. What they can reach is what the scan reads, so a function
+# a rule calls is a function the scan covers.
+RULE_ENTRY_POINTS = ("run_card_problems", "run_card_opened_at_problems")
+
+
+def called_names(node: ast.AST) -> set[str]:
+    """The names called anywhere in `node`."""
+    return {
+        call.func.id
+        for call in ast.walk(node)
+        if isinstance(call, ast.Call) and isinstance(call.func, ast.Name)
+    }
+
+
+def reached_functions(root: str, functions: dict[str, ast.FunctionDef]) -> set[str]:
+    """Every function of this file `root` calls, by name, transitively."""
+    reached = {root}
+    pending = [root]
+    while pending:
+        for name in called_names(functions[pending.pop()]):
+            if name in functions and name not in reached:
+                reached.add(name)
+                pending.append(name)
+    return reached
+
+
+def reads_a_field_pattern(node: ast.AST | None) -> bool:
+    """Whether the expression reads a match out of one of the field patterns."""
+    return (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id in FIELD_PATTERNS
+    )
+
+
+def bound_names(target: ast.AST) -> set[str]:
+    """Every name an assignment, a loop, a comprehension or a walrus binds."""
+    if isinstance(target, ast.Name):
+        return {target.id}
+    if isinstance(target, (ast.Tuple, ast.List)):
+        return {name for element in target.elts for name in bound_names(element)}
+    return set()
+
+
+def field_match_names(function: ast.FunctionDef) -> set[str]:
+    """The names `function` binds to a match of one of the field patterns.
+
+    Every place a name can be bound is read: an assignment, an annotated one, a loop, a
+    comprehension and a walrus. A tuple target is read for all of its names, so a shape this does
+    not tell apart is one it reads as a field rather than one it misses.
+    """
+    matches: set[str] = set()
+    for node in ast.walk(function):
+        target: ast.AST | None = None
+        source: ast.AST | None = None
+        if isinstance(node, ast.Assign):
+            targets = node.targets
+            source = node.value
+            if reads_a_field_pattern(source):
+                matches |= {name for one in targets for name in bound_names(one)}
+            continue
+        if isinstance(node, ast.AnnAssign):
+            target, source = node.target, node.value
+        elif isinstance(node, (ast.For, ast.comprehension)):
+            target, source = node.target, node.iter
+        elif isinstance(node, ast.NamedExpr):
+            target, source = node.target, node.value
+        if target is not None and reads_a_field_pattern(source):
+            matches |= bound_names(target)
+    return matches
+
+
+def field_group_reads(function: ast.FunctionDef) -> list[ast.Call]:
+    """Every `.group(…)` read in `function` taken off a match of one of the field patterns."""
+    matches = field_match_names(function)
+    return [
+        node
+        for node in ast.walk(function)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "group"
+        and (
+            reads_a_field_pattern(node.func.value)
+            or any(
+                isinstance(inner, ast.Name) and inner.id in FIELD_PATTERNS
+                for inner in ast.walk(node.func.value)
+            )
+            or (isinstance(node.func.value, ast.Name) and node.func.value.id in matches)
+        )
+    ]
+
+
+def minted_arguments(function: ast.FunctionDef) -> set[int]:
+    """The expressions `function` reads a `ParsedName` out of, by identity."""
+    return {
+        id(argument)
+        for call in ast.walk(function)
+        if isinstance(call, ast.Call)
+        and isinstance(call.func, ast.Name)
+        and call.func.id == MINTED_FIELD
+        for argument in call.args
+    }
+
+
+def unseamed_field_problems() -> list[str]:
+    """Every read of a name or a reference the card's rules reach that does not mint a `ParsedName`.
+
+    `ParsedName` refuses a comparison written outside the seam, and a value that never became one is
+    a comparison it cannot see: the name the rule that reports a container off its network compared
+    was `attached.group("name")`, the text the pattern matched, so the `!=` beside `docker network
+    create selvage` answered for `--network selvage-net`. What closed that was the name arriving as
+    a `ParsedName`; this is the other half, and it is what makes the closure stick rather than hold
+    until the next edit. It walks this file's own syntax tree, out from the functions the card's
+    rules are built from, and fails on two shapes:
+
+    - a `.group(…)` read taken off a match of one of the three patterns, which is not the expression
+      a `ParsedName` is made from where it is read; and
+    - a function that reads one of those patterns and makes no `ParsedName` at all.
+
+    A return annotation naming the type does not satisfy either; only minting the value does.
+
+    What it does not see: a function the rules do not call (`check_published_image` compares the
+    references the whole page carries, and that is not one of the card's rules), a name read with a
+    pattern of the rule's own rather than one of those three, and a comparison of the text a
+    `ParsedName` was read from — that value is a `str` and carries no record of where it came from.
+    """
+    with open(__file__, encoding="utf-8") as handle:
+        tree = ast.parse(handle.read(), filename=__file__)
+    functions = {
+        node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)
+    }
+    problems: list[str] = []
+    reached: set[str] = set()
+    for entry in RULE_ENTRY_POINTS:
+        if entry not in functions:
+            problems.append(
+                f"the scan's entry point {entry!r} is not a function of this file, so what the "
+                "card's rules are built from is not what this reads"
+            )
+            continue
+        reached |= reached_functions(entry, functions)
+    readers = 0
+    for name in sorted(reached):
+        function = functions[name]
+        mentioned = {
+            node.id for node in ast.walk(function) if isinstance(node, ast.Name)
+        } & FIELD_PATTERNS
+        if not mentioned:
+            continue
+        readers += 1
+        reads = field_group_reads(function)
+        minted = minted_arguments(function)
+        for read in reads:
+            if id(read) not in minted:
+                problems.append(
+                    f"the function {name} reads a container or network name out of a command "
+                    f"through {', '.join(sorted(mentioned))} and hands back the text it matched: "
+                    "a comparison of it is one no fixture can hold, so read it as a `ParsedName` "
+                    "where the field is read"
+                )
+        if not reads and not minted:
+            problems.append(
+                f"the function {name} reads a name or a reference out of a command through "
+                f"{', '.join(sorted(mentioned))} without reading it as a `ParsedName`, so a "
+                "comparison of it is one no fixture can hold"
+            )
+    if not readers:
+        problems.append(
+            "the scan reached no function of the card's rules that reads a name or a reference "
+            "out of a command, so it is checking nothing"
+        )
+    return problems
+
+
+def scan(targets: list[str]) -> int:
     compiled: list[
         tuple[Phrase, re.Pattern[str], list[re.Pattern[str]], tuple[re.Pattern[str], ...]]
     ] = []
@@ -4386,7 +4766,7 @@ def main() -> int:
     # The fixtures above say the rules read the right commands; this says they read them the right
     # way, which is the half that was missing: a reading can be swapped for a weaker one with every
     # fixture still green, and then the fixtures hold a rule and not the reading inside it.
-    reading_problems = run_card_reading_problems()
+    reading_problems = run_card_reading_problems() + unseamed_field_problems()
     if reading_problems:
         for problem in reading_problems:
             print(f"check-claims: {problem}", file=sys.stderr)
@@ -4394,7 +4774,6 @@ def main() -> int:
 
     root = root_of_this_checkout()
     os.chdir(root)
-    targets = sys.argv[1:] or ["."]
     paths = html_files(targets)
     if not paths:
         print(
@@ -4458,6 +4837,17 @@ def main() -> int:
         "found. This is a filter, not a proof: a false claim in other words passes it"
     )
     return 0
+
+
+def main() -> int:
+    """The check's entry point, and the one place a name compared outside the seam is turned into
+    the exit this check promises for a check that cannot run rather than for a page that is wrong.
+    """
+    try:
+        return scan(sys.argv[1:] or ["."])
+    except UnseamedComparison as unseamed:
+        print(f"check-claims: {unseamed}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

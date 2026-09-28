@@ -537,11 +537,14 @@ is the shape rather than a run — every container the command names is force-cl
 -f`) before the run reaches it, because a plain `docker rm` refuses a container a previous paste
 left running, and the error it prints is one the card discards; each of those names is read as a
 whole name, so a removal of `selvage-net` is not read as a removal of `selvage`, and a near miss
-does not stand in for the name the run uses — in all **five** places a container or network name is
-compared, which are the container in the run's own clearing, the container in the teardown, the
-container in the teardown's ordering, the network in the teardown's ordering, and the network in the
-rule that reports it left behind (this paragraph and the commit before it both said four, each
-leaving out a different one of the five); every run has to be detached, because one that is not
+does not stand in for the name the run uses — in all **ten** places two names are compared, which are
+the container in the run's own clearing, the container in the teardown, the container in the
+teardown's ordering, the network in the teardown's ordering, the network in the rule that reports it
+left behind, the network the run looks for against the one it creates, the network each run attaches
+its container to, the container the server's address names, and the two references the card's runs
+carry (this paragraph and the commit before it both said four, each leaving out a different one of
+the five they knew about, and the five after that were the comparisons nobody had named at all);
+every run has to be detached, because one that is not
 holds the line at that clause and the containers below it — the page the reader is told to open
 among them — never start; the network is looked for
 (`docker network inspect`) before it is created **and under the same name the creation uses**, so
@@ -570,20 +573,48 @@ that keeps those words can pass — the limit every assertion here has, and the 
 this paragraph used to state. Every one of those rules carries a fixture in the check itself: a
 command of its own with the defect written into it, run before the scan, pinning the fragment the
 rule emits, so a rule deleted is a rule the check fails on rather than one nothing reads. Holding a
-rule is not holding the *reading* inside it, and that is the other half: the five name comparisons
-and the published host port are each named in the check, and before it scans anything it swaps each
-one in turn for the weaker reading a later edit would leave in its place — a `\b{name}\b` search for
-a name, the mapping's container port for the host port — and fails unless a fixture goes red. That
-is what the run's own clearing lacked: the fixtures around it named a container plainly, so the
-search left them all green and a card clearing `selvaged-old` passed a check that reads a clearing
-of `selvaged`; the port reading was the same shape, with every mapping a fixture carried written
-`8080:8080`, where the two fields are one number; and the host a mapping names is held the ordinary
-way rather than by a swap, by the two fixtures a command that names `192.168.1.5` or `::1` has to
-be reported as. What that guarantees is exact, and so is what it
-does not: a reading that *is* one of those named places cannot be weakened to a search without the
-check failing on its own fixtures, and a place a fixture never tells the two readings apart at, or
-one the rules stop reading, fails with it — while a comparison written around that naming is one
-nothing swaps and nothing notices, and a fixture a rule passes is not a proof the rule is complete.
+rule is not holding the *reading* inside it, and that is the other half: the ten comparisons and the
+published host port are each named in the check, and before it scans anything it swaps each one in
+turn for the weaker reading a later edit would leave in its place — a `\b{name}\b` search for a name,
+one name being the start of the other for a pair of them, the mapping's container port for the host
+port — and fails unless a fixture goes red. That is what the run's own clearing lacked: the fixtures
+around it named a container plainly, so the search left them all green and a card clearing
+`selvaged-old` passed a check that reads a clearing of `selvaged`. The port reading was the same shape,
+with every mapping a fixture carried written `8080:8080`, where the two fields are one number. The
+five comparisons added with this one — the network the run looks for, the network each run attaches
+to, the container the address names, and the two references the runs carry — had failed the same way,
+and for one reason: no fixture told the two readings apart in any of them. Every fixture that named a
+network named the one the run creates, in the run's `--network`, in the teardown and in the name the
+run looks for, so `--network selvage-net` beside `docker network create selvage` passed and so did
+`docker network inspect selvage-net`; no fixture named a container whose name starts with the host its
+address names, so a run named `server-net` under an address naming `server` passed; and every
+reference a fixture carried was one the project publishes, neither of the two inside the other, so a
+run carrying `selvaged:latest-extra` passed. The host a mapping names is held the ordinary way rather
+than by a swap, by the two fixtures a command that names `192.168.1.5` or `::1` has to be reported as.
+
+What that guarantees is exact, and so is what it does not. Of the table: a reading that *is* one of
+those named places cannot be weakened to a search without the check failing on its own fixtures, and a
+place a fixture never tells the two readings apart at, or one the rules stop reading, fails with it. A
+table holds what someone remembered, though, so a comparison written *around* it is closed by
+construction instead of by another entry: every container name, network name and image reference the
+card's rules touch is read as a `ParsedName`, and one of those answers only inside `reads_the_name`.
+`attached.group("name") != network`, the comparison that read `--network selvage-net` as `selvage`,
+therefore fails where it is written rather than passing the page, and the check exits **2** naming the
+line it was written on. The other half is a scan of the check's own syntax tree
+(`unseamed_field_problems`): it walks the functions the card's rules can reach and reads the three
+patterns those rules match a command with — `CONTAINER_NAME`, `NETWORK_FLAG` and `IMAGE_REFERENCE`,
+which are where a container name, a network name and an image reference come from — and fails when a
+`.group(…)` read taken off a match of one of them, however that match was bound (an assignment, a
+loop, a comprehension, a walrus or a tuple target), is not the expression a `ParsedName` is made
+from, or when a function it reaches reads one of those patterns and makes no `ParsedName` at all.
+What it does not catch, and this check cannot: a comparison of the *text* a name was read from — a
+`.split()` of the clause, a pattern matched against the name, `str()` of one — because that value is
+a `str` with no record of where it came from; a read of a match that is not `.group(…)` (`match[0]`,
+`match.expand()`), or a match bound by `with … as`; a name read with a pattern of the rule's own
+rather than one of the three; and any function the card's rules do not call, `check_published_image`
+among them, which compares the references the whole page carries against the two the project
+publishes and is held by the served page rather than by a fixture. A fixture a rule passes is not a
+proof the rule is complete, either.
 What carries none is what is not a command — the pin below that holds the `$ ` prompt and the labels
 to the stylesheet, and the refusal to pass when no scanned page carries a block: those read a
 served page and the build it was served from, so their fixture would be a page and a build rather
