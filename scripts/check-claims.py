@@ -2199,13 +2199,26 @@ class ParsedName(str):
     wrote them otherwise, so a comparison written where no fixture can hold it fails the check
     rather than passing the page.
 
-    Holding the text this way costs nothing a rule needs. The value still formats, sorts and prints
-    as the string it was read from, so every message a rule emits is unchanged.
+    Holding the text this way costs nothing a rule needs. The value still formats and prints as the
+    string it was read from, so every message a rule emits is unchanged. Ordering one of these is a
+    comparison like any other and is refused with the rest, so a rule that sorts them sorts their
+    text instead — `container_names_in` does, and says why there.
 
-    What it does not close is a comparison of the text a name was read from — a `.split()` of the
-    clause, a fresh pattern matched against it — because that value is not one of these and carries
-    no record of where it came from. `unseamed_field_problems` scans this file for the reads that
-    would produce one, and the reach of both halves is written out in `README.md`.
+    A `str` this is, so what it can refuse is bounded by which side does the answering. The
+    operators and methods below are the ones Python hands the subclass: `==`, `!=` and the four
+    orderings answer for a `plain` receiver too, because a subclass's reflected method is tried
+    first, and `in` is refused where this is the `str` it searches and `startswith`, `endswith`,
+    `find`, `index` and `count` where this is the object they are called on. A plain receiver
+    answers for the rest — `name in plain_text`, `plain.startswith(name)`, `plain.find(name)`, and
+    the `str` side of any operator that answers with plain text, `"-" + name` among them — and so
+    does any method that answers with plain text, `name.lower()` and `name.strip()` among them.
+    `README.md` writes that limit out with the edit that defeats each, and `seam_problems` fails
+    this check when one of the refusals goes.
+
+    What it does not close either is a comparison of the text a name was read from — a `.split()` of
+    the clause, a fresh pattern matched against it — because that value is not one of these and
+    carries no record of where it came from. `unseamed_field_problems` scans this file for the
+    reads that would produce one, and the reach of both halves is written out in `README.md`.
     """
 
     __hash__ = str.__hash__
@@ -2234,6 +2247,22 @@ class ParsedName(str):
         self._through_the_seam_alone()
         return str.__contains__(self, other)
 
+    def __lt__(self, other: object) -> bool:
+        self._through_the_seam_alone()
+        return str.__lt__(self, other)
+
+    def __le__(self, other: object) -> bool:
+        self._through_the_seam_alone()
+        return str.__le__(self, other)
+
+    def __gt__(self, other: object) -> bool:
+        self._through_the_seam_alone()
+        return str.__gt__(self, other)
+
+    def __ge__(self, other: object) -> bool:
+        self._through_the_seam_alone()
+        return str.__ge__(self, other)
+
     def startswith(self, prefix: str | tuple[str, ...], *rest: int) -> bool:
         self._through_the_seam_alone()
         return str.startswith(self, prefix, *rest)
@@ -2242,19 +2271,34 @@ class ParsedName(str):
         self._through_the_seam_alone()
         return str.endswith(self, suffix, *rest)
 
+    def find(self, sub: str, *rest: int) -> int:
+        self._through_the_seam_alone()
+        return str.find(self, sub, *rest)
+
+    def index(self, sub: str, *rest: int) -> int:
+        self._through_the_seam_alone()
+        return str.index(self, sub, *rest)
+
+    def count(self, sub: str, *rest: int) -> int:
+        self._through_the_seam_alone()
+        return str.count(self, sub, *rest)
+
 
 def container_names_in(command: str) -> list[ParsedName]:
     """Every name the command gives a container, read as a name, once each and in name order.
 
-    Each name is read as a `ParsedName` where the pattern reads it. What is deduplicated is the
-    plain text of those names, which is bookkeeping and not a claim about two of them: the question
-    is which names the command uses, not whether one name is another. The text comes from the name
-    itself, so no field is read twice and none is read as text.
+    Each name is read as a `ParsedName` where the pattern reads it. What is deduplicated and
+    ordered is the plain text of those names, which is bookkeeping and not a claim about two of
+    them: the question is which names the command uses, not whether one name is another. The text
+    comes from the name itself, so no field is read twice and none is read as text — and the sort
+    is over the text rather than over the names, because ordering two of those is a comparison the
+    seam refuses like any other.
     """
     minted = [ParsedName(match.group("name")) for match in CONTAINER_NAME.finditer(command)]
     # `str()` of a `ParsedName` is the text it was read from: the keys are plain strings, so a
-    # duplicate is found without comparing two names.
-    return sorted({str(name): name for name in minted}.values())
+    # duplicate is found and the order is taken without comparing two names.
+    by_text = {str(name): name for name in minted}
+    return [by_text[text] for text in sorted(by_text)]
 
 
 def container_name_in(clause: str) -> ParsedName | None:
@@ -2410,6 +2454,93 @@ def reads_the_name(site: str, one: str, other: str) -> bool:
         return weakened(one, other)
     finally:
         reading_a_name = was_reading
+
+
+# The comparisons `ParsedName` has to refuse when they are written outside the seam, in the forms
+# Python hands a subclass: the operands and the methods called on one of these. Every one of them
+# answers for a plain `str` receiver — that is the limit the class's docstring writes out — so the
+# list is the refusal half alone, one entry per operator a later edit could drop.
+def unseamed_comparisons(
+    one: ParsedName, two: ParsedName, plain: str
+) -> tuple[tuple[str, Callable[..., object]], ...]:
+    """Each comparison of a name read out of a command that the seam has to refuse, by shape."""
+    return (
+        ("`one == two`", lambda: one == two),
+        ("`one != two`", lambda: one != two),
+        ("`plain == one`", lambda: plain == one),
+        ("`plain != one`", lambda: plain != one),
+        ("`plain in one`", lambda: plain in one),
+        ("`one.startswith(…)`", lambda: one.startswith("sel")),
+        ("`one.endswith(…)`", lambda: one.endswith("ge")),
+        ("`one < two`", lambda: one < two),
+        ("`one <= two`", lambda: one <= two),
+        ("`one > two`", lambda: one > two),
+        ("`one >= two`", lambda: one >= two),
+        ("`plain < one`", lambda: plain < one),
+        ("`plain <= one`", lambda: plain <= one),
+        ("`plain > one`", lambda: plain > one),
+        ("`plain >= one`", lambda: plain >= one),
+        ("`one.find(…)`", lambda: one.find("age")),
+        ("`one.index(…)`", lambda: one.index("age")),
+        ("`one.count(…)`", lambda: one.count("e")),
+        ("`sorted([one, two])`", lambda: sorted([one, two])),
+    )
+
+
+def seam_problems() -> list[str]:
+    """Every comparison the seam has to refuse, evaluated, against the one place it answers.
+
+    The refusal is the whole guard on a name read out of a command, and it is one line per
+    operator: delete `__lt__` and the class still reads exactly as it does now, the fixtures still
+    pass, and a rule that orders two names is compared as plain text. So each shape is evaluated
+    here, outside the seam where it has to name the line it was written on, and one comparison is
+    evaluated through `reads_the_name` where it has to answer — a refusal that refuses everything
+    would take the table's readings with it.
+
+    What is not here is the other half of the class's limit, the forms a `str` receiver answers for
+    on its own: `name in plain_text`, `plain.startswith(name)`, `plain.find(name)`, and the methods
+    that answer with plain text, `name.lower()` among them. No evaluation can hold a shape that
+    answers, and `README.md` writes each of those out with the edit that defeats it.
+
+    This runs after the fixture harness, because the comparison it makes inside the seam goes
+    through `reads_the_name` and that records the place it read: the harness's answer about which
+    places the rules still reach is finished by then, and this is not part of it.
+    """
+    one = ParsedName("selvage")
+    two = ParsedName("selvage-net")
+    plain = "selvage-net"
+    problems: list[str] = []
+    for what, comparison in unseamed_comparisons(one, two, plain):
+        try:
+            comparison()
+        except UnseamedComparison:
+            continue
+        except Exception as thrown:
+            problems.append(
+                f"the seam refuses {what} with {type(thrown).__name__} rather than naming the "
+                "line it was written on, so a comparison written outside `reads_the_name` is "
+                "reported as something else"
+            )
+        else:
+            problems.append(
+                f"the seam answers {what}, a comparison of a name read out of a command written "
+                "outside `reads_the_name`: the method that refuses it no longer does, so a "
+                "fixture's reading can be replaced by this and nothing notices"
+            )
+    try:
+        inside = reads_the_name(READING_RUN_NETWORK_CHECK, one, two)
+    except UnseamedComparison:
+        problems.append(
+            "the seam refuses `reads_the_name`, the one place a comparison of two names is "
+            "asked to answer, so every reading in the table is refused where it is made"
+        )
+    else:
+        if inside is not False:
+            problems.append(
+                f"`reads_the_name` answers {inside!r} for two names that are not the same, so "
+                "the place that reads a pair is not reading them"
+            )
+    return problems
 
 
 def forced_removal_clauses(where: str, name: str, site: str) -> list[str]:
@@ -4828,7 +4959,7 @@ def scan(targets: list[str]) -> int:
     # The fixtures above say the rules read the right commands; this says they read them the right
     # way, which is the half that was missing: a reading can be swapped for a weaker one with every
     # fixture still green, and then the fixtures hold a rule and not the reading inside it.
-    reading_problems = run_card_reading_problems() + unseamed_field_problems()
+    reading_problems = run_card_reading_problems() + unseamed_field_problems() + seam_problems()
     if reading_problems:
         for problem in reading_problems:
             print(f"check-claims: {problem}", file=sys.stderr)
