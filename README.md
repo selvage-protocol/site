@@ -26,7 +26,7 @@ browser proof the runner cannot run, and nothing else.
 
 | Path | What it is |
 |---|---|
-| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (the promise, two CTAs, four one-word facts, and the room window), *Try → Run* (the demo with the two controls that open it and copy its address, the two published images as one Docker command, and the hosted tier that does not exist yet), *Get it working* (the command and each client in the tabbed terminal, what the server carries and what it still sees in the two panels beside it), *See it working* (four cards), *How it works* (four steps), *Why a spec* (why the specification is the artifact, with the file that prints the corpus's counts in place of the counts, the comparison against the layers that already exist, and the repositories, one of which is a plan rather than a link), then the footer |
+| `app/page.tsx` | the page: the prose, the section order, and nothing else. Hero (the promise, two CTAs, four one-word facts, and the room window), *Try → Run* (the demo with the two controls that open it and copy its address, the two published images, and the hosted tier that does not exist yet), *Run it yourself* (the three commands that stand the server and the web client up, and what the web client is for), *Get it working* (each client in the tabbed terminal, and what the server carries and what it still sees in the two panels beside it), *See it working* (four cards), *How it works* (four steps), *Why a spec* (why the specification is the artifact, with the file that prints the corpus's counts in place of the counts, the comparison against the layers that already exist, and the repositories, one of which is a plan rather than a link), then the footer |
 | `app/layout.tsx` | the root layout: `lang`, title, description and Open Graph metadata, the one origin the metadata resolves against (`metadataBase`, `alternates.canonical`, `openGraph.url`; see "The live origin"), the global stylesheet, and the two fonts. `next/font/google` fetches Geist (400, 500, 600) and JetBrains Mono (400, 500) at build time and exposes them as `--font-geist-sans` and `--font-jetbrains-mono` on the document element, which the theme and the page's own rules both read, so the glyphs are served from `/_next/static/media` and no request leaves for a font host. The favicons are deliberately absent: they are Next file conventions, so the framework writes their tags and `sizes` from the files themselves |
 | `app/not-found.tsx` | the not-found route: what a mistyped address renders. The framework's own 404 document is styled with a `<style>` element and four `style` attributes, every one of which the policy's `style-src 'self'` refuses; this one is styled from `style.css` and carries neither (see "The Content-Security-Policy") |
 | `style.css` | the one stylesheet, dark-only Catppuccin Mocha with a mauve accent: the Tailwind v4 entry (`@import "tailwindcss"` plus a `@theme` block pinning the palette) followed by the page's own rules under CSS variables, which sit in Tailwind's `components` layer so that a utility on an element wins over the class the page gives it. One width is named there and the page keeps to it: `--measure`, where a line of running prose stops, so a wide figure is deliberate inside a narrow measure rather than an overflow |
@@ -178,8 +178,9 @@ the reader can name.
 | Part | Its job |
 |---|---|
 | Hero | the promise, two CTAs, four one-word facts, and the room window beside them: the host's folder down the side, the file the room has open, the line one of them is typing, and the invite link that put them there. The CTAs come **above** the facts because of the fold: four facts, a CTA row and the version line of the order the page carried put the primary button at y≈823 on a 1280×633 screen and nothing but the header's small link in the first one, so a reader met evidence and no action. The CTAs lead with the demo — the fastest thing a stranger can do, with nothing installed — then running it in the editor, which is where the commands are; the header's own CTA points at the demo for the same reason. The specification is not a third button: it is the link that closes *Why a spec*, and nothing on the page presents a link as a disabled-looking control. The four facts are one row of one-word chips — *Sealed*, *Specified*, *Path-scoped*, *No account* — and a check mark each. They were four sentences, and three of those arguments are made below in any case: the relay's disclosure is the panel beside the terminal in *Get it working*, the specification has its own section, and the granted paths are the third card of *See it working*. *No account* is the one the page carries nowhere else, and that is the reason the row is kept rather than deleted: the fact goes with it. The relay's chip leads because what the relay reads and does not read is the claim a reader has to be able to take before the others are worth anything, and it is read against the panel below, where the detail lives — the gate reads the panel, not the chip, for exactly that reason |
-| Try → Run | the ways in, in the order they cost. *01 Try* is the one card the page draws a live border around: the demo, and the host a reader pastes into a client, with those two controls as the card's last element so they sit on its bottom edge. *02 Run* is the two published images as three labelled commands — the network the two containers share, the server on it and the page container published on this machine's loopback, all detached and named, the images printed as bare repositories rather than with the `:latest` docker reads them as — so a reader takes one step at a time and a selection never carries two: the prompt in front of each block and the label above it are kept out of a selection, so a triple-click takes the command and not the `$ ` a shell would refuse, and a drag from one block across another takes two commands and no label. The prose above them is two sentences: where to open the browser editor once both containers are up, and that rooms live in memory so a restart ends them. Nothing on the card clears a name or looks a network up first, and pasting a line twice is docker's error to report: the card is the happy path, and a reader who is done stops the pair with `docker stop` or `docker rm -f`. *03 Rent* is the tier the project does not run yet: the card offers it, the pill on it says it is not available, and the row under it is a plan rather than a control, so nothing on the page offers a hosted room and nothing presents a row as a disabled-looking button |
-| Get it working | one server, any client: the install routes in one tabbed terminal — VS Code, Neovim, Browser — each with the command it copies, the note a reader needs before running it, and the repository it comes from. The strip is the ARIA tabs pattern (the arrow keys move between them, and every panel is in the document, so the page carries every route without scripting), and the routes are the client list's own install data: a client the project has not written has no route and so no tab. The routes carry the facts a reader installs by: the extension's published identity (`selvage-protocol.selvage`) and the two registries it is on; the Neovim plugin-manager line and `:SelvageHost`; and the demo's address an editor hosts on. The command that runs both containers, `selvaged` and the page in front of it, sits in the *Run* card of *Try → Run*: the page container is the one that publishes a port, on `127.0.0.1:8080`, and the server has none on the host, so the card says which address a reader opens rather than leaving it to the command. Beside the terminal the two panels say what the wire seals and what the relay still sees and still does, and that the host is a peer's signed claim rather than a server fact. The manual a reader wants next — the corpus check, the vector replay, each client's full command list — is the specification link and each repository's README, not a fold on this page; the per-client settings and the hosting routes were cut for the same reason |
+| Try → Run | the ways in, in the order they cost, as three cards of one height. *01 Try* is the one card the page draws a live border around: the demo, and the host a reader pastes into a client, with those two controls as the card's last element so they sit on its bottom edge. *02 Run* is the pair of published images the page hands over, said in two sentences: two containers, the server that holds the room and the web client a guest joins in a browser, rooms living in memory so a restart ends them. It used to print the three commands too, and a third of the row is not wide enough for them: at 376 px the longest wrapped to four lines and the card grew to 554 px against the 230 px and 163 px of the two beside it, which the row then stretched all three to, so two of the three ways in were mostly empty box. The commands are the section below instead, and the card links down to them. *03 Rent* is the tier the project does not run yet: the card offers it, the pill on it says it is not available, and the row under it is a plan rather than a control, so nothing on the page offers a hosted room and nothing presents a row as a disabled-looking button |
+| Run it yourself | two containers, three commands: the network the two share, the server on it and the page container published on this machine's loopback, all detached and named, the images printed as bare repositories rather than with the `:latest` docker reads them as. The section is its own rather than a card in the band, because the band is the ways in and this is one of them spelled out, and because a card of the band's height is the defect this section was written to fix: the commands in a third of the row wrapped the longest of them across four lines, and the card grew to 554 px against the 230 px and 163 px beside it, which the row then stretched all three to. The section wears no surface of its own either: a box around the lede and the commands would be the only one on the page that is not a thing — a terminal, a panel, a figure — and its fill here would be the section's own ground, so the commands stand on the page like the steps of *How it works*. The lede is two sentences in plain words, because the earlier draft explained the plumbing: run the three in order, then open the address, which is the page container's own and so a link to it — the page's only link that answers on the reader's machine and nowhere else, and the only exclusion `lychee.toml` carries besides `mailto:`. Guests can join through the browser from the invite link with nothing installed, which is what the web client is for. Each label sits beside its block rather than above it, so the three read as the sequence they are, and a reader takes one command at a time: the prompt in front of each block and the label beside it are kept out of a selection, so a triple-click takes the command and not the `$ ` a shell would refuse, and a drag from one block across another takes two commands and no label. The page container is the one that publishes a port, on `127.0.0.1:8080`, and the server has none on the host, so the section says which address a reader opens rather than leaving it to the command. Nothing here clears a name or looks a network up first, and pasting a line twice is docker's error to report: this is the happy path, and a reader who is done stops the pair with `docker stop` or `docker rm -f` |
+| Get it working | one server, any client: the install routes in one tabbed terminal — VS Code, Neovim, Browser — each with the command it copies, the note a reader needs before running it, and the repository it comes from. The strip is the ARIA tabs pattern (the arrow keys move between them, and every panel is in the document, so the page carries every route without scripting), and the routes are the client list's own install data: a client the project has not written has no route and so no tab. The routes carry the facts a reader installs by: the extension's published identity (`selvage-protocol.selvage`) and the two registries it is on; the Neovim plugin-manager line and `:SelvageHost`; and the demo's address an editor hosts on. Beside the terminal the two panels say what the wire seals and what the relay still sees and still does, and that the host is a peer's signed claim rather than a server fact. The manual a reader wants next — the corpus check, the vector replay, each client's full command list — is the specification link and each repository's README, not a fold on this page; the per-client settings and the hosting routes were cut for the same reason |
 | See it working | four cards, each with a drawing of the thing it claims: anyone with the link is in, the carets of three peers in one file, the paths a guest sees, multiple clients on one engine |
 | How it works | the four moves in order (host a folder, send the invite, type in the same file, close the window), under its own one-line summary of the workflow. They are the sequence rather than the argument: the grant, the sealed material and the host's signed claim are all made in the sections above, where a reader meets the thing they are about. The fourth move says whose window ends the room and what a dropped connection can still do: the host's window ends it after a short countdown, and a connection that only drops can rejoin before the countdown runs out. That a guest who closes their window leaves the others in the room is not on the page: it is what a reader expects, and the step is kept to the two facts a reader would otherwise get wrong |
 | Why a spec | the wedge: language tooling has the Language Server Protocol and debugging the Debug Adapter Protocol, document sync has `y-protocols`, and the session layer is unspecified, so every collaborative tool decides those for itself. The corpus is named here with the file that prints its counts and without the counts themselves: they move as the corpus grows, so a number on the page is stale by the next vector, and the file is where a reader reads the current ones. The section then hands the reader the specification itself, under a comparison card that sets the session layer beside the three layers that already have one. The repository grid below it is the page's own account of what exists: a word and a link for each repository the project has, and a row for the client that is planned and unwritten, which carries the hosted tier's *Not available yet* in the same yellow and no link because there is nothing to open. Its client rows are the client list's own, so a client added to the page is a row here without a second edit, and the grid closes on a dashed full-width strip rather than another card: the list is open, and a strip that spans the grid cannot be stranded on a short last row the way a seventh cell can. The peer corpus is not named on the page either: its counts backed the signed-host sentence, which the panels in *Get it working* still make. The heading says what the page does rather than denying what the hero's chip states: it used to read *The session layer has no specification*, which contradicted that fact for anyone skimming the two |
@@ -506,7 +507,7 @@ the prose the page carries in its `meta` attributes — `description`, `og:*`, `
 beside the visible text, because a link unfurl prints that prose verbatim and the tags themselves
 are stripped from the body: five planted overclaims in `og:description` used to pass the scan
 unseen, on the surface a person deciding whether to paste a link meets first. It also
-asserts facts in the positive — the images the card's commands name, which of the two runs
+asserts facts in the positive — the images the section's commands name, which of the two runs
 carries which, the demo instance, the one wire version those
 artefacts speak, two disclosures (what the relay still sees, and the terms `selvaged` is under),
 the file the corpus counts are pinned in, the identity
@@ -524,7 +525,7 @@ them. The first is the image tags the happy path hands a reader: the check pins
 requires every reference the rendered page carries to be one of the two and both of them to be
 there — a command that names one where the other belongs pulls an image the page is not about, and
 a reference printed as a bare repository is read as the `:latest` tag docker reads it as, which is
-the tag the card prints —
+the tag the section prints —
 and then asks the registry for each tag — anonymously, with no credential in
 the request, because no account is the point of the command. It compares the **per-platform
 manifests' layer digests**, not the index: a platform entry only states that a slot is *labelled*
@@ -535,7 +536,7 @@ half of the command is held to it too. The card's commands are then read as the 
 are, one per line, and the promise the single chained command used to carry is gone with it:
 `docker network create` chained with `&&` stopped the
 second paste at an error, and the detached server kept its name for the next one with nothing on
-the card to remove it, so everything that read that promise went too and the check has no shape
+the section to remove it, so everything that read that promise went too and the check has no shape
 for a second paste at all. This host has no Docker, so
 what is asserted is the shape rather than a run: the first command creates the network the two
 containers share, and it stands before every run that names it, because a run reaches a network
@@ -549,24 +550,24 @@ and sits on the container that publishes the port a reader opens — read in eit
 image accepts, `http://selvaged:8080` or the bare
 `selvaged:8080`, which is the form `web_client`'s README documents; each of the two runs carries
 the reference the page publishes for it, the run a reader opens the page image and the run beside
-it the server's, so a command with the two swapped is refused rather than passed, and the card
+it the server's, so a command with the two swapped is refused rather than passed, and the section
 prints those references as bare repositories, which the check reads as the `:latest` tag docker
 gives a bare repository; the server's run
 publishes no port, because the page's own `-p` would collide with it and the page would never
-start; the address the command publishes is the address the card prints for a reader — its **host
-port**, and the host its mapping names when it names one — read out of the card's own text rather
+start; the address the command publishes is the address the section prints for a reader — its **host
+port**, and the host its mapping names when it names one — read out of the section's own text rather
 than the page, because `http://127.0.0.1:8080/` in the copy and `-p 127.0.0.1:8080:8080` in the
 command are one fact printed twice: a command publishing another port, or publishing that
 port on `192.168.1.5` or on `::1`, sends every reader to an address its own card says answers. The
-address is read wherever the card states it in its own element, and the run it belongs to is looked
+address is read wherever the section states it in its own element, and the run it belongs to is looked
 for in whichever of the three commands carries `SELVAGE_SERVER`. A
 mapping that names no host (`-p 8080:8080`) passes, because what is read is the address a mapping
 carries and not the one docker picks when it carries none — while a mapping that writes the wildcard
 down (`-p 0.0.0.0:8080:8080`) is **refused**, because `0.0.0.0` is a host a mapping names and it is
-neither loopback the card's own address may print, so the form that leaves the host out passes and
+neither loopback the section's own address may print, so the form that leaves the host out passes and
 the form that spells every interface out fails; and the mapping's **container** port is
 not compared either, so `-p 8080:80` passes on its port. The host is compared against the two
-loopback names the card's own address may print, `127.0.0.1` and `localhost`, and it is not
+loopback names the section's own address may print, `127.0.0.1` and `localhost`, and it is not
 validated as an address: docker's own reference calls that field an IP address, writes one in every
 example and never writes the name `localhost` as a value of it, and this check has no docker to ask,
 so `-p localhost:8080:8080` passes here as one of the two loopback names and whether docker accepts
@@ -608,7 +609,7 @@ tried first. `attached.group("name") != network`, the comparison that read `--ne
 rather than trusted: `seam_problems` runs every one of them outside the seam, where it has to raise,
 and one through `reads_the_name`, where it has to answer, and fails the check when a method that
 refuses no longer does. The other half is a scan of the check's own syntax tree
-(`unseamed_field_problems`): it walks the functions the card's rules can reach — by a bare call,
+(`unseamed_field_problems`): it walks the functions the section's rules can reach — by a bare call,
 and out from the function values `RUN_CARD_READINGS` and `published_port_reading` hold, which are
 called through a table or a variable and are never written as a call, so the four readings and their
 weakened twins are walked too — and reads the three patterns those rules match a command with —
@@ -633,7 +634,7 @@ than entries in the table. Then a comparison of the *text* a name was read from 
 a `str` with no record of where it came from; a read of a match that is not `.group(…)` (`match[0]`,
 `match.expand()`) inside a function that mints a `ParsedName` somewhere else, which is the one
 surviving way past the second shape above, or a match bound by `with … as`; a name read with a
-pattern of the rule's own rather than one of the three; and any function the card's rules do not
+pattern of the rule's own rather than one of the three; and any function the section's rules do not
 reach, `check_published_image`
 among them, which compares the references the whole page carries against the two the project
 publishes and is held by the served page rather than by a fixture. A fixture a rule passes is not a
@@ -641,7 +642,7 @@ proof the rule is complete, either.
 What carries none is what is not a command — the pin below that holds the `$ ` prompt and the labels
 to the stylesheet, and the refusal to pass when no scanned page carries a block: those read a
 served page and the build it was served from, so their fixture would be a page and a build rather
-than a line. The pin that closes the card's last hole is not a phrase or a
+than a line. The pin that closes the section's last hole is not a phrase or a
 command at all: the `$ ` prompt in front of each block and the label above it are read out of the
 served page's own markup, and a rule in **the stylesheet the served page loads** has to name the
 class they carry and take it out of a selection. The stylesheet is read from the build the server
@@ -921,13 +922,13 @@ routes have to name the same clients, so a client written onto one surface and n
 the gate. It then reads the page's image references, holds each to
 the tag `scripts/check-claims.py` carries on its package — a bare repository being that tag — and
 asks `ghcr.io` for both of them;
-reads the Run card's three commands — the first creates the network, every run is detached and on
+reads the Run section's three commands — the first creates the network, every run is detached and on
 it, the page container is
 pointed at the server container on the network both are on and is the one that publishes a port,
 with the page image on that run and the server's on the other, which publishes none, and the
-address the card prints for a reader is the host port that run publishes, with the host its mapping
+address the section prints for a reader is the host port that run publishes, with the host its mapping
 names where it names one — and reads the `$ ` prompt and the
-labels the card prints against the stylesheet the served page loads, requiring a rule that names
+labels the section prints against the stylesheet the served page loads, requiring a rule that names
 their class and takes it out of a selection, read from the build the server is serving rather than
 from `style.css`, which this host having no Docker makes a shape and not a run, read in one way
 of writing each part, so a correct command in other words fails it; reads the page's

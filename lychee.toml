@@ -1,15 +1,22 @@
 # What the link check does not check, and why.
 #
-# `^mailto:` is the one exclusion: the contact address in the footer. The check
-# runs lychee without `--include-mail`, so a `mailto:` is counted as excluded
-# whether or not it is named here, and nothing can follow it to a live
-# destination either way. Naming it says that on purpose rather than by default,
-# and keeps the address a link a person can write to. Nothing else is excluded.
-# The waitlist form is gone (the page collects nothing), so the reserved-name
-# endpoint went with it, and every other link left on the page is expected to
-# resolve and is checked. The page's home is
-# `https://selvage.dontblameme.dev`: the canonical link, `og:url` and
+# `^mailto:` is the contact address in the footer. The check runs lychee without
+# `--include-mail`, so a `mailto:` is counted as excluded whether or not it is
+# named here, and nothing can follow it to a live destination either way. Naming
+# it says that on purpose rather than by default, and keeps the address a link a
+# person can write to.
+#
+# `^http://127\.0\.0\.1:` is the address the Run section tells a reader to open:
+# the page container those three commands start on the reader's own machine. It
+# answers on their loopback or nowhere at all, so a check that could only pass
+# with that server already running would fail every time. The address is still
+# held to the command beside it — the claim check reads the mapping the `-p`
+# publishes against the address the section prints — so what is skipped here is
+# only the fetch.
+#
+# Every other link on the page is expected to resolve and is checked. The page's
+# home is `https://selvage.dontblameme.dev`: the canonical link, `og:url` and
 # `og:image` all name that origin, and it resolves. `selvageprotocol.com` is not
-# registered and registering it is not being pursued. If a URL ever needs
-# another exclusion, add it here with its reason beside it.
-exclude = ["^mailto:"]
+# registered and registering it is not being pursued. If a URL ever needs another
+# exclusion, add it here with its reason beside it.
+exclude = ["^mailto:", "^http://127\\.0\\.0\\.1:"]

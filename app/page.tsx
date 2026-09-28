@@ -220,8 +220,9 @@ export default function Home() {
                   Try it in the browser, then run your own.
                 </h2>
                 <p className="lede">
-                  Every room runs on a server. The demo is one; the Run card starts the
-                  same server, and the page in front of it, on a machine you control.
+                  Every room runs on a server. The demo is one; the commands below start
+                  the same server, and the web client in front of it, on a machine you
+                  control.
                 </p>
               </div>
               <div className="try-grid">
@@ -260,21 +261,9 @@ export default function Home() {
                     </Badge>
                   </div>
                   <p className="try-body">
-                    Two containers: the server that holds the room, and the page that
-                    reaches it. Open {OPEN_AT} once both are up; rooms live in memory, so a
-                    restart ends them.
+                    Two containers: the server that holds the room, and the web client a
+                    guest joins in a browser. Rooms live in memory, so a restart ends them.
                   </p>
-                  {RUN_STEPS.map((step) => (
-                    <div className="command-group" key={step.label}>
-                      <p className="command-label">{step.label}</p>
-                      <div className="command">
-                        <p className="command-line">
-                          <span className="command-prompt">$ </span>
-                          {step.command}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
                   <a className="try-link" href="#run">
                     Set up the server and your editor
                     <ArrowDown className="icon-14" aria-hidden="true" />
@@ -301,7 +290,32 @@ export default function Home() {
             </div>
           </section>
 
-          <section id="run" className="shell">
+          <section id="run" className="shell run-section">
+            <div className="head-block">
+              <Eyebrow>Run it yourself</Eyebrow>
+              <h2 className="display">Two containers, three commands.</h2>
+              <p className="lede">
+                Run the three in order, then open <a href={OPEN_AT}>{OPEN_AT}</a>.
+                Guests can join through the browser using the invite link, with
+                nothing to install.
+              </p>
+            </div>
+            <div className="run-steps">
+              {RUN_STEPS.map((step) => (
+                <div className="command-group" key={step.label}>
+                  <p className="command-label">{step.label}</p>
+                  <div className="command">
+                    <p className="command-line">
+                      <span className="command-prompt">$ </span>
+                      {step.command}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section id="clients" className="shell">
             <div className="head-block">
               <Eyebrow>Get it working</Eyebrow>
               <h2 className="display">One server, any client.</h2>

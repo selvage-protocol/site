@@ -834,8 +834,31 @@ section[id],
   font-size: 14px;
 }
 
-/* Get it working: the terminal a reader copies from, beside what the server
-   carries and what it still sees. */
+/* Run it yourself: the three commands that stand the server and the web client up, in the
+   section of their own between the band and the clients that connect to them. The prose above
+   them is the section's own lede; the commands stand on the section's ground, like the steps
+   of *How it works* and the rows of the comparison, rather than in a box around them. */
+.run-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 32px;
+}
+
+/* The label sits on the command's first line rather than above it, so the three steps stay a
+   list a reader reads down. The column it takes is the width of the longest of the three
+   labels, and the row is only drawn where there is room beside a command for one. */
+@media (min-width: 720px) {
+  .run-steps .command-group {
+    display: grid;
+    grid-template-columns: minmax(0, 190px) minmax(0, 1fr);
+    align-items: baseline;
+    gap: 16px;
+  }
+}
+
+/* Get it working: the terminal a reader installs a client from, beside what the server carries
+   and what it still sees. */
 .run-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));

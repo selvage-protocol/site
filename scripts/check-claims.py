@@ -8,7 +8,7 @@ worth having: those known wordings do not appear, even when the page wraps them 
 encodes the characters as HTML entities.
 
 Facts are asserted in the positive instead, because a phrase list cannot reach them: the images
-the card's `docker run`s hand a reader and which of the two sits on which run, the
+the section's `docker run`s hand a reader and which of the two sits on which run, the
 instance the demo section points at — the address
 it gives an editor and the page a guest is sent to — the wire the tags and that address each speak,
 held together and to no version this protocol does not have, the disclosures the page owes a reader
@@ -19,7 +19,7 @@ install is and is not. The address half asks the
 path a plain `GET` can reach, not the upgrade: see `demo_session_route`. Each is a fact with an
 artefact behind it, and a wrong tag is a command that fails rather than a wording that lies. See
 `PUBLISHED_IMAGES`, `DEMO_ORIGIN`, `RELAY_DISCLOSURE`, `FSL_DISCLOSURE`, `PUBLISHED_EXTENSION`,
-`check_run_card_command`, `check_run_card_address`, `check_command_prompt_selection` and
+`check_run_section_command`, `check_run_section_address`, `check_command_prompt_selection` and
 `check_wire_binding` below.
 
 Each entry below pairs a phrase the page must not carry with the reason it must not, and with a
@@ -124,8 +124,8 @@ PUBLISHED_IMAGE_TAG = "latest"
 # the artefact the demo instance reports from `/meta`; `PAGE_IMAGE` is the one that relays to it.
 SERVER_IMAGE, PAGE_IMAGE = PUBLISHED_IMAGES
 IMAGE_REFERENCES = tuple(f"{image}:{PUBLISHED_IMAGE_TAG}" for image in PUBLISHED_IMAGES)
-# The same pair as the card prints them, tag and all: the card prints the repository alone, because
-# a bare repository is the tag above, and what the card's own reading compares is the reference.
+# The same pair as the section prints them, tag and all: the section prints the repository alone, because
+# a bare repository is the tag above, and what the section's own reading compares is the reference.
 SERVER_REFERENCE, PAGE_REFERENCE = IMAGE_REFERENCES
 # Every reference under the project's own namespace, so a typo, another tag or a package the
 # project does not publish is read and refused rather than passed over for naming nothing. The
@@ -138,7 +138,7 @@ IMAGE_REFERENCE = re.compile(
 def with_default_tag(reference: str) -> str:
     """A reference with no tag written as the `:latest` docker reads it as.
 
-    The card prints the repository alone — `ghcr.io/selvage-protocol/selvaged` — because docker
+    The section prints the repository alone — `ghcr.io/selvage-protocol/selvaged` — because docker
     reads a bare repository as `:latest` and the shorter string is the one a reader reads. The
     reference is what is compared, so both spellings are read as the same one and any other tag is
     still a reference this project does not publish. The tag has one home: `PUBLISHED_IMAGE_TAG`
@@ -151,7 +151,7 @@ def with_default_tag(reference: str) -> str:
 REGISTRY_HOST = "ghcr.io"
 REQUEST_TIMEOUT_SECONDS = 20
 
-# The Run card hands a reader three commands, one line each, and this host has no Docker, so what
+# The Run section hands a reader three commands, one line each, and this host has no Docker, so what
 # is read is the shape of those commands rather than the run itself: the network the two containers
 # share is created in the first, before either run names it, and the server and the page are started
 # in the others; every run is detached,
@@ -163,20 +163,20 @@ REQUEST_TIMEOUT_SECONDS = 20
 # the server's on the other, and the server's run publishes nothing, because the page's own `-p`
 # would collide with it and the page would never start.
 #
-# What was removed here is what the card no longer does: it does not clear container names, does not
+# What was removed here is what the section no longer does: it does not clear container names, does not
 # look a network up before creating it, prints no teardown, and makes no promise about a second
-# paste. The rules for those were removed with the card rather than left to fail.
-RUN_CARD_CLASS = "command"
-# The card's printed blocks, in the order the page puts them: one command each, so a reader who
+# paste. The rules for those were removed with the section rather than left to fail.
+RUN_BLOCK_CLASS = "command"
+# The section's printed blocks, in the order the page puts them: one command each, so a reader who
 # selects one does not take the next with it. The class is matched
 # as a whole name rather than a prefix, or the `command-line` paragraphs inside a block would be
 # read as blocks of their own.
 COMMAND_BLOCK = re.compile(
-    rf'<(?P<tag>[a-z][\w-]*)\b[^>]*\bclass="[^"]*(?<![\w-]){re.escape(RUN_CARD_CLASS)}(?![\w-])[^"]*"[^>]*>',
+    rf'<(?P<tag>[a-z][\w-]*)\b[^>]*\bclass="[^"]*(?<![\w-]){re.escape(RUN_BLOCK_CLASS)}(?![\w-])[^"]*"[^>]*>',
     re.IGNORECASE,
 )
 # One printed line of a block.
-RUN_CARD_LINE = re.compile(
+RUN_BLOCK_LINE = re.compile(
     r'<p\b[^>]*\bclass="[^"]*\bcommand-line\b[^"]*"[^>]*>(?P<line>.*?)</p>',
     re.IGNORECASE | re.DOTALL,
 )
@@ -193,28 +193,28 @@ SERVER_ADDRESS = re.compile(r"-e\s+SELVAGE_SERVER=(?P<url>[^\s;|&]+)")
 # the page never sees.
 PUBLISHED_PORT = re.compile(r"(?:\s|^)(?:-p|--publish)[=\s]")
 # The mapping that flag publishes, so the address on this machine can be read out of it and
-# compared with the address the card prints. Docker's form is
+# compared with the address the section prints. Docker's form is
 # `[host-ip:][host-port:]container-port[/proto]`, and only the field before the last colon is a port
 # on the host: `-p 8080` publishes the container's port on one docker picks, which is not an
 # address a page can tell a reader to open. The host it names is read beside the port, because the
-# card's own address is a claim about both: `-p 192.168.1.5:8080:8080` publishes the page where a
+# section's own address is a claim about both: `-p 192.168.1.5:8080:8080` publishes the page where a
 # browser sent to `http://127.0.0.1:8080/` never reaches it.
 PUBLISHED_MAPPING = re.compile(r"(?:\s|^)(?:-p|--publish)[=\s](?P<mapping>[^\s;|&]+)")
-# The loopback the card's own address may name, in the two spellings `CARD_OPENED_AT` accepts. A
-# mapping that names one of these on its host side publishes where the address the card prints
+# The loopback the section's own address may name, in the two spellings `RUN_OPENED_AT` accepts. A
+# mapping that names one of these on its host side publishes where the address the section prints
 # reaches; a mapping that names no host at all is left to docker and is read as naming none.
 LOOPBACK_NAMES = ("127.0.0.1", "localhost")
-# The address the card tells a reader to open, read out of the card's own text rather than off the
+# The address the section tells a reader to open, read out of the section's own text rather than off the
 # command: the run's `-e SELVAGE_SERVER` is the address the page container relays to, and this is
 # the one a browser opens. They are two copies of one fact, which is why they are compared. The
 # lookahead is where the address ends rather than a character to consume — a slash, a space or a
 # full stop after it is the prose around it, while a colon or a word character means what matched
 # is not the address — so what the rule is handed is the address itself and not the space after it.
-CARD_OPENED_AT = re.compile(r"http://(?:127\.0\.0\.1|localhost)(?::(?P<port>\d+))?(?![\w:])")
-# Where the Run card is drawn. All three cards of that section carry this class and only the Run
-# card carries a command in it, so the region is found by that rather than by a class of its own.
-RUN_CARD_REGION_CLASS = "try-card"
-# Where one command in a chain ends and the next begins: a block is one line the card prints, and
+RUN_OPENED_AT = re.compile(r"http://(?:127\.0\.0\.1|localhost)(?::(?P<port>\d+))?(?![\w:])")
+# Where the Run section is drawn: the page's own section between the band and the clients, the one
+# that puts the three commands in it, above the terminal a reader installs one from.
+RUN_SECTION_CLASS = "run-section"
+# Where one command in a chain ends and the next begins: a block is one line the section prints, and
 # a line may be several clauses.
 COMMAND_SEPARATOR = re.compile(r";|&&")
 DOCKER_RUN = re.compile(r"\bdocker\s+run\b")
@@ -222,22 +222,22 @@ DOCKER_RUN = re.compile(r"\bdocker\s+run\b")
 # reader's terminal instead of returning their prompt.
 DETACHED = re.compile(r"(?:\s|^)(?:-\w*d\w*|--detach)(?=\s|$)")
 
-# The card prints two kinds of text that are not the command: the `$ ` prompt in front of a
+# The section prints two kinds of text that are not the command: the `$ ` prompt in front of a
 # block's command, and the label above the block. Both sit inside the selection a reader makes
-# over the card, so both have to be out of it — a `$ ` or a label pasted into a shell is a
+# over the section, so both have to be out of it — a `$ ` or a label pasted into a shell is a
 # command that does not exist — and that is a property of the stylesheet the served page loads
 # rather than of its markup: the prompt is drawn by a rule, and deleting the rule brings the
 # pasted prompt back with nothing else in the tree to say so. The prompt's class is read out of
-# the page's own markup, so a card that renames the prompt and its rule together still passes;
+# the page's own markup, so a section that renames the prompt and its rule together still passes;
 # the label's is named here, the way `command-line` is.
-RUN_CARD_LABEL_CLASS = "command-label"
+RUN_BLOCK_LABEL_CLASS = "command-label"
 # An element that carries a class, with the names read as whole words, or `command-line` would
 # answer for `command-label`.
 CLASSED_ELEMENT = re.compile(
     r'<(?P<tag>[a-z][\w-]*)\b[^>]*\bclass="(?P<classes>[^"]*)"[^>]*>', re.IGNORECASE
 )
 # The innermost elements of a markup, with their attributes and their own text: the prompt is the
-# element whose whole text is the `$ ` the card prints.
+# element whose whole text is the `$ ` the section prints.
 INNER_ELEMENT = re.compile(
     r'<(?P<tag>[a-z][\w-]*)\b(?P<attrs>[^>]*)>(?P<text>[^<]*)</(?P=tag)>', re.IGNORECASE
 )
@@ -256,31 +256,31 @@ BUILD_PREFIX = "/_next/static/"
 USER_SELECT_NONE = re.compile(r"(?:^|[\s;{])user-select\s*:\s*none\b", re.IGNORECASE)
 CSS_RULE = re.compile(r"(?P<selectors>[^{}@]+)\{(?P<body>[^{}]*)\}", re.DOTALL)
 
-# The card's command is read as a shape, and a shape read by matching is worth no more than what
+# The section's command is read as a shape, and a shape read by matching is worth no more than what
 # it is matched against, so every rule below carries its own fixture: one command in the shape the
-# card prints, and a variant per rule `run_card_problems` can report, each pinning the fragment
+# section prints, and a variant per rule `run_section_problems` can report, each pinning the fragment
 # that rule emits so deleting the rule reddens the loop rather than leaving one nothing reads.
 # They are written with names of their own rather than with the page's, so they are the shapes and
-# not a second copy of the card, and `main` runs them before it scans anything: a rule that stops
+# not a second copy of the section, and `main` runs them before it scans anything: a rule that stops
 # finding its shape, or that starts failing the correct one, fails the check itself rather than
 # reporting a page clean. The rules about which of the two published references sits on which run
 # name them in their fixtures, because a shape with names of its own says nothing about those.
 #
 # What is not fixtured this way is what is not a command string: the `$ ` prompt and label pin and
-# the refusal to pass when a scanned page carries no Run card block read a served page and the
+# the refusal to pass when a scanned page carries no Run section block read a served page and the
 # stylesheet its build produced, so their fixture would be a page and a build rather than a line.
-RUN_CARD_FIXTURE_NETWORK = "docker network create room"
-RUN_CARD_FIXTURE_SERVER = (
+RUN_FIXTURE_NETWORK = "docker network create room"
+RUN_FIXTURE_SERVER = (
     "docker run -d --rm --name server --network room example/server:1"
 )
-RUN_CARD_FIXTURE_PAGE = (
+RUN_FIXTURE_PAGE = (
     "docker run -d --rm --name page --network room"
     " -p 127.0.0.1:8080:8080 -e SELVAGE_SERVER=http://server:8080 example/page:1"
 )
-RUN_CARD_FIXTURE_BLOCKS = (
-    RUN_CARD_FIXTURE_NETWORK,
-    RUN_CARD_FIXTURE_SERVER,
-    RUN_CARD_FIXTURE_PAGE,
+RUN_FIXTURE_BLOCKS = (
+    RUN_FIXTURE_NETWORK,
+    RUN_FIXTURE_SERVER,
+    RUN_FIXTURE_PAGE,
 )
 
 
@@ -291,24 +291,24 @@ RUN_CARD_FIXTURE_BLOCKS = (
 def with_project_images(server_reference: str, page_reference: str) -> tuple[str, ...]:
     """The fixture's blocks with the two published references in place of the example ones."""
     return (
-        RUN_CARD_FIXTURE_NETWORK,
-        RUN_CARD_FIXTURE_SERVER.replace("example/server:1", server_reference),
-        RUN_CARD_FIXTURE_PAGE.replace("example/page:1", page_reference),
+        RUN_FIXTURE_NETWORK,
+        RUN_FIXTURE_SERVER.replace("example/server:1", server_reference),
+        RUN_FIXTURE_PAGE.replace("example/page:1", page_reference),
     )
 
 
-RUN_CARD_FIXTURE_NAMED = with_project_images(SERVER_REFERENCE, PAGE_REFERENCE)
-RUN_CARD_FIXTURE_SWAPPED = with_project_images(PAGE_REFERENCE, SERVER_REFERENCE)
-# The card prints the two references without their tags, and docker reads a bare repository as
-# `:latest`, so this is one of the correct shapes: it is the card's own, and the fixture below
+RUN_FIXTURE_NAMED = with_project_images(SERVER_REFERENCE, PAGE_REFERENCE)
+RUN_FIXTURE_SWAPPED = with_project_images(PAGE_REFERENCE, SERVER_REFERENCE)
+# The section prints the two references without their tags, and docker reads a bare repository as
+# `:latest`, so this is one of the correct shapes: it is the section's own, and the fixture below
 # holds the reading that makes it the pinned reference.
-RUN_CARD_FIXTURE_BARE = with_project_images(SERVER_IMAGE, PAGE_IMAGE)
+RUN_FIXTURE_BARE = with_project_images(SERVER_IMAGE, PAGE_IMAGE)
 
 
-def run_card_fixture(
+def run_fixture(
     *edits: tuple[int, str, str],
     dropped: tuple[int, ...] = (),
-    blocks: tuple[str, ...] = RUN_CARD_FIXTURE_BLOCKS,
+    blocks: tuple[str, ...] = RUN_FIXTURE_BLOCKS,
 ) -> tuple[str, ...] | None:
     """The correct command with `edits` written into it, or None when one of them does not apply.
 
@@ -328,55 +328,55 @@ def run_card_fixture(
 
 # `(what, the blocks it runs, the fragment of the rule it has to be reported as)`, the fragment
 # empty for the variants that are a correct command and have to come back clean.
-RUN_CARD_FIXTURES: tuple[tuple[str, tuple[str, ...] | None, str], ...] = (
+RUN_FIXTURES: tuple[tuple[str, tuple[str, ...] | None, str], ...] = (
     (
         "a server container left in the foreground",
-        run_card_fixture(
+        run_fixture(
             (1, "docker run -d --rm --name server", "docker run --rm --name server")
         ),
         "runs a container without `-d`",
     ),
     (
         "a page container left off the network the server is on",
-        run_card_fixture((2, "--name page --network room", "--name page --network other")),
+        run_fixture((2, "--name page --network room", "--name page --network other")),
         "runs a container that is not on room",
     ),
     (
         "a page container on a network the one the run creates starts with",
-        run_card_fixture(
+        run_fixture(
             (2, "--name page --network room", "--name page --network room-net")
         ),
         "runs a container that is not on room",
     ),
     (
         "a command that creates no network for the two containers",
-        run_card_fixture((0, "docker network create room", "docker network inspect room")),
+        run_fixture((0, "docker network create room", "docker network inspect room")),
         "does not create the network the two containers share",
     ),
     (
         "a command that creates the network after the runs that join it",
         (
-            RUN_CARD_FIXTURE_SERVER,
-            RUN_CARD_FIXTURE_PAGE,
-            RUN_CARD_FIXTURE_NETWORK,
+            RUN_FIXTURE_SERVER,
+            RUN_FIXTURE_PAGE,
+            RUN_FIXTURE_NETWORK,
         ),
         "runs a container before the command that creates room",
     ),
     (
         "a command that gives no container the relay address",
-        run_card_fixture((2, " -e SELVAGE_SERVER=http://server:8080", "")),
+        run_fixture((2, " -e SELVAGE_SERVER=http://server:8080", "")),
         "gives no container `-e SELVAGE_SERVER`",
     ),
     (
         "an address that names a container nothing else is named",
-        run_card_fixture(
+        run_fixture(
             (2, "SELVAGE_SERVER=http://server:8080", "SELVAGE_SERVER=http://other:8080")
         ),
         "gives no other container the name 'other'",
     ),
     (
         "an address whose host is the start of a container the run does name",
-        run_card_fixture(
+        run_fixture(
             (1, "--name server --network room", "--name server-net --network room")
         ),
         "gives no other container the name 'server'",
@@ -387,21 +387,21 @@ RUN_CARD_FIXTURES: tuple[tuple[str, tuple[str, ...] | None, str], ...] = (
     # container. Each half is fixtured, and the two together are the shape that passed.
     (
         "an address that names no host",
-        run_card_fixture(
+        run_fixture(
             (2, "SELVAGE_SERVER=http://server:8080", "SELVAGE_SERVER=http://:8080")
         ),
         "names no host in it",
     ),
     (
         "an address in the bare form that names no host",
-        run_card_fixture(
+        run_fixture(
             (2, "SELVAGE_SERVER=http://server:8080", "SELVAGE_SERVER=:8080")
         ),
         "gives no other container the name ':8080'",
     ),
     (
         "an address that names no host beside a run that gives its container no name",
-        run_card_fixture(
+        run_fixture(
             (1, "--name server --network room", "--network room"),
             (2, "SELVAGE_SERVER=http://server:8080", "SELVAGE_SERVER=http://:8080"),
         ),
@@ -409,166 +409,166 @@ RUN_CARD_FIXTURES: tuple[tuple[str, tuple[str, ...] | None, str], ...] = (
     ),
     (
         "an address that names a container no run is named",
-        run_card_fixture((1, "--name server --network room", "--network room")),
+        run_fixture((1, "--name server --network room", "--network room")),
         "gives no other container the name 'server'",
     ),
     (
         "an address on a container that publishes no port",
-        run_card_fixture((2, " -p 127.0.0.1:8080:8080", "")),
+        run_fixture((2, " -p 127.0.0.1:8080:8080", "")),
         "to a container that publishes no port",
     ),
     (
         "a command that runs no container",
-        run_card_fixture(dropped=(1, 2)),
+        run_fixture(dropped=(1, 2)),
         "runs no container",
     ),
     (
         "a command whose two runs carry each other's image",
-        RUN_CARD_FIXTURE_SWAPPED,
+        RUN_FIXTURE_SWAPPED,
         "gives `-e SELVAGE_SERVER` to the run carrying",
     ),
     (
         "the page image on the run the address is not given to",
-        run_card_fixture(
+        run_fixture(
             (1, f"--network room {SERVER_REFERENCE}", f"--network room {PAGE_REFERENCE}"),
-            blocks=RUN_CARD_FIXTURE_NAMED,
+            blocks=RUN_FIXTURE_NAMED,
         ),
         "is the container the server's image belongs on",
     ),
     (
         "the addressed run carrying a reference the page image's is the start of",
-        run_card_fixture(
+        run_fixture(
             (2, PAGE_REFERENCE, f"{PAGE_REFERENCE}-extra"),
-            blocks=RUN_CARD_FIXTURE_NAMED,
+            blocks=RUN_FIXTURE_NAMED,
         ),
         "the address belongs on the page image",
     ),
     (
         "a run carrying a reference the server image's is the start of",
-        run_card_fixture(
+        run_fixture(
             (1, SERVER_REFERENCE, f"{SERVER_REFERENCE}-extra"),
-            blocks=RUN_CARD_FIXTURE_NAMED,
+            blocks=RUN_FIXTURE_NAMED,
         ),
         "is the container the server's image belongs on",
     ),
     (
         "a server run that publishes a port of its own",
-        run_card_fixture(
+        run_fixture(
             (
                 1,
                 f"--network room {SERVER_REFERENCE}",
                 f"--network room -p 127.0.0.1:8080:8080 {SERVER_REFERENCE}",
             ),
-            blocks=RUN_CARD_FIXTURE_NAMED,
+            blocks=RUN_FIXTURE_NAMED,
         ),
         "publishes a port on the run carrying the server image",
     ),
     (
         "a run whose option carries the other image's reference",
-        run_card_fixture(
+        run_fixture(
             (
                 1,
                 f"--name server --network room {SERVER_REFERENCE}",
                 f"--name server --network room --label note={PAGE_REFERENCE} "
                 f"{SERVER_REFERENCE}",
             ),
-            blocks=RUN_CARD_FIXTURE_NAMED,
+            blocks=RUN_FIXTURE_NAMED,
         ),
         "",
     ),
     (
         "the same command with the address in the bare form the READMEs document",
-        run_card_fixture(
+        run_fixture(
             (2, "SELVAGE_SERVER=http://server:8080", "SELVAGE_SERVER=server:8080")
         ),
         "",
     ),
     (
-        "the card's own shape, with the two references printed without their tags",
-        RUN_CARD_FIXTURE_BARE,
+        "the section's own shape, with the two references printed without their tags",
+        RUN_FIXTURE_BARE,
         "",
     ),
     (
-        "a third run the card publishes no image for",
-        run_card_fixture(
+        "a third run the section publishes no image for",
+        run_fixture(
             (
                 2,
                 f"-e SELVAGE_SERVER=http://server:8080 {PAGE_REFERENCE}",
                 f"-e SELVAGE_SERVER=http://server:8080 {PAGE_REFERENCE}"
                 " && docker run -d --rm --name other --network room example/other:1",
             ),
-            blocks=RUN_CARD_FIXTURE_NAMED,
+            blocks=RUN_FIXTURE_NAMED,
         ),
-        "is given no `-e SELVAGE_SERVER`, and the card hands a reader two runs",
+        "is given no `-e SELVAGE_SERVER`, and the section hands a reader two runs",
     ),
 )
 
-# The address the card tells a reader to open and the address its command publishes on are two
-# copies of one fact, and nothing compared them: the card prints `http://127.0.0.1:8080/`, the
+# The address the section tells a reader to open and the address its command publishes on are two
+# copies of one fact, and nothing compared them: the section prints `http://127.0.0.1:8080/`, the
 # command maps `-p 127.0.0.1:8080:8080`, and a command that publishes something else — another
-# port, or the same port on another address — sends the reader to an address its own card says
-# answers. `(what, the address the card prints, the blocks it prints beside it, the fragment of the
+# port, or the same port on another address — sends the reader to an address its own section says
+# answers. `(what, the address the section prints, the blocks it prints beside it, the fragment of the
 # rule that pair has to be reported as)`, the fragment empty for the pair that agrees.
-RUN_CARD_OPENED_AT_FIXTURES: tuple[tuple[str, str, tuple[str, ...] | None, str], ...] = (
+RUN_OPENED_AT_FIXTURES: tuple[tuple[str, str, tuple[str, ...] | None, str], ...] = (
     (
-        "a card whose command publishes another port than the one it prints",
+        "a section whose command publishes another port than the one it prints",
         "http://127.0.0.1:9090/",
-        RUN_CARD_FIXTURE_BLOCKS,
-        "publishes 8080 and the card tells the reader to open http://127.0.0.1:9090/",
+        RUN_FIXTURE_BLOCKS,
+        "publishes 8080 and the section tells the reader to open http://127.0.0.1:9090/",
     ),
     (
-        "a card whose address names no port",
+        "a section whose address names no port",
         "http://127.0.0.1/",
-        RUN_CARD_FIXTURE_BLOCKS,
+        RUN_FIXTURE_BLOCKS,
         "names no port",
     ),
     (
         "a command that publishes the container's port on one docker picks",
         "http://127.0.0.1:8080/",
-        run_card_fixture((2, "-p 127.0.0.1:8080:8080", "-p 8080")),
+        run_fixture((2, "-p 127.0.0.1:8080:8080", "-p 8080")),
         "publishes no port on the host",
     ),
     # The host and the container port of a mapping are the two readings this check found
     # unfixtured: every fixture it had mapped `8080:8080`, where the field before the colon and the
     # one after it are the same number, so a reading of the container port answered for the host
-    # port and a card over a mapping those two fields disagree in was never read.
+    # port and a section over a mapping those two fields disagree in was never read.
     (
         "a command that publishes the host port on a container port of its own",
         "http://127.0.0.1:9090/",
-        run_card_fixture((2, "-p 127.0.0.1:8080:8080", "-p 127.0.0.1:9090:8080")),
+        run_fixture((2, "-p 127.0.0.1:8080:8080", "-p 127.0.0.1:9090:8080")),
         "",
     ),
     (
-        "a command that publishes the page on another address than the card prints",
+        "a command that publishes the page on another address than the section prints",
         "http://127.0.0.1:8080/",
-        run_card_fixture((2, "-p 127.0.0.1:8080:8080", "-p 192.168.1.5:8080:8080")),
-        "publishes on 192.168.1.5 and the card tells the reader to open http://127.0.0.1:8080/",
+        run_fixture((2, "-p 127.0.0.1:8080:8080", "-p 192.168.1.5:8080:8080")),
+        "publishes on 192.168.1.5 and the section tells the reader to open http://127.0.0.1:8080/",
     ),
     (
         "a command that publishes the page on the other loopback",
         "http://127.0.0.1:8080/",
-        run_card_fixture((2, "-p 127.0.0.1:8080:8080", "-p [::1]:8080:8080")),
-        "publishes on ::1 and the card tells the reader to open http://127.0.0.1:8080/",
+        run_fixture((2, "-p 127.0.0.1:8080:8080", "-p [::1]:8080:8080")),
+        "publishes on ::1 and the section tells the reader to open http://127.0.0.1:8080/",
     ),
-    # Every interface is not the loopback the card prints, and this is what the host half of the
+    # Every interface is not the loopback the section prints, and this is what the host half of the
     # comparison does with it: `0.0.0.0` is a host a mapping names, so it is compared and refused,
     # where a mapping that names none is left to docker and passes.
     (
         "a command that publishes the page on every interface",
         "http://127.0.0.1:8080/",
-        run_card_fixture((2, "-p 127.0.0.1:8080:8080", "-p 0.0.0.0:8080:8080")),
-        "publishes on 0.0.0.0 and the card tells the reader to open http://127.0.0.1:8080/",
+        run_fixture((2, "-p 127.0.0.1:8080:8080", "-p 0.0.0.0:8080:8080")),
+        "publishes on 0.0.0.0 and the section tells the reader to open http://127.0.0.1:8080/",
     ),
     (
-        "a command that names the card's own loopback on a host port of its own",
+        "a command that names the section's own loopback on a host port of its own",
         "http://localhost:9090/",
-        run_card_fixture((2, "-p 127.0.0.1:8080:8080", "-p 127.0.0.1:9090:9090")),
+        run_fixture((2, "-p 127.0.0.1:8080:8080", "-p 127.0.0.1:9090:9090")),
         "",
     ),
     (
-        "the card's own address against the address its own command publishes on",
+        "the section's own address against the address its own command publishes on",
         "http://127.0.0.1:8080/",
-        RUN_CARD_FIXTURE_BLOCKS,
+        RUN_FIXTURE_BLOCKS,
         "",
     ),
 )
@@ -1921,7 +1921,7 @@ def check_published_image(pages: list[Scanned]) -> int:
     """The page's image references against the two the project publishes, and each against the
     registry its tag names.
 
-    The card prints the repository without its tag — docker reads a bare repository as `:latest` —
+    The section prints the repository without its tag — docker reads a bare repository as `:latest` —
     so a reference is read as its `:latest` form (`with_default_tag`) before it is compared, and
     the same page still may not name a version the release does not publish.
 
@@ -1976,7 +1976,7 @@ def check_published_image(pages: list[Scanned]) -> int:
 
 
 def command_block_markups(page: Scanned) -> list[str]:
-    """The Run card's printed blocks, as markup, in the order the page puts them.
+    """The Run section's printed blocks, as markup, in the order the page puts them.
 
     Answers [] for a page that carries no such block, which is a failure where the block is
     required rather than a quiet pass: a scan that reaches no command is not checking one. Each
@@ -2000,7 +2000,7 @@ def command_block_markups(page: Scanned) -> list[str]:
 def command_blocks(page: Scanned) -> list[list[str]]:
     """Those blocks' printed lines, one list each: what the command is read out of."""
     return [
-        [normalise(line.group("line"))[0] for line in RUN_CARD_LINE.finditer(markup)]
+        [normalise(line.group("line"))[0] for line in RUN_BLOCK_LINE.finditer(markup)]
         for markup in command_block_markups(page)
     ]
 
@@ -2090,7 +2090,7 @@ class ParsedName(str):
             raise UnseamedComparison(
                 f"{self!r} is a name read out of a command and is compared outside "
                 f"`reads_the_name` at {written.filename}:{written.lineno}, where no fixture can "
-                "hold the reading: name the place in `RUN_CARD_READINGS` and compare through the "
+                "hold the reading: name the place in `RUN_READINGS` and compare through the "
                 "seam"
             )
 
@@ -2156,7 +2156,7 @@ def network_attached_in(clause: str) -> ParsedName | None:
 
 
 def server_address_in(clause: str) -> str | None:
-    """The address a clause points its container at its server with, as the card prints it, or None.
+    """The address a clause points its container at its server with, as the section prints it, or None.
 
     The address is text a rule prints and reads a host out of, not a name two rules are about: the
     *host* is the name a rule compares against the containers the command gives names to, and
@@ -2173,7 +2173,7 @@ def server_address_in(clause: str) -> str | None:
 # references the two runs carry: `selvage-net` read as `selvage` is a page container off the network
 # its server is on, and `selvaged:latest-extra` read as `selvaged:latest` is a run this project
 # publishes no image for. Every one of these places reads through `reads_the_name`,
-# `run_card_reading_problems` swaps one place at a time for the search and requires a fixture to go
+# `run_section_reading_problems` swaps one place at a time for the search and requires a fixture to go
 # red, and a comparison written outside it is refused where it is written — so a place no fixture
 # distinguishes is reported rather than left in place, and a place nobody named is not silent.
 READING_CONTAINER_NETWORK = "the network each run attaches its container to"
@@ -2203,11 +2203,11 @@ def the_same_name_as_a_search(one: str, other: str) -> bool:
 
 
 def names_something(name: ParsedName) -> bool:
-    """Whether a name read out of the card names anything at all.
+    """Whether a name read out of the section names anything at all.
 
     The empty name is what a reading answers when there was nothing to read: a run that gives its
     container no name, an address whose host is missing. Two of those are not two names that are
-    the same, and a rule that read them as one passed a card whose page container is pointed at
+    the same, and a rule that read them as one passed a section whose page container is pointed at
     `http://:8080` beside a server run it gives no name to — a pair that relays to nothing, read
     as satisfied by the very emptiness that is the defect. So the rule that compares a host against
     the containers the command names asks this of both, and an empty name is never evidence.
@@ -2216,7 +2216,7 @@ def names_something(name: ParsedName) -> bool:
 
 
 # `(the reading the place does, the search it must not be)`.
-RUN_CARD_READINGS: dict[str, tuple[Callable[[str, str], bool], Callable[[str, str], bool]]] = {
+RUN_READINGS: dict[str, tuple[Callable[[str, str], bool], Callable[[str, str], bool]]] = {
     READING_CONTAINER_NETWORK: (the_same_name, the_same_name_as_a_search),
     READING_ADDRESSED_CONTAINER: (the_same_name, the_same_name_as_a_search),
     READING_PAGE_IMAGE_RUN: (the_same_name, the_same_name_as_a_search),
@@ -2248,7 +2248,7 @@ def reads_the_name(site: str, one: str, other: str) -> bool:
     """
     global reading_a_name
     readings_reached.add(site)
-    reading, weakened = RUN_CARD_READINGS[site]
+    reading, weakened = RUN_READINGS[site]
     was_reading = reading_a_name
     reading_a_name = True
     try:
@@ -2372,8 +2372,8 @@ def server_address_host(address: str) -> ParsedName:
 
 
 def port_named_by(address: str) -> int | None:
-    """The port the address the card prints names, or None when it names none."""
-    match = CARD_OPENED_AT.search(address)
+    """The port the address the section prints names, or None when it names none."""
+    match = RUN_OPENED_AT.search(address)
     if match is None or match.group("port") is None:
         return None
     return int(match.group("port"))
@@ -2404,7 +2404,7 @@ def host_port_of_mapping(mapping: str) -> int | None:
     """The port a mapping publishes on the host, or None when it publishes none.
 
     Only the field before the last colon is a port on the host: `-p 8080` publishes the container's
-    port on one docker picks, which is not a port the card's address can name.
+    port on one docker picks, which is not a port the section's address can name.
     """
     host_port = mapping_fields(mapping)[1]
     return int(host_port) if host_port.isdigit() else None
@@ -2442,7 +2442,7 @@ def published_host_address(clause: str) -> str:
     """The host address a clause publishes on, '' when its mapping names none.
 
     Docker leaves the host to itself when the mapping names none, and what is read here is the
-    mapping and not docker's choice: an address nobody wrote is not one the card's own address can
+    mapping and not docker's choice: an address nobody wrote is not one the section's own address can
     be held to, and the fixture that holds this reading is a mapping that names another one.
     """
     found = PUBLISHED_MAPPING.search(clause)
@@ -2460,7 +2460,7 @@ def run_image_operand(clause: str) -> ParsedName:
     would, a reference in an option's value classifies the run as the image that value names, and
     a command with the two images in each other's place would pass.
 
-    The card prints the repository without its tag, and docker reads a bare repository as
+    The section prints the repository without its tag, and docker reads a bare repository as
     `:latest`, so what is handed back is the reference with that tag spelled out: the comparison
     against the pinned reference is then the whole-name reading it has always been, and a run
     carrying any other tag of the same package is still refused.
@@ -2490,10 +2490,10 @@ def classed_elements(raw: str, wanted: str) -> list[str]:
     return found
 
 
-def run_card_problems(blocks: list[list[str]]) -> list[str]:
-    """What the card's commands have to be, one problem each.
+def run_section_problems(blocks: list[list[str]]) -> list[str]:
+    """What the section's commands have to be, one problem each.
 
-    The card hands a reader three lines: the network the two containers share, the server that
+    The section hands a reader three lines: the network the two containers share, the server that
     holds the room, and the page that reaches it. The first has to create that network before
     either run names it, every run
     has to join it, every run has to be detached, and the address the page container is given is
@@ -2501,22 +2501,22 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
     two are attached to, and the run carrying the address has to be the one that publishes a port,
     or the page asks for a server nothing answers for. Neither side of that first claim may be the
     empty name — an address whose host is empty names no container, a run given no `--name` names
-    none — because the two of those are equal and a card that relays to nothing would read as
+    none — because the two of those are equal and a section that relays to nothing would read as
     satisfied. The address is also read against the two references the page publishes: the run a
     reader opens carries the page image and the run beside it the server's, so the two swapped is a
     reader sent to the server's port for a page, and the server's run publishes nothing, because a
     port there collides with the page's own.
 
-    Every rule here carries a fixture in `RUN_CARD_FIXTURES`, and each fixture pins the fragment
+    Every rule here carries a fixture in `RUN_FIXTURES`, and each fixture pins the fragment
     its rule emits, so a rule removed is a rule this file fails on rather than one nothing reads.
     Every comparison of two names goes through `reads_the_name` with one of the places named at the
     top of this file, and it is a fixture rather than the code that says each place is held:
-    `run_card_reading_problems` swaps each place in turn for the search it must not be and requires
+    `run_section_reading_problems` swaps each place in turn for the search it must not be and requires
     a fixture to go red, so a place whose fixtures all stay green is a reading nobody holds. A
     comparison written straight into this body instead is refused where it is written, because the
     names here are `ParsedName` and only the seam answers for one of those.
 
-    What it does not read is anything about a second paste: the card promises nothing about one, so
+    What it does not read is anything about a second paste: the section promises nothing about one, so
     there is no shape here for it to hold.
     """
     problems: list[str] = []
@@ -2580,7 +2580,7 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
         host = server_address_host(address)
         # A name that names nothing is not a name: `http://:8080` gives the page container no host
         # and a run given no `--name` gives it no container, and the two compared equal, so this
-        # rule read a card whose page relays to nothing as satisfied. Both sides are asked here
+        # rule read a section whose page relays to nothing as satisfied. Both sides are asked here
         # rather than leaving it to the reading, because `reads_the_name` is the place a fixture
         # harness swaps for a weaker one, and a weaker reading is what `''` slips through.
         elsewhere = [
@@ -2618,7 +2618,7 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
     # the container a reader opens, so that run is the page image and the run beside it is the
     # server's: the two swapped is a reader sent to the server's port for a page, and the address on
     # the server's run is one sent to a container that serves no page. The server's run publishes
-    # nothing, because the page container is the only one the card publishes: a second `-p` there
+    # nothing, because the page container is the only one the section publishes: a second `-p` there
     # is a collision that leaves the page container never starting.
     named_runs: list[tuple[str, ParsedName]] = [
         (clause, run_image_operand(clause)) for _name, _attached, clause in started
@@ -2644,7 +2644,7 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
             elif not given and not reference:
                 problems.append(
                     "runs a container this project publishes no image for on the container that "
-                    "is given no `-e SELVAGE_SERVER`, and the card hands a reader two runs: the "
+                    "is given no `-e SELVAGE_SERVER`, and the section hands a reader two runs: the "
                     f"page image {PAGE_REFERENCE} on the one the address is given to and the "
                     f"server's {SERVER_REFERENCE} beside it"
                 )
@@ -2657,35 +2657,35 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
     return problems
 
 
-def run_card_region(page: Scanned) -> str:
-    """The Run card's own text, the region the address it prints for a reader is read out of.
+def run_section_region(page: Scanned) -> str:
+    """The Run section's own text, the region the address it prints for a reader is read out of.
 
-    The card prints the address and the command that publishes it inside one element, and the
-    section's other two cards carry the same class, so the region is the card holding a command
-    rather than a class of the Run card's own. A card whose markup cannot be followed to its closer
-    answers '' rather than a fragment, which is a page this check refuses to pass.
+    The section prints the address and the command that publishes it inside one element, and the class
+    is the section's own, so what is asked for is the element carrying both: a section the scan cannot
+    follow to its closer, or one that carries an address and no command, answers '' rather than a
+    fragment, which is a page this check refuses to pass.
     """
-    for markup in classed_elements(page.raw, RUN_CARD_REGION_CLASS):
-        if any(RUN_CARD_LINE.finditer(markup)):
+    for markup in classed_elements(page.raw, RUN_SECTION_CLASS):
+        if any(RUN_BLOCK_LINE.finditer(markup)):
             return normalise(markup)[0]
     return ""
 
 
-def run_card_opened_at_problems(opened_at: str, blocks: list[list[str]]) -> list[str]:
-    """The address the card prints against the address its command publishes on, one problem each.
+def run_section_opened_at_problems(opened_at: str, blocks: list[list[str]]) -> list[str]:
+    """The address the section prints against the address its command publishes on, one problem each.
 
     The reader is told to open an address and the command maps one, and those are two copies of one
-    fact: `http://127.0.0.1:8080/` in the card's own copy and `-p 127.0.0.1:8080:8080` in the
+    fact: `http://127.0.0.1:8080/` in the section's own copy and `-p 127.0.0.1:8080:8080` in the
     command under it. A command that publishes another port, or only the container's port on one
     this machine picks, sends the reader to an address nothing answers on while the copy beside it
     says it does; an address that names no port is one no command can publish to; and a mapping
-    that names a host other than the loopback the card prints — `-p 192.168.1.5:8080:8080`,
-    `-p [::1]:8080:8080` — publishes the page where a browser sent to the card's own address never
+    that names a host other than the loopback the section prints — `-p 192.168.1.5:8080:8080`,
+    `-p [::1]:8080:8080` — publishes the page where a browser sent to the section's own address never
     reaches it. A mapping that names no host at all is left to docker, which publishes it on every
     interface the machine has, and passes: what is read here is the address a mapping carries and
     not the one docker picks. The run the address is given to is the one read, because that is the
-    container the reader opens, and it is read in whichever of the card's blocks it is printed in:
-    the card hands a reader three commands, and the address belongs on the one that serves the page.
+    container the reader opens, and it is read in whichever of the section's blocks it is printed in:
+    the section hands a reader three commands, and the address belongs on the one that serves the page.
     """
     port = port_named_by(opened_at)
     if port is None:
@@ -2706,42 +2706,42 @@ def run_card_opened_at_problems(opened_at: str, blocks: list[list[str]]) -> list
                 )
             elif published != port:
                 problems.append(
-                    f"publishes {published} and the card tells the reader to open {opened_at}, "
+                    f"publishes {published} and the section tells the reader to open {opened_at}, "
                     "so the address it prints is on a port its own command does not serve"
                 )
             bound = published_host_address(clause)
             if bound and bound not in LOOPBACK_NAMES:
                 problems.append(
-                    f"publishes on {bound} and the card tells the reader to open {opened_at}, "
+                    f"publishes on {bound} and the section tells the reader to open {opened_at}, "
                     "so the address it prints is not one its own command serves"
                 )
     return problems
 
 
-def check_run_card_address(pages: list[Scanned]) -> int:
-    """The address the Run card tells a reader to open, against the address its command publishes.
+def check_run_section_address(pages: list[Scanned]) -> int:
+    """The address the Run section tells a reader to open, against the address its command publishes.
 
-    The card prints one address and its command publishes one, and those are two copies of one
+    The section prints one address and its command publishes one, and those are two copies of one
     fact that nothing compared: a page saying `http://127.0.0.1:8080/` over a command publishing
     `-p 127.0.0.1:9090:8080` sends every reader it has to an address nothing answers on, and the
     check that reads the command's shape cannot see it, because the command is a correct command.
     The mapping's host is read the same way: `-p 192.168.1.5:8080:8080` publishes the page where
-    the card's own loopback address reaches nothing, and a page that says its container is
+    the section's own loopback address reaches nothing, and a page that says its container is
     published on this machine's loopback while its command puts the page on a LAN address or on
     `::1` is one whose copy and command are two different facts.
 
-    The address is read out of the card's own text, not off the command: what the run's
+    The address is read out of the section's own text, not off the command: what the run's
     `-e SELVAGE_SERVER` names is the address the page container relays to, which is a different
     address on a different network. It is read out of that one region for the same reason: an
-    address another part of the page prints is a different fact, and a card whose own copy and
-    command agree is a card that is right. Every place the card states it in that region is read,
-    not the first one: the card prints three commands now, so there is no longer a single block a
-    card's copy could be assumed to sit beside, and the run the address belongs to is looked for in
+    address another part of the page prints is a different fact, and a section whose own copy and
+    command agree is a section that is right. Every place the section states it in that region is read,
+    not the first one: the section prints three commands now, so there is no longer a single block a
+    section's copy could be assumed to sit beside, and the run the address belongs to is looked for in
     whichever block carries it.
 
-    Returns 0 when the address the card prints is the address its command publishes — its host
+    Returns 0 when the address the section prints is the address its command publishes — its host
     port, and the host that mapping names where it names one — 1 when it is not, and 2 when no
-    scanned page prints a loopback address inside the card that carries a command: an address the
+    scanned page prints a loopback address inside the section that carries a command: an address the
     check cannot find is not an address it checked.
     """
     root = root_of_this_checkout()
@@ -2751,15 +2751,15 @@ def check_run_card_address(pages: list[Scanned]) -> int:
         blocks = command_blocks(page)
         if not any(blocks):
             continue
-        region = run_card_region(page)
-        addresses = sorted({match.group(0) for match in CARD_OPENED_AT.finditer(region)})
+        region = run_section_region(page)
+        addresses = sorted({match.group(0) for match in RUN_OPENED_AT.finditer(region)})
         if not addresses:
             continue
         reached += 1
         problems = [
             problem
             for opened_at in addresses
-            for problem in run_card_opened_at_problems(opened_at, blocks)
+            for problem in run_section_opened_at_problems(opened_at, blocks)
         ]
         if problems:
             failures.append((os.path.relpath(page.path, root), problems))
@@ -2767,7 +2767,7 @@ def check_run_card_address(pages: list[Scanned]) -> int:
         for where, problems in failures:
             for problem in problems:
                 print(
-                    f"check-claims: the Run card at {where} {problem}; the card prints that "
+                    f"check-claims: the Run section at {where} {problem}; the section prints that "
                     "address for the command beside it, and a reader who opens it reaches what "
                     "the command published or nothing",
                     file=sys.stderr,
@@ -2775,24 +2775,24 @@ def check_run_card_address(pages: list[Scanned]) -> int:
         return 1
     if not reached:
         print(
-            f"check-claims: none of {len(pages)} scanned file(s) carries the address the Run card "
-            "tells a reader to open inside the card that prints the command beside it, and that "
-            "card prints one, so a scan that reads no address is not checking one",
+            f"check-claims: none of {len(pages)} scanned file(s) carries the address the Run section "
+            "tells a reader to open inside the section that prints the command beside it, and that "
+            "section prints one, so a scan that reads no address is not checking one",
             file=sys.stderr,
         )
         return 2
     print(
-        "check-claims: the address the Run card tells a reader to open is the address its command "
+        "check-claims: the address the Run section tells a reader to open is the address its command "
         "publishes, its host port and the loopback its mapping names where it names one, so the "
         "address the page sends a browser to is one the run beside it serves"
     )
     return 0
 
 
-def check_run_card_command(pages: list[Scanned]) -> int:
-    """The Run card's three commands, against what each of them has to be.
+def check_run_section_command(pages: list[Scanned]) -> int:
+    """The Run section's three commands, against what each of them has to be.
 
-    The card hands a reader the network the two containers share, the server that holds the room and
+    The section hands a reader the network the two containers share, the server that holds the room and
     the page that reaches it, one command each. What is required is that the first creates their
     network, that every run joins it under the same name, that every run is detached, that the
     address the page is given names the container its server runs in on the network both are on and
@@ -2804,7 +2804,7 @@ def check_run_card_command(pages: list[Scanned]) -> int:
     each part of it: a command that is correct but spells one of them differently fails here, and
     a broken one that keeps these words together passes it. That is the limit of the reading, and
     it runs the other way from the one an earlier message here claimed.
-    Returns 0 when a scanned page's card carries all of it, 1 when one part is missing, and 2
+    Returns 0 when a scanned page's section carries all of it, 1 when one part is missing, and 2
     when no scanned page carries the command blocks at all.
     """
     root = root_of_this_checkout()
@@ -2815,28 +2815,28 @@ def check_run_card_command(pages: list[Scanned]) -> int:
         if not any(blocks):
             continue
         reached += 1
-        problems = run_card_problems(blocks)
+        problems = run_section_problems(blocks)
         if problems:
             failures.append((os.path.relpath(page.path, root), problems))
     if failures:
         for where, problems in failures:
             for problem in problems:
                 print(
-                    f"check-claims: the Run card's commands at {where} {problem}; the card hands "
+                    f"check-claims: the Run section's commands at {where} {problem}; the section hands "
                     "them to a reader to paste, and they have to run there",
                     file=sys.stderr,
                 )
         return 1
     if not reached:
         print(
-            f"check-claims: none of {len(pages)} scanned file(s) carries the Run card's "
+            f"check-claims: none of {len(pages)} scanned file(s) carries the Run section's "
             "command block, and that block is where the project hands a reader two containers "
             "to run, so a scan that reaches no command is not checking one",
             file=sys.stderr,
         )
         return 2
     print(
-        "check-claims: the Run card creates the network the two containers share before the runs "
+        "check-claims: the Run section creates the network the two containers share before the runs "
         "that name it, runs every "
         "container detached and on that network, points the page container at the server "
         "container, gives the address to the run carrying the page image, and publishes nothing "
@@ -2865,7 +2865,7 @@ def served_stylesheets(page: Scanned) -> tuple[list[str], str]:
             hrefs.append(href.group("href"))
     if not hrefs:
         return [], (
-            "the served page names no stylesheet, so the rule that keeps the card's prompt and "
+            "the served page names no stylesheet, so the rule that keeps the section's prompt and "
             "labels out of a copy was not reached; a page whose stylesheet cannot be read is not "
             "a page whose selection behaviour was checked"
         )
@@ -2874,7 +2874,7 @@ def served_stylesheets(page: Scanned) -> tuple[list[str], str]:
         if not href.startswith(BUILD_PREFIX):
             return [], (
                 f"the served page loads a stylesheet from {href!r}, which is not this "
-                f"checkout's own build under {BUILD_PREFIX}, so the rule that keeps the card's "
+                f"checkout's own build under {BUILD_PREFIX}, so the rule that keeps the section's "
                 "prompt and labels out of a copy is not the one this build produced"
             )
         # The page names the file with the build's own root-relative href, so what is opened is
@@ -2925,8 +2925,8 @@ def neutralised(sheets: list[str], class_name: str) -> bool:
 def prompt_classes(markup: str) -> list[list[str]]:
     """The class tokens of every element of `markup` whose whole visible text is the `$ ` prompt.
 
-    Read out of the card's own markup rather than off a class name of this file's choosing, so a
-    card that renames the prompt and its rule together still passes: what is required is that the
+    Read out of the section's own markup rather than off a class name of this file's choosing, so a
+    section that renames the prompt and its rule together still passes: what is required is that the
     rule the stylesheet carries names the element the page prints.
     """
     found: list[list[str]] = []
@@ -2939,9 +2939,9 @@ def prompt_classes(markup: str) -> list[list[str]]:
 
 
 def check_command_prompt_selection(pages: list[Scanned]) -> int:
-    """The card's `$ ` prompt and its labels, against the stylesheet the served page loads.
+    """The section's `$ ` prompt and its labels, against the stylesheet the served page loads.
 
-    The card prints each command under a `$ ` prompt, and the prompt is not part of the command:
+    The section prints each command under a `$ ` prompt, and the prompt is not part of the command:
     a triple-click takes the whole line, and a `$ ` pasted into a shell is `command not found` on
     the first clause of it. The labels above the blocks are the same kind of text with the same
     consequence, and a selection that reaches across two blocks takes both. What keeps them out
@@ -2953,8 +2953,8 @@ def check_command_prompt_selection(pages: list[Scanned]) -> int:
     A command line whose visible text begins with `$` but which carries no prompt element is the
     same defect written into the command's own text, and fails here.
 
-    Returns 0 when every prompt and label the card prints is out of the selection, 1 when one is
-    in it, and 2 when the check cannot reach what it has to read: a card that prints no prompt
+    Returns 0 when every prompt and label the section prints is out of the selection, 1 when one is
+    in it, and 2 when the check cannot reach what it has to read: a section that prints no prompt
     element at all, or a stylesheet this checkout's build does not carry.
     """
     root = root_of_this_checkout()
@@ -2974,7 +2974,7 @@ def check_command_prompt_selection(pages: list[Scanned]) -> int:
             return 2
         chrome: list[tuple[str, list[str]]] = []
         for markup in markups:
-            for line in RUN_CARD_LINE.finditer(markup):
+            for line in RUN_BLOCK_LINE.finditer(markup):
                 inner = line.group("line")
                 prompts = prompt_classes(inner)
                 if not prompts and normalise(inner)[0].startswith("$"):
@@ -2986,8 +2986,8 @@ def check_command_prompt_selection(pages: list[Scanned]) -> int:
                     chrome.append(("a `$ ` prompt", tokens))
         if not any(what == "a `$ ` prompt" for what, _tokens in chrome):
             promptless.append(where)
-        for label in classed_elements(page.raw, RUN_CARD_LABEL_CLASS):
-            chrome.append((f"the label {normalise(label)[0].strip()!r}", [RUN_CARD_LABEL_CLASS]))
+        for label in classed_elements(page.raw, RUN_BLOCK_LABEL_CLASS):
+            chrome.append((f"the label {normalise(label)[0].strip()!r}", [RUN_BLOCK_LABEL_CLASS]))
         for what, tokens in chrome:
             if not tokens:
                 problems.append(
@@ -3004,28 +3004,28 @@ def check_command_prompt_selection(pages: list[Scanned]) -> int:
         for where, problems in failures:
             for problem in problems:
                 print(
-                    f"check-claims: the Run card at {where} {problem}; a `$ ` or a label "
+                    f"check-claims: the Run section at {where} {problem}; a `$ ` or a label "
                     "pasted into a shell is a command that does not exist",
                     file=sys.stderr,
                 )
         return 1
     if promptless:
         print(
-            f"check-claims: the Run card at {', '.join(promptless)} prints no prompt element, "
-            "and the card's design prints a `$ ` in front of each block; a pin that reaches no "
+            f"check-claims: the Run section at {', '.join(promptless)} prints no prompt element, "
+            "and the section's design prints a `$ ` in front of each block; a pin that reaches no "
             "prompt is not checking one",
             file=sys.stderr,
         )
         return 2
     if not reached:
         print(
-            f"check-claims: none of {len(pages)} scanned file(s) carries the Run card's "
+            f"check-claims: none of {len(pages)} scanned file(s) carries the Run section's "
             "command block, so no prompt or label of it was read",
             file=sys.stderr,
         )
         return 2
     print(
-        "check-claims: every `$ ` prompt and label the Run card prints is named by a rule in "
+        "check-claims: every `$ ` prompt and label the Run section prints is named by a rule in "
         "the stylesheet the served page loads that takes it out of a selection, so a reader's "
         "copy of the command does not carry the prompt or the labels"
     )
@@ -4285,48 +4285,48 @@ def fixture_failure(what: str, problems: list[str], expected: str) -> str:
     """
     if expected and not any(expected in problem for problem in problems):
         return (
-            f"the Run card fixture {what!r} is the defect {expected!r} names and is not reported "
+            f"the Run section fixture {what!r} is the defect {expected!r} names and is not reported "
             "as one; a rule that stops matching the shape it was written for passes everything"
         )
     if not expected and problems:
         return (
-            f"the Run card fixture {what!r} is a correct command and is reported as "
+            f"the Run section fixture {what!r} is a correct command and is reported as "
             f"{'; '.join(problems)}, so the rule that reads it fails a page that is right"
         )
     return ""
 
 
-def reddened_run_card_fixtures() -> list[str]:
-    """The Run card fixtures the rules as they now stand report, by name."""
+def reddened_run_fixtures() -> list[str]:
+    """The Run section fixtures the rules as they now stand report, by name."""
     reddened: list[str] = []
-    for what, shape, expected in RUN_CARD_FIXTURES:
+    for what, shape, expected in RUN_FIXTURES:
         if shape is None:
             continue
-        problems = run_card_problems([[line] for line in shape])
+        problems = run_section_problems([[line] for line in shape])
         if fixture_failure(what, problems, expected):
             reddened.append(what)
     return reddened
 
 
-def reddened_run_card_address_fixtures() -> list[str]:
-    """The Run card address fixtures the rules as they now stand report, by name."""
+def reddened_run_address_fixtures() -> list[str]:
+    """The Run section address fixtures the rules as they now stand report, by name."""
     reddened: list[str] = []
-    for what, opened_at, shape, expected in RUN_CARD_OPENED_AT_FIXTURES:
+    for what, opened_at, shape, expected in RUN_OPENED_AT_FIXTURES:
         if shape is None:
             continue
-        problems = run_card_opened_at_problems(opened_at, [[line] for line in shape])
+        problems = run_section_opened_at_problems(opened_at, [[line] for line in shape])
         if fixture_failure(what, problems, expected):
             reddened.append(what)
     return reddened
 
 
-def run_card_reading_problems() -> list[str]:
-    """Every reading the card's rules do, against the fixture that has to hold it.
+def run_section_reading_problems() -> list[str]:
+    """Every reading the section's rules do, against the fixture that has to hold it.
 
     A fixture holds a rule when it pins the fragment the rule emits; it holds a *reading* when
     swapping that reading for the weaker one a later edit would leave in its place turns a fixture
-    red, and those are two different things. Six of the card's comparisons were reported as covered
-    and were not, and the four left are the ones that survived the card losing its clearing, its
+    red, and those are two different things. Six of the section's comparisons were reported as covered
+    and were not, and the four left are the ones that survived the section losing its clearing, its
     network check and its teardown. Each is still the shape that failure had: the published host
     port is one — every mapping a fixture carries is `8080:8080`, where the field before the last
     colon and the one after it are one number, so reading the container port would answer for the
@@ -4342,10 +4342,10 @@ def run_card_reading_problems() -> list[str]:
     two readings apart at, and a place whose difference never reaches a rule's answer.
     """
     problems: list[str] = []
-    for site in RUN_CARD_READINGS:
+    for site in RUN_READINGS:
         swapped_readings.add(site)
         try:
-            reddened = reddened_run_card_fixtures()
+            reddened = reddened_run_fixtures()
         finally:
             swapped_readings.discard(site)
         if reddened:
@@ -4358,27 +4358,27 @@ def run_card_reading_problems() -> list[str]:
         elif site not in readings_disagreed:
             problems.append(
                 f"the name reading {site!r} can be replaced with a `\\b{{name}}\\b` search with "
-                "every Run card fixture still green, and no fixture reaches a clause there where "
+                "every Run section fixture still green, and no fixture reaches a clause there where "
                 "the two readings differ: a reading no fixture tells apart is a reading nothing "
                 "holds"
             )
         else:
             problems.append(
                 f"the name reading {site!r} can be replaced with a `\\b{{name}}\\b` search with "
-                "every Run card fixture still green although a fixture reads a name there the two "
+                "every Run section fixture still green although a fixture reads a name there the two "
                 "readings differ on: the difference never reaches a rule's answer"
             )
 
     global published_port_reading
     published_port_reading = container_port_of_mapping
     try:
-        reddened = reddened_run_card_address_fixtures()
+        reddened = reddened_run_address_fixtures()
     finally:
         published_port_reading = host_port_of_mapping
     if not reddened:
         problems.append(
             "the published host port can be read as the mapping's container port with every Run "
-            "card address fixture still green: no fixture publishes the host port and the "
+            "section address fixture still green: no fixture publishes the host port and the "
             "container port as two different numbers"
         )
     return problems
@@ -4393,7 +4393,7 @@ MINTED_FIELD = "ParsedName"
 # The entries the scan walks out from, and the values it walks out from beside them. What these
 # reach is what the scan reads, so a function the rules call is a function the scan covers — and so
 # is one the rules reach through a table or a variable rather than by calling it.
-RULE_ENTRY_POINTS = ("run_card_problems", "run_card_opened_at_problems")
+RULE_ENTRY_POINTS = ("run_section_problems", "run_section_opened_at_problems")
 
 
 def called_names(node: ast.AST) -> set[str]:
@@ -4409,14 +4409,14 @@ def named_function_values(tree: ast.Module, functions: dict[str, ast.FunctionDef
     """Every function of this file a module-level value of it *is*, rather than a call it is in.
 
     `called_names` follows a bare call, and the rules do not reach every function that way: the four
-    places a name is compared sit in `RUN_CARD_READINGS` and are called through the table, and the
+    places a name is compared sit in `RUN_READINGS` and are called through the table, and the
     mapping reading the fixture harness swaps sits in a variable, so `the_same_name`, its weakened
     twin and the published-port reading were never walked — and a weakened reading written
     *inside* one of them was outside the reach the prose claimed. What is read is a value that is
     one of these functions, or a collection of
     them: the table and the variable, and not a function handed to another call.
     `first_page_stating(pages, RELAY_DISCLOSURE, disclosure_region)` names one too, and that one
-    reads the page's image reference rather than a name out of the card.
+    reads the page's image reference rather than a name out of the section.
     """
     named: set[str] = set()
     for node in tree.body:
@@ -4655,14 +4655,14 @@ def kept_field_matches(function: ast.FunctionDef) -> list[ast.Call]:
 
 
 def unseamed_field_problems() -> list[str]:
-    """Every read of a name or a reference the card's rules reach that does not mint a `ParsedName`.
+    """Every read of a name or a reference the section's rules reach that does not mint a `ParsedName`.
 
     `ParsedName` refuses a comparison written outside the seam, and a value that never became one is
     a comparison it cannot see: the name the rule that reports a container off its network compared
     was `attached.group("name")`, the text the pattern matched, so the `!=` beside `docker network
     create selvage` answered for `--network selvage-net`. What closed that was the name arriving as
     a `ParsedName`; this is the other half, and it is what makes the closure stick rather than hold
-    until the next edit. It walks this file's own syntax tree, out from the functions the card's
+    until the next edit. It walks this file's own syntax tree, out from the functions the section's
     rules are built from and out from the function values those rules reach through a table or a
     variable, and fails on two shapes:
 
@@ -4676,7 +4676,7 @@ def unseamed_field_problems() -> list[str]:
     no name and is not one of these shapes.
 
     What it does not see: a function the rules do not reach (`check_published_image` compares the
-    references the whole page carries, and that is not one of the card's rules), a name read with a
+    references the whole page carries, and that is not one of the section's rules), a name read with a
     pattern of the rule's own rather than one of those three, a function that mints a `ParsedName`
     and keeps a match of one of those patterns without a `.group(…)` read off it, and a comparison
     of the text a `ParsedName` was read from — that value is a `str` and carries no record of where
@@ -4692,14 +4692,14 @@ def unseamed_field_problems() -> list[str]:
     for root in sorted(roots):
         if root not in functions:
             problems.append(
-                f"the scan's root {root!r} is not a function of this file, so what the card's "
+                f"the scan's root {root!r} is not a function of this file, so what the section's "
                 "rules are built from is not what this reads"
             )
     reached = reached_functions(roots, functions)
     # A pin must reach what it claims to cover, and this half of the scan claims the functions the
     # rules reach: a reading the table names but the walk does not is one a weakened edit inside it
     # is invisible in, which is what the table-shaped readings were.
-    for place, readings in RUN_CARD_READINGS.items():
+    for place, readings in RUN_READINGS.items():
         for reading in readings:
             if reading.__name__ not in reached:
                 problems.append(
@@ -4740,7 +4740,7 @@ def unseamed_field_problems() -> list[str]:
             )
     if not readers:
         problems.append(
-            "the scan reached no function of the card's rules that reads a name or a reference "
+            "the scan reached no function of the section's rules that reads a name or a reference "
             "out of a command, so it is checking nothing"
         )
     return problems
@@ -4781,29 +4781,29 @@ def scan(targets: list[str]) -> int:
                 return 2
         compiled.append((phrase, pattern, permits, voiding))
 
-    for what, shape, expected in RUN_CARD_FIXTURES:
+    for what, shape, expected in RUN_FIXTURES:
         if shape is None:
             print(
-                f"check-claims: the Run card fixture {what!r} does not apply to the shape it "
+                f"check-claims: the Run section fixture {what!r} does not apply to the shape it "
                 f"names, so it is not reading what it says it is",
                 file=sys.stderr,
             )
             return 2
-        failure = fixture_failure(what, run_card_problems([[line] for line in shape]), expected)
+        failure = fixture_failure(what, run_section_problems([[line] for line in shape]), expected)
         if failure:
             print(f"check-claims: {failure}", file=sys.stderr)
             return 2
 
-    for what, opened_at, shape, expected in RUN_CARD_OPENED_AT_FIXTURES:
+    for what, opened_at, shape, expected in RUN_OPENED_AT_FIXTURES:
         if shape is None:
             print(
-                f"check-claims: the Run card address fixture {what!r} does not apply to the "
+                f"check-claims: the Run section address fixture {what!r} does not apply to the "
                 "blocks it names, so it is not reading what it says it is",
                 file=sys.stderr,
             )
             return 2
         failure = fixture_failure(
-            what, run_card_opened_at_problems(opened_at, [[line] for line in shape]), expected
+            what, run_section_opened_at_problems(opened_at, [[line] for line in shape]), expected
         )
         if failure:
             print(f"check-claims: {failure}", file=sys.stderr)
@@ -4812,7 +4812,7 @@ def scan(targets: list[str]) -> int:
     # The fixtures above say the rules read the right commands; this says they read them the right
     # way, which is the half that was missing: a reading can be swapped for a weaker one with every
     # fixture still green, and then the fixtures hold a rule and not the reading inside it.
-    reading_problems = run_card_reading_problems() + unseamed_field_problems() + seam_problems()
+    reading_problems = run_section_reading_problems() + unseamed_field_problems() + seam_problems()
     if reading_problems:
         for problem in reading_problems:
             print(f"check-claims: {problem}", file=sys.stderr)
@@ -4868,8 +4868,8 @@ def scan(targets: list[str]) -> int:
         check_hosted_tier,
         check_repository_grid,
         check_published_image,
-        check_run_card_command,
-        check_run_card_address,
+        check_run_section_command,
+        check_run_section_address,
         check_command_prompt_selection,
         check_demo_instance,
         check_wire_binding,
