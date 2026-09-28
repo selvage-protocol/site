@@ -427,6 +427,37 @@ RUN_CARD_FIXTURES: tuple[tuple[str, tuple[str, ...] | None, str], ...] = (
         ),
         "gives no other container the name 'server'",
     ),
+    # The empty name is what both readings answer when there is nothing to read, and two of those
+    # compared equal: the address `http://:8080` names no host and a run given no `--name` names no
+    # container, so this page passed a rule whose whole question is whether the address reaches a
+    # container. Each half is fixtured, and the two together are the shape that passed.
+    (
+        "an address that names no host",
+        run_card_fixture(
+            (0, "SELVAGE_SERVER=http://server:8080", "SELVAGE_SERVER=http://:8080")
+        ),
+        "names no host in it",
+    ),
+    (
+        "an address in the bare form that names no host",
+        run_card_fixture(
+            (0, "SELVAGE_SERVER=http://server:8080", "SELVAGE_SERVER=:8080")
+        ),
+        "gives no other container the name ':8080'",
+    ),
+    (
+        "an address that names no host beside a run that gives its container no name",
+        run_card_fixture(
+            (0, "--name server --network room", "--network room"),
+            (0, "SELVAGE_SERVER=http://server:8080", "SELVAGE_SERVER=http://:8080"),
+        ),
+        "names no host in it",
+    ),
+    (
+        "an address that names a container no run is named",
+        run_card_fixture((0, "--name server --network room", "--network room")),
+        "gives no other container the name 'server'",
+    ),
     (
         "an address on a container that publishes no port",
         run_card_fixture((0, " -p 127.0.0.1:8080:8080", "")),
@@ -2313,6 +2344,19 @@ def the_same_name_as_a_search(one: str, other: str) -> bool:
     return one in other or other in one
 
 
+def names_something(name: ParsedName) -> bool:
+    """Whether a name read out of the card names anything at all.
+
+    The empty name is what a reading answers when there was nothing to read: a run that gives its
+    container no name, an address whose host is missing. Two of those are not two names that are
+    the same, and a rule that read them as one passed a card whose page container is pointed at
+    `http://:8080` beside a server run it gives no name to — a pair that relays to nothing, read
+    as satisfied by the very emptiness that is the defect. So the rule that compares a host against
+    the containers the command names asks this of both, and an empty name is never evidence.
+    """
+    return str.__len__(name) > 0
+
+
 # `(the reading the place does, the search it must not be)`.
 RUN_CARD_READINGS: dict[str, tuple[Callable[[str, str], bool], Callable[[str, str], bool]]] = {
     READING_RUN_CLEARING: (names_the_word, names_the_word_as_a_search),
@@ -2389,7 +2433,9 @@ def server_address_host(address: str) -> ParsedName:
     `http://selvaged:8080` is a URL and is read as one. A bare `selvaged:8080` is not: as a URL
     its scheme is `selvaged`, which has no host at all, so the bare form — the one
     `web_client`'s README documents and `reference_server`'s README uses — is read as a host and
-    an optional port instead. Answering '' for what names no host is what the caller fails on.
+    an optional port instead. An address that names no host answers '' here, and '' names nothing:
+    the rule that compares this against the containers the command names fails on it, because
+    `names_something` says an empty name is not a host any container can be.
 
     The parameter is the address as text, and the host is the one thing read out of it that is a
     name: a rule compares that against the names the command gives its containers, and it is read
@@ -2534,7 +2580,10 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
     container is given is read as two claims about the other containers: some run has to give
     that host a name on the network the two are attached to, and the run carrying the address has
     to be the one that publishes the port a reader opens, or the page asks for a server nothing
-    answers for. The address is also read against the two references the page publishes: the run a
+    answers for. Neither side of that first claim may be the empty name — an address whose host is
+    empty names no container, a run given no `--name` names none — because the two of those are
+    equal and a card that relays to nothing would read as satisfied. The address is also read
+    against the two references the page publishes: the run a
     reader opens carries the page image and the run beside it the server's, so the two swapped is a
     reader sent to the server's port for a page, and the server's run publishes nothing, because a
     port there collides with the page's own.
@@ -2655,12 +2704,25 @@ def run_card_problems(blocks: list[list[str]]) -> list[str]:
             continue
         addressed += 1
         host = server_address_host(address)
+        # A name that names nothing is not a name: `http://:8080` gives the page container no host
+        # and a run given no `--name` gives it no container, and the two compared equal, so this
+        # rule read a card whose page relays to nothing as satisfied. Both sides are asked here
+        # rather than leaving it to the reading, because `reads_the_name` is the place a fixture
+        # harness swaps for a weaker one, and a weaker reading is what `''` slips through.
         elsewhere = [
             one
             for one, _network, other in started
-            if reads_the_name(READING_ADDRESSED_CONTAINER, one, host) and other != clause
+            if names_something(one)
+            and names_something(host)
+            and reads_the_name(READING_ADDRESSED_CONTAINER, one, host)
+            and other != clause
         ]
-        if not elsewhere:
+        if not names_something(host):
+            problems.append(
+                f"points a container at {address} and names no host in it, so that address "
+                "reaches nothing"
+            )
+        elif not elsewhere:
             problems.append(
                 f"points a container at {address} and gives no other container "
                 f"the name {host!r}, so that address reaches nothing"
