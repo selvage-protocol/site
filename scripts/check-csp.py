@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Fails the tree when the policy in vercel.json would refuse something the page serves.
 
-This is the defect it exists for: `default-src 'none'` with no `script-src` makes the page's
-own seven chunks and its inline bootstrap fall back to `'none'`, so the browser loads the HTML
-and nothing else — the page never hydrates, and anything client-side (the header's hide-on-
-scroll) silently does nothing while the accessibility floor reads as if it works. A policy that
-blocks the page it ships with is not a strict policy, it is a broken one, and nothing in the gate
-noticed. `docs/content-security-policy.md` writes this out.
+The policy has to permit what the page serves: `default-src 'none'` with no `script-src` makes
+the page's own seven chunks and its inline bootstrap fall back to `'none'`, so the browser loads
+the HTML and nothing else — the page never hydrates, and anything client-side (the header's
+hide-on-scroll) silently does nothing while the accessibility floor reads as if it works. A
+policy that blocks the page it ships with is not a strict policy, it is a broken one.
+`docs/content-security-policy.md` writes this out.
 
 So: the CSP is read from `vercel.json` (the file Vercel applies, not a copy of it), the page is
 read from the served HTML, and every subresource the page carries is decided against the
@@ -429,8 +429,8 @@ def self_test() -> str | None:
     """Every verdict this checker can reach, on a fixture that has to reach it.
 
     A checker whose fixtures stopped behaving reports a clean page: this is the same discipline
-    the claim filter keeps, and the reason the regressed policy is here — the defect this file
-    was written for stays reachable, so the check cannot quietly become blind to it.
+    the claim filter keeps, and the reason the regressed policy is here: it stays reachable, so
+    the check cannot quietly become blind to it.
     """
     body = 'self.__next_f.push([1,"x"])'
     digest = base64.b64encode(hashlib.sha256(body.encode()).digest()).decode()

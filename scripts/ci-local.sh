@@ -29,21 +29,22 @@
 # it cannot be checked. A filter, not a proof: see scripts/check-claims.py.
 #
 # The CSP step reads the same rendered HTML and the policy out of `vercel.json`, and fails when
-# the policy would refuse a script, stylesheet, image or font the page carries. That is the defect
-# it was written for: `default-src 'none'` with no `script-src` blocked the page's own chunks and
-# its inline bootstrap, so it never hydrated. A font fetch falls back to `default-src` the same way,
+# the policy would refuse a script, stylesheet, image or font the page carries. A policy that
+# blocks the page it ships with is a broken one, not a strict one: with no `script-src` the page's
+# own chunks and its inline bootstrap fall back to `'none'` and it never hydrates. A font fetch
+# falls back to `default-src` the same way,
 # and the page serves its own glyph files, so `font-src` is modelled too. See scripts/check-csp.py.
 # It reads the not-found route too: the framework's own 404 markup carries a `<style>` element and
 # four style attributes, which this policy refuses, and a scan that only ever saw `/` did not know.
 #
 # The weight step reads the same rendered HTML and the bytes on disk: every image the page body
-# fetches out of `public/` is within its budget and declares its own pixel size. The mark was
-# served as the 800×800 master — a quarter of everything the page transferred — to a surface it
-# paints at 32 px. See scripts/check-weight.py.
+# fetches out of `public/` is within its budget and declares its own pixel size. The mark lands
+# on a surface it paints at 32 px, so the budget is a ceiling on what that surface may cost. See
+# scripts/check-weight.py.
 #
 # The mark step re-derives the nav derivative from the master and compares it with the committed
-# file, so a derivative nobody can reproduce — the defect `scripts/make-mark.py` was written for —
-# fails here. It reads pixels rather than bytes: a zlib release may compress the same raster
+# file, so a derivative nobody can reproduce fails here. It reads pixels rather than bytes: a zlib
+# release may compress the same raster
 # differently, and the raster is the claim. See scripts/make-mark.py.
 set -euo pipefail
 
