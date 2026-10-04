@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Fails the tree when the page serves an image heavier or larger than the surface it paints.
 
-The defect this exists for: the body mark is painted at 32 CSS px in the nav header, and it was
-served as the owner's 800×800 master — 60,595 bytes, a quarter of everything the page transfers,
-for a 20×9 px monogram. A browser resamples it silently, so nothing said so.
+The body mark is painted at 32 CSS px in the nav header, and the surface it lands on decides its
+budget: a browser resamples a heavier file silently, so nothing on the page says so.
 
 Two rules, both decided from the served HTML and the bytes on disk, so both hold without a
 layout engine:
@@ -40,7 +39,7 @@ from html.parser import HTMLParser
 
 # A surface this page paints at 32 CSS px, so the largest reasonable derivative is a few
 # hundred bytes of pixels per side. 16 KiB is roughly 2.5× the 128 px derivative and a quarter
-# of the master it replaced: it fails on the master and leaves room for a denser mark.
+# of the 800 px master: it fails on the master and leaves room for a denser mark.
 BUDGET_BYTES = 16 * 1024
 
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"

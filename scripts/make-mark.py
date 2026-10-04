@@ -2,10 +2,8 @@
 """Derives `public/mark-header.png` from the owner's master, `public/mark-transparent.png`.
 
 The nav bar paints the monogram at 30 CSS px, so the page fetches a 128×128 derivative of
-the 800×800 master instead of the master itself (`scripts/check-weight.py` holds that). Until
-now nothing in the tree made that derivative: it was built once by hand with
-`magick -resize -gamma`, which left it impossible for anyone to reproduce or verify.
-This is the producer, and `--check` is the pin: the gate re-derives the file and fails when the
+the 800×800 master instead of the master itself (`scripts/check-weight.py` holds that). This
+script is the producer, and `--check` is the pin: the gate re-derives the file and fails when the
 committed pixels are not what the master produces.
 
 The arithmetic, in the order the file is built in:
@@ -55,8 +53,7 @@ SIZE = 128
 # `-gamma`, applied to the colour channels after the resize. It is 1.0 — the identity — because
 # nothing about the owner's artwork is to be changed to pass a check.
 #
-# The derivative used to be lifted to clear the 3.0:1 non-text floor `scripts/check-contrast.py`
-# asserted on it, and that floor does not apply: WCAG 1.4.11 asks for 3.0:1 from graphical
+# The 3.0:1 non-text floor does not apply to this mark: WCAG 1.4.11 asks for 3.0:1 from graphical
 # objects a reader needs to understand the content, which this decorative monogram — `alt=""`
 # beside the link's own `Selvage` label — is not, and the standard's logotype clause is SC
 # 1.4.3's rather than 1.4.11's. Unlevelled the derivative carries the owner's own tones: on the
@@ -71,9 +68,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 MASTER = os.path.join(HERE, "..", "public", "mark-transparent.png")
 DERIVATIVE = os.path.join(HERE, "..", "public", "mark-header.png")
 
-# The colour declaration the file this replaces carried, and the one it keeps: ImageMagick's
-# sRGB `gAMA` (1/2.2) and `cHRM`. Writing them again is what makes the new file a drop-in for the
-# old one rather than a file whose pixels a colour-managed browser may interpret differently.
+# The colour declaration this file carries: ImageMagick's sRGB `gAMA` (1/2.2) and `cHRM`.
+# Writing them is what makes the file a drop-in for a derivative ImageMagick produced rather than
+# one whose pixels a colour-managed browser may interpret differently.
 PNG_GAMMA = 45455
 PNG_CHRM = (31270, 32900, 64000, 33000, 30000, 60000, 15000, 6000)
 

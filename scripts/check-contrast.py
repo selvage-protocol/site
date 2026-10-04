@@ -10,8 +10,7 @@ boundary of the outline button the page renders, and the worst case of the
 translucent glass card over every stop of the hero figure's own ground. The text
 that is not a theme token — the window's line numbers, the card the page offers
 but cannot sell yet, the repository descriptions — is read out of the rule that
-paints it, so a pair cannot go on measuring a token the page stopped using there
-(which is what the line-number pair did). The button
+paints it, so a pair cannot go on measuring a token the page stopped using there. The button
 component's own variants are parsed out of `components/ui/button.tsx`: the `secondary`
 and `ghost` pairs are the primitive's, because the page renders neither, and the
 `outline` variant the page's second hero CTA does render is read for its boundary
@@ -548,8 +547,7 @@ def main() -> int:
         tok["mantle"],
     )
     # The peer badges' label is read off the rule that paints it rather than taken to be the
-    # page's own pair: the badge wore the page's background once and wears the palette's crust
-    # now, and a pair that assumed either would go on measuring the colour it replaced.
+    # page's own pair: reading the rule is what keeps the pair on the colour the badge wears.
     peer_label = text_colour(css, ".peer-badge")
     if peer_label is None:
         print(
@@ -718,10 +716,9 @@ def main() -> int:
     ):
         checks.append((f"code {token} on the code figure", colour, figure_ground, TEXT_MIN))
         checks.append((f"code {token} on the glass card", colour, worst_glass, TEXT_MIN))
-    # The page's line numbers are the ones in the room window, and its own rule paints them
-    # in a colour of their own: reading `muted` here measured a token the window does not use
-    # for them, which is the way this pair goes blind to a dimmed number. The ground is the
-    # window's, the glass over the figure's fill.
+    # The room window paints its line numbers in a colour of their own, so the pair is read from
+    # that rule rather than from `muted`: the ground is the window's, the glass over the figure's
+    # fill.
     room_num = text_colour(css, ".room-num")
     if room_num is None:
         print(

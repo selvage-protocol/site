@@ -3,13 +3,11 @@
 // silently depends on it.
 //
 // scripts/check-csp.py decides the policy against the page's markup in the gate, but a model
-// cannot see whether a browser enforces it the way the model assumes — and the defect this file
-// exists for was exactly that: `default-src 'none'` with no `script-src` refused all seven
-// chunks and all fifteen inline scripts, `window.__next_f` stayed undefined, the page never
-// hydrated, and SiteHeader's hide-on-scroll did nothing while the accessibility floor described it
-// working — `docs/content-security-policy.md` writes this out. Nothing in the gate noticed, because
-// nothing ran a browser. A refused font is the same defect
-// with a quieter failure: the model decides `font-src` against the preloads the page carries, and
+// cannot see whether a browser enforces it the way the model assumes: a policy that refuses the
+// page's chunks and its inline bootstrap leaves `window.__next_f` undefined, so the page never
+// hydrates and SiteHeader's hide-on-scroll does nothing while the accessibility floor describes
+// it working (`docs/content-security-policy.md` writes this out). A refused font fails more
+// quietly: the model decides `font-src` against the preloads the page carries, and
 // only a run like this one can say the glyph files came back rather than the fallback stack.
 //
 // So this runs one. It serves the built page through a proxy that applies the `headers` block
@@ -33,8 +31,8 @@
 //   6. the document response carries no `X-Powered-By` (next.config.ts's `poweredByHeader`);
 //   7. a request for a path no route claims, which is the other page this policy covers, carries
 //      zero violations too. The framework's own 404 document carries a `<style>` element and four
-//      `style` attributes and `style-src 'self'` refuses all five, so this route is where the
-//      policy was refusing the site: `app/not-found.tsx` is styled from `style.css` instead.
+//      `style` attributes and `style-src 'self'` refuses all five, which is why this route has to
+//      be checked too: `app/not-found.tsx` is styled from `style.css` instead.
 //
 // It needs a Chromium and so is not in the workflow; `scripts/ci-local.sh` is what CI runs.
 // Every wait is a bounded poll for the state being waited for, so a page that never hydrates

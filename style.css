@@ -764,8 +764,8 @@ section[id],
   height: 18px;
 }
 
-/* The card's two actions: the run a reader pastes, and the teardown that ends it. Each is
-   captioned and in a block of its own, so selecting one does not take the other with it. */
+/* The Run section's command groups: each is one command a reader pastes, captioned and in a block
+   of its own, so selecting one does not take the other with it. */
 .command-group {
   display: flex;
   flex-direction: column;
@@ -776,8 +776,8 @@ section[id],
   margin: 0;
   color: var(--muted);
   font-size: 12px;
-  /* A drag from one block to the other takes the labels with it, and `Run both containers`
-     pasted into a shell is a command not found before the lines that matter. */
+  /* A drag from one block to the other takes the labels with it, and a label pasted into a shell
+     is a command not found before the lines that matter. */
   user-select: none;
 }
 

@@ -109,9 +109,8 @@ DASHES = re.compile("[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]")
 #
 # The registry half is the one that reaches the artefact, and it holds the distinction that
 # matters: a platform entry in an image index proves only that a slot is *labelled* arm64.
-# `selvaged:0.1.1` published one, and both its legs carried the amd64 binary — every layer
-# digest identical across the two per-platform manifests, the same defect `0.1.0` carries. The check
-# compares those digests and fails when they are the same set, which is what a mislabelled leg
+# The check compares the layer digests of the two per-platform manifests and fails when they are
+# the same set, which is what a mislabelled leg
 # looks like, and it pulls them with no credential in the request, because no account is the
 # point of the command the page hands over. It runs per package, so the page half of the command
 # is held to the same proof as the server half.
@@ -162,10 +161,6 @@ REQUEST_TIMEOUT_SECONDS = 20
 # the reference the project publishes for it, the page image on the run the address is given to and
 # the server's on the other, and the server's run publishes nothing, because the page's own `-p`
 # would collide with it and the page would never start.
-#
-# What was removed here is what the section no longer does: it does not clear container names, does not
-# look a network up before creating it, prints no teardown, and makes no promise about a second
-# paste. The rules for those were removed with the section rather than left to fail.
 RUN_BLOCK_CLASS = "command"
 # The section's printed blocks, in the order the page puts them: one command each, so a reader who
 # selects one does not take the next with it. The class is matched
@@ -601,15 +596,13 @@ WIRE_VERSION = re.compile(r"\bselvage/\d+\b")
 # host that has moved, a box that is down, or a box that answers only part of that is a false
 # sentence, and no phrase list can enumerate those.
 #
-# What is deliberately no longer asserted is which release the box runs. The page named one and
-# the check compared it; the page stopped naming it, because a visitor has no use for the version
-# of an endpoint they will never call. `PUBLISHED_IMAGE_TAG` is still asserted, against the
-# registry, as the tag the `docker run` hands a reader.
+# `PUBLISHED_IMAGE_TAG` is asserted against the registry, as the tag the `docker run` hands a
+# reader.
 DEMO_HOST = "selvage-demo.dontblameme.dev"
 DEMO_ORIGIN = "https://" + DEMO_HOST
-# Every reference the page may carry to that host: the instance's own origin. The `/terms` page the
-# instance served is gone, so a link to it would 404 for a reader; the origin is the only address on
-# that host the page may hand a reader. The session address is the origin as well, with no path. The
+# Every reference the page may carry to that host: the instance's own origin. It is the only
+# address on that host the page may hand a reader. The session address is the origin as well, with
+# no path. The
 # clients append the endpoint path themselves (`sessionUrl` in the engines both clients vendor), so
 # the two forms are not interchangeable: an address already carrying the path gets a second one
 # appended and the socket is refused, which is why the full form is not an allowed reference.
@@ -640,10 +633,9 @@ HOST_CARD = re.compile(r'id="host-wrap"')
 # Two of the four are phrased as the panel's own statement rather than as a bare subject and verb,
 # because the page states those two a second time in *The session layer is written down*: "Which
 # rooms exist, who is in one, ...", which is a sentence about what every collaborative tool
-# decides for itself and not a statement of relay visibility at all. Loosely matched, that
-# paragraph would supply existence and membership for a page whose statement had been deleted, and
-# a rewrite that dropped the two facts while keeping "their names" and "sizes and timing" would
-# pass with them gone. `who is in it` is the panel's wording and `who is in one` is the donor's;
+# decides for itself and not a statement of relay visibility at all. A loose pattern would let
+# that paragraph stand in for the panel's statement, so the two are read as the panel's wording:
+# `who is in it` is the panel's wording and `who is in one` is the donor's;
 # the existence fact is the heading's "still see" with the chip's clause after it, not the bare
 # "rooms exist" the donor paragraph writes.
 RELAY_DISCLOSURE = (
@@ -744,12 +736,9 @@ USER_AGENT = "selvage-site-check/1.0"
 # and the two registries are the two publish steps in that repository's `release.yml`; the page
 # hands a reader an install, so these are facts with artefacts behind them rather than wordings.
 #
-# The entry this replaces forbade the words "marketplace", "open vsx" and "gallery" outright,
-# because publishing the extension was a non-goal (`DESIGN.md` §11: "marketplace publication
-# until it works with a friend"). The owner retired that non-goal and the extension is published
-# on both registries, so the rule runs the other way now: naming the two is required, and what is
-# forbidden is a registry the project does not publish to — or "the extension gallery" without
-# naming one, which is a channel the page cannot point at.
+# Naming the two registries is required, and what is forbidden is a registry the project does not
+# publish to — or "the extension gallery" without naming one, which is a channel the page cannot
+# point at.
 PUBLISHED_EXTENSION = "selvage-protocol.selvage"
 PUBLISHED_REGISTRIES = (
     (
@@ -762,9 +751,8 @@ PUBLISHED_REGISTRIES = (
 # own link check reaches every URL it carries, and the Marketplace's listing URL answers 404
 # until the release that publishes the extension has run, so requiring one here would redden the
 # gate for a release that has not been dispatched. What is checked is the other direction — a
-# page that links a listing has to link one of these two, so a link to the retired
-# `selvage-protocol.selvage-client`, which still exists on the Marketplace, fails on the
-# destination rather than on the label.
+# page that links a listing has to link one of these two, so a listing that is not one of them
+# fails on the destination rather than on the label.
 EXTENSION_LISTINGS = (
     "https://marketplace.visualstudio.com/items?itemName=" + PUBLISHED_EXTENSION,
     "https://open-vsx.org/extension/" + PUBLISHED_EXTENSION.replace(".", "/"),
@@ -836,7 +824,7 @@ WIRE_OF_DEMO = re.compile(
 # How a page says the sealing is not what a reader can obtain yet. There is no version to say it of:
 # the protocol has one wire version and the published tag speaks it, so the sentence is false — it
 # tells a guest their room is plaintext when it is not. `check_wire_binding` forbids it rather than
-# requiring it, which is the direction it had while a version was still unpublished.
+# requiring it.
 WIRE_UNRELEASED = re.compile(
     r"\bnot in a published release\b|\bno published release\b"
     r"|\bnot (?:yet )?(?:published|released|shipped)\b",
@@ -995,10 +983,9 @@ FORBIDDEN: list[Phrase] = [
         # say a room can be started from a page. What survives is what is still false: hosting in
         # a browser the reader may not be holding (Firefox and Safari have no directory picker,
         # so they join and cannot host, which is the claim the unqualified "host a session in the
-        # browser" makes); joining without the invite link a host copies; the stale denial that
-        # nothing runs in a page, which the page once carried; and the claim that the project's
-        # own landing page is a place to join a room, the route-shaped overclaim left now that a
-        # real route exists.
+        # browser" makes); joining without the invite link a host copies; the denial that nothing
+        # runs in a page; and the claim that the project's own landing page is a place to join a
+        # room.
         r"\bnothing runs? in a (?:web page|tab|browser)\b"
         r"|no clients? (?:to|that|which)? ?(?:runs?|open)\w* in a (?:web page|tab|browser)"
         r"|\b(?:host|start|create|mint)\w*\s+(?:a|the|your)\s+(?:room|session)\s+"
@@ -1046,19 +1033,12 @@ FORBIDDEN: list[Phrase] = [
         "cannot create, rename or delete a file in it",
     ),
     Phrase(
-        # This entry used to forbid the word `docker`, on the reason that no Dockerfile, compose
-        # file or service unit existed. All three exist today, so those wordings are truth and
-        # the pattern was enforcing the opposite of it. What it holds now is the denial those
-        # artefacts refute, which is the sentence the page carried until this was corrected:
-        # `reference_server/Dockerfile` builds the anonymously pullable
-        # `ghcr.io/selvage-protocol/selvaged:latest`, `web_client/Dockerfile` builds
-        # `ghcr.io/selvage-protocol/selvage-web:latest`, `reference_server/compose.yaml` runs
-        # the server, and the systemd unit the repositories carry is
-        # `reference_server/deploy/selvage-update.service`, which the demo box installs to
-        # `/etc/systemd/system/` to pull and apply the images. The unit this comment used to
-        # cite, `packaging/systemd/selvaged.service`, went with `packaging/` when it became
-        # `deploy/`, and the denial of a systemd unit is false either way: the unit above is
-        # one.
+        # The denial the published artefacts refute: `reference_server/Dockerfile` builds the
+        # anonymously pullable `ghcr.io/selvage-protocol/selvaged:latest`, `web_client/Dockerfile`
+        # builds `ghcr.io/selvage-protocol/selvage-web:latest`, `reference_server/compose.yaml`
+        # runs the server, and `reference_server/deploy/selvage-update.service` is the systemd
+        # unit the demo box installs. A page saying none of that exists states the opposite of
+        # the truth.
         r"\bno (?:image|container) to pull\b|\bnothing to install on the server\b"
         r"|\bno compose (?:file|configuration)\b|\bno systemd (?:service|unit)\b",
         "there is no image to pull and no service unit to install in any repository yet",
@@ -1094,11 +1074,10 @@ FORBIDDEN: list[Phrase] = [
         "byte for byte with this one",
     ),
     Phrase(
-        # The direction that is false now. Publication used to be a non-goal and the page said as
-        # much (`DESIGN.md` §11); the owner retired that, and the extension is published under
-        # both registries, so the denial is what a rewrite would reach for and what this forbids.
-        # The registries themselves are the other half of the rule, in
-        # `check_published_extension`: this one only stops the page saying there are none.
+        # The extension is published under both registries, so the denial is what a rewrite would
+        # reach for and what this forbids. The registries themselves are the other half of the
+        # rule, in `check_published_extension`: this one only stops the page saying there are
+        # none.
         r"\bunpublished\b|\bnot (?:yet )?published\b|\bnothing published\b"
         r"|\bno published (?:extension|listin\w+|build)\b",
         "the extension is unpublished",
@@ -1323,8 +1302,7 @@ FORBIDDEN: list[Phrase] = [
     ),
     Phrase(
         # The project states nothing about how the instance may be used: the repository licences
-        # are the whole of it, and the non-commercial notice and `/terms` page the instance served
-        # were its own prose, retired on 2026-09-27. The licences are not a non-commercial one
+        # are the whole of it, and they are not a non-commercial one
         # either — the workspace and clients are MIT OR Apache-2.0, `crates/selvaged` is
         # FSL-1.1-MIT, and the specification's prose, schema and vectors are CC-BY-4.0 — so a
         # non-commercial term asserted of the software, or of the instance, claims a restriction
@@ -2052,8 +2030,7 @@ class ParsedName(str):
     has to be one the fixture harness can swap for the weaker reading a later edit would leave in
     its place: `selvage-net` is a different name from `selvage`, a `\b` search does not say so
     because a hyphen is one, and a comparison written around `reads_the_name` is one nothing swaps
-    and nothing notices — which is how the rule that reports a container off its network read as
-    satisfied while `--network selvage-net` stood beside `docker network create selvage`. That is
+    and nothing notices. That is
     what this class closes: the operators below answer inside the seam alone and name the line that
     wrote them otherwise, so a comparison written where no fixture can hold it fails the check
     rather than passing the page.
@@ -2417,8 +2394,7 @@ def container_port_of_mapping(mapping: str) -> int | None:
     Docker's last field is the container's port, and the guard above is left where it is: a mapping
     that names no host port is still read as naming none, and only the field the port comes out of
     moves. That is the shape a later hand reaches for — `fields[-1]` in place of `fields[-2]` — and
-    every mapping a fixture carried was `8080:8080`, where the two fields are one number, so it
-    answered for the host port with every fixture green. The fixture that refuses it is a mapping
+    the fixture that refuses it is a mapping
     whose two fields differ.
     """
     host_port, container_port = mapping_fields(mapping)[1:]
@@ -2803,8 +2779,7 @@ def check_run_section_command(pages: list[Scanned]) -> int:
 
     This host has no Docker, so this reads a shape and not a run, and it knows one way of writing
     each part of it: a command that is correct but spells one of them differently fails here, and
-    a broken one that keeps these words together passes it. That is the limit of the reading, and
-    it runs the other way from the one an earlier message here claimed.
+    a broken one that keeps these words together passes it. That is the limit of the reading.
     Returns 0 when a scanned page's section carries all of it, 1 when one part is missing, and 2
     when no scanned page carries the command blocks at all.
     """
@@ -3280,9 +3255,7 @@ def disclosure_region(page: Scanned) -> str:
     """The page from its own `docker run` on: the text the relay's disclosure is read from.
 
     The paragraph sits under the packed command because a reader can take the claim and the
-    command together, which is also what tells the paragraph apart from the hero. The hero used to
-    state the same four facts above the command: reading the whole page let a hero line satisfy a
-    check written to require the paragraph, and deleting the paragraph then passed. What is read is
+    command together, which is also what tells the paragraph apart from the hero. What is read is
     the page from its image's own reference onwards, so the hero cannot stand in for it —
     its chips name the same properties in a word each, and a hero line that states a fact in full
     would be the same defect again. Returns "" when the page carries no such reference, which the
@@ -3322,9 +3295,8 @@ def check_relay_disclosure(pages: list[Scanned]) -> int:
     rewritten panel that keeps them passes and one that drops a fact fails. Two of the four
     are read as the panel's own wording rather than as a bare subject and verb, because the page
     states the same two nouns a second time in *The session layer is written down*, about what
-    every collaborative tool decides for itself; matched loosely that paragraph supplied them for
-    a page whose statement had been deleted, and a rewrite that dropped those two while keeping
-    "their names" and "sizes and timing" passed with them gone. The region is the page from the
+    every collaborative tool decides for itself, so those two have to be read as the panel's own
+    wording. The region is the page from the
     `docker run` that pulls the page's image onwards: the panel's place under that command is
     part of the claim, the chips and the heading over them state the facts a line at a time, and a
     hero line above the command is not where a reader is owed them. Returns 0 when a
@@ -3477,8 +3449,8 @@ def check_published_extension(pages: list[Scanned]) -> int:
       offering the extension from somewhere else — "the extension gallery", the JetBrains or
       Eclipse marketplace, another editor's store — fails rather than passing on the two names
       it also carries;
-    - that any link the page does carry to a listing is one of the two, so a link to the retired
-      ID's listing fails on the destination rather than on the label.
+    - that any link the page does carry to a listing is one of the two, so a listing that is not
+      one of them fails on the destination rather than on the label.
 
     What it does not do is ask the galleries. A listing is the release's fact — the two publish
     steps in `vscode_client/.github/workflows/release.yml` are what produce it — and a query here
@@ -3562,8 +3534,8 @@ def check_published_extension(pages: list[Scanned]) -> int:
 # rewrite that keeps the fact passes and a card that drops it fails.
 #
 # The status is stated once, in either of two spellings: the pill says the tier is not available
-# yet and the row calls it planned. The pattern reads both rather than requiring both, because a
-# card that states the same fact twice is the redundancy this replaced; a card that states it
+# yet and the row calls it planned. The pattern reads both rather than requiring both; a card that
+# states it
 # neither way is the absent status the check still catches. The facts are read from the card's own
 # markup, not the page's text, so the same words elsewhere on the page — the grid's own plan wears
 # them — cannot stand in for the status the card owes.
@@ -4190,9 +4162,9 @@ def check_wire_binding(pages: list[Scanned]) -> int:
     """Which wire version the page says each artefact it hands a reader speaks.
 
     The page hands a reader one `docker run` and one instance address, there is one wire version,
-    and it is the sealed one. It no longer has to say which: what is read here is what it says
-    about the wire, and behind that the artefacts against each other, which is the fact the
-    sentence used to carry. The wire each reference speaks is read from `IMAGE_WIRE_BY_REFERENCE`,
+    and it is the sealed one. What is read here is what the page says about the wire, and behind
+    that the artefacts against each other. The wire each reference speaks is read from
+    `IMAGE_WIRE_BY_REFERENCE`,
     because no registry answers what wire a binary or a bundle speaks and a reference the map does
     not name has to declare its wire in the same wave; the instance's half is measured, from
     `/meta`, where no wording can forge it. A reference the instance does not offer, or a version
@@ -4326,9 +4298,8 @@ def run_section_reading_problems() -> list[str]:
 
     A fixture holds a rule when it pins the fragment the rule emits; it holds a *reading* when
     swapping that reading for the weaker one a later edit would leave in its place turns a fixture
-    red, and those are two different things. Six of the section's comparisons were reported as covered
-    and were not, and the four left are the ones that survived the section losing its clearing, its
-    network check and its teardown. Each is still the shape that failure had: the published host
+    red, and those are two different things. Each place is one a weaker reading would replace: the
+    published host
     port is one — every mapping a fixture carries is `8080:8080`, where the field before the last
     colon and the one after it are one number, so reading the container port would answer for the
     host port unless a fixture writes two different numbers; and the network a run attaches its
@@ -4411,9 +4382,8 @@ def named_function_values(tree: ast.Module, functions: dict[str, ast.FunctionDef
 
     `called_names` follows a bare call, and the rules do not reach every function that way: the four
     places a name is compared sit in `RUN_READINGS` and are called through the table, and the
-    mapping reading the fixture harness swaps sits in a variable, so `the_same_name`, its weakened
-    twin and the published-port reading were never walked — and a weakened reading written
-    *inside* one of them was outside the reach the prose claimed. What is read is a value that is
+    mapping reading the fixture harness swaps sits in a variable, so a function reachable only as
+    a value has to be walked as one. What is read is a value that is
     one of these functions, or a collection of
     them: the table and the variable, and not a function handed to another call.
     `first_page_stating(pages, RELAY_DISCLOSURE, disclosure_region)` names one too, and that one
@@ -4659,11 +4629,9 @@ def unseamed_field_problems() -> list[str]:
     """Every read of a name or a reference the section's rules reach that does not mint a `ParsedName`.
 
     `ParsedName` refuses a comparison written outside the seam, and a value that never became one is
-    a comparison it cannot see: the name the rule that reports a container off its network compared
-    was `attached.group("name")`, the text the pattern matched, so the `!=` beside `docker network
-    create selvage` answered for `--network selvage-net`. What closed that was the name arriving as
-    a `ParsedName`; this is the other half, and it is what makes the closure stick rather than hold
-    until the next edit. It walks this file's own syntax tree, out from the functions the section's
+    a comparison it cannot see. This is the half that checks the read itself, and it is what makes
+    the closure stick rather than hold until the next edit. It walks this file's own syntax tree,
+    out from the functions the section's
     rules are built from and out from the function values those rules reach through a table or a
     variable, and fails on two shapes:
 
