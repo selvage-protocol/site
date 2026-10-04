@@ -15,7 +15,8 @@ images the section's commands name, which of the two runs carries which, the dem
 wire version those artefacts speak, two disclosures (what the relay still sees, and the terms
 `selvaged` is under), the file the corpus counts are pinned in, the identity the extension is
 published under with the two registries it is on, that the hosted tier the page offers is not
-available yet, and the word beside each repository in the grid — described just below. **It is a
+available yet, the word beside each repository in the grid, and the JetBrains plugin's listing with
+the Marketplace's word that it is public — described just below. **It is a
 filter, not a proof.** It cannot see meaning: a false claim in different words, a synonym outside
 the list, a superlative, an unbacked sentence or a wrong number the list does not pin all pass it. A
 green gate means the known wordings are absent, nothing more. The reasons are summarised here so
@@ -232,10 +233,11 @@ publication until it works with a friend"); the owner retired that non-goal, and
 published as `selvage-protocol.selvage` on the VS Code Marketplace and on Open VSX, which are the
 two publish steps in `vscode_client/.github/workflows/release.yml`. So what is required is now the
 truth and what is forbidden is the false direction: the identity and both registry names have to be
-in the row, every registry-shaped word the page carries has to be part of one of those two names — a
-third registry, or "the extension gallery" without saying which, fails — and any link the page
-carries to a listing has to be one of the two, because the retired `selvage-protocol.selvage-client`
-listing is still live and still linkable by mistake. The row also has to say what an install is: the
+in the row, every registry-shaped word the page carries has to be part of one of those two names or
+of the JetBrains Marketplace's, where the JetBrains plugin is handed over — any other registry, or
+"the extension gallery" without saying which, fails — and any link the page carries to a listing has
+to be one of the two or the JetBrains plugin's, because the retired
+`selvage-protocol.selvage-client` listing is still live and still linkable by mistake. The row also has to say what an install is: the
 clients are not a server, and each connects to a `selvaged` the reader runs. That last fact is
 required rather than left to the phrase list because the registry names alone would read as a
 running room, and "on a server you run" is not the sentence to read — the hero carries it. It asks
@@ -261,8 +263,8 @@ rows are read from the page rather than listed in the check, because the clients
 list: a hand-maintained list of names here would be the drift the rule exists to catch, and a client
 added to the page would be one the check never looked at. What is pinned by name is the handful of
 facts that have to stay true of named rows: the specification is the source of truth, the
-extension's row is the one a reader is also handed an install for, `reference_server`, `nvim_client`
-and `web_client` each keep a row that names them, and `jetbrains_client` is the plan. A row's name,
+extension's row is the one a reader is also handed an install for, and `reference_server`,
+`nvim_client`, `web_client` and `jetbrains_client` each keep a row that names them. A row's name,
 description, word and destination are one claim, read together from the row's own list item rather
 than from the page's text, so a row that links a different repository fails even though the page
 still carries every name and every word. A row the page links has to wear one of the words a live
@@ -282,7 +284,23 @@ them against each other: a client a chip names has to be a row in the grid, an i
 has to be a client the grid draws, and the chips have to be the leading clients in the grid's own
 order, so what the figure's cap leaves out is the tail of the list rather than a scatter. A client
 added to the page's own list moves all three at once; a surface written out by hand instead is the
-half-added client this catches. `jetbrains_client` is the plan:
-`github.com/selvage-protocol/jetbrains_client` answers `404` and the organisation carries no such
-public repository, so the page shows it as a plan rather than as something a reader can open. It
-asks no network either.
+half-added client this catches. It asks no network either.
+
+The JetBrains plugin's listing is asserted against the Marketplace itself, and it is the one claim
+here that waits on somebody else. The JetBrains route in the terminal has to name the JetBrains
+Marketplace and link `https://plugins.jetbrains.com/plugin/34763-selvage`, read from the route's own
+panel, and then the check asks `https://plugins.jetbrains.com/api/plugins/34763` about the plugin:
+the answer has to describe plugin 34763 at that listing's path and carry `"approve": true`, read as
+the JSON `true` and nothing looser. JetBrains reviews a plugin by hand before it lists it for
+everyone, and until then the API answers `"approve": false`, so a route that says the plugin is
+published there sends a reader to a plugin they cannot install yet, and the step fails with exit 1.
+The extension's half asks no registry, for the release-ordering reason above; this half does,
+because the plugin's first listing is uploaded by hand and approved by JetBrains rather than
+produced by a release this project dispatches, so what the page waits on is the approval. The
+reading carries fixtures of its own, run before the scan: an approved answer has to pass, and one in
+review, one with no `approve`, one whose `approve` is the string `"true"`, another plugin's, one at
+another path and one that is not an object each have to be reported, so a reading that stops telling
+a listing in review from a public one fails the check with exit 2 rather than passing every page. It
+needs egress to `plugins.jetbrains.com` and exits 2 when it cannot ask; a `404` for the plugin is
+exit 1, because a listing the Marketplace does not have disproves the route. It runs after every
+other assertion, so a step that is red only on the approval is a page whose other claims all held.

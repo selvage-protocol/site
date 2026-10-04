@@ -6,10 +6,11 @@ route `/` carries the page, and `app/not-found.tsx` is the route beside it. The 
 lives in the other repositories:
 [`selvage-protocol/specification`](https://github.com/selvage-protocol/specification) for the
 protocol, prose and vectors, [`selvage-protocol/reference_server`](https://github.com/selvage-protocol/reference_server)
-for the server and client library, and [`selvage-protocol/vscode_client`](https://github.com/selvage-protocol/vscode_client)
-and [`selvage-protocol/nvim_client`](https://github.com/selvage-protocol/nvim_client) for the two
-editor clients. This repository holds the page, the six check scripts that gate it, the one browser
-proof the runner cannot run, and nothing else.
+for the server and client library, and [`selvage-protocol/vscode_client`](https://github.com/selvage-protocol/vscode_client),
+[`selvage-protocol/nvim_client`](https://github.com/selvage-protocol/nvim_client) and
+[`selvage-protocol/jetbrains_client`](https://github.com/selvage-protocol/jetbrains_client) for the
+three editor clients. This repository holds the page, the six check scripts that gate it, the one
+browser proof the runner cannot run, and nothing else.
 
 ## Running it
 

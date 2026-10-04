@@ -19,6 +19,6 @@ What that decides:
 - **The title, description and `og:title`/`og:description` are the page's own words, in the longer
   form a crawler and a card unfurl want.** The title is the project's name in front of the hero's
   own sentence; the description is the same account at more length — one Rust binary you host holds
-  the room and an invite link is the whole permission, three clients on the same file, no account
+  the room and an invite link is the whole permission, four clients on the same file, no account
   and no third party's cloud holding the room — with the specification clause after it. It has to
   agree with the lede, and it does: the lede is the shorter statement of the same two claims.
