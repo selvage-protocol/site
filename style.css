@@ -1016,6 +1016,7 @@ section[id],
 
 .term-note {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   gap: 10px;
   padding: 14px 18px;
@@ -1034,8 +1035,16 @@ section[id],
   color: var(--color-blue);
 }
 
+/* The note keeps a readable measure: once the links beside it would squeeze it under 9rem, they
+   move to a line of their own, at the right edge. */
 .term-note-text {
-  flex: 1;
+  flex: 1 1 9rem;
+}
+
+.term-links {
+  display: flex;
+  gap: 14px;
+  margin-left: auto;
 }
 
 .source-link {

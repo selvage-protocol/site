@@ -7,10 +7,10 @@ import { CLIENTS, repositoryUrl, type InstallLine } from "@/lib/clients";
 import { useCopy } from "@/lib/use-copy";
 
 /* The terminal a reader copies from: one route per client that has one, with the command that
-   route is, the note a reader needs before running it, and the repository it comes from. The
-   panels are the ARIA tabs pattern — one strip, one panel per tab, the inactive ones `hidden` —
-   and every panel is in the document, so the page still carries every route for a reader
-   without scripting.
+   route is, the note a reader needs before running it, the listing it installs from where it is
+   one, and the repository it comes from. The panels are the ARIA tabs pattern — one strip, one
+   panel per tab, the inactive ones `hidden` — and every panel is in the document, so the page
+   still carries every route for a reader without scripting.
 
    The routes are the client list's own install data, and the tab labels are its chip labels:
    a client is added to the list and its route appears here, rather than being written out a
@@ -25,6 +25,7 @@ type Tab = {
   copy: string;
   announce: string;
   note: string;
+  listing?: { label: string; href: string };
 };
 
 /* Only the clients a reader can install have a route: a plan has none, and so has no tab. */
@@ -44,9 +45,9 @@ const TABS: Tab[] = CLIENTS.flatMap((client) =>
 
 export function SetupTerminal() {
   const [active, setActive] = useState(TABS[0].id);
-  /* Which edge of the strip has a tab past it. Three tabs fit every panel this page is read at
-down to 360 px; at 320 the last one is clipped, and the clipped label on its own reads as a
-mistake. */
+  /* Which edge of the strip has a tab past it. The four tabs take 424 px, so they fit beside the
+panels and in a single column from about 460 px; narrower than that the last one is clipped, and
+the clipped label on its own reads as a mistake. */
   const [edges, setEdges] = useState({ left: false, right: false });
   const strip = useRef<HTMLDivElement>(null);
   const { copied, copy } = useCopy<string>();
@@ -163,10 +164,18 @@ mistake. */
           <div className="term-note">
             <Info className="term-info" aria-hidden="true" />
             <span className="term-note-text">{tab.note}</span>
-            <a className="source-link" href={tab.source}>
-              Source
-              <ArrowUpRight className="icon-14" aria-hidden="true" />
-            </a>
+            <span className="term-links">
+              {tab.listing && (
+                <a className="source-link" href={tab.listing.href}>
+                  {tab.listing.label}
+                  <ArrowUpRight className="icon-14" aria-hidden="true" />
+                </a>
+              )}
+              <a className="source-link" href={tab.source}>
+                Source
+                <ArrowUpRight className="icon-14" aria-hidden="true" />
+              </a>
+            </span>
           </div>
         </div>
       ))}

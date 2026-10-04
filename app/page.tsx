@@ -320,8 +320,8 @@ export default function Home() {
               <Eyebrow>Get it working</Eyebrow>
               <h2 className="display">One server, any client.</h2>
               <p className="lede">
-                The extension, the plugin and the browser page are clients, not a
-                server: each one connects to a selvaged you run.
+                The extension, the two plugins and the browser page are clients, not
+                a server: each one connects to a selvaged you run.
               </p>
             </div>
             <div className="run-grid">
@@ -414,6 +414,10 @@ export default function Home() {
                   <code>specification/schema/validate.py</code>, prints the corpus&apos;s
                   counts, so a reader can check the current figures. It is written to be
                   implemented on its own, without reading the server&apos;s code.
+                </p>
+                <p className="spec-line">
+                  The JetBrains plugin is a separate implementation, written in Kotlin
+                  from the specification. The other clients share one TypeScript engine.
                 </p>
                 <a
                   className="spec-link"

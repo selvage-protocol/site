@@ -758,14 +758,30 @@ EXTENSION_LISTINGS = (
     "https://open-vsx.org/extension/" + PUBLISHED_EXTENSION.replace(".", "/"),
 )
 REGISTRY_LISTING = re.compile(
-    r"marketplace\.visualstudio\.com/items\b|open-vsx\.org/extension/",
+    r"marketplace\.visualstudio\.com/items\b|open-vsx\.org/extension/"
+    r"|plugins\.jetbrains\.com/plugin/",
     re.IGNORECASE,
 )
-# Registry-shaped words. Every one the page carries has to be part of one of the two names above,
-# so a page that also offers the extension from somewhere else — "the extension gallery", the
-# JetBrains or Eclipse marketplace, another editor's store — fails instead of passing on the two
-# names it carries as well. A bare "registry" is deliberately not here: `ghcr.io` is one, and the
-# image section may name it.
+
+# The JetBrains plugin and its one listing. The plugin is a client of its own and the JetBrains
+# Marketplace is not one of the extension's registries, so it is pinned apart from them: the page
+# may name the Marketplace, and any link to a plugin listing other than this one fails on its
+# destination.
+JETBRAINS_PLUGIN_ID = 34763
+JETBRAINS_LISTING_PATH = f"/plugin/{JETBRAINS_PLUGIN_ID}-selvage"
+JETBRAINS_LISTING = "https://plugins.jetbrains.com" + JETBRAINS_LISTING_PATH
+JETBRAINS_REGISTRY = (
+    "the JetBrains Marketplace",
+    re.compile(r"\bJetBrains\s+Marketplace\b", re.IGNORECASE),
+)
+# Every listing a link on the page may point at.
+KNOWN_LISTINGS = (*EXTENSION_LISTINGS, JETBRAINS_LISTING)
+
+# Registry-shaped words. Every one the page carries has to be part of one of the names above, the
+# extension's two registries or the JetBrains Marketplace, so a page that also offers a client from
+# somewhere else ("the extension gallery", the Eclipse marketplace, another editor's store) fails
+# instead of passing on the names it carries as well. A bare "registry" is deliberately not here:
+# `ghcr.io` is one, and the image section may name it.
 REGISTRY_WORD = re.compile(
     r"\bmarketplaces?\b|\bgaller(?:y|ies)\b|\bopen\s*vsx\b"
     r"|\b(?:extension|plugin|add-?on)s?\s+stores?\b|\b(?:extension|plugin)s?\s+registr(?:y|ies)\b",
@@ -1067,11 +1083,22 @@ FORBIDDEN: list[Phrase] = [
         ("ghcr.io/selvage-protocol/selvaged:0.4.5", "0.4.5", "version 0.4.5", "tool:2.1.0"),
     ),
     Phrase(
-        r"second implementation|interoperab\w*",
-        "a second implementation exists",
-        "there is no second implementation: the Neovim client drives a byte-identical copy of "
-        "the same engine, so nothing yet shows a client built from the prose alone agreeing "
-        "byte for byte with this one",
+        # The JetBrains client is the second implementation: Kotlin, written from the
+        # specification, passing the peer corpus and sharing rooms with the TypeScript engine
+        # through a real server. What that shows is two implementations agreeing, so the page says
+        # what the JetBrains client is and leaves the protocol's interoperability unclaimed.
+        r"interoperab\w*",
+        "the clients are interoperable",
+        "two implementations exist, the TypeScript engine the VS Code, Neovim and browser "
+        "clients share and the JetBrains client's Kotlin engine written from the specification, "
+        "and two implementations agreeing is evidence about those two rather than a property of "
+        "the protocol; say what the JetBrains client is instead",
+        ("the clients are interop<!-- -->erable", "the protocol guarantees interoperability"),
+        (
+            "The JetBrains plugin is a separate implementation, written in Kotlin from the "
+            "specification.",
+            "The other clients share one TypeScript engine.",
+        ),
     ),
     Phrase(
         # The extension is published under both registries, so the denial is what a rewrite would
@@ -3445,12 +3472,12 @@ def check_published_extension(pages: list[Scanned]) -> int:
     - the identity the release publishes under and both registries it publishes to, in the
       visible text — a reader installs from one of them, so a row that names neither is not an
       install row;
-    - that every registry-shaped word on the page is part of one of those two names, so a page
-      offering the extension from somewhere else — "the extension gallery", the JetBrains or
-      Eclipse marketplace, another editor's store — fails rather than passing on the two names
-      it also carries;
-    - that any link the page does carry to a listing is one of the two, so a listing that is not
-      one of them fails on the destination rather than on the label.
+    - that every registry-shaped word on the page is part of one of those two names or of the
+      JetBrains Marketplace's, where the JetBrains plugin is handed over, so a page offering a
+      client from somewhere else — "the extension gallery", the Eclipse marketplace, another
+      editor's store — fails rather than passing on the names it also carries;
+    - that any link the page does carry to a listing is one of the two or the JetBrains plugin's,
+      so a listing that is not one of them fails on the destination rather than on the label.
 
     What it does not do is ask the galleries. A listing is the release's fact — the two publish
     steps in `vscode_client/.github/workflows/release.yml` are what produce it — and a query here
@@ -3478,7 +3505,7 @@ def check_published_extension(pages: list[Scanned]) -> int:
     for scanned in pages:
         allowed = [
             match.span()
-            for _, pattern in PUBLISHED_REGISTRIES
+            for _, pattern in (*PUBLISHED_REGISTRIES, JETBRAINS_REGISTRY)
             for match in pattern.finditer(scanned.text)
         ]
         for match in REGISTRY_WORD.finditer(scanned.text):
@@ -3493,10 +3520,11 @@ def check_published_extension(pages: list[Scanned]) -> int:
     if stray:
         for where in stray:
             print(
-                f"check-claims: the page names a registry at {where}, and the release publishes "
-                f"to {' and '.join(name for name, _ in PUBLISHED_REGISTRIES)}. A registry the "
-                "project does not publish to is a distribution channel it does not have, and "
-                "\"the extension gallery\" names a channel without naming which",
+                f"check-claims: the page names a registry at {where}, and the extension is "
+                f"published to {' and '.join(name for name, _ in PUBLISHED_REGISTRIES)} and the "
+                f"JetBrains plugin to {JETBRAINS_REGISTRY[0]}. A registry the project does not "
+                "publish to is a distribution channel it does not have, and \"the extension "
+                "gallery\" names a channel without naming which",
                 file=sys.stderr,
             )
         return 1
@@ -3505,16 +3533,16 @@ def check_published_extension(pages: list[Scanned]) -> int:
         f"{os.path.relpath(scanned.path, root)}:{line}: {destination!r}"
         for scanned in pages
         for destination, line in scanned.destinations
-        if REGISTRY_LISTING.search(destination) and destination not in EXTENSION_LISTINGS
+        if REGISTRY_LISTING.search(destination) and destination not in KNOWN_LISTINGS
     ]
     if missing:
         for where in missing:
             print(
                 f"check-claims: the page links a listing at {where}, and the extension is "
-                f"published as `{PUBLISHED_EXTENSION}`; the listing on each registry is "
-                f"{' and '.join(EXTENSION_LISTINGS)}. A link to a listing is a claim about "
-                "which one, and the retired ID's listing is still there to be linked by "
-                "mistake",
+                f"published as `{PUBLISHED_EXTENSION}`, whose listing on each registry is "
+                f"{' and '.join(EXTENSION_LISTINGS)}, and the JetBrains plugin's listing is "
+                f"{JETBRAINS_LISTING}. A link to a listing is a claim about which one, and the "
+                "retired ID's listing is still there to be linked by mistake",
                 file=sys.stderr,
             )
         return 1
@@ -3522,8 +3550,8 @@ def check_published_extension(pages: list[Scanned]) -> int:
     print(
         f"check-claims: the page hands a reader `{PUBLISHED_EXTENSION}` on "
         f"{' and '.join(name for name, _ in PUBLISHED_REGISTRIES)}, names no registry the "
-        "project does not publish to, links no other listing, and says an install is the client "
-        "and not a server"
+        "project does not publish to, links no listing but the extension's and the JetBrains "
+        "plugin's, and says an install is the client and not a server"
     )
     return 0
 
@@ -3599,25 +3627,11 @@ GRID_PINNED_ROWS = (
         "available",
         re.compile(r"\bweb_client[^.]{0,32}available\b", re.IGNORECASE),
     ),
-)
-
-# The row that is a plan rather than a repository a reader can open: a client nobody has written
-# cannot be offered, so the row carries no destination and the word beside it says so. Its name,
-# its description and that word are required the way a linked row's are, and read below without a
-# destination, which is the half a linked row has no analogue for.
-#
-# It is named here so the page cannot quietly drop it: a plan that is not drawn at all satisfies
-# every agreement rule below, and the one row the project writes down as planned is a fact about
-# what the project has not written. `jetbrains_client` is that row.
-GRID_PINNED_PLANS = (
     (
         "jetbrains_client",
-        "JetBrains IDEs",
-        "Not available yet",
-        re.compile(
-            r"\bjetbrains_client[^.]{0,32}JetBrains IDEs[^.]{0,32}Not available yet\b",
-            re.IGNORECASE,
-        ),
+        "JetBrains IDE plugin",
+        "available",
+        re.compile(r"\bjetbrains_client[^.]{0,32}available\b", re.IGNORECASE),
     ),
 )
 
@@ -3861,8 +3875,9 @@ def check_repository_grid(pages: list[Scanned]) -> int:
       not got.
 
     What is pinned by name is the handful of facts that have to stay true of named rows whatever
-    else the grid carries: the specification is the source of truth, the extension's row is the
-    one a reader is also handed an install for, and the plan is the one row that must not link.
+    else the grid carries: the specification is the source of truth, every client the page hands
+    over keeps a row that says it is available, and the extension's row is the one a reader is
+    also handed an install for.
     Nothing else about the grid is a list in this file: the clients are the page's own list, and
     a client added there is one this function reads rather than one it has to be told about.
 
@@ -3881,8 +3896,7 @@ def check_repository_grid(pages: list[Scanned]) -> int:
     Returns 0 when all of it holds and 1 when it does not; it asks no network.
     """
     root = root_of_this_checkout()
-    pinned = GRID_PINNED_ROWS + GRID_PINNED_PLANS
-    facts = [(f"the {name} row", pattern) for name, _desc, _status, pattern in pinned]
+    facts = [(f"the {name} row", pattern) for name, _desc, _status, pattern in GRID_PINNED_ROWS]
     page, failures = first_page_stating(pages, facts)
     if page is None:
         for where, absent in failures:
@@ -4054,7 +4068,7 @@ def check_repository_grid(pages: list[Scanned]) -> int:
 
     # A row's repository, its own text and its destination are one claim about one repository.
     # The rules above prove the shape of every row, not that a named row is still there; these
-    # three hold the facts that have to stay true of the rows the page has always carried.
+    # hold the facts that have to stay true of the rows the page carries by name.
     for name, desc, status, _pattern in GRID_PINNED_ROWS:
         owner = next(
             (
@@ -4084,30 +4098,12 @@ def check_repository_grid(pages: list[Scanned]) -> int:
         )
         return 1
 
-    # A row that is a plan has no destination to be held against, so its own list item is what
-    # carries the claim. The row's text is read whole, which is what keeps a sentence naming the
-    # repository from standing in for the row the page draws.
-    for name, desc, status, _pattern in GRID_PINNED_PLANS:
-        if any(
-            not row.linked and name in row.text and desc in row.text and status in row.text
-            for row in rows
-        ):
-            continue
-        print(
-            f"check-claims: the {name} row does not join its name, its description ({desc!r}) "
-            f"and its pill ({status!r}) in one row. Such a row is the page's own statement that "
-            "it is a plan rather than something a reader can open, and a word about it loose on "
-            "the page is not that statement",
-            file=sys.stderr,
-        )
-        return 1
-
     print(
         f"check-claims: the grid draws {len(rows)} rows, {len(linked_repos)} of them linked, "
         f"and its {len(client_rows)} clients, its {len(chips)} chips and its {len(routes)} "
         "install routes name the same ones. Each row joins its own name, description and word "
-        "to its own link, every repository the page links is one the grid links, the plan is "
-        f"the one row left unlinked, and the extension is handed over in a VS Code install "
+        "to its own link, every row left unlinked says it is a plan, every repository the page "
+        f"links is one the grid links, and the extension is handed over in a VS Code install "
         f"route that names `{PUBLISHED_EXTENSION}` on both registries it is published to"
     )
     return 0
