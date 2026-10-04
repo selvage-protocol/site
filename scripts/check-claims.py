@@ -15,12 +15,13 @@ held together and to no version this protocol does not have, the disclosures the
 of what the sealed relay still sees and of the terms `selvaged` is under, and the identity the
 extension is published under with the two
 registries the release publishes it to and what an
-install is and is not. The address half asks the
+install is and is not, and the JetBrains plugin's listing, which the Marketplace has to say is
+public. The address half asks the
 path a plain `GET` can reach, not the upgrade: see `demo_session_route`. Each is a fact with an
 artefact behind it, and a wrong tag is a command that fails rather than a wording that lies. See
 `PUBLISHED_IMAGES`, `DEMO_ORIGIN`, `RELAY_DISCLOSURE`, `FSL_DISCLOSURE`, `PUBLISHED_EXTENSION`,
-`check_run_section_command`, `check_run_section_address`, `check_command_prompt_selection` and
-`check_wire_binding` below.
+`JETBRAINS_LISTING`, `check_run_section_command`, `check_run_section_address`,
+`check_command_prompt_selection`, `check_wire_binding` and `check_jetbrains_listing` below.
 
 Each entry below pairs a phrase the page must not carry with the reason it must not, and with a
 sample that has to match it. The reasons are not this script's opinion: every one of them is a
@@ -50,8 +51,8 @@ Run from anywhere; the repository root is resolved from this file's location. Ar
 
 Exit 0 when the page is clean of every known wording and the positive claims hold up, 1 when it
 carries a forbidden wording or a positive claim is wrong, 2 when the check itself cannot run (a
-dead pattern, nothing to scan, a registry that cannot be asked, or a demo host that does not
-answer).
+dead pattern, nothing to scan, a registry that cannot be asked, or a demo host or the JetBrains
+Marketplace that does not answer).
 """
 
 from __future__ import annotations
@@ -764,12 +765,18 @@ REGISTRY_LISTING = re.compile(
 )
 
 # The JetBrains plugin and its one listing. The plugin is a client of its own and the JetBrains
-# Marketplace is not one of the extension's registries, so it is pinned apart from them: the page
-# may name the Marketplace, and any link to a plugin listing other than this one fails on its
-# destination.
+# Marketplace is not one of the extension's registries, so it is pinned apart from them: the route
+# that hands the plugin over has to name the Marketplace and link this listing, any other link to a
+# plugin listing fails on its destination, and the Marketplace has to say the listing is public.
+# JetBrains reviews a plugin by hand before it is listed for everyone, and until then its API
+# answers `"approve": false`; a route that sends a reader to the listing before that sends them to a
+# plugin they cannot install yet, so the approval is asked for rather than assumed.
 JETBRAINS_PLUGIN_ID = 34763
 JETBRAINS_LISTING_PATH = f"/plugin/{JETBRAINS_PLUGIN_ID}-selvage"
 JETBRAINS_LISTING = "https://plugins.jetbrains.com" + JETBRAINS_LISTING_PATH
+JETBRAINS_LISTING_API = f"https://plugins.jetbrains.com/api/plugins/{JETBRAINS_PLUGIN_ID}"
+# The route's key: the install panel's id, which is the client's id in `lib/clients.ts`.
+JETBRAINS_ROUTE = "jetbrains"
 JETBRAINS_REGISTRY = (
     "the JetBrains Marketplace",
     re.compile(r"\bJetBrains\s+Marketplace\b", re.IGNORECASE),
@@ -3556,6 +3563,161 @@ def check_published_extension(pages: list[Scanned]) -> int:
     return 0
 
 
+# What the Marketplace's answer for the plugin has to say, read by `jetbrains_listing_problems`.
+# Each fixture is an answer of the API's shape with the defect its name gives written into it, and
+# the fragment the reading has to report for it; an empty fragment is an answer the reading has to
+# pass. They run before the scan, so a reading that stops telling a listing in review from a public
+# one fails the check rather than passing every page.
+JETBRAINS_LISTING_FIXTURES: tuple[tuple[str, object, str], ...] = (
+    (
+        "a public listing",
+        {"id": JETBRAINS_PLUGIN_ID, "link": JETBRAINS_LISTING_PATH, "approve": True},
+        "",
+    ),
+    (
+        "a listing still in review",
+        {"id": JETBRAINS_PLUGIN_ID, "link": JETBRAINS_LISTING_PATH, "approve": False},
+        '"approve" is false',
+    ),
+    (
+        "an answer with no approval in it",
+        {"id": JETBRAINS_PLUGIN_ID, "link": JETBRAINS_LISTING_PATH},
+        '"approve" is missing',
+    ),
+    (
+        "an approval written as a string",
+        {"id": JETBRAINS_PLUGIN_ID, "link": JETBRAINS_LISTING_PATH, "approve": "true"},
+        "\"approve\" is 'true'",
+    ),
+    (
+        "another plugin's listing",
+        {"id": JETBRAINS_PLUGIN_ID + 1, "link": "/plugin/34764-other", "approve": True},
+        f"plugin {JETBRAINS_PLUGIN_ID + 1}",
+    ),
+    (
+        "the listing moved to another address",
+        {"id": JETBRAINS_PLUGIN_ID, "link": "/plugin/34763-renamed", "approve": True},
+        "/plugin/34763-renamed",
+    ),
+    ("an answer that is not an object", [JETBRAINS_PLUGIN_ID], "not a JSON object"),
+)
+
+
+def jetbrains_listing_problems(answer: object) -> list[str]:
+    """What the Marketplace's answer for the plugin says against the page, or [] when it holds.
+
+    The answer has to be about the plugin the page links, at the address the page links, and it
+    has to say JetBrains approved it. `approve` is read as the JSON `true` and nothing looser, so a
+    string or a number in its place is not taken for an approval.
+    """
+    if not isinstance(answer, dict):
+        return [f"the answer is not a JSON object ({type(answer).__name__})"]
+    problems: list[str] = []
+    plugin = answer.get("id")
+    if plugin != JETBRAINS_PLUGIN_ID or isinstance(plugin, bool):
+        problems.append(f"it describes plugin {plugin!r}, and the page links {JETBRAINS_PLUGIN_ID}")
+    link = answer.get("link")
+    if link != JETBRAINS_LISTING_PATH:
+        problems.append(
+            f"it puts the listing at {link!r}, and the page links {JETBRAINS_LISTING_PATH!r}"
+        )
+    if "approve" not in answer:
+        problems.append('"approve" is missing, so nothing says the listing is public')
+    elif answer["approve"] is False:
+        problems.append(
+            '"approve" is false: JetBrains has not approved the listing yet, so the plugin is '
+            "not public"
+        )
+    elif answer["approve"] is not True:
+        problems.append(f'"approve" is {answer["approve"]!r}, and only true says it is public')
+    return problems
+
+
+def jetbrains_listing() -> object:
+    """The Marketplace's answer for the plugin, as JSON. Raises when it cannot be asked."""
+    request = urllib.request.Request(JETBRAINS_LISTING_API)
+    request.add_header("Accept", "application/json")
+    request.add_header("User-Agent", USER_AGENT)
+    with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+        return json.loads(response.read())
+
+
+def check_jetbrains_listing(pages: list[Scanned]) -> int:
+    """The JetBrains route against the listing it links, and the listing against the Marketplace.
+
+    The page hands the plugin over in the terminal's JetBrains route, so that route has to name the
+    JetBrains Marketplace and link the plugin's listing, read from the route's own panel. Then the
+    Marketplace is asked about the plugin: the listing has to be the one the route links and
+    JetBrains has to have approved it, because a listing in review is not one a reader can install
+    from, and the route says the plugin is published there.
+
+    Returns 0 when it holds, 1 when the page or the Marketplace disproves the route, and 2 when the
+    Marketplace cannot be asked.
+    """
+    root = root_of_this_checkout()
+    page = next(
+        (one for one in pages if install_panel_markup(one.raw, JETBRAINS_ROUTE) is not None), None
+    )
+    if page is None:
+        print(
+            f"check-claims: none of {len(pages)} scanned file(s) carries the JetBrains install "
+            "route, and the grid says the JetBrains plugin is available: a client the page offers "
+            "has to say where a reader installs it",
+            file=sys.stderr,
+        )
+        return 1
+    where = os.path.relpath(page.path, root)
+    route = install_panel_markup(page.raw, JETBRAINS_ROUTE) or ""
+    absent = []
+    if not JETBRAINS_REGISTRY[1].search(normalise(route)[0]):
+        absent.append(JETBRAINS_REGISTRY[0])
+    if JETBRAINS_LISTING not in [found for found, _ in destinations(route)]:
+        absent.append(f"a link to {JETBRAINS_LISTING}")
+    if absent:
+        print(
+            f"check-claims: the JetBrains route in {where} is missing {' and '.join(absent)}. "
+            "The route is where a reader is handed the plugin, so it names the registry and "
+            "links the listing it installs from",
+            file=sys.stderr,
+        )
+        return 1
+
+    try:
+        answer = jetbrains_listing()
+    except urllib.error.HTTPError as error:
+        print(
+            f"check-claims: {JETBRAINS_LISTING_API} answered {error.code} {error.reason}; the "
+            f"route links {JETBRAINS_LISTING}, and a listing the Marketplace does not describe "
+            "is one nothing can confirm",
+            file=sys.stderr,
+        )
+        return 1 if error.code == 404 else 2
+    except (urllib.error.URLError, OSError, ValueError) as error:
+        print(
+            f"check-claims: cannot ask {JETBRAINS_LISTING_API} about the plugin ({error}); the "
+            "JetBrains route cannot be checked against the listing it links, so this is a "
+            "failure rather than a pass",
+            file=sys.stderr,
+        )
+        return 2
+
+    problems = jetbrains_listing_problems(answer)
+    if problems:
+        print(
+            f"check-claims: the JetBrains route in {where} links {JETBRAINS_LISTING} and says the "
+            f"plugin is published on {JETBRAINS_REGISTRY[0]}, and {JETBRAINS_LISTING_API} "
+            f"answers that {'; '.join(problems)}. The route waits for that approval",
+            file=sys.stderr,
+        )
+        return 1
+
+    print(
+        f"check-claims: the JetBrains route links {JETBRAINS_LISTING} on "
+        f"{JETBRAINS_REGISTRY[0]}, and the Marketplace says JetBrains approved the listing"
+    )
+    return 0
+
+
 # The card the page offers and does not have: a hosted tier the project would run for the reader.
 # Its parts are one claim — the card, the status on it, the sentence saying who would run it, and
 # the row that is a plan rather than a control — and each is a required fact of its own, so a
@@ -3733,13 +3895,19 @@ def install_panel_text(raw: str, panel: str) -> str | None:
     whatever the page says after it. A page that no longer draws the terminal answers with None,
     which fails where a route is required rather than passing quietly.
     """
+    markup = install_panel_markup(raw, panel)
+    return normalise(markup)[0] if markup is not None else None
+
+
+def install_panel_markup(raw: str, panel: str) -> str | None:
+    """One install route's own markup, its panel read to the panel's own closer, or None."""
     opening = re.compile(
         rf'<(?P<tag>[a-z][\w-]*)\b[^>]*\bid="install-panel-{re.escape(panel)}"[^>]*>',
         re.IGNORECASE,
     )
     match = opening.search(raw)
     element = element_from(raw, match) if match is not None else None
-    return normalise(element[1])[0] if element is not None else None
+    return element[1] if element is not None else None
 
 
 def element_by_class(raw: str, class_name: str) -> tuple[str, str] | None:
@@ -4774,6 +4942,24 @@ def scan(targets: list[str]) -> int:
             print(f"check-claims: {failure}", file=sys.stderr)
             return 2
 
+    for what, answer, expected in JETBRAINS_LISTING_FIXTURES:
+        problems = jetbrains_listing_problems(answer)
+        if expected and not any(expected in problem for problem in problems):
+            print(
+                f"check-claims: the JetBrains listing fixture {what!r} is the defect {expected!r} "
+                "names and is not reported as one; a reading that stops seeing it passes a "
+                "listing that is not public",
+                file=sys.stderr,
+            )
+            return 2
+        if not expected and problems:
+            print(
+                f"check-claims: the JetBrains listing fixture {what!r} is a public listing and is "
+                f"reported as {'; '.join(problems)}, so the reading fails a route that is right",
+                file=sys.stderr,
+            )
+            return 2
+
     # The fixtures above say the rules read the right commands; this says they read them the right
     # way, which is the half that was missing: a reading can be swapped for a weaker one with every
     # fixture still green, and then the fixtures hold a rule and not the reading inside it.
@@ -4838,6 +5024,7 @@ def scan(targets: list[str]) -> int:
         check_command_prompt_selection,
         check_demo_instance,
         check_wire_binding,
+        check_jetbrains_listing,
     ):
         status = check(scanned)
         if status != 0:
