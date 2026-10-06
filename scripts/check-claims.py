@@ -15,12 +15,13 @@ held together and to no version this protocol does not have, the disclosures the
 of what the sealed relay still sees and of the terms `selvaged` is under, and the identity the
 extension is published under with the two
 registries the release publishes it to and what an
-install is and is not. The address half asks the
+install is and is not, and the JetBrains plugin's listing, which the Marketplace has to say is
+public. The address half asks the
 path a plain `GET` can reach, not the upgrade: see `demo_session_route`. Each is a fact with an
 artefact behind it, and a wrong tag is a command that fails rather than a wording that lies. See
 `PUBLISHED_IMAGES`, `DEMO_ORIGIN`, `RELAY_DISCLOSURE`, `FSL_DISCLOSURE`, `PUBLISHED_EXTENSION`,
-`check_run_section_command`, `check_run_section_address`, `check_command_prompt_selection` and
-`check_wire_binding` below.
+`JETBRAINS_LISTING`, `check_run_section_command`, `check_run_section_address`,
+`check_command_prompt_selection`, `check_wire_binding` and `check_jetbrains_listing` below.
 
 Each entry below pairs a phrase the page must not carry with the reason it must not, and with a
 sample that has to match it. The reasons are not this script's opinion: every one of them is a
@@ -50,8 +51,8 @@ Run from anywhere; the repository root is resolved from this file's location. Ar
 
 Exit 0 when the page is clean of every known wording and the positive claims hold up, 1 when it
 carries a forbidden wording or a positive claim is wrong, 2 when the check itself cannot run (a
-dead pattern, nothing to scan, a registry that cannot be asked, or a demo host that does not
-answer).
+dead pattern, nothing to scan, a registry that cannot be asked, or a demo host or the JetBrains
+Marketplace that does not answer).
 """
 
 from __future__ import annotations
@@ -758,14 +759,39 @@ EXTENSION_LISTINGS = (
     "https://open-vsx.org/extension/" + PUBLISHED_EXTENSION.replace(".", "/"),
 )
 REGISTRY_LISTING = re.compile(
-    r"marketplace\.visualstudio\.com/items\b|open-vsx\.org/extension/",
+    r"marketplace\.visualstudio\.com/items\b|open-vsx\.org/extension/"
+    r"|plugins\.jetbrains\.com/plugin/",
     re.IGNORECASE,
 )
-# Registry-shaped words. Every one the page carries has to be part of one of the two names above,
-# so a page that also offers the extension from somewhere else — "the extension gallery", the
-# JetBrains or Eclipse marketplace, another editor's store — fails instead of passing on the two
-# names it carries as well. A bare "registry" is deliberately not here: `ghcr.io` is one, and the
-# image section may name it.
+
+# The JetBrains plugin and its one listing. The plugin is a client of its own and the JetBrains
+# Marketplace is not one of the extension's registries, so it is pinned apart from them: the route
+# that hands the plugin over has to name the Marketplace and link this listing, any other link to a
+# plugin listing fails on its destination, and the Marketplace has to say the listing is public.
+# JetBrains reviews each version by hand before it is listed for everyone, and until then the
+# version answers `"approve": false`; a route that sends a reader to the listing before a version is
+# approved sends them to a plugin they cannot install yet, so the approval is asked for rather than
+# assumed. The plugin's own `approve` is not that fact: it stays false on a plugin whose approved
+# version the IDE already installs, so the versions are what is read.
+JETBRAINS_PLUGIN_ID = 34763
+JETBRAINS_LISTING_PATH = f"/plugin/{JETBRAINS_PLUGIN_ID}-selvage"
+JETBRAINS_LISTING = "https://plugins.jetbrains.com" + JETBRAINS_LISTING_PATH
+JETBRAINS_LISTING_API = f"https://plugins.jetbrains.com/api/plugins/{JETBRAINS_PLUGIN_ID}"
+JETBRAINS_VERSIONS_API = JETBRAINS_LISTING_API + "/updates"
+# The route's key: the install panel's id, which is the client's id in `lib/clients.ts`.
+JETBRAINS_ROUTE = "jetbrains"
+JETBRAINS_REGISTRY = (
+    "the JetBrains Marketplace",
+    re.compile(r"\bJetBrains\s+Marketplace\b", re.IGNORECASE),
+)
+# Every listing a link on the page may point at.
+KNOWN_LISTINGS = (*EXTENSION_LISTINGS, JETBRAINS_LISTING)
+
+# Registry-shaped words. Every one the page carries has to be part of one of the names above, the
+# extension's two registries or the JetBrains Marketplace, so a page that also offers a client from
+# somewhere else ("the extension gallery", the Eclipse marketplace, another editor's store) fails
+# instead of passing on the names it carries as well. A bare "registry" is deliberately not here:
+# `ghcr.io` is one, and the image section may name it.
 REGISTRY_WORD = re.compile(
     r"\bmarketplaces?\b|\bgaller(?:y|ies)\b|\bopen\s*vsx\b"
     r"|\b(?:extension|plugin|add-?on)s?\s+stores?\b|\b(?:extension|plugin)s?\s+registr(?:y|ies)\b",
@@ -1067,11 +1093,22 @@ FORBIDDEN: list[Phrase] = [
         ("ghcr.io/selvage-protocol/selvaged:0.4.5", "0.4.5", "version 0.4.5", "tool:2.1.0"),
     ),
     Phrase(
-        r"second implementation|interoperab\w*",
-        "a second implementation exists",
-        "there is no second implementation: the Neovim client drives a byte-identical copy of "
-        "the same engine, so nothing yet shows a client built from the prose alone agreeing "
-        "byte for byte with this one",
+        # The JetBrains client is the second implementation: Kotlin, written from the
+        # specification, passing the peer corpus and sharing rooms with the TypeScript engine
+        # through a real server. What that shows is two implementations agreeing, so the page says
+        # what the JetBrains client is and leaves the protocol's interoperability unclaimed.
+        r"interoperab\w*",
+        "the clients are interoperable",
+        "two implementations exist, the TypeScript engine the VS Code, Neovim and browser "
+        "clients share and the JetBrains client's Kotlin engine written from the specification, "
+        "and two implementations agreeing is evidence about those two rather than a property of "
+        "the protocol; say what the JetBrains client is instead",
+        ("the clients are interop<!-- -->erable", "the protocol guarantees interoperability"),
+        (
+            "The JetBrains plugin is a separate implementation, written in Kotlin from the "
+            "specification.",
+            "The other clients share one TypeScript engine.",
+        ),
     ),
     Phrase(
         # The extension is published under both registries, so the denial is what a rewrite would
@@ -3445,12 +3482,12 @@ def check_published_extension(pages: list[Scanned]) -> int:
     - the identity the release publishes under and both registries it publishes to, in the
       visible text — a reader installs from one of them, so a row that names neither is not an
       install row;
-    - that every registry-shaped word on the page is part of one of those two names, so a page
-      offering the extension from somewhere else — "the extension gallery", the JetBrains or
-      Eclipse marketplace, another editor's store — fails rather than passing on the two names
-      it also carries;
-    - that any link the page does carry to a listing is one of the two, so a listing that is not
-      one of them fails on the destination rather than on the label.
+    - that every registry-shaped word on the page is part of one of those two names or of the
+      JetBrains Marketplace's, where the JetBrains plugin is handed over, so a page offering a
+      client from somewhere else — "the extension gallery", the Eclipse marketplace, another
+      editor's store — fails rather than passing on the names it also carries;
+    - that any link the page does carry to a listing is one of the two or the JetBrains plugin's,
+      so a listing that is not one of them fails on the destination rather than on the label.
 
     What it does not do is ask the galleries. A listing is the release's fact — the two publish
     steps in `vscode_client/.github/workflows/release.yml` are what produce it — and a query here
@@ -3478,7 +3515,7 @@ def check_published_extension(pages: list[Scanned]) -> int:
     for scanned in pages:
         allowed = [
             match.span()
-            for _, pattern in PUBLISHED_REGISTRIES
+            for _, pattern in (*PUBLISHED_REGISTRIES, JETBRAINS_REGISTRY)
             for match in pattern.finditer(scanned.text)
         ]
         for match in REGISTRY_WORD.finditer(scanned.text):
@@ -3493,10 +3530,11 @@ def check_published_extension(pages: list[Scanned]) -> int:
     if stray:
         for where in stray:
             print(
-                f"check-claims: the page names a registry at {where}, and the release publishes "
-                f"to {' and '.join(name for name, _ in PUBLISHED_REGISTRIES)}. A registry the "
-                "project does not publish to is a distribution channel it does not have, and "
-                "\"the extension gallery\" names a channel without naming which",
+                f"check-claims: the page names a registry at {where}, and the extension is "
+                f"published to {' and '.join(name for name, _ in PUBLISHED_REGISTRIES)} and the "
+                f"JetBrains plugin to {JETBRAINS_REGISTRY[0]}. A registry the project does not "
+                "publish to is a distribution channel it does not have, and \"the extension "
+                "gallery\" names a channel without naming which",
                 file=sys.stderr,
             )
         return 1
@@ -3505,16 +3543,16 @@ def check_published_extension(pages: list[Scanned]) -> int:
         f"{os.path.relpath(scanned.path, root)}:{line}: {destination!r}"
         for scanned in pages
         for destination, line in scanned.destinations
-        if REGISTRY_LISTING.search(destination) and destination not in EXTENSION_LISTINGS
+        if REGISTRY_LISTING.search(destination) and destination not in KNOWN_LISTINGS
     ]
     if missing:
         for where in missing:
             print(
                 f"check-claims: the page links a listing at {where}, and the extension is "
-                f"published as `{PUBLISHED_EXTENSION}`; the listing on each registry is "
-                f"{' and '.join(EXTENSION_LISTINGS)}. A link to a listing is a claim about "
-                "which one, and the retired ID's listing is still there to be linked by "
-                "mistake",
+                f"published as `{PUBLISHED_EXTENSION}`, whose listing on each registry is "
+                f"{' and '.join(EXTENSION_LISTINGS)}, and the JetBrains plugin's listing is "
+                f"{JETBRAINS_LISTING}. A link to a listing is a claim about which one, and the "
+                "retired ID's listing is still there to be linked by mistake",
                 file=sys.stderr,
             )
         return 1
@@ -3522,8 +3560,211 @@ def check_published_extension(pages: list[Scanned]) -> int:
     print(
         f"check-claims: the page hands a reader `{PUBLISHED_EXTENSION}` on "
         f"{' and '.join(name for name, _ in PUBLISHED_REGISTRIES)}, names no registry the "
-        "project does not publish to, links no other listing, and says an install is the client "
-        "and not a server"
+        "project does not publish to, links no listing but the extension's and the JetBrains "
+        "plugin's, and says an install is the client and not a server"
+    )
+    return 0
+
+
+# What the Marketplace's answers for the plugin have to say, read by `jetbrains_listing_problems`.
+# Each fixture is a plugin answer and a version list of the API's shapes with the defect its name
+# gives written into them, and the fragment the reading has to report for it; an empty fragment is a
+# pair the reading has to pass. They run before the scan, so a reading that stops telling a listing
+# in review from a public one fails the check rather than passing every page.
+JETBRAINS_PLUGIN = {"id": JETBRAINS_PLUGIN_ID, "link": JETBRAINS_LISTING_PATH, "approve": False}
+JETBRAINS_VERSION = {
+    "pluginId": JETBRAINS_PLUGIN_ID,
+    "version": "0.1.0",
+    "channel": "",
+    "approve": True,
+    "listed": True,
+    "hidden": False,
+}
+JETBRAINS_LISTING_FIXTURES: tuple[tuple[str, object, object, str], ...] = (
+    ("a public listing", JETBRAINS_PLUGIN, [JETBRAINS_VERSION], ""),
+    (
+        "a public listing with a newer version in review",
+        JETBRAINS_PLUGIN,
+        [{**JETBRAINS_VERSION, "version": "0.2.0", "approve": False}, JETBRAINS_VERSION],
+        "",
+    ),
+    (
+        "a listing whose only version is in review",
+        JETBRAINS_PLUGIN,
+        [{**JETBRAINS_VERSION, "approve": False}],
+        "no version is approved",
+    ),
+    ("a listing with no version", JETBRAINS_PLUGIN, [], "no version is approved"),
+    (
+        "an approval written as a string",
+        JETBRAINS_PLUGIN,
+        [{**JETBRAINS_VERSION, "approve": "true"}],
+        "no version is approved",
+    ),
+    (
+        "an approved version that is unlisted",
+        JETBRAINS_PLUGIN,
+        [{**JETBRAINS_VERSION, "listed": False}],
+        "no version is approved",
+    ),
+    (
+        "an approved version that is hidden",
+        JETBRAINS_PLUGIN,
+        [{**JETBRAINS_VERSION, "hidden": True}],
+        "no version is approved",
+    ),
+    (
+        "an approved version on a channel other than stable",
+        JETBRAINS_PLUGIN,
+        [{**JETBRAINS_VERSION, "channel": "eap"}],
+        "no version is approved",
+    ),
+    (
+        "another plugin's version",
+        JETBRAINS_PLUGIN,
+        [{**JETBRAINS_VERSION, "pluginId": JETBRAINS_PLUGIN_ID + 1}],
+        "no version is approved",
+    ),
+    (
+        "another plugin's listing",
+        {**JETBRAINS_PLUGIN, "id": JETBRAINS_PLUGIN_ID + 1, "link": "/plugin/34764-other"},
+        [JETBRAINS_VERSION],
+        f"plugin {JETBRAINS_PLUGIN_ID + 1}",
+    ),
+    (
+        "the listing moved to another address",
+        {**JETBRAINS_PLUGIN, "link": "/plugin/34763-renamed"},
+        [JETBRAINS_VERSION],
+        "/plugin/34763-renamed",
+    ),
+    ("an answer that is not an object", [JETBRAINS_PLUGIN_ID], [JETBRAINS_VERSION], "not a JSON object"),
+    ("a version list that is not a list", JETBRAINS_PLUGIN, JETBRAINS_VERSION, "not a JSON list"),
+)
+
+
+def jetbrains_listing_problems(answer: object, versions: object) -> list[str]:
+    """What the Marketplace's answers for the plugin say against the page, or [] when they hold.
+
+    The plugin answer has to be about the plugin the page links, at the address the page links,
+    and one of its versions has to be one a reader installs: on the stable channel, listed, not
+    hidden, and approved by JetBrains. `approve` and `listed` are read as the JSON `true` and
+    nothing looser, so a string or a number in their place is not taken for an approval.
+    """
+    if not isinstance(answer, dict):
+        return [f"the answer is not a JSON object ({type(answer).__name__})"]
+    problems: list[str] = []
+    plugin = answer.get("id")
+    if plugin != JETBRAINS_PLUGIN_ID or isinstance(plugin, bool):
+        problems.append(f"it describes plugin {plugin!r}, and the page links {JETBRAINS_PLUGIN_ID}")
+    link = answer.get("link")
+    if link != JETBRAINS_LISTING_PATH:
+        problems.append(
+            f"it puts the listing at {link!r}, and the page links {JETBRAINS_LISTING_PATH!r}"
+        )
+    if not isinstance(versions, list):
+        problems.append(f"its version list is not a JSON list ({type(versions).__name__})")
+        return problems
+    public = [
+        one
+        for one in versions
+        if isinstance(one, dict)
+        and one.get("pluginId") == JETBRAINS_PLUGIN_ID
+        and one.get("channel") == ""
+        and one.get("approve") is True
+        and one.get("listed") is True
+        and one.get("hidden") is not True
+    ]
+    if not public:
+        problems.append(
+            f"no version is approved, listed and on the stable channel among the {len(versions)} "
+            "it lists: JetBrains has not approved the plugin yet, so it is not public"
+        )
+    return problems
+
+
+def jetbrains_listing(api: str = JETBRAINS_LISTING_API) -> object:
+    """The Marketplace's answer at `api`, as JSON. Raises when it cannot be asked."""
+    request = urllib.request.Request(api)
+    request.add_header("Accept", "application/json")
+    request.add_header("User-Agent", USER_AGENT)
+    with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+        return json.loads(response.read())
+
+
+def check_jetbrains_listing(pages: list[Scanned]) -> int:
+    """The JetBrains route against the listing it links, and the listing against the Marketplace.
+
+    The page hands the plugin over in the terminal's JetBrains route, so that route has to name the
+    JetBrains Marketplace and link the plugin's listing, read from the route's own panel. Then the
+    Marketplace is asked about the plugin and its versions: the listing has to be the one the route
+    links and JetBrains has to have approved a version of it, because a listing with no approved
+    version is not one a reader can install from, and the route says the plugin is published there.
+
+    Returns 0 when it holds, 1 when the page or the Marketplace disproves the route, and 2 when the
+    Marketplace cannot be asked.
+    """
+    root = root_of_this_checkout()
+    page = next(
+        (one for one in pages if install_panel_markup(one.raw, JETBRAINS_ROUTE) is not None), None
+    )
+    if page is None:
+        print(
+            f"check-claims: none of {len(pages)} scanned file(s) carries the JetBrains install "
+            "route, and the grid says the JetBrains plugin is available: a client the page offers "
+            "has to say where a reader installs it",
+            file=sys.stderr,
+        )
+        return 1
+    where = os.path.relpath(page.path, root)
+    route = install_panel_markup(page.raw, JETBRAINS_ROUTE) or ""
+    absent = []
+    if not JETBRAINS_REGISTRY[1].search(normalise(route)[0]):
+        absent.append(JETBRAINS_REGISTRY[0])
+    if JETBRAINS_LISTING not in [found for found, _ in destinations(route)]:
+        absent.append(f"a link to {JETBRAINS_LISTING}")
+    if absent:
+        print(
+            f"check-claims: the JetBrains route in {where} is missing {' and '.join(absent)}. "
+            "The route is where a reader is handed the plugin, so it names the registry and "
+            "links the listing it installs from",
+            file=sys.stderr,
+        )
+        return 1
+
+    try:
+        answer = jetbrains_listing()
+        versions = jetbrains_listing(JETBRAINS_VERSIONS_API)
+    except urllib.error.HTTPError as error:
+        print(
+            f"check-claims: {error.url} answered {error.code} {error.reason}; the "
+            f"route links {JETBRAINS_LISTING}, and a listing the Marketplace does not describe "
+            "is one nothing can confirm",
+            file=sys.stderr,
+        )
+        return 1 if error.code == 404 else 2
+    except (urllib.error.URLError, OSError, ValueError) as error:
+        print(
+            f"check-claims: cannot ask {JETBRAINS_LISTING_API} about the plugin and its "
+            f"versions ({error}); the "
+            "JetBrains route cannot be checked against the listing it links, so this is a "
+            "failure rather than a pass",
+            file=sys.stderr,
+        )
+        return 2
+
+    problems = jetbrains_listing_problems(answer, versions)
+    if problems:
+        print(
+            f"check-claims: the JetBrains route in {where} links {JETBRAINS_LISTING} and says the "
+            f"plugin is published on {JETBRAINS_REGISTRY[0]}, and {JETBRAINS_LISTING_API} "
+            f"and its versions answer that {'; '.join(problems)}. The route waits for that approval",
+            file=sys.stderr,
+        )
+        return 1
+
+    print(
+        f"check-claims: the JetBrains route links {JETBRAINS_LISTING} on "
+        f"{JETBRAINS_REGISTRY[0]}, and the Marketplace lists a version JetBrains approved"
     )
     return 0
 
@@ -3599,25 +3840,11 @@ GRID_PINNED_ROWS = (
         "available",
         re.compile(r"\bweb_client[^.]{0,32}available\b", re.IGNORECASE),
     ),
-)
-
-# The row that is a plan rather than a repository a reader can open: a client nobody has written
-# cannot be offered, so the row carries no destination and the word beside it says so. Its name,
-# its description and that word are required the way a linked row's are, and read below without a
-# destination, which is the half a linked row has no analogue for.
-#
-# It is named here so the page cannot quietly drop it: a plan that is not drawn at all satisfies
-# every agreement rule below, and the one row the project writes down as planned is a fact about
-# what the project has not written. `jetbrains_client` is that row.
-GRID_PINNED_PLANS = (
     (
         "jetbrains_client",
-        "JetBrains IDEs",
-        "Not available yet",
-        re.compile(
-            r"\bjetbrains_client[^.]{0,32}JetBrains IDEs[^.]{0,32}Not available yet\b",
-            re.IGNORECASE,
-        ),
+        "JetBrains IDE plugin",
+        "available",
+        re.compile(r"\bjetbrains_client[^.]{0,32}available\b", re.IGNORECASE),
     ),
 )
 
@@ -3719,13 +3946,19 @@ def install_panel_text(raw: str, panel: str) -> str | None:
     whatever the page says after it. A page that no longer draws the terminal answers with None,
     which fails where a route is required rather than passing quietly.
     """
+    markup = install_panel_markup(raw, panel)
+    return normalise(markup)[0] if markup is not None else None
+
+
+def install_panel_markup(raw: str, panel: str) -> str | None:
+    """One install route's own markup, its panel read to the panel's own closer, or None."""
     opening = re.compile(
         rf'<(?P<tag>[a-z][\w-]*)\b[^>]*\bid="install-panel-{re.escape(panel)}"[^>]*>',
         re.IGNORECASE,
     )
     match = opening.search(raw)
     element = element_from(raw, match) if match is not None else None
-    return normalise(element[1])[0] if element is not None else None
+    return element[1] if element is not None else None
 
 
 def element_by_class(raw: str, class_name: str) -> tuple[str, str] | None:
@@ -3861,8 +4094,9 @@ def check_repository_grid(pages: list[Scanned]) -> int:
       not got.
 
     What is pinned by name is the handful of facts that have to stay true of named rows whatever
-    else the grid carries: the specification is the source of truth, the extension's row is the
-    one a reader is also handed an install for, and the plan is the one row that must not link.
+    else the grid carries: the specification is the source of truth, every client the page hands
+    over keeps a row that says it is available, and the extension's row is the one a reader is
+    also handed an install for.
     Nothing else about the grid is a list in this file: the clients are the page's own list, and
     a client added there is one this function reads rather than one it has to be told about.
 
@@ -3881,8 +4115,7 @@ def check_repository_grid(pages: list[Scanned]) -> int:
     Returns 0 when all of it holds and 1 when it does not; it asks no network.
     """
     root = root_of_this_checkout()
-    pinned = GRID_PINNED_ROWS + GRID_PINNED_PLANS
-    facts = [(f"the {name} row", pattern) for name, _desc, _status, pattern in pinned]
+    facts = [(f"the {name} row", pattern) for name, _desc, _status, pattern in GRID_PINNED_ROWS]
     page, failures = first_page_stating(pages, facts)
     if page is None:
         for where, absent in failures:
@@ -4054,7 +4287,7 @@ def check_repository_grid(pages: list[Scanned]) -> int:
 
     # A row's repository, its own text and its destination are one claim about one repository.
     # The rules above prove the shape of every row, not that a named row is still there; these
-    # three hold the facts that have to stay true of the rows the page has always carried.
+    # hold the facts that have to stay true of the rows the page carries by name.
     for name, desc, status, _pattern in GRID_PINNED_ROWS:
         owner = next(
             (
@@ -4084,30 +4317,12 @@ def check_repository_grid(pages: list[Scanned]) -> int:
         )
         return 1
 
-    # A row that is a plan has no destination to be held against, so its own list item is what
-    # carries the claim. The row's text is read whole, which is what keeps a sentence naming the
-    # repository from standing in for the row the page draws.
-    for name, desc, status, _pattern in GRID_PINNED_PLANS:
-        if any(
-            not row.linked and name in row.text and desc in row.text and status in row.text
-            for row in rows
-        ):
-            continue
-        print(
-            f"check-claims: the {name} row does not join its name, its description ({desc!r}) "
-            f"and its pill ({status!r}) in one row. Such a row is the page's own statement that "
-            "it is a plan rather than something a reader can open, and a word about it loose on "
-            "the page is not that statement",
-            file=sys.stderr,
-        )
-        return 1
-
     print(
         f"check-claims: the grid draws {len(rows)} rows, {len(linked_repos)} of them linked, "
         f"and its {len(client_rows)} clients, its {len(chips)} chips and its {len(routes)} "
         "install routes name the same ones. Each row joins its own name, description and word "
-        "to its own link, every repository the page links is one the grid links, the plan is "
-        f"the one row left unlinked, and the extension is handed over in a VS Code install "
+        "to its own link, every row left unlinked says it is a plan, every repository the page "
+        f"links is one the grid links, and the extension is handed over in a VS Code install "
         f"route that names `{PUBLISHED_EXTENSION}` on both registries it is published to"
     )
     return 0
@@ -4778,6 +4993,24 @@ def scan(targets: list[str]) -> int:
             print(f"check-claims: {failure}", file=sys.stderr)
             return 2
 
+    for what, answer, versions, expected in JETBRAINS_LISTING_FIXTURES:
+        problems = jetbrains_listing_problems(answer, versions)
+        if expected and not any(expected in problem for problem in problems):
+            print(
+                f"check-claims: the JetBrains listing fixture {what!r} is the defect {expected!r} "
+                "names and is not reported as one; a reading that stops seeing it passes a "
+                "listing that is not public",
+                file=sys.stderr,
+            )
+            return 2
+        if not expected and problems:
+            print(
+                f"check-claims: the JetBrains listing fixture {what!r} is a public listing and is "
+                f"reported as {'; '.join(problems)}, so the reading fails a route that is right",
+                file=sys.stderr,
+            )
+            return 2
+
     # The fixtures above say the rules read the right commands; this says they read them the right
     # way, which is the half that was missing: a reading can be swapped for a weaker one with every
     # fixture still green, and then the fixtures hold a rule and not the reading inside it.
@@ -4842,6 +5075,7 @@ def scan(targets: list[str]) -> int:
         check_command_prompt_selection,
         check_demo_instance,
         check_wire_binding,
+        check_jetbrains_listing,
     ):
         status = check(scanned)
         if status != 0:

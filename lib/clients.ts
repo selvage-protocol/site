@@ -62,6 +62,9 @@ export type Client = {
     /** What the copy announces: the tab it came from is not something a listener sees. */
     announce: string;
     note: string;
+    /** The registry listing a reader installs from, where the route is one rather than a
+        command: it is drawn beside the repository's link. */
+    listing?: { label: string; href: string };
   };
 };
 
@@ -71,6 +74,8 @@ export function repositoryUrl(repository: string) {
 
 const NEOVIM_COMMAND = "SelvageHost ws://127.0.0.1:8080";
 const NEOVIM_PLUGIN_LINE = "{ 'selvage-protocol/nvim_client', build = 'npm ci' }";
+const JETBRAINS_ADDRESS = "plugins.jetbrains.com/plugin/34763-selvage";
+const JETBRAINS_LISTING = `https://${JETBRAINS_ADDRESS}`;
 
 export const CLIENTS: Client[] = [
   {
@@ -109,6 +114,27 @@ export const CLIENTS: Client[] = [
     },
   },
   {
+    id: "jetbrains",
+    repository: "jetbrains_client",
+    description: "JetBrains IDE plugin",
+    Icon: Box,
+    status: "available",
+    chip: "JetBrains",
+    install: {
+      lines: [
+        command("›", JETBRAINS_ADDRESS),
+        { text: "# or search for Selvage in Settings → Plugins", comment: true },
+        { text: "# then run  Tools → Selvage → Host a session", comment: true },
+      ],
+      copy: JETBRAINS_LISTING,
+      announce: "JetBrains Marketplace address",
+      note:
+        "Published on the JetBrains Marketplace. Works in IntelliJ IDEA, PyCharm and every " +
+        "other JetBrains IDE, version 2026.2 or newer.",
+      listing: { label: "Marketplace", href: JETBRAINS_LISTING },
+    },
+  },
+  {
     id: "web",
     repository: "web_client",
     description: "The browser page",
@@ -125,14 +151,6 @@ export const CLIENTS: Client[] = [
       announce: "Browser address",
       note: "Guests need nothing installed.",
     },
-  },
-  {
-    id: "jetbrains",
-    repository: "jetbrains_client",
-    description: "JetBrains IDEs",
-    Icon: Box,
-    status: "planned",
-    chip: "JetBrains",
   },
 ];
 

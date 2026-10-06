@@ -120,8 +120,8 @@ What no ratio proves is read against the code by a person on every change:
 - **The figure grid is a list.** Each card's drawing is followed by a bold lead and a sentence, so
   the four claims are readable as a list before they are readable as a picture.
 - **Client links.** The routes, the repositories and the specification are links drawn as controls —
-  a tab, a card with a border and a fill, a `Source` label with an arrow — and the stylesheet takes
-  the prose underline off that group (`.repo`, `.demo-link`, `.spec-link`, `.source-link`,
-  `.try-link`, `.cta`), because their affordance is the control's own shape. Every link in running
+  a tab, a card with a border and a fill, a `Source` or `Marketplace` label with an arrow — and the
+  stylesheet takes the prose underline off that group (`.repo`, `.demo-link`, `.spec-link`,
+  `.source-link`, `.try-link`, `.cta`), because their affordance is the control's own shape. Every link in running
   prose keeps it, so a link there is not told apart by its colour and monospace face alone; the
   focus outline is unchanged.

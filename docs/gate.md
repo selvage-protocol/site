@@ -32,10 +32,10 @@ way — the card, a status stated once in either its pill or its row, the senten
 run it, and a row that is a plan rather than a control, read from the card's own markup — and so is
 the repository grid, where every row joins its own word to its own link, the extension's row is read
 against the VS Code install route that names the identity the release publishes under and both
-registries, the row that is a plan is held to carrying no link, every repository the page links is
-one the grid links, so `jetbrains_client` cannot come back as a link to a repository that is not
-there, and the grid's client rows, the chips figure and the terminal's install routes have to name
-the same clients, so a client written onto one surface and not the others fails the gate. It then
+registries, a row that is a plan is held to carrying no link, every repository the page links is
+one the grid links, so no row and no source link points at a repository the project does not have,
+and the grid's client rows, the chips figure and the terminal's install routes have to name the same
+clients, so a client written onto one surface and not the others fails the gate. It then
 reads the page's image references, holds each to the tag `scripts/check-claims.py` carries on its
 package — a bare repository being that tag — and asks `ghcr.io` for both of them; reads the Run
 section's three commands — the first creates the network, every run is detached and on it, the page
@@ -52,7 +52,11 @@ host the check allows, and asks that instance what it reports, whether the edito
 `/` serves the page with a host card in its shell; and holds the tag's declared wire and that
 address against each other, since a reader takes both of them from the page — so the sealing claim
 cannot be read without the command under it being read too. Where the page names a version for
-either of the two, that sentence is held to the same pair.
+either of the two, that sentence is held to the same pair. Last, it reads the JetBrains route for
+the JetBrains Marketplace and a link to the plugin's listing, and asks `plugins.jetbrains.com`
+whether JetBrains has approved a version on that listing, with its reading of the answer held by fixtures that
+run before the scan: until JetBrains has, the step fails on that alone, and why this half asks a registry when the
+extension's does not is in [the claim filter](claim-filter.md).
 
 The policy step reads the same rendered file, its not-found route, and the policy out of
 `vercel.json`, and fails when the policy would refuse a script, stylesheet, image or font either

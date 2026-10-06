@@ -23,7 +23,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 const title = "Selvage: edit the same file together, on a server you run";
 const description =
-  "One Rust binary you host holds the room. An invite link is the whole permission: VS Code, Neovim and a browser page edit the same file, with no account and no third party's cloud holding the room. The session layer is written down as a specification, with JSON Schema and conformance vectors.";
+  "One Rust binary you host holds the room. An invite link is the whole permission: VS Code, Neovim, JetBrains IDEs and a browser page edit the same file, with no account and no third party's cloud holding the room. The session layer is written down as a specification, with JSON Schema and conformance vectors.";
 
 // The page's home. `metadataBase` resolves the file conventions' paths against it, and the
 // canonical link and `og:url` name it, so one constant decides all three. `check-csp.py`'s own
