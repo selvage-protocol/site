@@ -768,13 +768,16 @@ REGISTRY_LISTING = re.compile(
 # Marketplace is not one of the extension's registries, so it is pinned apart from them: the route
 # that hands the plugin over has to name the Marketplace and link this listing, any other link to a
 # plugin listing fails on its destination, and the Marketplace has to say the listing is public.
-# JetBrains reviews a plugin by hand before it is listed for everyone, and until then its API
-# answers `"approve": false`; a route that sends a reader to the listing before that sends them to a
-# plugin they cannot install yet, so the approval is asked for rather than assumed.
+# JetBrains reviews each version by hand before it is listed for everyone, and until then the
+# version answers `"approve": false`; a route that sends a reader to the listing before a version is
+# approved sends them to a plugin they cannot install yet, so the approval is asked for rather than
+# assumed. The plugin's own `approve` is not that fact: it stays false on a plugin whose approved
+# version the IDE already installs, so the versions are what is read.
 JETBRAINS_PLUGIN_ID = 34763
 JETBRAINS_LISTING_PATH = f"/plugin/{JETBRAINS_PLUGIN_ID}-selvage"
 JETBRAINS_LISTING = "https://plugins.jetbrains.com" + JETBRAINS_LISTING_PATH
 JETBRAINS_LISTING_API = f"https://plugins.jetbrains.com/api/plugins/{JETBRAINS_PLUGIN_ID}"
+JETBRAINS_VERSIONS_API = JETBRAINS_LISTING_API + "/updates"
 # The route's key: the install panel's id, which is the client's id in `lib/clients.ts`.
 JETBRAINS_ROUTE = "jetbrains"
 JETBRAINS_REGISTRY = (
@@ -3563,52 +3566,89 @@ def check_published_extension(pages: list[Scanned]) -> int:
     return 0
 
 
-# What the Marketplace's answer for the plugin has to say, read by `jetbrains_listing_problems`.
-# Each fixture is an answer of the API's shape with the defect its name gives written into it, and
-# the fragment the reading has to report for it; an empty fragment is an answer the reading has to
-# pass. They run before the scan, so a reading that stops telling a listing in review from a public
-# one fails the check rather than passing every page.
-JETBRAINS_LISTING_FIXTURES: tuple[tuple[str, object, str], ...] = (
+# What the Marketplace's answers for the plugin have to say, read by `jetbrains_listing_problems`.
+# Each fixture is a plugin answer and a version list of the API's shapes with the defect its name
+# gives written into them, and the fragment the reading has to report for it; an empty fragment is a
+# pair the reading has to pass. They run before the scan, so a reading that stops telling a listing
+# in review from a public one fails the check rather than passing every page.
+JETBRAINS_PLUGIN = {"id": JETBRAINS_PLUGIN_ID, "link": JETBRAINS_LISTING_PATH, "approve": False}
+JETBRAINS_VERSION = {
+    "pluginId": JETBRAINS_PLUGIN_ID,
+    "version": "0.1.0",
+    "channel": "",
+    "approve": True,
+    "listed": True,
+    "hidden": False,
+}
+JETBRAINS_LISTING_FIXTURES: tuple[tuple[str, object, object, str], ...] = (
+    ("a public listing", JETBRAINS_PLUGIN, [JETBRAINS_VERSION], ""),
     (
-        "a public listing",
-        {"id": JETBRAINS_PLUGIN_ID, "link": JETBRAINS_LISTING_PATH, "approve": True},
+        "a public listing with a newer version in review",
+        JETBRAINS_PLUGIN,
+        [{**JETBRAINS_VERSION, "version": "0.2.0", "approve": False}, JETBRAINS_VERSION],
         "",
     ),
     (
-        "a listing still in review",
-        {"id": JETBRAINS_PLUGIN_ID, "link": JETBRAINS_LISTING_PATH, "approve": False},
-        '"approve" is false',
+        "a listing whose only version is in review",
+        JETBRAINS_PLUGIN,
+        [{**JETBRAINS_VERSION, "approve": False}],
+        "no version is approved",
     ),
-    (
-        "an answer with no approval in it",
-        {"id": JETBRAINS_PLUGIN_ID, "link": JETBRAINS_LISTING_PATH},
-        '"approve" is missing',
-    ),
+    ("a listing with no version", JETBRAINS_PLUGIN, [], "no version is approved"),
     (
         "an approval written as a string",
-        {"id": JETBRAINS_PLUGIN_ID, "link": JETBRAINS_LISTING_PATH, "approve": "true"},
-        "\"approve\" is 'true'",
+        JETBRAINS_PLUGIN,
+        [{**JETBRAINS_VERSION, "approve": "true"}],
+        "no version is approved",
+    ),
+    (
+        "an approved version that is unlisted",
+        JETBRAINS_PLUGIN,
+        [{**JETBRAINS_VERSION, "listed": False}],
+        "no version is approved",
+    ),
+    (
+        "an approved version that is hidden",
+        JETBRAINS_PLUGIN,
+        [{**JETBRAINS_VERSION, "hidden": True}],
+        "no version is approved",
+    ),
+    (
+        "an approved version on a channel other than stable",
+        JETBRAINS_PLUGIN,
+        [{**JETBRAINS_VERSION, "channel": "eap"}],
+        "no version is approved",
+    ),
+    (
+        "another plugin's version",
+        JETBRAINS_PLUGIN,
+        [{**JETBRAINS_VERSION, "pluginId": JETBRAINS_PLUGIN_ID + 1}],
+        "no version is approved",
     ),
     (
         "another plugin's listing",
-        {"id": JETBRAINS_PLUGIN_ID + 1, "link": "/plugin/34764-other", "approve": True},
+        {**JETBRAINS_PLUGIN, "id": JETBRAINS_PLUGIN_ID + 1, "link": "/plugin/34764-other"},
+        [JETBRAINS_VERSION],
         f"plugin {JETBRAINS_PLUGIN_ID + 1}",
     ),
     (
         "the listing moved to another address",
-        {"id": JETBRAINS_PLUGIN_ID, "link": "/plugin/34763-renamed", "approve": True},
+        {**JETBRAINS_PLUGIN, "link": "/plugin/34763-renamed"},
+        [JETBRAINS_VERSION],
         "/plugin/34763-renamed",
     ),
-    ("an answer that is not an object", [JETBRAINS_PLUGIN_ID], "not a JSON object"),
+    ("an answer that is not an object", [JETBRAINS_PLUGIN_ID], [JETBRAINS_VERSION], "not a JSON object"),
+    ("a version list that is not a list", JETBRAINS_PLUGIN, JETBRAINS_VERSION, "not a JSON list"),
 )
 
 
-def jetbrains_listing_problems(answer: object) -> list[str]:
-    """What the Marketplace's answer for the plugin says against the page, or [] when it holds.
+def jetbrains_listing_problems(answer: object, versions: object) -> list[str]:
+    """What the Marketplace's answers for the plugin say against the page, or [] when they hold.
 
-    The answer has to be about the plugin the page links, at the address the page links, and it
-    has to say JetBrains approved it. `approve` is read as the JSON `true` and nothing looser, so a
-    string or a number in its place is not taken for an approval.
+    The plugin answer has to be about the plugin the page links, at the address the page links,
+    and one of its versions has to be one a reader installs: on the stable channel, listed, not
+    hidden, and approved by JetBrains. `approve` and `listed` are read as the JSON `true` and
+    nothing looser, so a string or a number in their place is not taken for an approval.
     """
     if not isinstance(answer, dict):
         return [f"the answer is not a JSON object ({type(answer).__name__})"]
@@ -3621,21 +3661,30 @@ def jetbrains_listing_problems(answer: object) -> list[str]:
         problems.append(
             f"it puts the listing at {link!r}, and the page links {JETBRAINS_LISTING_PATH!r}"
         )
-    if "approve" not in answer:
-        problems.append('"approve" is missing, so nothing says the listing is public')
-    elif answer["approve"] is False:
+    if not isinstance(versions, list):
+        problems.append(f"its version list is not a JSON list ({type(versions).__name__})")
+        return problems
+    public = [
+        one
+        for one in versions
+        if isinstance(one, dict)
+        and one.get("pluginId") == JETBRAINS_PLUGIN_ID
+        and one.get("channel") == ""
+        and one.get("approve") is True
+        and one.get("listed") is True
+        and one.get("hidden") is not True
+    ]
+    if not public:
         problems.append(
-            '"approve" is false: JetBrains has not approved the listing yet, so the plugin is '
-            "not public"
+            f"no version is approved, listed and on the stable channel among the {len(versions)} "
+            "it lists: JetBrains has not approved the plugin yet, so it is not public"
         )
-    elif answer["approve"] is not True:
-        problems.append(f'"approve" is {answer["approve"]!r}, and only true says it is public')
     return problems
 
 
-def jetbrains_listing() -> object:
-    """The Marketplace's answer for the plugin, as JSON. Raises when it cannot be asked."""
-    request = urllib.request.Request(JETBRAINS_LISTING_API)
+def jetbrains_listing(api: str = JETBRAINS_LISTING_API) -> object:
+    """The Marketplace's answer at `api`, as JSON. Raises when it cannot be asked."""
+    request = urllib.request.Request(api)
     request.add_header("Accept", "application/json")
     request.add_header("User-Agent", USER_AGENT)
     with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
@@ -3647,9 +3696,9 @@ def check_jetbrains_listing(pages: list[Scanned]) -> int:
 
     The page hands the plugin over in the terminal's JetBrains route, so that route has to name the
     JetBrains Marketplace and link the plugin's listing, read from the route's own panel. Then the
-    Marketplace is asked about the plugin: the listing has to be the one the route links and
-    JetBrains has to have approved it, because a listing in review is not one a reader can install
-    from, and the route says the plugin is published there.
+    Marketplace is asked about the plugin and its versions: the listing has to be the one the route
+    links and JetBrains has to have approved a version of it, because a listing with no approved
+    version is not one a reader can install from, and the route says the plugin is published there.
 
     Returns 0 when it holds, 1 when the page or the Marketplace disproves the route, and 2 when the
     Marketplace cannot be asked.
@@ -3684,9 +3733,10 @@ def check_jetbrains_listing(pages: list[Scanned]) -> int:
 
     try:
         answer = jetbrains_listing()
+        versions = jetbrains_listing(JETBRAINS_VERSIONS_API)
     except urllib.error.HTTPError as error:
         print(
-            f"check-claims: {JETBRAINS_LISTING_API} answered {error.code} {error.reason}; the "
+            f"check-claims: {error.url} answered {error.code} {error.reason}; the "
             f"route links {JETBRAINS_LISTING}, and a listing the Marketplace does not describe "
             "is one nothing can confirm",
             file=sys.stderr,
@@ -3694,26 +3744,27 @@ def check_jetbrains_listing(pages: list[Scanned]) -> int:
         return 1 if error.code == 404 else 2
     except (urllib.error.URLError, OSError, ValueError) as error:
         print(
-            f"check-claims: cannot ask {JETBRAINS_LISTING_API} about the plugin ({error}); the "
+            f"check-claims: cannot ask {JETBRAINS_LISTING_API} about the plugin and its "
+            f"versions ({error}); the "
             "JetBrains route cannot be checked against the listing it links, so this is a "
             "failure rather than a pass",
             file=sys.stderr,
         )
         return 2
 
-    problems = jetbrains_listing_problems(answer)
+    problems = jetbrains_listing_problems(answer, versions)
     if problems:
         print(
             f"check-claims: the JetBrains route in {where} links {JETBRAINS_LISTING} and says the "
             f"plugin is published on {JETBRAINS_REGISTRY[0]}, and {JETBRAINS_LISTING_API} "
-            f"answers that {'; '.join(problems)}. The route waits for that approval",
+            f"and its versions answer that {'; '.join(problems)}. The route waits for that approval",
             file=sys.stderr,
         )
         return 1
 
     print(
         f"check-claims: the JetBrains route links {JETBRAINS_LISTING} on "
-        f"{JETBRAINS_REGISTRY[0]}, and the Marketplace says JetBrains approved the listing"
+        f"{JETBRAINS_REGISTRY[0]}, and the Marketplace lists a version JetBrains approved"
     )
     return 0
 
@@ -4942,8 +4993,8 @@ def scan(targets: list[str]) -> int:
             print(f"check-claims: {failure}", file=sys.stderr)
             return 2
 
-    for what, answer, expected in JETBRAINS_LISTING_FIXTURES:
-        problems = jetbrains_listing_problems(answer)
+    for what, answer, versions, expected in JETBRAINS_LISTING_FIXTURES:
+        problems = jetbrains_listing_problems(answer, versions)
         if expected and not any(expected in problem for problem in problems):
             print(
                 f"check-claims: the JetBrains listing fixture {what!r} is the defect {expected!r} "

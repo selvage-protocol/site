@@ -289,17 +289,22 @@ half-added client this catches. It asks no network either.
 The JetBrains plugin's listing is asserted against the Marketplace itself, and it is the one claim
 here that waits on somebody else. The JetBrains route in the terminal has to name the JetBrains
 Marketplace and link `https://plugins.jetbrains.com/plugin/34763-selvage`, read from the route's own
-panel, and then the check asks `https://plugins.jetbrains.com/api/plugins/34763` about the plugin:
-the answer has to describe plugin 34763 at that listing's path and carry `"approve": true`, read as
-the JSON `true` and nothing looser. JetBrains reviews a plugin by hand before it lists it for
-everyone, and until then the API answers `"approve": false`, so a route that says the plugin is
-published there sends a reader to a plugin they cannot install yet, and the step fails with exit 1.
+panel, and then the check asks `https://plugins.jetbrains.com/api/plugins/34763` about the plugin
+and `…/34763/updates` about its versions: the plugin has to be plugin 34763 at that listing's path,
+and one of its versions has to be on the stable channel, not hidden, and carry `"approve": true` and
+`"listed": true`, read as the JSON `true` and nothing looser. JetBrains reviews each version by hand
+before it lists it for everyone, and until then the version answers `"approve": false`, so a route
+that says the plugin is published there with no approved version sends a reader to a plugin they
+cannot install yet, and the step fails with exit 1. The plugin's own `"approve"` is not read: it
+stayed `false` on a plugin whose approved version the IDE already offered to install.
 The extension's half asks no registry, for the release-ordering reason above; this half does,
 because the plugin's first listing is uploaded by hand and approved by JetBrains rather than
 produced by a release this project dispatches, so what the page waits on is the approval. The
-reading carries fixtures of its own, run before the scan: an approved answer has to pass, and one in
-review, one with no `approve`, one whose `approve` is the string `"true"`, another plugin's, one at
-another path and one that is not an object each have to be reported, so a reading that stops telling
+reading carries fixtures of its own, run before the scan: an approved version has to pass, and so
+does one beside a newer version still in review; a listing whose only version is in review, one with
+no version, one whose `approve` is the string `"true"`, an unlisted, hidden or non-stable version,
+another plugin's version, another plugin's listing, one at another path, an answer that is not an
+object and a version list that is not a list each have to be reported, so a reading that stops telling
 a listing in review from a public one fails the check with exit 2 rather than passing every page. It
 needs egress to `plugins.jetbrains.com` and exits 2 when it cannot ask; a `404` for the plugin is
 exit 1, because a listing the Marketplace does not have disproves the route. It runs after every

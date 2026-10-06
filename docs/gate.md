@@ -54,7 +54,7 @@ address against each other, since a reader takes both of them from the page — 
 cannot be read without the command under it being read too. Where the page names a version for
 either of the two, that sentence is held to the same pair. Last, it reads the JetBrains route for
 the JetBrains Marketplace and a link to the plugin's listing, and asks `plugins.jetbrains.com`
-whether JetBrains has approved that listing, with its reading of the answer held by fixtures that
+whether JetBrains has approved a version on that listing, with its reading of the answer held by fixtures that
 run before the scan: until JetBrains has, the step fails on that alone, and why this half asks a registry when the
 extension's does not is in [the claim filter](claim-filter.md).
 
