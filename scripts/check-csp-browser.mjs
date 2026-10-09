@@ -37,7 +37,10 @@
 // It needs a Chromium, which the runner image carries; `scripts/ci-local.sh csp` finds one on
 // `PATH` and runs this after the model, and `.github/workflows/ci.yml` runs that same command.
 // Every wait is a bounded poll for the state being waited for, so a page that never hydrates
-// fails here instead of passing slowly.
+// fails here instead of passing slowly. A failure at or after the hydration step carries the
+// page's own state and console, because "the scripts never ran", "hydration did not finish
+// inside the wait", "the scroll never moved" and "the effect never fired" share a symptom and
+// not a cause.
 //
 //   npm run build
 //   CHROMIUM=/path/to/chromium node scripts/check-csp-browser.mjs
@@ -354,6 +357,20 @@ function send(method, params = {}, sessionId) {
 }
 
 const refusals = [];
+// The page's own account of a hydration that went wrong arrives as a console error or warning,
+// and it is the one thing no assertion here can reconstruct. Bounded to the last few of those.
+const consoleTail = [];
+const CONSOLE_TAIL_LINES = 10;
+let quietConsoleLines = 0;
+function recordConsole(level, text) {
+  if (!text) return;
+  if (level !== "warning" && level !== "error") {
+    quietConsoleLines += 1;
+    return;
+  }
+  consoleTail.push(`${level}: ${text}`);
+  if (consoleTail.length > CONSOLE_TAIL_LINES) consoleTail.shift();
+}
 let document_ = null;
 let loaded = false;
 
@@ -377,6 +394,10 @@ cdp.socket.addEventListener("message", (event) => {
   }
   const text = message.params?.entry?.text ?? message.params?.args?.map((a) => a.value ?? "").join(" ");
   if (text && /Refused|Content Security|violat/i.test(text)) refusals.push(text);
+  if (message.method === "Runtime.consoleAPICalled") {
+    recordConsole(message.params.type, message.params.args?.map((a) => a.value ?? a.description ?? "").join(" "));
+  }
+  if (message.method === "Log.entryAdded") recordConsole(message.params.entry?.level, message.params.entry?.text);
 });
 
 const { targetId } = await send("Target.createTarget", { url: "about:blank" });
@@ -415,6 +436,62 @@ async function waitFor(expression, seconds = 5) {
     if (Date.now() > deadline) return false;
     await sleep(100);
   }
+}
+
+// What the page was in when an assertion about it failed. "The scripts never ran", "hydration
+// did not finish inside the wait", "the scroll never moved" and "the effect never fired" all wear
+// one symptom from the outside and leave different states here.
+async function pageReport() {
+  let state;
+  try {
+    state = JSON.parse(
+      await evaluate(`JSON.stringify({
+        readyState: document.readyState,
+        nextF: typeof window.__next_f,
+        header: (() => {
+          const el = document.querySelector('header.site-header');
+          if (!el) return null;
+          return {
+            classes: el.className,
+            translate: getComputedStyle(el).translate,
+            reactKeys: Object.keys(el).filter((key) => key.startsWith('__react')).length,
+          };
+        })(),
+        scrollY: window.scrollY,
+        viewport: window.innerHeight,
+        height: document.documentElement.scrollHeight,
+      })`),
+    );
+  } catch (error) {
+    return `  page       : could not be read (${error.message})`;
+  }
+  const lines = [
+    `  page       : readyState ${state.readyState}, window.__next_f is ${state.nextF}, ` +
+      `scrollY ${state.scrollY} of ${Math.max(0, state.height - state.viewport)} ` +
+      `(viewport ${state.viewport}, document ${state.height})`,
+  ];
+  if (state.header === null) {
+    lines.push("  header     : not in the document");
+  } else {
+    lines.push(
+      `  header     : ${state.header.reactKeys > 0 ? "hydrated" : "not hydrated"}, ` +
+        `class "${state.header.classes}", translate ${state.header.translate}`,
+    );
+  }
+  lines.push(
+    consoleTail.length > 0
+      ? `  console    : last ${consoleTail.length} warning(s) and error(s)\n${consoleTail
+          .map((line) => `      ${line}`)
+          .join("\n")}`
+      : `  console    : no warning or error, ${quietConsoleLines} quieter line(s)`,
+  );
+  return lines.join("\n");
+}
+
+// Every assertion about the page, from the hydration step on, fails with this: the state that
+// tells those four shapes apart is cheaper to print than to guess at from a job log later.
+async function failWithPage(message) {
+  fail(`${message}\n${await pageReport()}`);
 }
 
 const where = `http://127.0.0.1:${PORT}/`;
@@ -520,13 +597,13 @@ await evaluate("window.scrollTo({ top: 300, behavior: 'instant' })");
 const returned = await waitFor(
   "!document.querySelector('header.site-header').className.includes('-translate-y-full')",
 );
-if (!concealed) fail("the header never concealed itself when scrolled down: the page is not hydrating");
-if (!moved) fail(`the header's translate settled at ${concealedTranslate}, not 0px -100%`);
-if (!returned) fail("the header stayed concealed when scrolled back up");
+if (!concealed) await failWithPage("the header never concealed itself when scrolled down: the page is not hydrating");
+if (!moved) await failWithPage(`the header's translate settled at ${concealedTranslate}, not 0px -100%`);
+if (!returned) await failWithPage("the header stayed concealed when scrolled back up");
 
 // 6. no framework banner on the document response
 const banner = Object.keys(document_?.headers ?? {}).some((key) => key.toLowerCase() === "x-powered-by");
-if (banner) fail("the document response carries X-Powered-By: next.config.ts should have stopped it");
+if (banner) await failWithPage("the document response carries X-Powered-By: next.config.ts should have stopped it");
 
 // 7. the site's own not-found route, served with the same policy. Asserted separately from the
 // page above because it is a different document with different markup: the framework's default
@@ -536,21 +613,21 @@ const refusalsBeforeNotFound = refusals.length;
 loaded = false;
 await send("Page.navigate", { url: `http://127.0.0.1:${PORT}/no-such-path` }, sessionId);
 for (let i = 0; i < 120 && !loaded; i += 1) await sleep(100);
-if (!loaded) fail("a request for an unrouted path never fired a load event");
+if (!loaded) await failWithPage("a request for an unrouted path never fired a load event");
 const notFoundStatus = document_?.status;
 if (notFoundStatus !== 404) {
-  fail(`a request for an unrouted path answered ${notFoundStatus}, so it did not render the not-found route`);
+  await failWithPage(`a request for an unrouted path answered ${notFoundStatus}, so it did not render the not-found route`);
 }
 const notFoundViolations = JSON.parse(await evaluate("JSON.stringify(window.__violations ?? null)"));
 if (!Array.isArray(notFoundViolations)) {
-  fail("the violation listener never ran on the not-found route, so this check saw nothing there");
+  await failWithPage("the violation listener never ran on the not-found route, so this check saw nothing there");
 }
 if (notFoundViolations.length > 0 || refusals.length > refusalsBeforeNotFound) {
   const lines = notFoundViolations.length > 0
     ? notFoundViolations.map((v) => `${v.directive} ${v.blockedURI}`)
     : refusals.slice(refusalsBeforeNotFound);
   for (const line of lines) console.error(`  refused: ${line}`);
-  fail(
+  await failWithPage(
     `the policy refuses the site's own not-found route: ${notFoundViolations.length} ` +
       `securitypolicyviolation event(s), ${refusals.length - refusalsBeforeNotFound} console refusal(s)`,
   );
@@ -561,7 +638,9 @@ if (notFoundViolations.length > 0 || refusals.length > refusalsBeforeNotFound) {
 const notFoundHtml = await (await fetch(`http://127.0.0.1:${PORT}/no-such-path`)).text();
 const inlineStyles = /<style[\s>]/i.test(notFoundHtml) || /\sstyle\s*=/i.test(notFoundHtml);
 if (inlineStyles) {
-  fail("the not-found route's served document carries an inline style or style attribute, which style-src 'self' refuses");
+  await failWithPage(
+    "the not-found route's served document carries an inline style or style attribute, which style-src 'self' refuses",
+  );
 }
 
 console.log(`check-csp-browser: ${version.Browser}, headless, ${where} served from the build with
