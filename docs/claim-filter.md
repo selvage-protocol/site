@@ -85,10 +85,13 @@ second `/session` appended and is refused. The check asserts that path separatel
 server's own JSON**: the path has to reach the server the page names, a redirect or a `5xx` must not
 stand in for it, and the proxy's own `404` page is `text/html`. Which `4xx` the server picks is its
 business, and pinning `404` would redden this gate for a change in `selvaged` that makes no sentence
-on the page false. The **WebSocket upgrade itself is not asserted**, because the host's proxy
-answers a hand-rolled upgrade from a runner's egress with `403` and a request the proxy refuses
-asserts nothing; the upgrade was verified by hand, from a client the proxy accepts, and that is
-recorded in the findings rather than claimed here. It also asks `/` for a `200` and a `text/html`,
+on the page false. The **WebSocket upgrade is asserted too**, on the same address: the check
+performs the handshake the clients perform and requires a `101`, a `Sec-WebSocket-Accept` that is
+the client key's own digest, and the first frame the server sends a socket that never says hello —
+a `session.error` envelope carrying `selvage/2`. A hand-rolled upgrade from this host's egress is
+answered `101` and then that frame, so the upgrade is a fact the gate reads rather than one it
+records by hand; an address whose plain path answers while its upgrade does not is a name an editor
+cannot use, and the gate says so. It also asks `/` for a `200` and a `text/html`,
 because the browser row tells a guest the demo serves the page and the proxy's own `404` is
 `text/html` too, so the media type alone would let a dead page satisfy it. It then reads the bytes
 `/` answered with and requires the host card's own element in them, because the browser row also

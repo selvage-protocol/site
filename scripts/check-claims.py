@@ -58,10 +58,14 @@ Marketplace that does not answer).
 from __future__ import annotations
 
 import ast
+import base64
+import hashlib
 import html
 import json
 import os
 import re
+import socket
+import ssl
 import sys
 import traceback
 import urllib.error
@@ -3092,11 +3096,10 @@ def demo_session_route() -> tuple[int, str]:
     """What answers the instance's session path, as the status and media type of a plain GET.
 
     The page hands a reader a server address and the clients append `SESSION_PATH` to it, so the
-    address is worth a sentence only if that path reaches the server. A plain GET is the request
-    this check can make: a hand-rolled WebSocket upgrade from a runner's egress is answered `403`
-    by the host's proxy, and a request the proxy refuses asserts nothing about the server. What
-    answers the path is the assertion instead, and `session_path_reaches_the_server` is what
-    decides it.
+    address is worth a sentence only if that path reaches the server. This is the plain request:
+    the server refuses one that asks for no upgrade with its own JSON, and
+    `session_path_reaches_the_server` is what decides it. The upgrade the clients actually open is
+    a different request and is asserted by `demo_upgrade_route`.
     """
     request = urllib.request.Request(f"{DEMO_ORIGIN}{SESSION_PATH}")
     request.add_header("User-Agent", USER_AGENT)
@@ -3122,6 +3125,119 @@ def session_path_reaches_the_server(status: int, media_type: str) -> bool:
     """
     return 400 <= status <= 499 and media_type == "application/json"
 
+# The WebSocket handshake the clients perform on the address the page hands a reader, RFC 6455:
+# the fixed GUID every server hashes a client's key with, and the deadline the read is bounded by.
+# A socket that completes the handshake and sends no `hello` is answered with a `session.error`
+# frame once the server's `hello_timeout` expires (`specification/schema/limits.json`, 10
+# seconds), so the read has to outlast that limit rather than assume a frame arrives at once.
+WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+WS_OPCODE_TEXT = 0x1
+WS_OPCODE_BINARY = 0x2
+
+
+def _recv_exactly(connection: ssl.SSLSocket, count: int) -> bytes:
+    """Up to `count` bytes, stopping when the connection's own timeout runs out."""
+    data = b""
+    while len(data) < count:
+        try:
+            chunk = connection.recv(count - len(data))
+        except (TimeoutError, socket.timeout):
+            break
+        if not chunk:
+            break
+        data += chunk
+    return data
+
+
+def _read_websocket_frame(connection: ssl.SSLSocket) -> bytes:
+    """The payload of the next data frame on the connection, or `b""` for anything else.
+
+    A control frame (a ping, a close) is deliberately not the answer this reads: what the check
+    is after is the server's own envelope, and a control frame is the connection rather than the
+    protocol's first word. A frame that times out part-way is reported as none as well, so the
+    caller says what it observed instead of reading a truncated payload as one.
+    """
+    header = _recv_exactly(connection, 2)
+    if len(header) < 2:
+        return b""
+    opcode = header[0] & 0x0F
+    masked = bool(header[1] & 0x80)
+    length = header[1] & 0x7F
+    if length == 126:
+        extended = _recv_exactly(connection, 2)
+        if len(extended) < 2:
+            return b""
+        length = int.from_bytes(extended, "big")
+    elif length == 127:
+        extended = _recv_exactly(connection, 8)
+        if len(extended) < 8:
+            return b""
+        length = int.from_bytes(extended, "big")
+    mask = _recv_exactly(connection, 4) if masked else b""
+    if masked and len(mask) < 4:
+        return b""
+    payload = _recv_exactly(connection, length)
+    if len(payload) < length:
+        return b""
+    if masked:
+        payload = bytes(byte ^ mask[index % 4] for index, byte in enumerate(payload))
+    if opcode not in (WS_OPCODE_TEXT, WS_OPCODE_BINARY):
+        return b""
+    return payload
+
+
+def demo_upgrade_route() -> tuple[int, bool, bytes]:
+    """What the instance answers a WebSocket upgrade on the session path with.
+
+    The address the page hands a reader is one an editor opens a socket on, so the handshake is
+    the sentence's own assertion: `session_path_reaches_the_server` decides the plain request, and
+    a proxy that answers that one and refuses the upgrade would pass a check that never made this
+    one. This performs the handshake the clients perform, and returns the status, whether the
+    answer's `Sec-WebSocket-Accept` is the client key's own digest, and the payload of the first
+    data frame — the server's envelope, which the caller reads against the one wire version.
+    """
+    context = ssl.create_default_context()
+    with socket.create_connection(
+        (DEMO_HOST, 443), timeout=REQUEST_TIMEOUT_SECONDS
+    ) as raw:
+        with context.wrap_socket(raw, server_hostname=DEMO_HOST) as connection:
+            connection.settimeout(REQUEST_TIMEOUT_SECONDS)
+            key = base64.b64encode(os.urandom(16)).decode("ascii")
+            connection.sendall(
+                (
+                    f"GET {SESSION_PATH} HTTP/1.1\r\n"
+                    f"Host: {DEMO_HOST}\r\n"
+                    "Upgrade: websocket\r\n"
+                    "Connection: Upgrade\r\n"
+                    f"Sec-WebSocket-Key: {key}\r\n"
+                    "Sec-WebSocket-Version: 13\r\n"
+                    f"User-Agent: {USER_AGENT}\r\n"
+                    "\r\n"
+                ).encode("ascii")
+            )
+            head = b""
+            while b"\r\n\r\n" not in head and len(head) <= 64 * 1024:
+                try:
+                    chunk = connection.recv(4096)
+                except (TimeoutError, socket.timeout):
+                    break
+                if not chunk:
+                    break
+                head += chunk
+            lines = head.split(b"\r\n")
+            if not lines or not lines[0].startswith(b"HTTP/"):
+                return 0, False, b""
+            status = int(lines[0].split(b" ", 2)[1])
+            accept = ""
+            for line in lines[1:]:
+                if line.lower().startswith(b"sec-websocket-accept:"):
+                    accept = line.split(b":", 1)[1].strip().decode("ascii", "replace")
+            expected = base64.b64encode(
+                hashlib.sha1((key + WS_GUID).encode("ascii")).digest()
+            ).decode("ascii")
+            if status != 101:
+                return status, accept == expected, b""
+            return status, accept == expected, _read_websocket_frame(connection)
 
 def demo_page_route() -> tuple[int, str, str]:
     """What the instance answers `/` with: its status, its media type, and the bytes it serves.
@@ -3220,6 +3336,7 @@ def check_demo_instance(pages: list[Scanned]) -> int:
     try:
         reported, offered = demo_meta()
         session_status, session_type = demo_session_route()
+        upgrade_status, upgrade_accept, upgrade_frame = demo_upgrade_route()
         page_status, media_type, page_body = demo_page_route()
     except urllib.error.HTTPError as error:
         answer = error.read(200).decode("utf-8", "replace").strip()
@@ -3260,6 +3377,41 @@ def check_demo_instance(pages: list[Scanned]) -> int:
         )
         return 1
 
+    if upgrade_status != 101:
+        print(
+            f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} answered a WebSocket upgrade with "
+            f"{upgrade_status}, and the page hands a reader {DEMO_REFERENCES[-1]!r} as the "
+            "address to give an editor: the clients open a socket on that address, so the "
+            "upgrade has to be accepted, and a plain path that answers while the upgrade does "
+            "not is a name an editor cannot use",
+            file=sys.stderr,
+        )
+        return 1
+
+    if not upgrade_accept:
+        print(
+            f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} answered a WebSocket upgrade with a "
+            "`Sec-WebSocket-Accept` that is not the client key's own digest: the 101 did not "
+            "complete a WebSocket handshake, so it is not the upgrade an editor opens",
+            file=sys.stderr,
+        )
+        return 1
+
+    try:
+        handshake = json.loads(upgrade_frame)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        handshake = None
+    if not isinstance(handshake, dict) or handshake.get("v") != WIRE:
+        observed = "nothing" if not upgrade_frame else repr(upgrade_frame[:120])
+        print(
+            f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} accepted the WebSocket upgrade and sent "
+            f"{observed} as its first frame, and the page's own sentences put the one wire "
+            f"version, {WIRE}, on that address: a socket that opened and produced no frame of "
+            "the server's is a relay the page's claim does not reach",
+            file=sys.stderr,
+        )
+        return 1
+
     if page_status != 200 or media_type != "text/html":
         print(
             f"check-claims: {DEMO_ORIGIN}/ answers {page_status} {media_type!r}, and the browser "
@@ -3283,7 +3435,8 @@ def check_demo_instance(pages: list[Scanned]) -> int:
     print(
         f"check-claims: the demo instance {DEMO_ORIGIN} answers, reports {reported!r} offering "
         f"{', '.join(offered)}, answers {SESSION_PATH} with the server's own JSON "
-        f"({session_status}), and serves a page whose shell carries the host card"
+        f"({session_status}), accepts a WebSocket upgrade there with a {WIRE} frame, and serves "
+        "a page whose shell carries the host card"
     )
     return 0
 
