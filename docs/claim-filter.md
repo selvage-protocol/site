@@ -101,7 +101,8 @@ records the refusal and says in its closing line that the handshake is not asser
 general host's egress is answered `101`, and that run is what asserts the upgrade. Everything the
 page's claim depends on stays a failure whatever the egress: a `404`, a `4xx` the server itself
 answers with its own JSON, a `5xx` or any status that is not a refusal, a `101` whose
-`Sec-WebSocket-Accept` is not the key's own digest, and a `101` whose first frame is not `selvage/2`.
+`Sec-WebSocket-Accept` is not the key's own digest, and a `101` whose first frame is not a
+`session.error` envelope carrying `selvage/2`.
 It also asks `/` for a `200` and a `text/html`,
 because the browser row tells a guest the demo serves the page and the proxy's own `404` is
 `text/html` too, so the media type alone would let a dead page satisfy it. It then reads the bytes

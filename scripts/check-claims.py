@@ -3139,6 +3139,10 @@ def session_path_reaches_the_server(status: int, media_type: str) -> bool:
 WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 WS_OPCODE_TEXT = 0x1
 WS_OPCODE_BINARY = 0x2
+# The event that frame carries. Its `params.code` is `hello_required` there, but the code is the
+# server's business and stays unpinned, like the `4xx` the plain request on the same path is answered
+# with.
+HELLO_REFUSAL_EVENT = "session.error"
 # How much of a refusal's body the probe reads: enough to say whether the server answered and to
 # quote what did, in its own words. A refusal is read for its shape, never for its whole text.
 REFUSAL_BODY_LIMIT = 512
@@ -3283,7 +3287,8 @@ def demo_upgrade_route() -> UpgradeAnswer:
     a proxy that answers that one and refuses the upgrade would pass a check that never made this
     one. This performs the handshake the clients perform, and reads the answer as the status,
     whether its `Sec-WebSocket-Accept` is the client key's own digest, the payload of its first
-    data frame — the server's envelope, which the caller reads against the one wire version — and,
+    data frame — the server's envelope, which the caller reads for its event and for the one wire
+    version — and,
     when the answer is no handshake, the refusal's own shape. An egress the edge refuses is a
     different fact from the server answering, and `UpgradeAnswer.refused_by_the_edge` is what
     tells the two apart.
@@ -3539,13 +3544,18 @@ def check_demo_instance(pages: list[Scanned]) -> int:
             handshake = json.loads(upgrade.frame)
         except (json.JSONDecodeError, UnicodeDecodeError):
             handshake = None
-        if not isinstance(handshake, dict) or handshake.get("v") != WIRE:
+        if (
+            not isinstance(handshake, dict)
+            or handshake.get("event") != HELLO_REFUSAL_EVENT
+            or handshake.get("v") != WIRE
+        ):
             observed = "nothing" if not upgrade.frame else repr(upgrade.frame[:120])
             print(
                 f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} accepted the WebSocket upgrade and "
-                f"sent {observed} as its first frame, and the page's own sentences put the one "
-                f"wire version, {WIRE}, on that address: a socket that opened and produced no "
-                "frame of the server's is a relay the page's claim does not reach",
+                f"sent {observed} as its first frame, and a socket that sends no `hello` is "
+                f"answered with a {HELLO_REFUSAL_EVENT} envelope carrying the one wire version, "
+                f"{WIRE}: a socket that opened and produced no frame of the server's is a relay "
+                "the page's claim does not reach",
                 file=sys.stderr,
             )
             return 1
@@ -3583,7 +3593,8 @@ def check_demo_instance(pages: list[Scanned]) -> int:
     print(
         f"check-claims: the demo instance {DEMO_ORIGIN} answers, reports {reported!r} offering "
         f"{', '.join(offered)}, answers {SESSION_PATH} with the server's own JSON "
-        f"({session_status}), accepts a WebSocket upgrade there with a {WIRE} frame, and serves "
+        f"({session_status}), accepts a WebSocket upgrade there with a {HELLO_REFUSAL_EVENT} "
+        f"{WIRE} frame, and serves "
         "a page whose shell carries the host card"
     )
     return 0
