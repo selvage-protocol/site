@@ -16,9 +16,12 @@ of what the sealed relay still sees and of the terms `selvaged` is under, and th
 extension is published under with the two
 registries the release publishes it to and what an
 install is and is not, and the JetBrains plugin's listing, which the Marketplace has to say is
-public. The address half asks the
-path a plain `GET` can reach, not the upgrade: see `demo_session_route`. Each is a fact with an
-artefact behind it, and a wrong tag is a command that fails rather than a wording that lies. See
+public. The address half asks the path a plain `GET` can reach and the upgrade the clients open on
+it: the path has to reach the server with the server's own JSON, and a `4xx` that is not that is the
+edge in front of the demo refusing the check's own egress rather than the server answering, which a
+run records instead of asserting (see `demo_session_route` and `demo_upgrade_route`). Each is a
+fact with an artefact behind it, and a wrong tag is a command that fails rather than a wording that
+lies. See
 `PUBLISHED_IMAGES`, `DEMO_ORIGIN`, `RELAY_DISCLOSURE`, `FSL_DISCLOSURE`, `PUBLISHED_EXTENSION`,
 `JETBRAINS_LISTING`, `check_run_section_command`, `check_run_section_address`,
 `check_command_prompt_selection`, `check_wire_binding` and `check_jetbrains_listing` below.
@@ -3099,7 +3102,9 @@ def demo_session_route() -> tuple[int, str]:
     address is worth a sentence only if that path reaches the server. This is the plain request:
     the server refuses one that asks for no upgrade with its own JSON, and
     `session_path_reaches_the_server` is what decides it. The upgrade the clients actually open is
-    a different request and is asserted by `demo_upgrade_route`.
+    a different request and is read by `demo_upgrade_route`, which asserts the handshake when the
+    edge in front of the host answers it and records the refusal when the edge answers the probe's
+    egress instead.
     """
     request = urllib.request.Request(f"{DEMO_ORIGIN}{SESSION_PATH}")
     request.add_header("User-Agent", USER_AGENT)
@@ -3125,6 +3130,7 @@ def session_path_reaches_the_server(status: int, media_type: str) -> bool:
     """
     return 400 <= status <= 499 and media_type == "application/json"
 
+
 # The WebSocket handshake the clients perform on the address the page hands a reader, RFC 6455:
 # the fixed GUID every server hashes a client's key with, and the deadline the read is bounded by.
 # A socket that completes the handshake and sends no `hello` is answered with a `session.error`
@@ -3133,6 +3139,65 @@ def session_path_reaches_the_server(status: int, media_type: str) -> bool:
 WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 WS_OPCODE_TEXT = 0x1
 WS_OPCODE_BINARY = 0x2
+# How much of a refusal's body the probe reads: enough to say whether the server answered and to
+# quote what did, in its own words. A refusal is read for its shape, never for its whole text.
+REFUSAL_BODY_LIMIT = 512
+
+
+@dataclass(frozen=True)
+class UpgradeAnswer:
+    """What the instance answered the WebSocket upgrade with, as the probe read it.
+
+    `status` is `0` when no HTTP head arrived at all within `REQUEST_TIMEOUT_SECONDS`, which is
+    neither a refusal nor a handshake. `media_type` and `body` are the refusal's own shape, read
+    because which answer a `4xx` is — the server's own or something in front of it — decides
+    whether the page's sentence is in question at all.
+    """
+
+    status: int
+    accept_matches: bool
+    frame: bytes
+    media_type: str
+    body: bytes
+
+    def refused_by_the_edge(self) -> bool:
+        """Whether something in front of the server refused the upgrade, rather than the server.
+
+        Apart from a handshake, the server answers this path with JSON of its own: the plain
+        request on the same address is read the same way, by `session_path_reaches_the_server`, and
+        a server that answered an upgrade with a refusal of its own would be a defect the address
+        the page hands over cannot survive. So a `4xx` that is neither that JSON nor a `404` came
+        from something in front of the server — Cloudflare's bot list, for one, answers a
+        hand-rolled upgrade from an egress it distrusts with `403`, `text/plain` and
+        `error code: 1010` — and says what that network did, not what the page claims. A `404` is
+        not that whatever its body is: it says the path itself is not there, which is a sentence
+        about the address the page hands a reader. Nothing else is read here: `5xx`, `3xx` and
+        `2xx` are not refusals at all and stay the caller's failure, and `0` is no answer having
+        arrived.
+        """
+        if not 400 <= self.status <= 499 or self.status == 404:
+            return False
+        return self.media_type != "application/json"
+
+
+def media_type_of(header: str) -> str:
+    """A `Content-Type` header as the media type alone, lowercased: its parameters are not it.
+
+    The plain request's media type comes from `urllib`'s own header object; this is the same
+    reading for a response read off a socket, which has no such object.
+    """
+    return header.split(";", 1)[0].strip().lower()
+
+
+def refusal_description(answer: UpgradeAnswer) -> str:
+    """A refusal as the record states it: its status, its media type and its own first words.
+
+    A log line naming all three says which conversation answered the probe, so nobody has to ask
+    the host again to find out what happened.
+    """
+    first_line = answer.body.decode("utf-8", "replace").strip().partition("\n")[0].strip()
+    words = f", {first_line!r}" if first_line else ""
+    return f"{answer.status} ({answer.media_type or 'no media type'}{words})"
 
 
 def _recv_exactly(connection: ssl.SSLSocket, count: int) -> bytes:
@@ -3186,15 +3251,42 @@ def _read_websocket_frame(connection: ssl.SSLSocket) -> bytes:
     return payload
 
 
-def demo_upgrade_route() -> tuple[int, bool, bytes]:
+def _read_refusal_body(connection: ssl.SSLSocket, head: bytes, buffered: bytes) -> bytes:
+    """Up to `REFUSAL_BODY_LIMIT` bytes of the body of the response whose head is `head`.
+
+    `buffered` is what arrived with the head. Only a `Content-Length` is believed, and a body that
+    keeps arriving is cut at the limit: what a refusal is read for is the shape of what answered.
+    A body that never arrives is reported as none rather than waited for.
+    """
+    body = buffered[:REFUSAL_BODY_LIMIT]
+    length = 0
+    for line in head.split(b"\r\n")[1:]:
+        if line.lower().startswith(b"content-length:"):
+            try:
+                length = int(line.split(b":", 1)[1].strip())
+            except ValueError:
+                length = 0
+    wanted = min(length, REFUSAL_BODY_LIMIT)
+    while len(body) < wanted:
+        chunk = _recv_exactly(connection, wanted - len(body))
+        if not chunk:
+            break
+        body += chunk
+    return body
+
+
+def demo_upgrade_route() -> UpgradeAnswer:
     """What the instance answers a WebSocket upgrade on the session path with.
 
     The address the page hands a reader is one an editor opens a socket on, so the handshake is
     the sentence's own assertion: `session_path_reaches_the_server` decides the plain request, and
     a proxy that answers that one and refuses the upgrade would pass a check that never made this
-    one. This performs the handshake the clients perform, and returns the status, whether the
-    answer's `Sec-WebSocket-Accept` is the client key's own digest, and the payload of the first
-    data frame — the server's envelope, which the caller reads against the one wire version.
+    one. This performs the handshake the clients perform, and reads the answer as the status,
+    whether its `Sec-WebSocket-Accept` is the client key's own digest, the payload of its first
+    data frame — the server's envelope, which the caller reads against the one wire version — and,
+    when the answer is no handshake, the refusal's own shape. An egress the edge refuses is a
+    different fact from the server answering, and `UpgradeAnswer.refused_by_the_edge` is what
+    tells the two apart.
     """
     context = ssl.create_default_context()
     with socket.create_connection(
@@ -3215,29 +3307,43 @@ def demo_upgrade_route() -> tuple[int, bool, bytes]:
                     "\r\n"
                 ).encode("ascii")
             )
-            head = b""
-            while b"\r\n\r\n" not in head and len(head) <= 64 * 1024:
+            raw = b""
+            while b"\r\n\r\n" not in raw and len(raw) <= 64 * 1024:
                 try:
                     chunk = connection.recv(4096)
                 except (TimeoutError, socket.timeout):
                     break
                 if not chunk:
                     break
-                head += chunk
+                raw += chunk
+            head, _, buffered = raw.partition(b"\r\n\r\n")
             lines = head.split(b"\r\n")
             if not lines or not lines[0].startswith(b"HTTP/"):
-                return 0, False, b""
+                return UpgradeAnswer(0, False, b"", "", b"")
             status = int(lines[0].split(b" ", 2)[1])
             accept = ""
+            media_type = ""
             for line in lines[1:]:
-                if line.lower().startswith(b"sec-websocket-accept:"):
+                lowered = line.lower()
+                if lowered.startswith(b"sec-websocket-accept:"):
                     accept = line.split(b":", 1)[1].strip().decode("ascii", "replace")
+                elif lowered.startswith(b"content-type:"):
+                    media_type = media_type_of(line.split(b":", 1)[1].decode("ascii", "replace"))
             expected = base64.b64encode(
                 hashlib.sha1((key + WS_GUID).encode("ascii")).digest()
             ).decode("ascii")
             if status != 101:
-                return status, accept == expected, b""
-            return status, accept == expected, _read_websocket_frame(connection)
+                return UpgradeAnswer(
+                    status,
+                    accept == expected,
+                    b"",
+                    media_type,
+                    _read_refusal_body(connection, head, buffered),
+                )
+            return UpgradeAnswer(
+                status, accept == expected, _read_websocket_frame(connection), media_type, b""
+            )
+
 
 def demo_page_route() -> tuple[int, str, str]:
     """What the instance answers `/` with: its status, its media type, and the bytes it serves.
@@ -3292,7 +3398,8 @@ def check_demo_instance(pages: list[Scanned]) -> int:
     """The page's demo references against the host they name, and the host against the sentences.
 
     Returns 0 when they hold, 1 when a sentence the page carries is disproved, 2 when the
-    instance cannot be asked.
+    instance cannot be asked. A refusal an edge answers the upgrade probe with is the probe's own
+    egress rather than the page, so it is recorded and a run it happened on still returns 0 here.
     """
     root = root_of_this_checkout()
     followed = 0
@@ -3336,7 +3443,7 @@ def check_demo_instance(pages: list[Scanned]) -> int:
     try:
         reported, offered = demo_meta()
         session_status, session_type = demo_session_route()
-        upgrade_status, upgrade_accept, upgrade_frame = demo_upgrade_route()
+        upgrade = demo_upgrade_route()
         page_status, media_type, page_body = demo_page_route()
     except urllib.error.HTTPError as error:
         answer = error.read(200).decode("utf-8", "replace").strip()
@@ -3377,40 +3484,66 @@ def check_demo_instance(pages: list[Scanned]) -> int:
         )
         return 1
 
-    if upgrade_status != 101:
-        print(
-            f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} answered a WebSocket upgrade with "
-            f"{upgrade_status}, and the page hands a reader {DEMO_REFERENCES[-1]!r} as the "
-            "address to give an editor: the clients open a socket on that address, so the "
-            "upgrade has to be accepted, and a plain path that answers while the upgrade does "
-            "not is a name an editor cannot use",
-            file=sys.stderr,
-        )
-        return 1
+    # The upgrade is the sentence's own assertion, and the one thing between the probe and it that
+    # is not the page is the network the probe runs from: a refusal the edge answers is recorded,
+    # and every outcome the page's claim depends on stays a failure. `upgrade_recorded` is what
+    # makes the closing line say which of the two runs this was.
+    upgrade_recorded = False
+    if upgrade.status != 101:
+        if upgrade.refused_by_the_edge():
+            upgrade_recorded = True
+            print(
+                f"check-claims: {DEMO_HOST}{SESSION_PATH} answered the WebSocket upgrade with "
+                f"{refusal_description(upgrade)} rather than the server's own JSON: that is the "
+                "edge in front of the server refusing this probe's egress, and not the server and "
+                "not the page the sentences are about, so the refusal is recorded here and the "
+                "handshake is not asserted on this run"
+            )
+        elif upgrade.status == 0:
+            print(
+                f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} sent no HTTP answer to a WebSocket "
+                f"upgrade within {REQUEST_TIMEOUT_SECONDS}s, and the page hands a reader "
+                f"{DEMO_REFERENCES[-1]!r} as the address to give an editor: the clients open a "
+                "socket on that address, and a socket that is answered nothing at all is not one "
+                "an editor can use",
+                file=sys.stderr,
+            )
+            return 1
+        else:
+            print(
+                f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} answered a WebSocket upgrade with "
+                f"{upgrade.status}, and the page hands a reader {DEMO_REFERENCES[-1]!r} as the "
+                "address to give an editor: the clients open a socket on that address, so the "
+                "upgrade has to be accepted, and a plain path that answers while the upgrade does "
+                "not is a name an editor cannot use",
+                file=sys.stderr,
+            )
+            return 1
 
-    if not upgrade_accept:
-        print(
-            f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} answered a WebSocket upgrade with a "
-            "`Sec-WebSocket-Accept` that is not the client key's own digest: the 101 did not "
-            "complete a WebSocket handshake, so it is not the upgrade an editor opens",
-            file=sys.stderr,
-        )
-        return 1
+    if upgrade.status == 101:
+        if not upgrade.accept_matches:
+            print(
+                f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} answered a WebSocket upgrade with a "
+                "`Sec-WebSocket-Accept` that is not the client key's own digest: the 101 did not "
+                "complete a WebSocket handshake, so it is not the upgrade an editor opens",
+                file=sys.stderr,
+            )
+            return 1
 
-    try:
-        handshake = json.loads(upgrade_frame)
-    except (json.JSONDecodeError, UnicodeDecodeError):
-        handshake = None
-    if not isinstance(handshake, dict) or handshake.get("v") != WIRE:
-        observed = "nothing" if not upgrade_frame else repr(upgrade_frame[:120])
-        print(
-            f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} accepted the WebSocket upgrade and sent "
-            f"{observed} as its first frame, and the page's own sentences put the one wire "
-            f"version, {WIRE}, on that address: a socket that opened and produced no frame of "
-            "the server's is a relay the page's claim does not reach",
-            file=sys.stderr,
-        )
-        return 1
+        try:
+            handshake = json.loads(upgrade.frame)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            handshake = None
+        if not isinstance(handshake, dict) or handshake.get("v") != WIRE:
+            observed = "nothing" if not upgrade.frame else repr(upgrade.frame[:120])
+            print(
+                f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} accepted the WebSocket upgrade and "
+                f"sent {observed} as its first frame, and the page's own sentences put the one "
+                f"wire version, {WIRE}, on that address: a socket that opened and produced no "
+                "frame of the server's is a relay the page's claim does not reach",
+                file=sys.stderr,
+            )
+            return 1
 
     if page_status != 200 or media_type != "text/html":
         print(
@@ -3431,6 +3564,16 @@ def check_demo_instance(pages: list[Scanned]) -> int:
             file=sys.stderr,
         )
         return 1
+
+    if upgrade_recorded:
+        print(
+            f"check-claims: the demo instance {DEMO_ORIGIN} answers, reports {reported!r} offering "
+            f"{', '.join(offered)}, answers {SESSION_PATH} with the server's own JSON "
+            f"({session_status}), and serves a page whose shell carries the host card; the "
+            f"WebSocket upgrade on {SESSION_PATH} was refused by the edge in front of the server, "
+            "which is recorded above and is not asserted on this run"
+        )
+        return 0
 
     print(
         f"check-claims: the demo instance {DEMO_ORIGIN} answers, reports {reported!r} offering "
