@@ -3552,7 +3552,8 @@ def check_published_extension(pages: list[Scanned]) -> int:
                 f"published as `{PUBLISHED_EXTENSION}`, whose listing on each registry is "
                 f"{' and '.join(EXTENSION_LISTINGS)}, and the JetBrains plugin's listing is "
                 f"{JETBRAINS_LISTING}. A link to a listing is a claim about which one, and the "
-                "retired ID's listing is still there to be linked by mistake",
+                "retired ID's listing is one that no longer exists: a reader sent to that address "
+                "finds nothing,",
                 file=sys.stderr,
             )
         return 1

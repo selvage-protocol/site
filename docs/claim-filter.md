@@ -164,8 +164,9 @@ truth and what is forbidden is the false direction: the identity and both regist
 in the row, every registry-shaped word the page carries has to be part of one of those two names or
 of the JetBrains Marketplace's, where the JetBrains plugin is handed over — any other registry, or
 "the extension gallery" without saying which, fails — and any link the page carries to a listing has
-to be one of the two or the JetBrains plugin's, because the retired
-`selvage-protocol.selvage-client` listing is still live and still linkable by mistake. The row also has to say what an install is: the
+to be one of the two or the JetBrains plugin's, because the retired `selvage-protocol.selvage-client`
+listing is one that no longer exists, and a link to it sends a reader to an address that answers
+nothing. The row also has to say what an install is: the
 clients are not a server, and each connects to a `selvaged` the reader runs. That last fact is
 required rather than left to the phrase list because the registry names alone would read as a
 running room, and "on a server you run" is not the sentence to read — the hero carries it. It asks
