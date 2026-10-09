@@ -88,10 +88,21 @@ business, and pinning `404` would redden this gate for a change in `selvaged` th
 on the page false. The **WebSocket upgrade is asserted too**, on the same address: the check
 performs the handshake the clients perform and requires a `101`, a `Sec-WebSocket-Accept` that is
 the client key's own digest, and the first frame the server sends a socket that never says hello —
-a `session.error` envelope carrying `selvage/2`. A hand-rolled upgrade from this host's egress is
-answered `101` and then that frame, so the upgrade is a fact the gate reads rather than one it
-records by hand; an address whose plain path answers while its upgrade does not is a name an editor
-cannot use, and the gate says so. It also asks `/` for a `200` and a `text/html`,
+a `session.error` envelope carrying `selvage/2`. A hand-rolled upgrade from a general host's egress
+is answered `101` and then that frame, so the upgrade is a fact the gate reads rather than one it
+records by hand, and an address whose plain path answers while its upgrade does not is a name an
+editor cannot use. The one answer that is neither of those is the edge in front of the demo
+refusing the **check's own egress**: a `4xx` that is not the server's own JSON is not the server
+answering, and what Cloudflare's bot list answers a hand-rolled upgrade from an egress it distrusts
+is `403` with `error code: 1010`. That is recorded with its status, the host it came from and the
+edge's own words, and it does not fail the step, because what it says is what that network did and
+not what the page claims. A GitHub runner's egress is one the edge refuses that way, so a run there
+records the refusal and says in its closing line that the handshake is not asserted on it; a
+general host's egress is answered `101`, and that run is what asserts the upgrade. Everything the
+page's claim depends on stays a failure whatever the egress: a `404`, a `4xx` the server itself
+answers with its own JSON, a `5xx` or any status that is not a refusal, a `101` whose
+`Sec-WebSocket-Accept` is not the key's own digest, and a `101` whose first frame is not `selvage/2`.
+It also asks `/` for a `200` and a `text/html`,
 because the browser row tells a guest the demo serves the page and the proxy's own `404` is
 `text/html` too, so the media type alone would let a dead page satisfy it. It then reads the bytes
 `/` answered with and requires the host card's own element in them, because the browser row also
@@ -105,9 +116,11 @@ to serve each of them. What the instance offers on the wire is read here and hel
 declared wire by the check below, which is where the artefacts the page hands over are compared.
 **That assertion couples the site's gate to a running box**: a demo that is down or moved, a
 `/session` the proxy no longer routes to the server, and a box whose `/` is not the page all fail
-the build, because a page claiming a demo that is not there is the defect it exists to catch. It
-sends its own user agent, since the host's proxy answers `403` to an interpreter's default
-signature. The image half needs egress to `ghcr.io` and exits 2 rather than passing when it cannot
+the build, because a page claiming a demo that is not there is the defect it exists to catch.
+The one answer in that half that does not fail the build is the edge refusing the upgrade probe's
+own egress, which the run records for the reason above. It sends its own user agent, since the
+host's proxy answers `403` to an interpreter's default signature. The image half needs egress to
+`ghcr.io` and exits 2 rather than passing when it cannot
 reach it; the demo half does the same for an instance that does not answer at all, and exits 1 when
 the instance answers something that disproves a sentence.
 
