@@ -44,12 +44,15 @@
 //
 // `VERCEL_JSON` points it at another policy file, the same override scripts/check-csp.py takes,
 // so it can be run against the policy that caused the defect: that run has to fail.
+// `CSP_DEBUG_DEADLINE` is the seconds it waits for the browser's debugging port (30 otherwise).
 //
 // Exit 0 prints what was observed. Exit 1 names the assertion that failed. Exit 2 means the
-// check could not run at all — no Chromium, no build, or a port already in use — which is a
-// failure, not a pass.
+// check could not run at all — no Chromium, no build, a port already in use, or a browser that
+// never opened its debugging port — and the last of those prints the browser's own account of
+// itself rather than only what this check saw, because the two are not the same failure. Exit 2 is
+// a failure, not a pass.
 
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { readFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { createServer, request as httpRequest } from "node:http";
 import { dirname, join } from "node:path";
@@ -72,11 +75,112 @@ function fail(message) {
 }
 
 const children = [];
+
+// A child's own words are the only account of why it did not do what it was started for, so the
+// end of each stream is kept rather than drained. Bounded: a browser session is chatty, and what a
+// reader of a failure needs is how it ended, not how it began.
+const STREAM_TAIL_BYTES = 8 * 1024;
+
+function capture(stream) {
+  const captured = { chunks: [], bytes: 0 };
+  stream.on("data", (chunk) => {
+    captured.bytes += chunk.length;
+    captured.chunks.push(chunk);
+    let held = captured.chunks.reduce((total, part) => total + part.length, 0);
+    while (held > STREAM_TAIL_BYTES && captured.chunks.length > 1) held -= captured.chunks.shift().length;
+  });
+  return captured;
+}
+
+function capturedText(captured) {
+  const kept = Buffer.concat(captured.chunks);
+  const text = kept.toString("utf8").trim();
+  if (!text) return null;
+  const dropped = captured.bytes - kept.length;
+  return dropped > 0 ? `[${dropped} earlier byte(s) dropped]\n${text}` : text;
+}
+
 function spawnChild(command, args, options = {}) {
-  const child = spawn(command, args, { stdio: ["ignore", "ignore", "pipe"], ...options });
-  child.stderr.on("data", () => {}); // drained; the messages this check reports are its own
+  const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"], ...options });
+  child.stdoutTail = capture(child.stdout);
+  child.stderrTail = capture(child.stderr);
+  child.exit = null;
+  child.failure = null;
+  child.closed = false;
+  child.on("error", (error) => {
+    child.failure = error;
+  });
+  child.on("exit", (code, signal) => {
+    child.exit = { code, signal };
+  });
+  child.on("close", () => {
+    child.closed = true;
+  });
   children.push(child);
   return child;
+}
+
+// The exit event arrives before the last of a child's output does, so a report built the moment
+// the process is gone can miss the line that explains it. Bounded, not a sleep-and-hope: a child
+// that has not closed its streams by then is reported as it stands.
+async function settle(child, milliseconds = 500) {
+  const deadline = Date.now() + milliseconds;
+  while (!child.closed && Date.now() < deadline) await sleep(25);
+}
+
+function describeChild(child) {
+  if (child.failure) return `could not be executed (${child.failure.code ?? child.failure.message})`;
+  if (!child.exit) return `still running as pid ${child.pid}`;
+  const code = child.exit.code === null ? "no exit code" : `exit code ${child.exit.code}`;
+  return child.exit.signal ? `${code}, killed by ${child.exit.signal}` : code;
+}
+
+// Asked of the binary itself. It is what the runner image's own browser test asserts, and it
+// separates "this binary runs and something after it does not" from "this binary does not run".
+function selfReportedVersion(command) {
+  const probe = spawnSync(command, ["--version"], { timeout: 5_000, encoding: "utf8", maxBuffer: 128 * 1024 });
+  if (probe.error) return `--version did not answer (${probe.error.code ?? probe.error.message})`;
+  const said = `${probe.stdout ?? ""}${probe.stderr ?? ""}`.trim().split("\n").filter(Boolean).join(" | ");
+  if (probe.status !== 0) return `--version exited ${probe.status}${said ? ` and said ${said}` : " with nothing on its streams"}`;
+  return said || "--version exited 0 with nothing on its streams";
+}
+
+// A reading of what the browser said, printed beside the words themselves so that a wrong reading
+// is visible. The shapes are the ones a launch actually fails in: a binary that cannot run at all,
+// a library it needs and does not have, a sandbox refusal, a flag it will not take, a wrapper that
+// exits before the browser starts, and a browser that starts and never listens.
+function readFailure(child, bound) {
+  const said = [capturedText(child.stderrTail), capturedText(child.stdoutTail)].filter(Boolean).join("\n");
+  if (child.failure) return "the binary is not executable: the path is wrong, it is not a program, or it is not one for this machine";
+  if (/error while loading shared libraries|cannot open shared object file|Failed to load (?:NSS|shared)/i.test(said))
+    return "a library the browser needs is missing, so it stopped before it could listen";
+  if (/No usable sandbox|Failed to move to new namespace|Cannot create user namespace|sandbox[^\n]*fail/i.test(said))
+    return "the sandbox refused to start it, which --no-sandbox did not talk it out of";
+  if (/unknown flag|unrecognized|bad flag|Unsupported (?:flag|command line)/i.test(said))
+    return "the browser refused a flag as one it does not know, so the launch needs a different one";
+  if (child.exit?.code === 0 && !child.exit.signal)
+    return "the binary exited 0 without listening, which is a wrapper that hands the job to another program rather than the browser itself";
+  if (child.exit) return "the browser ended before it listened, and the words above are all it left";
+  if (bound) return `the browser bound port ${bound} by its own account, so what failed is this check reaching it rather than the browser starting`;
+  return "the browser is still running and never bound the port, so what failed is the wait or the bind rather than the process";
+}
+
+function reportBrowser(command, child, observed, bound) {
+  const lines = [
+    `  binary     : ${command}`,
+    `  version    : ${selfReportedVersion(command)}`,
+    `  process    : ${describeChild(child)}`,
+    `  endpoint   : ${observed}`,
+  ];
+  const announced = /^DevTools listening on (\S+)$/m.exec(capturedText(child.stderrTail) ?? "")?.[1];
+  if (announced) lines.push(`  devtools   : the browser announced ${announced}, not the endpoint this check waited on`);
+  lines.push(`  diagnosis  : ${readFailure(child, bound)}`);
+  for (const [label, stream] of [["stdout", child.stdoutTail], ["stderr", child.stderrTail]]) {
+    const text = capturedText(stream);
+    lines.push(`  ${label}     : ${text ? `the browser's own words, last ${STREAM_TAIL_BYTES / 1024} KiB` : "(nothing)"}`);
+    if (text) for (const line of text.split("\n")) lines.push(`      ${line}`);
+  }
+  return lines.join("\n");
 }
 function stopChildren() {
   for (const child of children) {
@@ -176,7 +280,15 @@ const profile = join(root, ".tmp", "chrome-csp-check");
 rmSync(profile, { recursive: true, force: true });
 mkdirSync(profile, { recursive: true });
 const debugPort = 9333;
-spawnChild(chromium, [
+// The wait is a bound, not a guess: what the browser was doing when it expired is what gets
+// reported. Chrome opens this port in about a second on an idle machine, and a runner is not one.
+const debugDeadlineSeconds = Number(process.env.CSP_DEBUG_DEADLINE || 30);
+
+// The browser the runner image carries and the one its fallback installs both take these flags as
+// they stand: the Chromium snapshot the image installs (`Chromium 154.0.8037.0`, snapshot revision
+// 1689397) and Google's own 154 build (Chrome for Testing 154.0.8037.92) each open the debugging
+// port under this exact invocation.
+const browser = spawnChild(chromium, [
   "--headless=new",
   `--remote-debugging-port=${debugPort}`,
   `--user-data-dir=${profile}`,
@@ -190,16 +302,46 @@ spawnChild(chromium, [
 ]);
 
 let version = null;
-for (let i = 0; i < 100 && !version; i += 1) {
+let attempts = 0;
+let observed = `127.0.0.1:${debugPort} was never asked`;
+const waitedFrom = Date.now();
+for (;;) {
+  attempts += 1;
   try {
     const res = await fetch(`http://127.0.0.1:${debugPort}/json/version`);
-    if (res.ok) version = await res.json();
-  } catch {
-    /* not up yet */
+    if (res.ok) {
+      version = await res.json();
+      break;
+    }
+    observed = `127.0.0.1:${debugPort} answered /json/version with HTTP ${res.status}`;
+  } catch (error) {
+    const reason = error.cause?.code ?? error.cause?.message ?? error.message ?? error.name;
+    observed = `127.0.0.1:${debugPort} would not answer /json/version (${reason})`;
   }
-  if (!version) await sleep(100);
+  // A process that is already gone will not open the port later, so this reports what it said
+  // instead of spending the rest of the deadline on a browser that has exited.
+  if (browser.failure || browser.exit) break;
+  if (Date.now() - waitedFrom > debugDeadlineSeconds * 1000) {
+    observed += `, and did so until the ${debugDeadlineSeconds}s deadline`;
+    break;
+  }
+  await sleep(100);
 }
-if (!version) giveUp("CHROMIUM never opened a debugging port");
+if (!version) {
+  if (browser.failure || browser.exit) await settle(browser);
+  const waited = ((Date.now() - waitedFrom) / 1000).toFixed(1);
+  // The browser writes the port it bound into the profile, and announces the endpoint on stderr:
+  // either one is the difference between "it listened somewhere this check did not look" and "it
+  // never listened at all".
+  const activePortFile = join(profile, "DevToolsActivePort");
+  const bound = existsSync(activePortFile)
+    ? readFileSync(activePortFile, "utf8").split("\n")[0].trim() || null
+    : null;
+  if (bound) observed += `; the profile's DevToolsActivePort names port ${bound}`;
+  giveUp(
+    `CHROMIUM never opened a debugging port (${attempts} attempt(s) over ${waited}s)\n${reportBrowser(chromium, browser, observed, bound)}`,
+  );
+}
 
 const cdp = { id: 0, pending: new Map(), listeners: [], socket: null };
 function send(method, params = {}, sessionId) {
