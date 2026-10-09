@@ -76,12 +76,12 @@ SKIP_DIRS = {".git", ".tmp", "node_modules"}
 # A claimed corpus number that is not the one `specification/schema/validate.py` pins is a wrong
 # number the page would otherwise show without failing anything. The lookahead is what makes the
 # pinned value the only one that passes. There are two layers and each is pinned on its own — the
-# wire corpus's 24 vectors, 33,760 frame checks and 8,387 assertions, and the peer corpus's 26
-# vectors, 221 checks and 74 assertions — so a number before one of those nouns has to be that
-# layer's pin, and the peer layer's count is written with the layer named ('26 peer vectors').
+# wire corpus's 25 vectors, 33,784 frame checks and 8,394 assertions, and the peer corpus's 27
+# vectors, 232 checks and 74 assertions — so a number before one of those nouns has to be that
+# layer's pin, and the peer layer's count is written with the layer named ('27 peer vectors').
 #
 # The wire layer's two largest counts are written with their thousands separated on the page,
-# because a reader has to read them; `33,?760` accepts either spelling so a count written without
+# because a reader has to read them; `33,?784` accepts either spelling so a count written without
 # the separator is still recognised rather than read as a number that is missing.
 VEHICLE = r"\d[\d,]*"
 
@@ -705,8 +705,8 @@ FSL_DISCLOSURE = (
     ),
 )
 # The corpus and every count the page could show for it, and the file that pins each count: the
-# wire layer's 24 vectors, 33,760 frame checks and 8,387 assertions, and the peer layer's 26
-# vectors, 221 checks and 74 assertions are all constants in `specification/schema/validate.py`.
+# wire layer's 25 vectors, 33,784 frame checks and 8,394 assertions, and the peer layer's 27
+# vectors, 232 checks and 74 assertions are all constants in `specification/schema/validate.py`.
 # The page shows none of them, because they move as the corpus grows, and names the file
 # instead, which is where a reader reads the current ones. A number the page hands a reader with
 # no file beside it is one the reader cannot check, so a count that comes back is held to the same
@@ -716,15 +716,15 @@ FSL_DISCLOSURE = (
 # citation out of the very sentence that carries it.
 SENTENCE_END = re.compile(r"\.(?=\s|$)")
 CORPUS_COUNTS = (
-    # Both spellings the forbidden-number rules accept: `24 conformance vectors` and `24 wire
+    # Both spellings the forbidden-number rules accept: `25 conformance vectors` and `25 wire
     # vectors` are the same pin, and a citation rule that matched only one of them would leave
     # the other wording unguarded — the count would not be seen at all, so nothing would ask it
     # for a file.
-    (re.compile(r"\b24 (?:conformance|wire) vectors\b"), "the 24 wire vectors"),
-    (re.compile(r"\b33,?760 frame[- ]checks\b"), "33,760 frame checks"),
-    (re.compile(r"\b8,?387 assertions\b"), "8,387 assertions"),
-    (re.compile(r"\b26 peer vectors\b"), "26 peer vectors"),
-    (re.compile(r"\b221 peer checks\b"), "221 peer checks"),
+    (re.compile(r"\b25 (?:conformance|wire) vectors\b"), "the 25 wire vectors"),
+    (re.compile(r"\b33,?784 frame[- ]checks\b"), "33,784 frame checks"),
+    (re.compile(r"\b8,?394 assertions\b"), "8,394 assertions"),
+    (re.compile(r"\b27 peer vectors\b"), "27 peer vectors"),
+    (re.compile(r"\b232 peer checks\b"), "232 peer checks"),
     (re.compile(r"\b74 peer assertions\b"), "74 peer assertions"),
 )
 # The page's name for the corpus, in both spellings the counts above accept.
@@ -1303,7 +1303,7 @@ FORBIDDEN: list[Phrase] = [
         r"|subscribers)\b",
         "used in production by 40 engineering teams",
         "no user count exists. The only numbers this project can show are the corpus counts its "
-        "own validator pins (24 vectors, 33,760 frame checks, 8,387 assertions)",
+        "own validator pins (25 vectors, 33,784 frame checks, 8,394 assertions)",
     ),
     Phrase(
         r"\bfirst\b",
@@ -1391,65 +1391,65 @@ FORBIDDEN: list[Phrase] = [
         "0, which is not this one",
     ),
     Phrase(
-        rf"(?<![\d,])\b(?!33,?760\b){VEHICLE}\s+frame[- ]checks?\b",
-        "33759 frame checks",
-        "the wire corpus's pinned number is 33,760 frame checks "
+        rf"(?<![\d,])\b(?!33,?784\b){VEHICLE}\s+frame[- ]checks?\b",
+        "33783 frame checks",
+        "the wire corpus's pinned number is 33,784 frame checks "
         "(`specification/schema/validate.py`); a different number is a claim the corpus "
-        "disproves. The peer layer's 221 are checks and are pinned by that entry",
-        clean=("33,760 frame checks", "33760 frame checks"),
+        "disproves. The peer layer's 232 are checks and are pinned by that entry",
+        clean=("33,784 frame checks", "33784 frame checks"),
     ),
     Phrase(
         # The wire corpus and the peer corpus are two layers of one corpus and each is counted
         # and pinned on its own (`EXPECTED_WIRE_VECTORS` and `EXPECTED_PEER_VECTORS`,
         # `EXPECTED_PEER_CHECKS`). One number pinned wherever the word sits would read the peer
-        # layer's count as the wire layer's — `26 peer vectors` is the peer layer's pin, not a
+        # layer's count as the wire layer's — `27 peer vectors` is the peer layer's pin, not a
         # wrong count — so the wire entries exclude the shape the peer entries pin, exactly:
-        # `26 peer vectors`, never `26 peer-ish vectors`. The window is `\S+` rather than `\w+`
+        # `27 peer vectors`, never `27 peer-ish vectors`. The window is `\S+` rather than `\w+`
         # for that: a hyphenated word between the number and the noun is still a word in front
-        # of it, and `26 peer-ish vectors` was a rewrite the `\w+` window passed.
-        rf"\b(?!24\b)(?!26\s+peer\s+vectors?\b){VEHICLE}\s+(?:\S+\s+){{0,2}}vectors?\b",
-        "23 conformance vectors",
-        "the wire corpus's pinned number is 24 vectors (`specification/schema/validate.py`); a "
+        # of it, and `27 peer-ish vectors` was a rewrite the `\w+` window passed.
+        rf"\b(?!25\b)(?!27\s+peer\s+vectors?\b){VEHICLE}\s+(?:\S+\s+){{0,2}}vectors?\b",
+        "24 conformance vectors",
+        "the wire corpus's pinned number is 25 vectors (`specification/schema/validate.py`); a "
         "different number is a claim the corpus disproves, and the count is pinned wherever the "
         "word sits — the page writes both 'conformance vectors' and 'wire vectors'. The peer "
-        "layer's own count is a separate pin and is written '26 peer vectors'; any other number "
+        "layer's own count is a separate pin and is written '27 peer vectors'; any other number "
         "before that noun is still a failure",
-        clean=("24 conformance vectors", "the 24 wire vectors", "26 peer vectors"),
+        clean=("25 conformance vectors", "the 25 wire vectors", "27 peer vectors"),
     ),
     Phrase(
-        rf"(?<![\d,])\b(?!8,?387\b){VEHICLE}\s+assertions?\b",
-        "8386 assertions",
-        "the wire corpus's pinned number is 8,387 assertions "
+        rf"(?<![\d,])\b(?!8,?394\b){VEHICLE}\s+assertions?\b",
+        "8393 assertions",
+        "the wire corpus's pinned number is 8,394 assertions "
         "(`specification/schema/validate.py`); a different number is a claim the corpus "
         "disproves. The peer layer's count is its own pin and is written '74 peer assertions'",
-        clean=("8,387 assertions", "8387 assertions", "74 peer assertions"),
+        clean=("8,394 assertions", "8394 assertions", "74 peer assertions"),
     ),
     Phrase(
-        rf"\b(?!26\b){VEHICLE}\s+peer\s+vectors?\b",
-        "27 peer vectors",
-        "the peer corpus's pinned number is 26 vectors and 221 checks "
+        rf"\b(?!27\b){VEHICLE}\s+peer\s+vectors?\b",
+        "26 peer vectors",
+        "the peer corpus's pinned number is 27 vectors and 232 checks "
         "(`EXPECTED_PEER_VECTORS` and `EXPECTED_PEER_CHECKS` in "
-        "`specification/schema/validate.py`, where the validator prints 'peer vectors 26 files, "
-        "19 frame, 7 decision, 221 checks, 74 assertion steps'); a different number is a claim "
-        "the corpus disproves. The layer has to be named: `26 vectors` is read as the wire "
+        "`specification/schema/validate.py`, where the validator prints 'peer vectors 27 files, "
+        "19 frame, 8 decision, 232 checks, 74 assertion steps'); a different number is a claim "
+        "the corpus disproves. The layer has to be named: `27 vectors` is read as the wire "
         "layer's count and fails on that entry",
-        ("27 peer ve<!-- -->ctors",),
-        clean=("26 peer vectors",),
+        ("26 peer ve<!-- -->ctors",),
+        clean=("27 peer vectors",),
     ),
     Phrase(
-        rf"\b(?!221\b){VEHICLE}\s+peer\s+checks?\b",
-        "220 peer checks",
-        "the peer corpus's pinned count is 221 checks (`EXPECTED_PEER_CHECKS` in "
+        rf"\b(?!232\b){VEHICLE}\s+peer\s+checks?\b",
+        "231 peer checks",
+        "the peer corpus's pinned count is 232 checks (`EXPECTED_PEER_CHECKS` in "
         "`specification/schema/validate.py`); a different number is a claim the corpus "
-        "disproves. The wire layer's 33,760 are frame checks and are pinned by that entry",
-        clean=("221 peer checks",),
+        "disproves. The wire layer's 33,784 are frame checks and are pinned by that entry",
+        clean=("232 peer checks",),
     ),
     Phrase(
         rf"\b(?!74\b){VEHICLE}\s+peer\s+assertions?\b",
         "75 peer assertions",
         "the peer corpus's pinned number is 74 assertion steps (`EXPECTED_PEER_ASSERTIONS` in "
         "`specification/schema/validate.py`); a different number is a claim the corpus "
-        "disproves. The wire layer's 8,387 are pinned by that entry",
+        "disproves. The wire layer's 8,394 are pinned by that entry",
         clean=("74 peer assertions",),
     ),
     Phrase(
