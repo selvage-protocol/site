@@ -102,16 +102,34 @@ function capture(stream) {
     captured.chunks.push(chunk);
     let held = captured.chunks.reduce((total, part) => total + part.length, 0);
     while (held > STREAM_TAIL_BYTES && captured.chunks.length > 1) held -= captured.chunks.shift().length;
+    // A single write larger than the tail is trimmed inside the chunk: the loop above stops at the
+    // last chunk, so a browser that writes a burst in one piece would otherwise keep it whole.
+    if (held > STREAM_TAIL_BYTES) captured.chunks[0] = captured.chunks[0].subarray(-STREAM_TAIL_BYTES);
   });
   return captured;
 }
 
+// The last `budget` UTF-8 bytes of `text`, cut at a character boundary so the decode adds nothing
+// back: a cut inside a character decodes the fragment to U+FFFD and overshoots the bound.
+function tailWithinBytes(text, budget) {
+  const encoded = Buffer.from(text, "utf8");
+  if (encoded.length <= budget) return text;
+  let start = encoded.length - budget;
+  while (start < encoded.length && (encoded[start] & 0xc0) === 0x80) start += 1;
+  return encoded.subarray(start).toString("utf8");
+}
+
 function capturedText(captured) {
   const kept = Buffer.concat(captured.chunks);
-  const text = kept.toString("utf8").trim();
+  let text = kept.toString("utf8").trim();
   if (!text) return null;
   const dropped = captured.bytes - kept.length;
-  return dropped > 0 ? `[${dropped} earlier byte(s) dropped]\n${text}` : text;
+  const marker = dropped > 0 ? `[${dropped} earlier byte(s) dropped]\n` : "";
+  // The bound is on what the reader is handed, marker included, so the text is cut to what the
+  // marker leaves rather than to a byte count the marker then pushes back over.
+  const budget = Math.max(STREAM_TAIL_BYTES - Buffer.byteLength(marker, "utf8"), 0);
+  if (Buffer.byteLength(text, "utf8") > budget) text = tailWithinBytes(text, budget);
+  return `${marker}${text}`;
 }
 
 function spawnChild(command, args, options = {}) {
