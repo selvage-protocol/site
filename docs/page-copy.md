@@ -69,12 +69,12 @@ Three rows moved with what is now true:
   none of them non-commercial, so the sentence claims a licence nobody granted about whichever it
   names.
 - **The corpus counts.** Still exactly the numbers `specification/schema/validate.py` pins, and the
-  two layers are pinned apart because they are two corpora: the wire layer's 24 vectors, 33,760
-  frame checks and 8,387 assertions, and the peer layer's 26 vectors, 221 checks and 74 assertions.
+  two layers are pinned apart because they are two corpora: the wire layer's 25 vectors, 33,784
+  frame checks and 8,394 assertions, and the peer layer's 27 vectors, 232 checks and 74 assertions.
   The page carries neither layer's counts, because they move as the corpus grows; the entries stay
   so that a count that comes back is the right one. A number before `vectors`, `frame checks` or
   `assertions` has to be that layer's pin, and the peer layer's count is written with the layer
-  named — `26 peer vectors`, `221 peer checks`, `74 peer assertions` — because `26 vectors` alone is
+  named — `27 peer vectors`, `232 peer checks`, `74 peer assertions` — because `27 vectors` alone is
   read as the wire layer's count and fails. The window between the number and the word is any two
   whitespace-separated tokens (`\S+`, not `\w+`, so a hyphenated word in front of the noun is still
   a word in front of it), which is what both "conformance vectors" and "wire vectors" need.
