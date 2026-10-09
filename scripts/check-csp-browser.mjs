@@ -6,7 +6,7 @@
 // cannot see whether a browser enforces it the way the model assumes: a policy that refuses the
 // page's chunks and its inline bootstrap leaves `window.__next_f` undefined, so the page never
 // hydrates and SiteHeader's hide-on-scroll does nothing while the accessibility floor describes
-// it working (`docs/content-security-policy.md` writes this out). A refused font fails more
+// it working. A refused font fails more
 // quietly: the model decides `font-src` against the preloads the page carries, and
 // only a run like this one can say the glyph files came back rather than the fallback stack.
 //

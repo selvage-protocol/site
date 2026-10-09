@@ -17,7 +17,7 @@ and `ghost` pairs are the primitive's, because the page renders neither, and the
 (`border-surface1`). That boundary is drawn at the design's
 own 1.80:1, below the 3.0:1 a boundary that *identifies* a control would need and above
 the floor at which a reader loses it; it is held to the latter and named, the same way
-`docs/accessibility.md` argues the decorative `--color-surface1` borders. The ground a code sample
+the page's decorative `--color-surface1` borders are. The ground a code sample
 is drawn on is parsed the same way: the
 figure's own fill over the card's, rather than a constant that would measure a
 surface nobody renders. Thresholds are WCAG 2.2 AA: 4.5:1 for normal text,
@@ -34,7 +34,7 @@ fails the build. A quarter-alpha tint cannot also clear the non-text floor (see
 
 This is a floor, not an audit. It cannot see layout: touch-target sizes,
 keyboard reachability, focus visibility and reduced-motion handling are read
-against the code by a person (see `docs/accessibility.md`), because
+against the code by a person, because
 no ratio proves a link can be tabbed to.
 
 The one pair the floor cannot hold on this palette is the link against the body text
@@ -104,7 +104,7 @@ PNG_CHANNELS = {2: 3, 6: 4}
 TINT_MIN = 1.5
 
 # A boundary drawn in `--color-surface1` is the page's decorative hairline, the same case
-# `docs/accessibility.md` argues for its panel and card borders: it measures 1.80:1 on the page,
+# the page's panel and card borders are in: it measures 1.80:1 on the page,
 # below the 3.0:1 a boundary that *identifies* a control would need, and the control it belongs to
 # — the outline hero button — is identified by its label. It is held to the floor below which a
 # reader cannot see it at all rather than to the non-text floor it does not meet, so a border
