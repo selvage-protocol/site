@@ -339,8 +339,14 @@ let observed = `127.0.0.1:${debugPort} was never asked`;
 const waitedFrom = Date.now();
 for (;;) {
   attempts += 1;
+  // Every request carries its own bound out of what is left of the deadline, and the body read is
+  // bound by the same signal: an endpoint that accepts the connection and then says nothing must
+  // not hold the wait past the deadline it is meant to end at.
+  const remaining = debugDeadlineSeconds * 1000 - (Date.now() - waitedFrom);
   try {
-    const res = await fetch(`http://127.0.0.1:${debugPort}/json/version`);
+    const res = await fetch(`http://127.0.0.1:${debugPort}/json/version`, {
+      signal: AbortSignal.timeout(Math.max(remaining, 1)),
+    });
     if (res.ok) {
       version = await res.json();
       break;
