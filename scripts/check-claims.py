@@ -3320,7 +3320,12 @@ def demo_upgrade_route() -> UpgradeAnswer:
             lines = head.split(b"\r\n")
             if not lines or not lines[0].startswith(b"HTTP/"):
                 return UpgradeAnswer(0, False, b"", "", b"")
-            status = int(lines[0].split(b" ", 2)[1])
+            try:
+                status = int(lines[0].split(b" ", 2)[1])
+            except (IndexError, ValueError) as error:
+                # A status line with no code is a refusal this check cannot read as one, and the
+                # caller's own "could not run" path is the answer rather than an uncaught IndexError.
+                raise ValueError("malformed HTTP status line") from error
             accept = ""
             media_type = ""
             for line in lines[1:]:
