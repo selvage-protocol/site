@@ -36,9 +36,10 @@ Five rules hold it together:
   alone.
 - **The sample is coloured the way the editor colours it.** The token colours are the browser
   client's own `selvage-mocha` theme (`defineTheme` in `web_client/src/browser/main.ts`): comment
-  `#868ca2`, keyword `#cba6f7`, function `#89b4fa`, string `#a6e3a1`, number `#fab387`, type
-  `#f9e2af`, on the sample's ground and in the body colour `#cdd6f4` otherwise. Punctuation has no
-  rule in that theme, so it keeps the body colour here too.
+  `#868ca2`, keyword `#cba6f7`, string `#a6e3a1`, number `#fab387`, type `#f9e2af`, on the sample's
+  ground and in the body colour `#cdd6f4` otherwise. That theme gives functions no rule, so the
+  sample's function colour is this page's own (`--code-fn`), and punctuation, having no rule there
+  either, keeps the body colour too.
 - **No inline `style`, no `<style>`, no font from a third party, no external image.** The policy in
   `vercel.json` refuses the first two outright and admits this origin's fonts alone through
   `font-src 'self'`. Every colour in a figure is a class in `style.css` or a theme token, which is
