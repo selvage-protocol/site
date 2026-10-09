@@ -34,7 +34,8 @@
 //      `style` attributes and `style-src 'self'` refuses all five, which is why this route has to
 //      be checked too: `app/not-found.tsx` is styled from `style.css` instead.
 //
-// It needs a Chromium and so is not in the workflow; `scripts/ci-local.sh` is what CI runs.
+// It needs a Chromium, which the runner image carries; `scripts/ci-local.sh csp` finds one on
+// `PATH` and runs this after the model, and `.github/workflows/ci.yml` runs that same command.
 // Every wait is a bounded poll for the state being waited for, so a page that never hydrates
 // fails here instead of passing slowly.
 //
@@ -105,8 +106,9 @@ if (!declared) {
 const chromium = process.env.CHROMIUM;
 if (!chromium || !existsSync(chromium)) {
   giveUp(
-    `CHROMIUM must name a Chromium binary (got ${chromium ?? "nothing"}). This host has one ` +
-      "under a nix store path; CI has none, which is why this check is not in the workflow",
+    `CHROMIUM must name a Chromium binary (got ${chromium ?? "nothing"}). ` +
+      "scripts/ci-local.sh csp finds one on PATH when it is not set, and a host without one " +
+      "cannot run this proof",
   );
 }
 if (!existsSync(join(root, ".next", "BUILD_ID"))) {
