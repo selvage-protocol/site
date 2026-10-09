@@ -35,11 +35,8 @@ arm64, and `selvaged:0.1.1` proved the difference by publishing both legs around
 every layer digest identical across the two. `0.1.0` carries the same defect and `0.1.2` is the fix;
 neither broken tag will be retagged or removed. That proof runs per package, so the page half of the
 command is held to it too. The card's commands are then read as the three steps they are, one per
-line, and the promise the single chained command used to carry is gone with it: `docker network create`
-chained with `&&` stopped the second paste at an error, and the detached server kept its name for
-the next one with nothing on the section to remove it, so everything that read that promise went too
-and the check has no shape for a second paste at all. This host has no Docker, so what is asserted
-is the shape rather than a run: the first command creates the network the two containers share, and
+line. This host has no Docker, so what is asserted is the
+shape rather than a run: the first command creates the network the two containers share, and
 it stands before every run that names it, because a run reaches a network nothing has made yet;
 every run is detached, because one that is not holds the reader's terminal instead of returning
 their prompt; every run joins that network, read as a whole name, so a `--network selvage-net` is
@@ -71,81 +68,12 @@ reference calls that field an IP address, writes one in every example and never 
 `localhost` as a value of it, and this check has no docker to ask, so `-p localhost:8080:8080`
 passes here as one of the two loopback names and whether docker accepts it was not settled. It reads
 one way of writing each part, so a command that is correct in other words fails it and a broken one
-that keeps those words can pass — the limit every assertion here has, and the reverse of the one
-this paragraph used to state. Every one of those rules carries a fixture in the check itself: a
-command of its own with the defect written into it, run before the scan, pinning the fragment the
-rule emits, so a rule deleted is a rule the check fails on rather than one nothing reads. Holding a
-rule is not holding the *reading* inside it, and that is the other half: the four comparisons and
-the published host port are each named in the check, and before it scans anything it swaps each one
-in turn for the weaker reading a later edit would leave in its place — a `\b{name}\b` search for a
-name or one name inside the other either way round for a pair of them, the mapping's container port
-for the host port — and fails unless a fixture goes red. The port reading is the shape that failure
-used to have: with every mapping a fixture carried written `8080:8080`, where the two fields are one
-number, reading the container port answered for the host port and no fixture said otherwise, so the
-fixture that holds it is a mapping whose two numbers differ. Each of the four comparisons is held
-the same way: the network every run attaches to, by a fixture writing `--network room-net` beside
-`docker network create room`; the container the address names, by one naming `server-net` under an
-address naming `server`; and the two references, by one whose run carries `selvaged:latest-extra`.
-The host a mapping names is held the ordinary way rather than by a swap, by the three fixtures a
-command that names `192.168.1.5`, `::1` or `0.0.0.0` has to be reported as; and the empty name is
-held the same way, by the fixtures an address that names no host and an address that names no host
-beside a run given no `--name` have to be reported as, which is what the rule that compares an
-address's host against the containers the command names reads first.
-
-What that guarantees is exact, and so is what it does not. Of the table: a reading that *is* one of
-those named places cannot be weakened to a search without the check failing on its own fixtures, and
-a place a fixture never tells the two readings apart at, or one the rules stop reading, fails with
-it. A table holds what someone remembered, though, so a comparison written *around* it is closed by
-construction instead of by another entry: every container name, network name and image reference the
-card's rules touch is read as a `ParsedName`, and one of those answers only inside `reads_the_name`
-— for the forms Python hands a subclass: `==`, `!=`, `in`, `startswith`, `endswith`, `find`, `index`
-and `count` where the name is the object they are called on or the `str` they search, and the four
-orderings, which answer for a plain receiver too because a subclass's reflected method is tried
-first. `attached.group("name") != network`, the comparison that read `--network selvage-net` as
-`selvage`, therefore fails where it is written rather than passing the page, and the check exits
-**2** naming the line it was written on. Those refusals are one method each, so they are evaluated
-rather than trusted: `seam_problems` runs every one of them outside the seam, where it has to raise,
-and one through `reads_the_name`, where it has to answer, and fails the check when a method that
-refuses no longer does. The other half is a scan of the check's own syntax tree
-(`unseamed_field_problems`): it walks the functions the section's rules can reach — by a bare call,
-and out from the function values `RUN_CARD_READINGS` and `published_port_reading` hold, which are
-called through a table or a variable and are never written as a call, so the four readings and their
-weakened twins are walked too — and reads the three patterns those rules match a command with —
-`CONTAINER_NAME`, `NETWORK_FLAG` and `IMAGE_REFERENCE`, which are where a container name, a network
-name and an image reference come from — and fails when a `.group(…)` read taken off a match of one
-of them, however that match was bound (an assignment, a loop, a comprehension, a walrus, a tuple
-target, or any value that names one of the patterns anywhere inside it, which is what catches a
-match bound through a conditional expression, an `or`, a `list(…)`, an `enumerate(…)` or a
-`re.search(PATTERN, …)`), is neither the expression a `ParsedName` is made from where it is read nor
-the plain name that expression is bound to, or when a function it reaches keeps a match of one of
-those patterns and mints no `ParsedName` at all. What it does not catch, and this check cannot: the
-forms a `str` receiver answers for on its own, which no method of a `ParsedName` can reach. `name in clause`,
-`clause.split().count(name)` and `"-" + name` put the name on the right of a `str` and answer with
-its text; `clause.startswith(name)` and `clause.find(name)` put the text there; and
-`name.lower().strip() == other` leaves the `ParsedName` behind at the first method call, with the
-text it was read from compared in its place. Each of those answers outside `reads_the_name`, each is
-what a later hand reaches for, and each is closed by reading the value as a `ParsedName` at the
-comparison rather than by the class — which is also why they are limits rather than entries in the
-table. Then a comparison of the *text* a name was read from — a `.split()` of the clause, a pattern
-matched against the name, `str()` of one — because that value is a `str` with no record of where it
-came from; a read of a match that is not `.group(…)` (`match[0]`, `match.expand()`) inside a
-function that mints a `ParsedName` somewhere else, which is the one surviving way past the second
-shape above, or a match bound by `with … as`; a name read with a pattern of the rule's own rather
-than one of the three; and any function the section's rules do not reach, `check_published_image`
-among them, which compares the references the whole page carries against the two the project
-publishes and is held by the served page rather than by a fixture. A fixture a rule passes is not a
-proof the rule is complete, either. What carries none is what is not a command — the pin below that
-holds the `$ ` prompt and the labels to the stylesheet, and the refusal to pass when no scanned page
-carries a block: those read a served page and the build it was served from, so their fixture would
-be a page and a build rather than a line. The pin that closes the section's last hole is not a
-phrase or a command at all: the `$ ` prompt in front of each block and the label above it are read
-out of the served page's own markup, and a rule in **the stylesheet the served page loads** has to
-name the class they carry and take it out of a selection. The stylesheet is read from the build the
-server is serving rather than from `style.css`, under `/_next/static/` where the build puts what a
-browser is served, so a declaration the build drops fails here, and deleting `user-select: none`
-fails the gate instead of bringing a pasted `$ ` back with nothing to say so. The second is the demo
-instance: the page points at one host, every reference to that host has to be one of the two the
-page may carry, a link has to point at the instance itself, and
+that keeps those words can pass — the limit every reading in it has.
+The `$ ` prompt in front of each block and the label beside it are held to the stylesheet the served
+page loads: a rule has to name their class and take it out of a selection, or deleting
+`user-select: none` would bring a pasted `$ ` back with nothing to say so. The demo instance is
+asserted the same way: the page points at one host, every reference to that host has to be one of the
+two the page may carry, and a link has to point at the instance itself, and
 `https://selvage-demo.dontblameme.dev/meta` has to report a `selvaged` server. The references are
 read from the visible text *and* from the links' destinations, because a label and the place it goes
 are two claims: an anchor labelled with the demo host whose `href` points elsewhere passes a
@@ -300,12 +228,8 @@ stayed `false` on a plugin whose approved version the IDE already offered to ins
 The extension's half asks no registry, for the release-ordering reason above; this half does,
 because the plugin's first listing is uploaded by hand and approved by JetBrains rather than
 produced by a release this project dispatches, so what the page waits on is the approval. The
-reading carries fixtures of its own, run before the scan: an approved version has to pass, and so
-does one beside a newer version still in review; a listing whose only version is in review, one with
-no version, one whose `approve` is the string `"true"`, an unlisted, hidden or non-stable version,
-another plugin's version, another plugin's listing, one at another path, an answer that is not an
-object and a version list that is not a list each have to be reported, so a reading that stops telling
-a listing in review from a public one fails the check with exit 2 rather than passing every page. It
+reading carries fixtures of its own, so a reading that stops telling a listing in review from a
+public one fails the check with exit 2 rather than passing every page. It
 needs egress to `plugins.jetbrains.com` and exits 2 when it cannot ask; a `404` for the plugin is
 exit 1, because a listing the Marketplace does not have disproves the route. It runs after every
 other assertion, so a step that is red only on the approval is a page whose other claims all held.
