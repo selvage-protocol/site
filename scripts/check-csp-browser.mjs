@@ -27,7 +27,10 @@
 //   5. the header conceals itself when the page is scrolled down and comes back when it is
 //      scrolled up — the React effect, which only runs once the page hydrates. The concealed
 //      class is asserted absent from the served bytes first, so what is observed is the
-//      effect, not the prerender;
+//      effect, not the prerender. React has to be on the node before the scroll, and the
+//      scroll is a reader's movement down rather than one jump: the effect records the position
+//      it sees when it attaches, so a single jump made before it attaches is a scroll it never
+//      hears, which is what this looked like on a machine slower than the one it was written on;
 //   6. the document response carries no `X-Powered-By` (next.config.ts's `poweredByHeader`);
 //   7. a request for a path no route claims, which is the other page this policy covers, carries
 //      zero violations too. The framework's own 404 document carries a `<style>` element and four
@@ -65,6 +68,14 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const PORT = Number(process.env.CSP_PORT || 3210); // proxy: the page under its real headers
 const UPSTREAM = Number(process.env.CSP_UPSTREAM || 3211); // the built page, via next start
 const WINDOW = "1000,900";
+// Two bounds over one page state — React reaching the header, then its scroll effect answering a
+// scroll — and neither is a sleep. The idle machine this was written on has React on the node by
+// the time the load event fires and the conceal 25 ms after a scroll; one starved core was enough
+// to move hydration past a scroll made half a second after the load event, and the same
+// starvation left a scroll made right after React's mark unheard. 30 s is hundreds of times the
+// idle answer and still ends the check with a report rather than hanging it.
+const HYDRATION_DEADLINE_SECONDS = 30;
+const CONCEAL_DEADLINE_SECONDS = 30;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function giveUp(message) {
@@ -581,10 +592,68 @@ const servedHtml = await (await fetch(where)).text();
 if (servedHtml.includes("-translate-y-full")) {
   fail("the served HTML already carries -translate-y-full, so the concealment is not the effect");
 }
-await evaluate("window.scrollTo({ top: 900, behavior: 'instant' })");
-const concealed = await waitFor(
-  "document.querySelector('header.site-header').className.includes('-translate-y-full')",
+
+// The effect is attached once the page hydrates, which the load event does not wait for, and the
+// mark React leaves on the node it hydrated is the only account of that the DOM gives. The wait
+// is the point of this step: without it the scroll below can be made into the gap before the
+// listener exists, and the effect then records that position as the one it starts from.
+const hydrated = await waitFor(
+  `(() => {
+    const el = document.querySelector('header.site-header');
+    return el ? Object.keys(el).some((key) => key.startsWith('__react')) : false;
+  })()`,
+  HYDRATION_DEADLINE_SECONDS,
 );
+if (!hydrated) {
+  await failWithPage(
+    `the page never hydrated: no React mark appeared on the header in ${HYDRATION_DEADLINE_SECONDS}s, so the ` +
+      "page's own scripts either never ran or threw",
+  );
+}
+
+const CONCEALED = "document.querySelector('header.site-header').className.includes('-translate-y-full')";
+// A reader's movement, not one jump. The listener records the position it sees when it is
+// attached, and the passive phase that attaches it lands after the mark above — on the starved
+// core this was written against, a scroll made right after that mark was still missed. Every pass
+// therefore moves the page further down than the pass before it, so whichever moment the listener
+// arrives, the move after it is one it hears; a page with nothing left below is taken back to the
+// top first, which is what a reader does too. The conceal is still the effect answering a scroll;
+// nothing here sets it.
+const pageBelow = await evaluate("Math.max(0, document.documentElement.scrollHeight - window.innerHeight)");
+if (pageBelow <= 64) {
+  await failWithPage(
+    `the page is ${pageBelow}px taller than the viewport, so there is nowhere past the bar's own ` +
+      "height to scroll to and its hide-on-scroll cannot be seen at all",
+  );
+}
+const concealDeadline = Date.now() + CONCEAL_DEADLINE_SECONDS * 1000;
+let concealed = false;
+let concealedAtY = 0;
+while (!concealed && Date.now() < concealDeadline) {
+  for (const share of [0.25, 0.5, 0.75, 1]) {
+    const top = Math.min(pageBelow, Math.max(65, Math.round(pageBelow * share)));
+    await evaluate(`window.scrollTo({ top: ${top}, behavior: 'instant' })`);
+    // A scroll the browser accepts and does not make would leave every observation below
+    // meaningless, so what the conceal is read against is the page's own position.
+    const y = await evaluate("window.scrollY");
+    if (y <= 64) {
+      await failWithPage(`a scroll to ${top}px left window.scrollY at ${y}, so the page never moved past the bar`);
+    }
+    concealed = await waitFor(CONCEALED, 2);
+    if (concealed) {
+      concealedAtY = y;
+      break;
+    }
+    if (Date.now() > concealDeadline) break;
+  }
+  if (!concealed) await evaluate("window.scrollTo({ top: 0, behavior: 'instant' })");
+}
+if (!concealed) {
+  await failWithPage(
+    `the header never concealed itself while the page was scrolled down and down again for ` +
+      `${CONCEAL_DEADLINE_SECONDS}s, so the effect is not answering a scroll`,
+  );
+}
 // The class is applied before the 300 ms transition has moved anything, so the displacement is
 // polled to its settled value rather than read once and reported mid-flight.
 const moved = await waitFor(
@@ -597,7 +666,7 @@ await evaluate("window.scrollTo({ top: 300, behavior: 'instant' })");
 const returned = await waitFor(
   "!document.querySelector('header.site-header').className.includes('-translate-y-full')",
 );
-if (!concealed) await failWithPage("the header never concealed itself when scrolled down: the page is not hydrating");
+const returnedAtY = await evaluate("window.scrollY");
 if (!moved) await failWithPage(`the header's translate settled at ${concealedTranslate}, not 0px -100%`);
 if (!returned) await failWithPage("the header stayed concealed when scrolled back up");
 
@@ -650,7 +719,7 @@ console.log(`check-csp-browser: ${version.Browser}, headless, ${where} served fr
   fonts      : Geist and JetBrains Mono loaded and resolve, the body's family is ${fonts.body}
   violations : 0 securitypolicyviolation events, 0 console refusals, none naming a font
   not-found  : /no-such-path answered 404, 0 violations, no inline style or style attribute in its served bytes
-  header     : concealed at scrollY 900 (translate: ${concealedTranslate}), back at scrollY 300
+  header     : concealed at scrollY ${concealedAtY} (translate: ${concealedTranslate}), back at scrollY ${returnedAtY}
   banner     : no X-Powered-By on the document response
 This is a browser, not a model: what it cannot see is the deployed response headers, because
 only the host applies them, and what it sees that the model cannot is the fonts themselves.`);
