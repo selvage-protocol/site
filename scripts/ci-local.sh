@@ -8,7 +8,7 @@
 #   scripts/ci-local.sh contrast   # theme token pairs at or above WCAG AA, and the nav mark at its visibility floor
 #   scripts/ci-local.sh mark       # re-derive public/mark-header.png from the master, compare
 #   scripts/ci-local.sh claims     # build, serve production, fetch / and scan the rendered HTML (forbidden wordings and the artefact-backed claims)
-#   scripts/ci-local.sh csp        # the CSP in vercel.json over the served page and its not-found route: no script, stylesheet, image or font either carries is refused
+#   scripts/ci-local.sh csp        # the CSP in vercel.json over the served page and its not-found route, in the model and then in a real headless browser
 #   scripts/ci-local.sh weight     # every image the page body fetches is within its byte budget
 #   scripts/ci-local.sh links      # serve production, lychee over the rendered page, the README and the docs tree
 #   scripts/ci-local.sh lint       # actionlint over the workflow files
@@ -36,6 +36,12 @@
 # and the page serves its own glyph files, so `font-src` is modelled too. See scripts/check-csp.py.
 # It reads the not-found route too: the framework's own 404 markup carries a `<style>` element and
 # four style attributes, which this policy refuses, and a scan that only ever saw `/` did not know.
+# The same step then drives a real Chromium over the same two documents
+# (`scripts/check-csp-browser.mjs`): a model cannot see whether a browser enforces the policy the
+# way the model assumes, and that run records zero `securitypolicyviolation` events, the fonts
+# actually loading and the hide-on-scroll effect firing. It needs a Chromium-based binary, which
+# `find_chromium` takes from `CHROMIUM` or from `PATH`; this host and the runner image both carry
+# one, and a host without one fails the step rather than skipping it.
 #
 # The weight step reads the same rendered HTML and the bytes on disk: every image the page body
 # fetches out of `public/` is within its budget and declares its own pixel size. The mark lands
@@ -82,6 +88,25 @@ run_actionlint() {
   else
     nix shell nixpkgs#actionlint -c actionlint "$@"
   fi
+}
+
+# The browser the CSP proof drives. `CHROMIUM` wins when it is set, so a host with its browser
+# somewhere unusual can point the step at it; otherwise the first Chromium-based binary on `PATH`.
+# The last candidate is the runner image's own, which is not always linked onto `PATH`.
+find_chromium() {
+  if [ -n "${CHROMIUM:-}" ]; then
+    printf '%s\n' "$CHROMIUM"
+    return 0
+  fi
+  local candidate
+  for candidate in chromium chromium-browser google-chrome google-chrome-stable \
+    /usr/local/share/chromium/chrome-linux/chrome; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      command -v "$candidate"
+      return 0
+    fi
+  done
+  return 1
 }
 
 # Starts the production server in the background, polls / until it answers 200 (bounded: 60
@@ -170,7 +195,22 @@ job_csp() {
   say "csp: the policy in vercel.json over the served page and its not-found route"
   # Always rebuilt, so the policy can never pass over a stale page.
   npm run build >/dev/null
-  with_server fetch_and_csp
+  with_server fetch_and_csp &&
+    job_csp_browser
+}
+
+# The model in `scripts/check-csp.py` decides the policy against the markup; this drives a real
+# browser over the same build, which is the only thing that can say the policy is enforced the way
+# the model assumes. It starts its own server and applies the `headers` block itself (`next start`
+# does not), so it needs the build to exist rather than a server this script started.
+job_csp_browser() {
+  say "csp-browser: the policy in a real headless browser, over the served page and its not-found route"
+  local browser
+  if ! browser=$(find_chromium); then
+    echo "ci-local: no Chromium-based browser found; set CHROMIUM or install one — the browser proof cannot be skipped" >&2
+    return 2
+  fi
+  CHROMIUM="$browser" npm run check:csp-browser
 }
 
 fetch_and_scan() {
@@ -207,7 +247,7 @@ scan_csp() {
 }
 
 all_served() {
-  fetch_and_scan && fetch_not_found && scan_csp && scan_weight && run_lychee --config lychee.toml --no-progress "$BASE/" README.md docs
+  fetch_and_scan && fetch_not_found && scan_csp && scan_weight && run_lychee --config lychee.toml --no-progress "$BASE/" README.md docs && job_csp_browser
 }
 
 job_links() {

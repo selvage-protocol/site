@@ -20,7 +20,11 @@ is wrong: with `default-src 'none'` and nothing for scripts to fall back to, the
 and its inline bootstrap are refused, it never hydrates, and the header's conceal-on-scroll does
 nothing while the page reads as if it worked. `scripts/check-csp.py` decides every script,
 stylesheet, image and font the served page and its not-found route carry against the policy in
-`vercel.json`, so a policy that would refuse something the page loads fails the gate instead.
+`vercel.json`, so a policy that would refuse something the page loads fails the gate instead, and
+`scripts/check-csp-browser.mjs` then drives a real headless Chromium over the same two served
+documents — zero `securitypolicyviolation` events, the glyph files fetched, the conceal-on-scroll
+effect firing only if the page hydrated. The gate runs both, so the model is backed by a browser;
+the runner image carries the Chromium the second one needs.
 
 The page is not a released artefact: there is nothing to build or attach, no image and no registry,
 no tag and no GitHub Release, and no release workflow. Vercel deploys it from `main` on every push

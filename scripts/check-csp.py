@@ -21,9 +21,11 @@ It is a model of the CSP resource-loading rules, not a browser. Two consequences
 a source expression it does not model (`'strict-dynamic'`, `'unsafe-hashes'`, a report-only
 mechanism) is an error rather than an assumption, so the check can never pass a policy it does
 not understand; and the Chromium run that proves the real thing — zero `securitypolicyviolation`
-events on a page served with these exact headers — is not in this file, because the runner has
-no browser. What is here is the part that can run on every push. Neither this nor that run can
-see the deployed headers: if Vercel stops applying the `headers` block, nothing local notices.
+events on a page served with these exact headers — is a separate check,
+`scripts/check-csp-browser.mjs`, which `scripts/ci-local.sh csp` runs right after this one, here
+and on the runner, whose image carries a Chromium. This file is the part with no browser in it.
+Neither this nor that run can see the deployed headers: if Vercel stops applying the `headers`
+block, nothing local notices.
 
 Fonts are in scope the way images are, and on the same kind of evidence. The glyph files are
 served from this origin, a font fetch falls back to `default-src` like any other, and the
