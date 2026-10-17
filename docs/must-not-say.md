@@ -28,7 +28,7 @@
 | an only-machine claim (untouched by the network) | Document payloads travel through the server to the peers that ask for them; the grant bounds which paths are served, not which machines code touches |
 | a "live" / "now available" status | One small demo instance runs and there is no hosted service and no launch: a status reading "live" or "now available" sells the demo as a product. The honest status the page carries belongs to the hosted tier's card — *not available yet* — with the release named under the command a reader runs, and the specification called a draft where it is offered |
 | the protocol called finished, released or stable | The specification is a draft and the releases are 0.x: the wire version is `selvage/2`, no shape is frozen, and the corpus is still growing. A page that calls the specification finished, released or stable claims a status the project has not reached |
-| SaaS-creep words (sign in/up, get started, download, pricing) | No accounts exist, so nothing can be signed into; no package exists to download and no price exists to show. The page offers the specification to read and a server to run |
+| SaaS-creep words (sign in/up, get started, download, pricing) | No accounts exist, so nothing can be signed into; no package is published to a registry, and no price exists to show. The page offers the specification to read and a server to run |
 
 Four things the check cannot make mechanical, and which a reader of a change has to hold:
 

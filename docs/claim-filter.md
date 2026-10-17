@@ -209,7 +209,7 @@ rows are read from the page rather than listed in the check, because the clients
 list: a hand-maintained list of names here would be the drift the rule exists to catch, and a client
 added to the page would be one the check never looked at. What is pinned by name is the handful of
 facts that have to stay true of named rows: the specification is the source of truth, the
-extension's row is the one a reader is also handed an install for, and `reference_server`,
+extension's row is the one whose install names the registries, and `reference_server`,
 `nvim_client`, `web_client` and `jetbrains_client` each keep a row that names them. A row's name,
 description, word and destination are one claim, read together from the row's own list item rather
 than from the page's text, so a row that links a different repository fails even though the page
@@ -218,7 +218,7 @@ row may wear, and a row it does not link has to be a plan and say so, so a live 
 give up its link by being called a plan without the word moving with it and the absence showing in
 the diff. Every repository the page links has to be one the grid links, so no row and no source link
 beside the terminal points at a repository the project does not have. The extension's row is the one
-whose repository a reader is also handed an install for, and the install is where the claim about a
+whose install names the registries, and that install is where the claim about a
 registry rather than a repository lives: the VS Code route in the terminal has to carry
 `selvage-protocol.selvage` and both registries it is published to, read from that route's own panel,
 so the row that says the client is available and the install a reader follows cannot be read apart —

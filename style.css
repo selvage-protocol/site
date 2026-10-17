@@ -1424,8 +1424,8 @@ section[id],
 .repos {
   display: grid;
   /* A track minimum of 320px gives three columns at the section's own width and one on a
-     phone, so the six cards the page carries fill two rows exactly. The list is open, and no
-     track width keeps a growing count even: the strip under the grid is what closes it. */
+     phone. The list is open, and no track width keeps a growing count even: the strip under
+     the grid is what closes it. */
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: 10px;
   margin: 56px 0 0;

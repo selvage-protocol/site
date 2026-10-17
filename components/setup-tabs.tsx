@@ -45,9 +45,10 @@ const TABS: Tab[] = CLIENTS.flatMap((client) =>
 
 export function SetupTerminal() {
   const [active, setActive] = useState(TABS[0].id);
-  /* Which edge of the strip has a tab past it. The four tabs take 424 px, so they fit beside the
-panels and in a single column from about 460 px; narrower than that the last one is clipped, and
-the clipped label on its own reads as a mistake. */
+  /* Which edge of the strip has a tab past it. The five tabs take 525 px, so they fit beside the
+panels at a wide page and in a single column from about 560 px; narrower than that, and again
+where the two-column layout leaves the terminal under 525 px, the last one is clipped, and the
+clipped label on its own reads as a mistake. */
   const [edges, setEdges] = useState({ left: false, right: false });
   const strip = useRef<HTMLDivElement>(null);
   const { copied, copy } = useCopy<string>();
