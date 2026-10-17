@@ -173,8 +173,7 @@ export const CLIENTS: Client[] = [
       announce: "Agent instruction",
       note:
         "Point your agent at the server you run: it hosts a room or joins yours, and edits the " +
-        "same files, over the same TypeScript engine the other clients share. Not on npm: npx " +
-        "builds the package from the repository.",
+        "same files, over the same TypeScript engine the other clients share.",
     },
   },
 ];
