@@ -1572,8 +1572,9 @@ FORBIDDEN: list[Phrase] = [
     Phrase(
         r"\bsign[ -]?in\b|\bsign[ -]?up\b|\bget started\b|\bdownload\b|\bpricing\b",
         "Sign in to get started, then download the app.",
-        "no accounts exist, so nothing can be signed into; no package exists to download and "
-        "no price exists to show. The page offers the specification to read and a server to run",
+        "no accounts exist, so nothing can be signed into; no package is published to a registry "
+        "and no price exists to show. The page offers the specification to read and a server to "
+        "run",
     ),
 ]
 
@@ -4408,13 +4409,13 @@ def check_repository_grid(pages: list[Scanned]) -> int:
 
     What is pinned by name is the handful of facts that have to stay true of named rows whatever
     else the grid carries: the specification is the source of truth, every client the page hands
-    over keeps a row that says it is available, and the extension's row is the one a reader is
-    also handed an install for.
+    over keeps a row that says it is available, and the extension's row is the one whose install
+    names the registries it is published to.
     Nothing else about the grid is a list in this file: the clients are the page's own list, and
     a client added there is one this function reads rather than one it has to be told about.
 
-    The extension's row is the one whose repository a reader is also handed an install for, and
-    the install is where the identity the release publishes under and the two registries it
+    The extension's row is the one whose install names the registries, and that install is where
+    the identity the release publishes under and the two registries it
     publishes to live: the VS Code route in the terminal. So the row and that route are read as
     one claim — this function reads the word beside the repository from the grid and the install
     from the route's own panel, and `check_published_extension` reads the same identity and

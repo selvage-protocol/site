@@ -320,8 +320,8 @@ export default function Home() {
               <Eyebrow>Get it working</Eyebrow>
               <h2 className="display">One server, any client.</h2>
               <p className="lede">
-                The extension, the two plugins and the browser page are clients, not
-                a server: each one connects to a selvaged you run.
+                The extension, the two plugins, the browser page and an agent over MCP
+                are clients, not a server: each one connects to a selvaged you run.
               </p>
             </div>
             <div className="run-grid">

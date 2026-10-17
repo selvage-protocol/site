@@ -9,7 +9,9 @@ protocol, prose and vectors, [`selvage-protocol/reference_server`](https://githu
 for the server and client library, and [`selvage-protocol/vscode_client`](https://github.com/selvage-protocol/vscode_client),
 [`selvage-protocol/nvim_client`](https://github.com/selvage-protocol/nvim_client) and
 [`selvage-protocol/jetbrains_client`](https://github.com/selvage-protocol/jetbrains_client) for the
-three editor clients.
+three editor clients, [`selvage-protocol/web_client`](https://github.com/selvage-protocol/web_client)
+for the browser page, and [`selvage-protocol/mcp`](https://github.com/selvage-protocol/mcp) for an
+agent's way into a room, over the Model Context Protocol.
 
 ## Running it
 

@@ -1,4 +1,4 @@
-import { Box, Code, Globe, Terminal, type LucideIcon } from "lucide-react";
+import { Bot, Box, Code, Globe, Terminal, type LucideIcon } from "lucide-react";
 import { DEMO } from "@/lib/selvage";
 
 /* One entry per client, and every surface the page draws a client on derives from this list:
@@ -152,9 +152,34 @@ export const CLIENTS: Client[] = [
       note: "Guests need nothing installed.",
     },
   },
+  {
+    id: "mcp",
+    repository: "mcp",
+    description: "An agent over MCP",
+    Icon: Bot,
+    status: "available",
+    chip: "AI agent",
+    install: {
+      lines: [
+        { text: "# paste this into your agent", comment: true },
+        { text: "Set up the Selvage MCP server, pointing" },
+        { text: "SELVAGE_SERVER_URL at the server I run:" },
+        { text: "npx -y github:selvage-protocol/mcp" },
+      ],
+      copy:
+        "Set up the Selvage MCP server, pointing\n" +
+        "SELVAGE_SERVER_URL at the server I run:\n" +
+        "npx -y github:selvage-protocol/mcp",
+      announce: "Agent instruction",
+      note:
+        "Point your agent at the server you run: it hosts a room or joins yours, and edits the " +
+        "same files, over the same TypeScript engine the other clients share. Not on npm: npx " +
+        "builds the package from the repository.",
+    },
+  },
 ];
 
 /** How many clients the chips figure names before it rolls the rest into its last chip. The
     list is open, and the figure is a fixed-height band between two other drawings: a cap is
-    what keeps it the same shape at four clients and at ten. */
-export const CHIP_LIMIT = 4;
+    what keeps it the same shape at five clients and at ten. */
+export const CHIP_LIMIT = 5;
