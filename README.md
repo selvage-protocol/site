@@ -33,7 +33,7 @@ can look like a page that keeps refreshing itself; the `next build` output carri
 a page, and the deployed policy refuses every origin but its own.
 
 Node comes from `.nvmrc` (`nvm use`, or any manager that reads it). `package.json` `engines` carries
-only the major (`24.x`): Vercel deploys major versions alone, and an exact pin fails the deployment
+only the major (`26.x`): Vercel deploys major versions alone, and an exact pin fails the deployment
 before anything builds.
 
 ## Editing it
