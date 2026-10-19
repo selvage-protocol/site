@@ -33,8 +33,10 @@ can look like a page that keeps refreshing itself; the `next build` output carri
 a page, and the deployed policy refuses every origin but its own.
 
 Node comes from `.nvmrc` (`nvm use`, or any manager that reads it). `package.json` `engines` carries
-only the major (`24.x`): Vercel deploys major versions alone, and an exact pin fails the deployment
-before anything builds.
+a floor (`>=24`), not a pin: Vercel deploys only the Node majors its build image offers today
+(24.x default, 22.x), and a version it does not offer — whether pinned by major (`26.x`) or exactly
+(`26.11.1`) — fails the deployment before anything builds. A floor still admits the newer runtime
+developers and CI use.
 
 ## Editing it
 
