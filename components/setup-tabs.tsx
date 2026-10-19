@@ -44,7 +44,7 @@ const TABS: Tab[] = CLIENTS.flatMap((client) =>
 );
 
 export function SetupTerminal() {
-  const [active, setActive] = useState(TABS[0].id);
+  const [active, setActive] = useState(TABS[0]?.id);
   /* Which edge of the strip has a tab past it. The five tabs take 525 px, so they fit beside the
 panels at a wide page and in a single column from about 560 px; narrower than that, and again
 where the two-column layout leaves the terminal under 525 px, the last one is clipped, and the
@@ -78,6 +78,12 @@ clipped label on its own reads as a mistake. */
       watched.disconnect();
     };
   }, []);
+
+  /* A client set where no client carries an install route leaves no tab, so there is nothing
+     here to select between: nothing is drawn rather than `TABS[0]`, which would not exist. */
+  if (TABS.length === 0) {
+    return null;
+  }
 
   /* The tab a reader picks has to be the one in view: the strip can be wider than its panel, so
      the tab at either end sits clipped at the edge until it is scrolled to. */
