@@ -96,7 +96,7 @@ export function RoomWindow({ animatePlayground = true }: { animatePlayground?: b
   }, [animatePlayground]);
 
   return (
-    <figure className="hero-visual">
+    <figure className="hero-visual" aria-hidden="true">
       <div className="hero-glow" aria-hidden="true" />
       <div className="hero-glass">
         <div className="room-grid">
