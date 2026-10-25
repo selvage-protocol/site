@@ -35,10 +35,7 @@ export const OPEN_AT = "http://127.0.0.1:8080/";
     containers share, the server that holds the room, and the web client in front of it. Each is one
     line in a block of its own, so a reader who selects one does not take the next with it.
 
-    They are three steps and not one because that is what the three do, and each is short enough
-    to read. Pasting a line twice is docker's error to report — this is the happy path — and a
-    reader who is done stops the pair with `docker stop` or `docker rm -f`, which the section does
-    not spell out. */
+    Pasting a line twice is docker's error to report. */
 export const RUN_STEPS: readonly { label: string; command: string }[] = [
   {
     label: "Create the network",
@@ -56,5 +53,20 @@ export const RUN_STEPS: readonly { label: string; command: string }[] = [
   },
 ];
 
+export const STOP_STEPS: readonly { label: string; command: string }[] = [
+  {
+    label: "Stop both containers",
+    command: `docker stop ${PAGE_CONTAINER} ${SERVER_HOST}`,
+  },
+  {
+    label: "Remove the network",
+    command: `docker network rm ${NETWORK}`,
+  },
+];
+
 /** The demo instance: the origin a guest opens, and the address an editor hosts on. */
 export const DEMO = "selvage-demo.dontblameme.dev";
+export const DEMO_ORIGIN = `https://${DEMO}`;
+export const DEMO_SERVER = `wss://${DEMO}`;
+export const REMOTE_DEPLOYMENT =
+  "https://github.com/selvage-protocol/reference_server/blob/main/docs/deploying.md#letting-someone-else-in";

@@ -1,5 +1,5 @@
 import { Bot, Box, Code, Globe, Terminal, type LucideIcon } from "lucide-react";
-import { DEMO } from "@/lib/selvage";
+import { DEMO, DEMO_ORIGIN, DEMO_SERVER } from "@/lib/selvage";
 
 /* One entry per client, and every surface the page draws a client on derives from this list:
    the repository grid's row, the chips in *Clients share one protocol*, and the install route in
@@ -88,7 +88,10 @@ export const CLIENTS: Client[] = [
     install: {
       lines: [
         command("$", "code --install-extension selvage-protocol.selvage"),
-        { text: "# then run  Selvage: Host a session — this opens the room", comment: true },
+        { text: "# open a small disposable text folder in VS Code", comment: true },
+        { text: "# run  Selvage: Host a session", comment: true },
+        { text: `# server: ${DEMO_SERVER}`, comment: true },
+        { text: "# enter your name; the invite is copied to your clipboard", comment: true },
       ],
       copy: "code --install-extension selvage-protocol.selvage",
       announce: "VS Code command",
@@ -143,13 +146,16 @@ export const CLIENTS: Client[] = [
     chip: "Browser",
     install: {
       lines: [
-        { text: `# point an editor at wss://${DEMO}`, comment: true },
         command("›", DEMO),
-        { text: "# the invite a host sends opens in the page", comment: true },
+        { text: "# desktop Chrome or Edge: Your name → Share a folder…", comment: true },
+        { text: "# use a small disposable text folder; allow read/write access", comment: true },
+        { text: "# open a file, then Copy invite link", comment: true },
       ],
-      copy: DEMO,
+      copy: DEMO_ORIGIN,
       announce: "Browser address",
-      note: "Guests need nothing installed.",
+      note:
+        "Guests need nothing installed. Firefox and Safari can join from a complete invite " +
+        "link; to host, use an editor instead. The room setup steps above cover both routes.",
     },
   },
   {

@@ -2203,6 +2203,7 @@ READING_CONTAINER_NETWORK = "the network each run attaches its container to"
 READING_ADDRESSED_CONTAINER = "the container the server's address names"
 READING_PAGE_IMAGE_RUN = "the page image on the run the address is given to"
 READING_SERVER_IMAGE_RUN = "the server image on the run beside it"
+READING_TEARDOWN_NAME = "the teardown operands against the startup names"
 
 
 def the_same_name(one: str, other: str) -> bool:
@@ -2244,6 +2245,7 @@ RUN_READINGS: dict[str, tuple[Callable[[str, str], bool], Callable[[str, str], b
     READING_ADDRESSED_CONTAINER: (the_same_name, the_same_name_as_a_search),
     READING_PAGE_IMAGE_RUN: (the_same_name, the_same_name_as_a_search),
     READING_SERVER_IMAGE_RUN: (the_same_name, the_same_name_as_a_search),
+    READING_TEARDOWN_NAME: (the_same_name, the_same_name_as_a_search),
 }
 
 # Which places the fixtures reached, which of them read a name the search would read differently,
@@ -2677,6 +2679,74 @@ def run_section_problems(blocks: list[list[str]]) -> list[str]:
                     "page container's own `-p` nothing to bind and the page never starts"
                 )
     return problems
+
+
+def teardown_problems(blocks: list[list[str]]) -> list[str]:
+    """Require teardown after startup, using the names startup actually creates."""
+    clauses = [
+        re.sub(r"^\$\s*", "", clause.strip())
+        for block in blocks
+        for clause in command_clauses(" ".join(block))
+    ]
+    runs = [(index, clause) for index, clause in enumerate(clauses) if DOCKER_RUN.search(clause)]
+    page_names = [container_name_in(clause) for _, clause in runs if SERVER_ADDRESS.search(clause)]
+    server_names = [container_name_in(clause) for _, clause in runs if not SERVER_ADDRESS.search(clause)]
+    networks = [
+        network_named_in(clause, found)
+        for clause in clauses
+        if (found := NETWORK_CREATE.search(clause)) is not None
+    ]
+    if len(page_names) != 1 or len(server_names) != 1 or len(networks) != 1:
+        return ["cannot derive teardown names from one network and two startup runs"]
+    expected = [page_names[0], server_names[0], networks[0]]
+    if any(name is None or not names_something(name) for name in expected):
+        return ["cannot derive teardown names from unnamed startup resources"]
+    stops = [
+        (index, found)
+        for index, clause in enumerate(clauses)
+        if (found := re.fullmatch(r"docker\s+stop\s+(\S+)\s+(\S+)", clause)) is not None
+    ]
+    removals = [
+        (index, found)
+        for index, clause in enumerate(clauses)
+        if (found := re.fullmatch(r"docker\s+network\s+rm\s+(\S+)", clause)) is not None
+    ]
+    problems: list[str] = []
+    if len(stops) != 1:
+        problems.append("must print one docker stop naming both startup containers")
+    if len(removals) != 1:
+        problems.append("must print one docker network rm naming the startup network")
+    if problems:
+        return problems
+    stop_at, stop = stops[0]
+    remove_at, remove = removals[0]
+    actual = [ParsedName(stop.group(1)), ParsedName(stop.group(2)), ParsedName(remove.group(1))]
+    for given, wanted in zip(actual, expected):
+        if wanted is not None and not reads_the_name(READING_TEARDOWN_NAME, given, wanted):
+            problems.append(f"teardown names {given!r} instead of startup resource {wanted!r}")
+    if not max(index for index, _ in runs) < stop_at < remove_at:
+        problems.append("must stop after startup and remove the network after stopping both containers")
+    return problems
+
+
+def check_run_section_teardown(pages: list[Scanned]) -> int:
+    reached = 0
+    failed = False
+    for page in pages:
+        blocks = command_blocks(page)
+        if not any(blocks):
+            continue
+        reached += 1
+        for problem in teardown_problems(blocks):
+            print(f"check-claims: teardown at {page.path} {problem}", file=sys.stderr)
+            failed = True
+    if failed:
+        return 1
+    if not reached:
+        print("check-claims: reached no command blocks for teardown", file=sys.stderr)
+        return 2
+    print("check-claims: teardown stops both startup containers, then removes their network")
+    return 0
 
 
 def run_section_region(page: Scanned) -> str:
@@ -4798,6 +4868,215 @@ def fixture_failure(what: str, problems: list[str], expected: str) -> str:
     return ""
 
 
+RUN_TEARDOWN_BLOCKS = (*RUN_FIXTURE_NAMED, "docker stop page server", "docker network rm room")
+TEARDOWN_FIXTURES = (
+    ("startup plus teardown across all command blocks", RUN_TEARDOWN_BLOCKS, ""),
+    ("teardown follows renamed startup resources", run_fixture(
+        (0, "create room", "create session"),
+        (1, "--name server --network room", "--name host --network session"),
+        (2, "--name page --network room", "--name browser --network session"),
+        (2, "SELVAGE_SERVER=http://server:8080", "SELVAGE_SERVER=http://host:8080"),
+        (3, "page server", "browser host"),
+        (4, "rm room", "rm session"), blocks=RUN_TEARDOWN_BLOCKS), ""),
+    ("startup without teardown", RUN_FIXTURE_NAMED, "must print one docker stop"),
+    ("missing network removal", run_fixture(dropped=(4,), blocks=RUN_TEARDOWN_BLOCKS),
+     "must print one docker network rm"),
+    ("missing page operand", run_fixture((3, "page server", "server"), blocks=RUN_TEARDOWN_BLOCKS),
+     "must print one docker stop"),
+    ("missing server operand", run_fixture((3, "page server", "page"), blocks=RUN_TEARDOWN_BLOCKS),
+     "must print one docker stop"),
+    ("incorrect page name", run_fixture((3, "page server", "page-extra server"), blocks=RUN_TEARDOWN_BLOCKS),
+     "teardown names"),
+    ("incorrect server name", run_fixture((3, "page server", "page server-extra"), blocks=RUN_TEARDOWN_BLOCKS),
+     "teardown names"),
+    ("incorrect network name", run_fixture((4, "rm room", "rm room-extra"), blocks=RUN_TEARDOWN_BLOCKS),
+     "teardown names"),
+    ("missing network operand", run_fixture((4, "rm room", "rm"), blocks=RUN_TEARDOWN_BLOCKS),
+     "must print one docker network rm"),
+    ("network removed before stop", (*RUN_FIXTURE_NAMED, RUN_TEARDOWN_BLOCKS[4], RUN_TEARDOWN_BLOCKS[3]),
+     "must stop after startup"),
+    ("containers stopped before startup", (RUN_TEARDOWN_BLOCKS[3], *RUN_FIXTURE_NAMED, RUN_TEARDOWN_BLOCKS[4]),
+     "must stop after startup"),
+    ("extra container stopped", run_fixture((3, "page server", "page server unrelated"), blocks=RUN_TEARDOWN_BLOCKS),
+     "must print one docker stop"),
+)
+
+
+def teardown_fixture_problems(shape: tuple[str, ...]) -> list[str]:
+    # Use the page-wide reader, including the prompt the rendered blocks carry.
+    raw = "".join(
+        '<div class="command"><p class="command-line"><span class="command-prompt">$ </span>'
+        + html.escape(line) + '</p></div>'
+        for line in shape
+    )
+    text, lines = normalise(raw)
+    page = Scanned("fixture.html", text, lines, destinations(raw), raw, [])
+    blocks = command_blocks(page)
+    return run_section_problems(blocks) + teardown_problems(blocks)
+
+
+def reddened_teardown_fixtures() -> list[str]:
+    return [
+        what for what, shape, expected in TEARDOWN_FIXTURES
+        if shape is None or fixture_failure(what, teardown_fixture_problems(shape), expected)
+    ]
+
+
+REMOTE_DEPLOYMENT = (
+    "https://github.com/selvage-protocol/reference_server/blob/main/docs/deploying.md"
+    "#letting-someone-else-in"
+)
+# Required facts and UI labels, scoped to the recipe or disclosure that owes them.
+ONBOARDING_REQUIREMENTS = {
+    "first-room": (
+        "desktop Chrome or Edge", "small disposable text folder",
+        "host writes settled edits to the real folder", "trusted editors",
+        "anyone with the invite can join and edit", "Your name", "Share a folder…",
+        "allow read/write access", "Open a file from the folder tree",
+        "Copy invite link", "complete invite, including everything after #",
+        "They open it, enter their name and choose Join", "guest open the same file",
+        "leave icon, labeled “Leave and end the room”", "confirm Leave anyway",
+        "Keep the host tab open", "reloading it ends the host session",
+    ),
+    "editor-fallback": (
+        "Firefox and Safari can join, but cannot host a folder from the page",
+        "VS Code extension", "open a small disposable text folder in VS Code",
+        "Selvage: Host a session", f"wss://{DEMO_HOST}", "then your name",
+        "invite is copied to your clipboard", "send the complete link",
+        "hosting editor must stay open", "writes settled edits to its folder too",
+    ),
+    "run-section": (
+        "local-only", "binds to 127.0.0.1", "invite won't reach another machine",
+        "another browser window on this machine", "TLS and deployment hardening",
+        "Stopping the containers ends their rooms", "--rm",
+        "Docker removes the containers when they stop",
+    ),
+}
+ONBOARDING_FIXTURE = f'''
+<section class="first-room">
+  <p>Use desktop Chrome or Edge on <a href="{DEMO_ORIGIN}">the demo</a>.
+  Start with a small disposable text folder. The host writes settled edits to the real folder.
+  Share only with trusted editors: anyone with the invite can join and edit.</p>
+  <p>Your name, Share a folder…, allow read/write access. Open a file from the folder tree.</p>
+  <p>Copy invite link. Send the complete invite, including everything after #.
+  They open it, enter their name and choose Join. Have your guest open the same file.</p>
+  <p>Use the host’s leave icon, labeled “Leave and end the room”, then confirm Leave anyway.
+  Keep the host tab open; reloading it ends the host session.</p>
+  <div class="editor-fallback">
+    Firefox and Safari can join, but cannot host a folder from the page.
+    Install the VS Code extension, open a small disposable text folder in VS Code and run
+    Selvage: Host a session. Enter wss://{DEMO_HOST} as the server, then your name.
+    The invite is copied to your clipboard; send the complete link.
+    Your hosting editor must stay open and writes settled edits to its folder too.
+  </div>
+</section>
+<section class="run-section">
+  This setup is local-only: it binds to 127.0.0.1, so its invite won't reach another machine.
+  Test a guest in another browser window on this machine.
+  <a href="{REMOTE_DEPLOYMENT}">Remote deployment guide</a> for TLS and deployment hardening.
+  Stopping the containers ends their rooms. With --rm, Docker removes the containers when they stop.
+</section>
+'''
+
+
+def onboarding_problems(raw: str) -> list[str]:
+    problems: list[str] = []
+    regions: dict[str, str] = {}
+    for region, facts in ONBOARDING_REQUIREMENTS.items():
+        markups = classed_elements(raw, region)
+        if len(markups) != 1:
+            problems.append(f"must carry one {region} region")
+            continue
+        markup = markups[0]
+        if region == "first-room":
+            for fallback in classed_elements(markup, "editor-fallback"):
+                markup = markup.replace(fallback, "")
+        regions[region] = markup
+        text = normalise(markup)[0].casefold()
+        for fact in facts:
+            if fact.casefold() not in text:
+                problems.append(f"{region} must state {fact!r}")
+    for region, target in (("first-room", DEMO_ORIGIN), ("run-section", REMOTE_DEPLOYMENT)):
+        if target not in [url.rstrip("/") for url, _ in destinations(regions.get(region, ""))]:
+            problems.append(f"{region} must link to {target}")
+    fallback = normalise(regions.get("editor-fallback", ""))[0]
+    addresses = re.findall(r"wss://[^\s<>]+", fallback)
+    if addresses != [f"wss://{DEMO_HOST}"]:
+        problems.append("editor-fallback must give the demo server origin without a path")
+    return problems
+
+
+def onboarding_fixture_problems() -> list[str]:
+    problems = onboarding_problems(ONBOARDING_FIXTURE)
+    # Independent cases keep deleting a safety requirement from deleting its test too.
+    for region, fact in (
+        ("first-room", "desktop Chrome or Edge"),
+        ("first-room", "small disposable text folder"),
+        ("first-room", "host writes settled edits to the real folder"),
+        ("first-room", "trusted editors"),
+        ("first-room", "anyone with the invite can join and edit"),
+        ("first-room", "allow read/write access"),
+        ("first-room", "complete invite, including everything after #"),
+        ("first-room", "They open it, enter their name and choose Join"),
+        ("first-room", "guest open the same file"),
+        ("first-room", "leave icon, labeled “Leave and end the room”"),
+        ("first-room", "confirm Leave anyway"),
+        ("first-room", "Keep the host tab open"),
+        ("first-room", "reloading it ends the host session"),
+        ("editor-fallback", "Firefox and Safari can join, but cannot host a folder from the page"),
+        ("editor-fallback", "open a small disposable text folder in VS Code"),
+        ("editor-fallback", "Selvage: Host a session"),
+        ("editor-fallback", "send the complete link"),
+        ("editor-fallback", "hosting editor must stay open"),
+        ("editor-fallback", "writes settled edits to its folder too"),
+        ("run-section", "local-only"),
+        ("run-section", "binds to 127.0.0.1"),
+        ("run-section", "invite won't reach another machine"),
+        ("run-section", "TLS and deployment hardening"),
+        ("run-section", "Stopping the containers ends their rooms"),
+        ("run-section", "Docker removes the containers when they stop"),
+    ):
+        changed = ONBOARDING_FIXTURE.replace(fact, "omitted")
+        expected = f"{region} must state {fact!r}"
+        if expected not in onboarding_problems(changed):
+            problems.append(f"onboarding fixture does not reject missing {fact!r}")
+    for region, facts in ONBOARDING_REQUIREMENTS.items():
+        for fact in facts:
+            if fact not in ONBOARDING_FIXTURE:
+                problems.append(f"onboarding fixture does not carry {fact!r}")
+                continue
+            changed = ONBOARDING_FIXTURE.replace(fact, "omitted")
+            expected = f"{region} must state {fact!r}"
+            if expected not in onboarding_problems(changed):
+                problems.append(f"onboarding fixture does not reject missing {fact!r}")
+    for target in (DEMO_ORIGIN, REMOTE_DEPLOYMENT):
+        changed = ONBOARDING_FIXTURE.replace(f'href="{target}"', 'href="https://example.invalid/"')
+        if not any("must link to" in problem for problem in onboarding_problems(changed)):
+            problems.append(f"onboarding fixture does not reject incorrect link {target}")
+    for address in (f"wss://{DEMO_HOST}/session", "ws://127.0.0.1:8080", "wss://example.invalid"):
+        changed = ONBOARDING_FIXTURE.replace(f"wss://{DEMO_HOST}", address)
+        if "editor-fallback must give the demo server origin without a path" not in onboarding_problems(changed):
+            problems.append(f"onboarding fixture accepts incorrect editor address {address!r}")
+    moved = ONBOARDING_FIXTURE.replace('class="first-room"', 'class="unrelated"')
+    if "must carry one first-room region" not in onboarding_problems(moved):
+        problems.append("onboarding fixture accepts recipe text outside its region")
+    return problems
+
+
+def check_onboarding(pages: list[Scanned]) -> int:
+    if not pages:
+        return 2
+    failed = False
+    for page in pages:
+        for problem in onboarding_problems(page.raw):
+            print(f"check-claims: onboarding at {page.path} {problem}", file=sys.stderr)
+            failed = True
+    if failed:
+        return 1
+    print("check-claims: first-room recipe, editor fallback, local-only limit and deployment link present")
+    return 0
+
+
 def reddened_run_fixtures() -> list[str]:
     """The Run section fixtures the rules as they now stand report, by name."""
     reddened: list[str] = []
@@ -4846,7 +5125,7 @@ def run_section_reading_problems() -> list[str]:
     for site in RUN_READINGS:
         swapped_readings.add(site)
         try:
-            reddened = reddened_run_fixtures()
+            reddened = reddened_run_fixtures() + reddened_teardown_fixtures()
         finally:
             swapped_readings.discard(site)
         if reddened:
@@ -4894,7 +5173,7 @@ MINTED_FIELD = "ParsedName"
 # The entries the scan walks out from, and the values it walks out from beside them. What these
 # reach is what the scan reads, so a function the rules call is a function the scan covers — and so
 # is one the rules reach through a table or a variable rather than by calling it.
-RULE_ENTRY_POINTS = ("run_section_problems", "run_section_opened_at_problems")
+RULE_ENTRY_POINTS = ("run_section_problems", "run_section_opened_at_problems", "teardown_problems")
 
 
 def called_names(node: ast.AST) -> set[str]:
@@ -5292,6 +5571,13 @@ def scan(targets: list[str]) -> int:
             print(f"check-claims: {failure}", file=sys.stderr)
             return 2
 
+    for what in reddened_teardown_fixtures():
+        print(f"check-claims: teardown fixture {what!r} failed", file=sys.stderr)
+        return 2
+    for problem in onboarding_fixture_problems():
+        print(f"check-claims: {problem}", file=sys.stderr)
+        return 2
+
     for what, opened_at, shape, expected in RUN_OPENED_AT_FIXTURES:
         if shape is None:
             print(
@@ -5385,6 +5671,8 @@ def scan(targets: list[str]) -> int:
         check_repository_grid,
         check_published_image,
         check_run_section_command,
+        check_run_section_teardown,
+        check_onboarding,
         check_run_section_address,
         check_command_prompt_selection,
         check_demo_instance,

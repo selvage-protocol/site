@@ -69,6 +69,27 @@ reference calls that field an IP address, writes one in every example and never 
 passes here as one of the two loopback names and whether docker accepts it was not settled. It reads
 one way of writing each part, so a command that is correct in other words fails it and a broken one
 that keeps those words can pass — the limit every reading in it has.
+Teardown is checked separately over the same page-wide command blocks, including their prompts.
+It derives the page container, server container and network names from startup, then requires one
+`docker stop` naming both containers in that order, followed by `docker network rm` naming that
+network. Both must come after startup. Fixtures carry startup plus teardown, missing commands or
+operands, incorrect whole names (including prefix lookalikes), an extra container and incorrect
+ordering. The teardown name comparison participates in the existing weaker-reading mutation check;
+the startup and address guards are unchanged. These are command-shape checks, not Docker execution.
+
+The first-room check requires the recipe's desktop Chrome or Edge qualifier, actual UI labels,
+read/write permission, disposable-folder warning, host file writes, trusted editors, complete
+invite and guest steps, and host-tab lifetime and explicit leave instructions. The editor fallback
+must name Firefox and Safari's join-only browser path, the VS Code host command, the demo's
+`wss://` address and clipboard invite. The local setup must say an invite cannot reach another
+machine and link to the server's remote deployment guide. These facts are read from their own
+regions, so the fallback cannot satisfy a missing browser instruction. Embedded HTML source
+fixtures include the complete recipe and remove each requirement in turn, replace link destinations
+and move recipe text outside its region. Independent literal negative cases also pin the browser
+qualifier and critical safety and onboarding instructions, so deleting those requirements from the
+production table cannot delete their tests too. Exact wording checks require copy and fixtures to
+change together; they do not establish that the UI or deployment works.
+
 The `$ ` prompt in front of each block and the label beside it are held to the stylesheet the served
 page loads: a rule has to name their class and take it out of a selection, or deleting
 `user-select: none` would bring a pasted `$ ` back with nothing to say so. The demo instance is
