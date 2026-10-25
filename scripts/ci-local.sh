@@ -9,10 +9,11 @@
 #   scripts/ci-local.sh mark       # re-derive public/mark-header.png from the master, compare
 #   scripts/ci-local.sh claims     # build, serve production, fetch / and scan the rendered HTML (forbidden wordings and the artefact-backed claims)
 #   scripts/ci-local.sh csp        # the CSP in vercel.json over the served page and its not-found route, in the model and then in a real headless browser
+#   scripts/ci-local.sh csp-exit   # the browser check reaps its children and settles their streams before it exits (fake children, no browser)
 #   scripts/ci-local.sh weight     # every image the page body fetches is within its byte budget
 #   scripts/ci-local.sh links      # serve production, lychee over the rendered page, the README and the docs tree
 #   scripts/ci-local.sh lint       # actionlint over the workflow files
-#   scripts/ci-local.sh all        # typecheck + build + button + contrast + mark + claims + csp + weight + links + lint
+#   scripts/ci-local.sh all        # typecheck + build + button + contrast + mark + claims + csp + csp-exit + weight + links + lint
 #
 # Keep this in step with the workflow — it runs the same commands, so that a red job is found
 # here rather than on a runner.
@@ -199,6 +200,14 @@ job_csp() {
     job_csp_browser
 }
 
+# The browser check's exit path, on fake children in a root of its own: no browser and no build are
+# involved, so this runs where the browser proof cannot and fails where a real one would pass. See
+# scripts/test-csp-browser-exit.mjs.
+job_csp_exit() {
+  say "csp-exit: the browser check reaps its children and settles their streams before it exits"
+  node scripts/test-csp-browser-exit.mjs
+}
+
 # The model in `scripts/check-csp.py` decides the policy against the markup; this drives a real
 # browser over the same build, which is the only thing that can say the policy is enforced the way
 # the model assumes. It starts its own server and applies the `headers` block itself (`next start`
@@ -288,12 +297,13 @@ case "${1:-all}" in
   mark) job_mark ;;
   claims) job_claims ;;
   csp) job_csp ;;
+  csp-exit) job_csp_exit ;;
   weight) job_weight ;;
   links) job_links ;;
   lint) job_lint ;;
-  all) job_typecheck && job_build && job_button && job_contrast && job_mark && with_server all_served && job_lint ;;
+  all) job_typecheck && job_build && job_button && job_contrast && job_mark && with_server all_served && job_csp_exit && job_lint ;;
   *)
-    printf 'usage: %s [typecheck|build|button|contrast|mark|claims|csp|weight|links|lint|all]\n' "$0" >&2
+    printf 'usage: %s [typecheck|build|button|contrast|mark|claims|csp|csp-exit|weight|links|lint|all]\n' "$0" >&2
     exit 2
     ;;
 esac
