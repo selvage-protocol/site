@@ -318,6 +318,13 @@ function stopChildren() {
 process.on("SIGINT", async () => {
   await shutdown(130);
 });
+// A termination signal, which `kill` and many runners send, takes the same path: the children are
+// killed and their streams settled before the process ends with 143. Without this handler the
+// default disposition would end the process where it stood, leaving the detached upstream and the
+// browser running.
+process.on("SIGTERM", async () => {
+  await shutdown(143);
+});
 
 const policyFile = process.env.VERCEL_JSON ?? join(root, "vercel.json");
 const policyLabel = policyFile.startsWith(`${root}/`) ? policyFile.slice(root.length + 1) : policyFile;

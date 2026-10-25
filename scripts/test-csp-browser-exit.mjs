@@ -211,6 +211,24 @@ setTimeout(() => {}, ${LINGER_MS});
 `;
 }
 
+// The same readiness signal with the whole-stream body the other fakes write, so a clean signal's
+// capture can be read whole for the browser as well as for the upstream. The readiness file is a
+// fact rather than a guess at how long Node takes to boot, so a signal is never sent into the gap
+// before the listener is up.
+function fakeChromiumReadyChatty(readyFile) {
+  return `import { writeFileSync } from "node:fs";
+if (process.argv.includes("--version")) {
+  process.stdout.write("Fake Chromium 1.0.0\\n");
+  process.exit(0);
+}
+const body = "C".repeat(${STREAM_BYTES});
+process.stdout.write(\`\${body}\\n\`);
+process.stderr.write(\`\${body}\\n\`);
+writeFileSync(${JSON.stringify(readyFile)}, "ready\\n");
+setTimeout(() => {}, ${LINGER_MS});
+`;
+}
+
 // Every fixture this run makes, so a failure at any point can still reap each one's descendants.
 const fixtures = new Set();
 // Every check this run has started and not yet seen close. They are started detached, in a process
@@ -508,6 +526,86 @@ async function shutdownLatchSurvivesLaterFailure() {
   return fixture;
 }
 
+// Case 6: a termination signal arrives with both children running, which is the disposition `kill`
+// and a runner's timeout send. It must take the ordinary shutdown rather than the default one: the
+// requested status is 143, and the children are killed and their whole streams settled before the
+// process ends, so the capture is complete (not the fail-closed 74).
+async function terminationSignalShutsDownCleanly() {
+  const fixture = makeFixture({ chromium: (f) => fakeChromiumReadyChatty(join(f, "chrome.ready")) });
+  const port = await freePort();
+  const upstream = await freePort();
+  const debug = await freePort();
+  const evidence = join(fixture, "evidence-term");
+  const env = checkerEnv(fixture, { port, upstream, debug, evidence });
+  env.CSP_DEBUG_DEADLINE = "30";
+  const { child, done } = spawnChecker(fixture, env);
+  await waitForFile(join(fixture, "chrome.ready"));
+  assert(child.kill("SIGTERM"), "the termination signal was not delivered: the check had already exited");
+  const result = await done;
+
+  assert(result.code === 143, `the terminated check exited ${result.code} (${result.signal ?? "no signal"}), not 143`);
+  const requested = readJson(join(evidence, "requested-exit.json"));
+  assert(requested.code === 143, `the requested status was ${requested.code}, not 143`);
+
+  const dirs = childDirs(evidence);
+  assert(dirs.length === 2, `the evidence names ${dirs.length} child(ren), not 2: ${dirs.join(", ")}`);
+  const expected = { upstream: "N".repeat(STREAM_BYTES), chromium: "C".repeat(STREAM_BYTES) };
+  for (const dir of dirs) {
+    const label = dir.replace(/^\d+-/, "");
+    const path = join(evidence, dir);
+    const status = readJson(join(path, "status.json"));
+    assert(status.exit !== null, `${label}: no exit status at all`);
+    assert(status.close !== null, `${label}: no close status, so the streams were not settled before exit`);
+    assert(status.close.signal === "SIGKILL", `${label}: closed by ${status.close.signal ?? "no signal"}, not SIGKILL`);
+    assert(await gone(status.pid), `${label}: pid ${status.pid} is still running, so it was not reaped`);
+    for (const stream of ["stdout", "stderr"]) {
+      const whole = readFileSync(join(path, stream));
+      const wanted = Buffer.from(`${expected[label]}\n`, "utf8");
+      assert(whole.length === wanted.length, `${label} ${stream}: ${whole.length} bytes retained, not the whole ${wanted.length}`);
+      assert(whole.equals(wanted), `${label} ${stream}: the retained bytes are not the child's whole stream`);
+    }
+  }
+  return fixture;
+}
+
+// Case 7: a termination signal arrives once the check has already requested a failure of its own
+// (the debugging-port giveUp) and is still settling. The first caller latched the record, so the
+// signal must not rewrite it: the requested status stays the first one and does not become 143. The
+// held pipe keeps the settlement open long enough for the signal to land inside it, and the
+// incomplete capture still turns the exit into 74.
+async function terminationSignalKeepsFirstRequestedStatus() {
+  const fixture = makeFixture({
+    next: (f) => fakeNextHoldingPipe(join(f, "holder.pid")),
+    chromium: (f) => fakeChromiumReady(join(f, "chrome.ready")),
+  });
+  try {
+    const port = await freePort();
+    const upstream = await freePort();
+    const debug = await freePort();
+    const evidence = join(fixture, "evidence-term-race");
+    const env = checkerEnv(fixture, { port, upstream, debug, evidence });
+    env.CSP_DEBUG_DEADLINE = "1";
+    const { child, done } = spawnChecker(fixture, env);
+    const requestedFile = join(evidence, "requested-exit.json");
+    await waitForFile(requestedFile);
+    const first = readJson(requestedFile);
+    assert(first.code === 2, `the requested status before the signal was ${first.code}, not the first-requested 2`);
+    assert(child.kill("SIGTERM"), "the termination signal was not delivered: the check had already exited");
+    const result = await done;
+
+    assert(result.code === 74, `the settled check exited ${result.code} (${result.signal ?? "no signal"}), not 74, with a held stream`);
+    const requested = readJson(requestedFile);
+    assert(requested.code === 2, `the requested status after the signal was ${requested.code}, not the first-requested 2`);
+    assert(requested.code === first.code, `a termination signal rewrote the requested status from ${first.code} to ${requested.code}`);
+    assert(requested.code !== 143, `the requested status became 143; the signal overwrote the ${first.code} that was requested first`);
+    const held = readJson(join(evidence, "0-upstream", "status.json"));
+    assert(held.close === null, "upstream: a close status was invented although its streams never closed");
+  } finally {
+    await reapHolder(fixture);
+  }
+  return fixture;
+}
+
 // ---- The cleanup path itself ----------------------------------------------------------------
 
 // A held-pipe fixture with its check running and the descendant's pid already written. Shared by the
@@ -671,6 +769,8 @@ async function main() {
   completed.push(await evidenceFailureIsFailClosed());
   completed.push(await incompleteCaptureFailsClosed());
   completed.push(await shutdownLatchSurvivesLaterFailure());
+  completed.push(await terminationSignalShutsDownCleanly());
+  completed.push(await terminationSignalKeepsFirstRequestedStatus());
   await runCleanupSelfTest("--self-test-failure", "deliberate failure with a held pipe");
   await runCleanupSelfTest("--self-test-timeout", "did not end within");
   await runSupervisorTimeoutSelfTest();
@@ -705,8 +805,11 @@ if (completed) {
     "test-csp-browser-exit: the check reaped both children, retained both whole streams and both " +
       "literal statuses, kept requested status 2 across a debugging-port failure and an occupied " +
       "port, failed closed when its evidence could not be written or a child's streams never closed, " +
-      "and kept its first requested status 130 when a later failure tried to rewrite it; a deliberate " +
-      "assertion failure, a killed check and a stalled supervisor each left no process and no port behind",
+      "kept its first requested status 130 when a later failure tried to rewrite it, took the " +
+      "ordinary shutdown on a termination signal with the whole capture retained, and kept the first " +
+      "requested status when a termination signal arrived while a failure was already settling; a " +
+      "deliberate assertion failure, a killed check and a stalled supervisor each left no process and " +
+      "no port behind",
   );
   for (const fixture of completed) console.log(`  fixture: ${fixture}`);
 }
