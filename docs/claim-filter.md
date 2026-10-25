@@ -77,17 +77,26 @@ operands, incorrect whole names (including prefix lookalikes), an extra containe
 ordering. The teardown name comparison participates in the existing weaker-reading mutation check;
 the startup and address guards are unchanged. These are command-shape checks, not Docker execution.
 
-The first-room check requires the recipe's desktop Chrome or Edge qualifier, actual UI labels,
-read/write permission, disposable-folder warning, host file writes, trusted editors, complete
-invite and guest steps, and host-tab lifetime and explicit leave instructions. The editor fallback
-must name Firefox and Safari's join-only browser path, the VS Code host command, the demo's
-`wss://` address and clipboard invite. The local setup must say an invite cannot reach another
-machine and link to the server's remote deployment guide. These facts are read from their own
-regions, so the fallback cannot satisfy a missing browser instruction. Embedded HTML source
-fixtures include the complete recipe and remove each requirement in turn, replace link destinations
-and move recipe text outside its region. Independent literal negative cases also pin the browser
-qualifier and critical safety and onboarding instructions, so deleting those requirements from the
-production table cannot delete their tests too. Exact wording checks require copy and fixtures to
+The first-room check requires the recipe's desktop Chrome or Edge qualifier, actual UI labels
+(`Your name`, `Share a folder…`, `Copy invite link`, `Join`, `Leave and end the room`, `Leave
+anyway`), read/write permission, the disposable-folder warning and the real-disk one (`files on
+your disk`), the complete link including everything after #, the trust warning, the guest's Join
+and same-file steps, and host-tab lifetime and explicit leave instructions. The reload warning is
+read as a negation, `do(?:n't| not) reload`, and not as the word "reload": a recipe that says
+reload, or that drops only the negation, must not pass it. The editor choice is stated once, in the
+Browser install route's own panel, and the check reads it there: Firefox and Safari can join but
+cannot host a folder from the page, and a reader is sent to one of the editors.
+The recipe must not repeat the editor's host recipe, which is what kept the section a wall. The VS
+Code route's own panel carries the demo's `wss://` address without a path and links the VS Code
+Marketplace listing, whose URL is the published `selvage-protocol.selvage`. The local setup must
+say an invite cannot reach another machine and link to the server's remote deployment guide. These
+facts are read from their own regions, so neither route can satisfy a missing browser instruction.
+Embedded HTML source fixtures include the complete recipe and the two routes and remove each
+requirement in turn, replace link destinations, drop the reload negation, swap the listing for
+another extension's and move recipe text outside its region. Independent literal negative cases
+also pin the browser qualifier, the editor choice and critical safety and onboarding instructions,
+so deleting those requirements from the production table cannot delete their tests too. Exact
+wording checks require copy and fixtures to
 change together; they do not establish that the UI or deployment works.
 
 The `$ ` prompt in front of each block and the label beside it are held to the stylesheet the served
@@ -208,11 +217,11 @@ nothing. The row also has to say what an install is: the
 clients are not a server, and each connects to a `selvaged` the reader runs. That last fact is
 required rather than left to the phrase list because the registry names alone would read as a
 running room, and "on a server you run" is not the sentence to read — the hero carries it. It asks
-no network, and that is deliberate: the page's own link check reaches every URL it carries, and the
-Marketplace's listing URL answers `404` until the release that publishes the extension has run, so
-requiring a listing link here would redden this step for a release that has not been dispatched.
-What the check proves is that the page agrees with the release workflow about the identity and the
-two registries — not that either registry answers.
+no network, and that is deliberate: the page's own link check reaches every URL it carries, so what
+this proves is that the page agrees with the release workflow about the identity and the two
+registries, not that either registry answers. The VS Code route's link to the Marketplace listing is
+required too, read by the first-room check from that route's own panel, so the listing a reader
+follows is the published one and not another extension's.
 
 The hosted tier is required the same way, and it is the one card on the page that offers something
 the project cannot hand over yet. The card, the sentence saying who would run it and the row that is

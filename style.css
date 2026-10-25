@@ -1341,12 +1341,10 @@ section[id],
   line-height: 1.6;
 }
 
-.editor-fallback,
 .teardown-title {
   margin-top: 32px;
 }
 
-.editor-fallback .spec-line,
 .teardown-title + .spec-line {
   margin-top: 10px;
 }

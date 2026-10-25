@@ -28,7 +28,6 @@ import {
 } from "@/components/room-visuals";
 import {
   DEMO_ORIGIN,
-  DEMO_SERVER,
   OPEN_AT,
   REMOTE_DEPLOYMENT,
   RUN_STEPS,
@@ -86,23 +85,23 @@ const roomCards: RoomCard[] = [
 const steps = [
   {
     n: "01",
-    title: "Share a disposable folder",
-    body: "Enter Your name, choose Share a folder…, select a small disposable text folder and allow read/write access. Open a file from the folder tree.",
+    title: "Share a folder",
+    body: "Enter Your name, choose Share a folder… and allow read/write access. Open a text file.",
   },
   {
     n: "02",
     title: "Send the invite",
-    body: "Choose Copy invite link and send the complete invite, including everything after #, to someone you trust. They open it, enter their name and choose Join.",
+    body: "Choose Copy invite link and send the complete link, including everything after #, to someone you trust.",
   },
   {
     n: "03",
     title: "Type in the same file",
-    body: "Have your guest open the same file. Take turns typing and watch each other's edits and carets.",
+    body: "Your guest opens the link, enters their name, chooses Join and opens the same file. Try typing in both windows.",
   },
   {
     n: "04",
     title: "End the room",
-    body: "Use the host's leave icon, labeled “Leave and end the room”, then confirm Leave anyway. Keep the host tab open while you work; reloading it ends the host session.",
+    body: "Keep the host tab open; don't reload it. To finish, choose Leave and end the room, then Leave anyway.",
   },
 ];
 
@@ -304,10 +303,9 @@ export default function Home() {
               <Eyebrow>Start a room</Eyebrow>
               <h2 className="display">Edit together on the demo.</h2>
               <p className="lede">
-                Use desktop Chrome or Edge to host a folder on <a href={DEMO_ORIGIN}>the demo</a>.
-                Start with a small disposable text folder, not your working project.
-                The host writes settled edits to the real folder. Share only with
-                trusted editors: anyone with the invite can join and edit.
+                Open <a href={DEMO_ORIGIN}>the demo</a> in desktop Chrome or Edge.
+                Use a small, disposable text folder: anyone with the invite can edit
+                files on your disk.
               </p>
             </div>
             <ol className="steps">
@@ -319,17 +317,6 @@ export default function Home() {
                 </li>
               ))}
             </ol>
-            <div className="editor-fallback">
-              <h3 className="step-title">Hosting from Firefox or Safari?</h3>
-              <p className="spec-line">
-                Firefox and Safari can join, but cannot host a folder from the page.
-                Install the <a href="#clients">VS Code extension</a>, open a small
-                disposable text folder in VS Code and run <code>Selvage: Host a session</code>.
-                Enter <code>{DEMO_SERVER}</code> as the server, then your name. The invite
-                is copied to your clipboard; send the complete link to your guest.
-                Your hosting editor must stay open and writes settled edits to its folder too.
-              </p>
-            </div>
           </section>
 
           <section id="run" className="shell run-section">

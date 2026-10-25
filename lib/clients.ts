@@ -76,6 +76,8 @@ const NEOVIM_COMMAND = "SelvageHost ws://127.0.0.1:8080";
 const NEOVIM_PLUGIN_LINE = "{ 'selvage-protocol/nvim_client', build = 'npm ci' }";
 const JETBRAINS_ADDRESS = "plugins.jetbrains.com/plugin/34763-selvage";
 const JETBRAINS_LISTING = `https://${JETBRAINS_ADDRESS}`;
+const VSCODE_EXTENSION = "selvage-protocol.selvage";
+const VSCODE_LISTING = `https://marketplace.visualstudio.com/items?itemName=${VSCODE_EXTENSION}`;
 
 export const CLIENTS: Client[] = [
   {
@@ -87,15 +89,16 @@ export const CLIENTS: Client[] = [
     chip: "VS Code",
     install: {
       lines: [
-        command("$", "code --install-extension selvage-protocol.selvage"),
+        command("$", `code --install-extension ${VSCODE_EXTENSION}`),
         { text: "# open a small disposable text folder in VS Code", comment: true },
         { text: "# run  Selvage: Host a session", comment: true },
         { text: `# server: ${DEMO_SERVER}`, comment: true },
         { text: "# enter your name; the invite is copied to your clipboard", comment: true },
       ],
-      copy: "code --install-extension selvage-protocol.selvage",
+      copy: `code --install-extension ${VSCODE_EXTENSION}`,
       announce: "VS Code command",
       note: "Published on the VS Code Marketplace and on Open VSX.",
+      listing: { label: "Marketplace", href: VSCODE_LISTING },
     },
   },
   {
@@ -154,8 +157,8 @@ export const CLIENTS: Client[] = [
       copy: DEMO_ORIGIN,
       announce: "Browser address",
       note:
-        "Guests need nothing installed. Firefox and Safari can join from a complete invite " +
-        "link; to host, use an editor instead. The room setup steps above cover both routes.",
+        "Guests need nothing installed: Firefox and Safari can join from a complete invite " +
+        "link, but they cannot host a folder from the page. To host, use one of the editors.",
     },
   },
   {

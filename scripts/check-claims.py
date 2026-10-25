@@ -755,12 +755,10 @@ PUBLISHED_REGISTRIES = (
     ),
     ("Open VSX", re.compile(r"\bOpen\s*VSX\b", re.IGNORECASE)),
 )
-# The two listings, and the identity is inside both. They are not *required* links: the page's
-# own link check reaches every URL it carries, and the Marketplace's listing URL answers 404
-# until the release that publishes the extension has run, so requiring one here would redden the
-# gate for a release that has not been dispatched. What is checked is the other direction — a
-# page that links a listing has to link one of these two, so a listing that is not one of them
-# fails on the destination rather than on the label.
+# The two listings, and the identity is inside both. Both registries answer, so the VS Code route
+# is required to link the Marketplace listing, read in `onboarding_problems` from that route's own
+# panel. What is read here is the other direction — a page that links a listing has to link one of
+# these two, so a listing that is not one of them fails on the destination rather than on the label.
 EXTENSION_LISTINGS = (
     "https://marketplace.visualstudio.com/items?itemName=" + PUBLISHED_EXTENSION,
     "https://open-vsx.org/extension/" + PUBLISHED_EXTENSION.replace(".", "/"),
@@ -4926,24 +4924,17 @@ REMOTE_DEPLOYMENT = (
     "https://github.com/selvage-protocol/reference_server/blob/main/docs/deploying.md"
     "#letting-someone-else-in"
 )
-# Required facts and UI labels, scoped to the recipe or disclosure that owes them.
+# Required facts and UI labels, scoped to the recipe or disclosure that owes them. The editor
+# choice is not here: it is stated once, in the Browser route below, and read from that route's
+# own panel rather than from the recipe.
 ONBOARDING_REQUIREMENTS = {
     "first-room": (
-        "desktop Chrome or Edge", "small disposable text folder",
-        "host writes settled edits to the real folder", "trusted editors",
-        "anyone with the invite can join and edit", "Your name", "Share a folder…",
-        "allow read/write access", "Open a file from the folder tree",
-        "Copy invite link", "complete invite, including everything after #",
-        "They open it, enter their name and choose Join", "guest open the same file",
-        "leave icon, labeled “Leave and end the room”", "confirm Leave anyway",
-        "Keep the host tab open", "reloading it ends the host session",
-    ),
-    "editor-fallback": (
-        "Firefox and Safari can join, but cannot host a folder from the page",
-        "VS Code extension", "open a small disposable text folder in VS Code",
-        "Selvage: Host a session", f"wss://{DEMO_HOST}", "then your name",
-        "invite is copied to your clipboard", "send the complete link",
-        "hosting editor must stay open", "writes settled edits to its folder too",
+        "desktop Chrome or Edge", "disposable text folder",
+        "edit files on your disk", "someone you trust", "allow read/write access",
+        "Your name", "Share a folder…", "Open a text file",
+        "Copy invite link", "including everything after #",
+        "enters their name, chooses Join", "opens the same file",
+        "Keep the host tab open", "Leave and end the room", "Leave anyway",
     ),
     "run-section": (
         "local-only", "binds to 127.0.0.1", "invite won't reach another machine",
@@ -4952,24 +4943,46 @@ ONBOARDING_REQUIREMENTS = {
         "Docker removes the containers when they stop",
     ),
 }
+# The recipe's reload warning, read as a negation rather than as the word "reload": the shorter
+# copy says the host tab must not be reloaded, and a sentence that merely contains "reload" — an
+# instruction to reload it, say — must not satisfy the warning. Handled apart from the literals
+# above so a mutant that drops the negation is rejected and a positive instruction is not enough.
+FIRST_ROOM_RELOAD_NEGATION = re.compile(r"do(?:n['’]?t| not)\s+reload", re.IGNORECASE)
+# The editor choice, stated once and read from the Browser install route's own panel: the route a
+# reader whose browser cannot host is sent to, rather than a repeated VS Code recipe in the
+# recipe. It is a choice rather than a fallback to one editor.
+BROWSER_ROUTE = "web"
+EDITOR_CHOICE_FACTS = (
+    "Firefox and Safari can join",
+    "cannot host a folder from the page",
+    "use one of the editors",
+)
+# The VS Code route's own panel: the address an editor hosts on, and the Marketplace listing the
+# extension is installed from. The extension is published, so the link is a fact with an artefact
+# behind it rather than a release that has not been dispatched.
+VSCODE_ROUTE = "vscode"
+MARKETPLACE_LISTING = EXTENSION_LISTINGS[0]
 ONBOARDING_FIXTURE = f'''
 <section class="first-room">
-  <p>Use desktop Chrome or Edge on <a href="{DEMO_ORIGIN}">the demo</a>.
-  Start with a small disposable text folder. The host writes settled edits to the real folder.
-  Share only with trusted editors: anyone with the invite can join and edit.</p>
-  <p>Your name, Share a folder…, allow read/write access. Open a file from the folder tree.</p>
-  <p>Copy invite link. Send the complete invite, including everything after #.
-  They open it, enter their name and choose Join. Have your guest open the same file.</p>
-  <p>Use the host’s leave icon, labeled “Leave and end the room”, then confirm Leave anyway.
-  Keep the host tab open; reloading it ends the host session.</p>
-  <div class="editor-fallback">
-    Firefox and Safari can join, but cannot host a folder from the page.
-    Install the VS Code extension, open a small disposable text folder in VS Code and run
-    Selvage: Host a session. Enter wss://{DEMO_HOST} as the server, then your name.
-    The invite is copied to your clipboard; send the complete link.
-    Your hosting editor must stay open and writes settled edits to its folder too.
-  </div>
+  <p>Open <a href="{DEMO_ORIGIN}">the demo</a> in desktop Chrome or Edge.
+  Use a small, disposable text folder: anyone with the invite can edit files on your disk.</p>
+  <p>Enter Your name, choose Share a folder… and allow read/write access. Open a text file.</p>
+  <p>Choose Copy invite link and send the complete link, including everything after #,
+  to someone you trust.</p>
+  <p>Your guest opens the link, enters their name, chooses Join and opens the same file.</p>
+  <p>Keep the host tab open; don't reload it. To finish, choose Leave and end the room,
+  then Leave anyway.</p>
 </section>
+<div id="install-panel-{BROWSER_ROUTE}">
+  Guests need nothing installed: Firefox and Safari can join from a complete invite link,
+  but they cannot host a folder from the page. To host, use one of the editors.
+</div>
+<div id="install-panel-{VSCODE_ROUTE}">
+  <a href="{MARKETPLACE_LISTING}">Marketplace</a>
+  code --install-extension {PUBLISHED_EXTENSION}
+  open a small disposable text folder in VS Code and run Selvage: Host a session.
+  Enter wss://{DEMO_HOST} as the server, then your name.
+</div>
 <section class="run-section">
   This setup is local-only: it binds to 127.0.0.1, so its invite won't reach another machine.
   Test a guest in another browser window on this machine.
@@ -4977,6 +4990,12 @@ ONBOARDING_FIXTURE = f'''
   Stopping the containers ends their rooms. With --rm, Docker removes the containers when they stop.
 </section>
 '''
+
+
+# Instructions that are the editor's host recipe rather than the browser's, and so may not appear
+# in the recipe: repeating them there is the wall the Browser route's one eligibility line
+# replaces, and it would say with a name the choice the clients section leaves open.
+EDITOR_RECIPE_IN_RECIPE = "Selvage: Host a session"
 
 
 def onboarding_problems(raw: str) -> list[str]:
@@ -4988,9 +5007,6 @@ def onboarding_problems(raw: str) -> list[str]:
             problems.append(f"must carry one {region} region")
             continue
         markup = markups[0]
-        if region == "first-room":
-            for fallback in classed_elements(markup, "editor-fallback"):
-                markup = markup.replace(fallback, "")
         regions[region] = markup
         text = normalise(markup)[0].casefold()
         for fact in facts:
@@ -4999,10 +5015,33 @@ def onboarding_problems(raw: str) -> list[str]:
     for region, target in (("first-room", DEMO_ORIGIN), ("run-section", REMOTE_DEPLOYMENT)):
         if target not in [url.rstrip("/") for url, _ in destinations(regions.get(region, ""))]:
             problems.append(f"{region} must link to {target}")
-    fallback = normalise(regions.get("editor-fallback", ""))[0]
-    addresses = re.findall(r"wss://[^\s<>]+", fallback)
-    if addresses != [f"wss://{DEMO_HOST}"]:
-        problems.append("editor-fallback must give the demo server origin without a path")
+    first_room = normalise(regions.get("first-room", ""))[0]
+    if not FIRST_ROOM_RELOAD_NEGATION.search(first_room):
+        problems.append("first-room must warn against reloading the host tab")
+    if EDITOR_RECIPE_IN_RECIPE in first_room:
+        problems.append("first-room must keep the editor's host recipe in the routes below")
+
+    browser = install_panel_text(raw, BROWSER_ROUTE)
+    if browser is None:
+        problems.append("must carry one Browser route")
+    else:
+        text = browser.casefold()
+        for fact in EDITOR_CHOICE_FACTS:
+            if fact.casefold() not in text:
+                problems.append(f"Browser route must state {fact!r}")
+
+    vscode = install_panel_text(raw, VSCODE_ROUTE)
+    vscode_markup = install_panel_markup(raw, VSCODE_ROUTE)
+    if vscode is None or vscode_markup is None:
+        problems.append("must carry one VS Code route")
+    else:
+        addresses = re.findall(r"wss://[^\s<>]+", vscode)
+        if addresses != [f"wss://{DEMO_HOST}"]:
+            problems.append("VS Code route must give the demo server origin without a path")
+        if MARKETPLACE_LISTING not in [
+            url.rstrip("/") for url, _ in destinations(vscode_markup)
+        ]:
+            problems.append("VS Code route must link the Marketplace listing")
     return problems
 
 
@@ -5011,24 +5050,18 @@ def onboarding_fixture_problems() -> list[str]:
     # Independent cases keep deleting a safety requirement from deleting its test too.
     for region, fact in (
         ("first-room", "desktop Chrome or Edge"),
-        ("first-room", "small disposable text folder"),
-        ("first-room", "host writes settled edits to the real folder"),
-        ("first-room", "trusted editors"),
-        ("first-room", "anyone with the invite can join and edit"),
+        ("first-room", "disposable text folder"),
+        ("first-room", "edit files on your disk"),
+        ("first-room", "someone you trust"),
         ("first-room", "allow read/write access"),
-        ("first-room", "complete invite, including everything after #"),
-        ("first-room", "They open it, enter their name and choose Join"),
-        ("first-room", "guest open the same file"),
-        ("first-room", "leave icon, labeled “Leave and end the room”"),
-        ("first-room", "confirm Leave anyway"),
+        ("first-room", "Open a text file"),
+        ("first-room", "Copy invite link"),
+        ("first-room", "including everything after #"),
+        ("first-room", "enters their name, chooses Join"),
+        ("first-room", "opens the same file"),
         ("first-room", "Keep the host tab open"),
-        ("first-room", "reloading it ends the host session"),
-        ("editor-fallback", "Firefox and Safari can join, but cannot host a folder from the page"),
-        ("editor-fallback", "open a small disposable text folder in VS Code"),
-        ("editor-fallback", "Selvage: Host a session"),
-        ("editor-fallback", "send the complete link"),
-        ("editor-fallback", "hosting editor must stay open"),
-        ("editor-fallback", "writes settled edits to its folder too"),
+        ("first-room", "Leave and end the room"),
+        ("first-room", "Leave anyway"),
         ("run-section", "local-only"),
         ("run-section", "binds to 127.0.0.1"),
         ("run-section", "invite won't reach another machine"),
@@ -5038,6 +5071,16 @@ def onboarding_fixture_problems() -> list[str]:
     ):
         changed = ONBOARDING_FIXTURE.replace(fact, "omitted")
         expected = f"{region} must state {fact!r}"
+        if expected not in onboarding_problems(changed):
+            problems.append(f"onboarding fixture does not reject missing {fact!r}")
+    # The reload warning is a negation, so a recipe that keeps the word "reload" as an instruction
+    # is not the warning: the mutant drops only the negation and must be rejected.
+    reloaded = ONBOARDING_FIXTURE.replace("don't reload it", "reload it")
+    if "first-room must warn against reloading the host tab" not in onboarding_problems(reloaded):
+        problems.append("onboarding fixture accepts a recipe that tells the host to reload")
+    for fact in EDITOR_CHOICE_FACTS:
+        changed = ONBOARDING_FIXTURE.replace(fact, "omitted")
+        expected = f"Browser route must state {fact!r}"
         if expected not in onboarding_problems(changed):
             problems.append(f"onboarding fixture does not reject missing {fact!r}")
     for region, facts in ONBOARDING_REQUIREMENTS.items():
@@ -5055,26 +5098,109 @@ def onboarding_fixture_problems() -> list[str]:
             problems.append(f"onboarding fixture does not reject incorrect link {target}")
     for address in (f"wss://{DEMO_HOST}/session", "ws://127.0.0.1:8080", "wss://example.invalid"):
         changed = ONBOARDING_FIXTURE.replace(f"wss://{DEMO_HOST}", address)
-        if "editor-fallback must give the demo server origin without a path" not in onboarding_problems(changed):
+        if "VS Code route must give the demo server origin without a path" not in onboarding_problems(changed):
             problems.append(f"onboarding fixture accepts incorrect editor address {address!r}")
+    wrong_listing = MARKETPLACE_LISTING.replace(PUBLISHED_EXTENSION, PUBLISHED_EXTENSION + "-client")
+    changed = ONBOARDING_FIXTURE.replace(MARKETPLACE_LISTING, wrong_listing)
+    if "VS Code route must link the Marketplace listing" not in onboarding_problems(changed):
+        problems.append("onboarding fixture accepts a Marketplace link for another extension")
+    repeated = ONBOARDING_FIXTURE.replace(
+        "</section>\n<div id=\"install-panel-",
+        f"  <p>{EDITOR_RECIPE_IN_RECIPE}.</p>\n</section>\n<div id=\"install-panel-",
+        1,
+    )
+    if "first-room must keep the editor's host recipe in the routes below" not in onboarding_problems(repeated):
+        problems.append("onboarding fixture accepts the editor's host recipe inside the recipe")
     moved = ONBOARDING_FIXTURE.replace('class="first-room"', 'class="unrelated"')
     if "must carry one first-room region" not in onboarding_problems(moved):
         problems.append("onboarding fixture accepts recipe text outside its region")
     return problems
 
 
-def check_onboarding(pages: list[Scanned]) -> int:
+# The recipe is the home page's, and the scan reads every served HTML file, the not-found route
+# among them. The onboarding facts are required of the pages that carry this region, so the 404 is
+# not read as a page that lost the recipe, and a scan where no page carries it fails closed rather
+# than passing: a home page whose recipe was removed is the defect this reads.
+RECIPE_REGION = "first-room"
+
+
+def recipe_pages(pages: list[Scanned]) -> list[Scanned]:
+    """The scanned pages that carry the onboarding recipe region."""
+    return [page for page in pages if classed_elements(page.raw, RECIPE_REGION)]
+
+
+def onboarding_scan(pages: list[Scanned]) -> tuple[int, list[str]]:
+    """The onboarding check's outcome for a scan: its status and the problems it prints.
+
+    0 when every page carrying the recipe holds every fact, 1 when one does not or when no page
+    carries the recipe at all, and 2 when there was nothing to read. The 404 beside the recipe is
+    not read, so a scan of the served pages passes on the home page's recipe alone; a scan where
+    the recipe was removed fails rather than reporting a clean page.
+    """
     if not pages:
-        return 2
-    failed = False
-    for page in pages:
-        for problem in onboarding_problems(page.raw):
-            print(f"check-claims: onboarding at {page.path} {problem}", file=sys.stderr)
-            failed = True
-    if failed:
-        return 1
-    print("check-claims: first-room recipe, editor fallback, local-only limit and deployment link present")
-    return 0
+        return 2, []
+    selected = recipe_pages(pages)
+    if not selected:
+        return 1, [
+            "no scanned page carries the first-room recipe, so the recipe is gone rather than "
+            "unread"
+        ]
+    problems = [
+        f"at {page.path} {problem}"
+        for page in selected
+        for problem in onboarding_problems(page.raw)
+    ]
+    return (1 if problems else 0), problems
+
+
+def check_onboarding(pages: list[Scanned]) -> int:
+    status, problems = onboarding_scan(pages)
+    for problem in problems:
+        print(f"check-claims: onboarding {problem}", file=sys.stderr)
+    if status == 0:
+        print(
+            "check-claims: first-room recipe, the Browser route's editor choice, the VS Code route's "
+            "Marketplace listing and demo address, the local-only limit and the deployment link are "
+            "present"
+        )
+    return status
+
+
+def onboarding_scope_problems() -> list[str]:
+    """The scope contract: the recipe is read from the page that carries it, and its absence fails.
+
+    A scan reads every served page, the not-found route included. A home page with the recipe and a
+    404 beside it passes; a scan of the 404 alone fails rather than passing, because no recipe page
+    was read; and a home page whose recipe region was removed fails the same way rather than being
+    read as a page with nothing to say.
+    """
+    problems: list[str] = []
+
+    def page(path: str, raw: str) -> Scanned:
+        text, line_of = normalise(raw)
+        return Scanned(path, text, line_of, destinations(raw), raw, [])
+
+    home = page("/index.html", ONBOARDING_FIXTURE)
+    notfound = page("/404.html", "<p>The page you are looking for is not here.</p>")
+    empty_status, empty_problems = onboarding_scan([])
+    if (empty_status, empty_problems) != (2, []):
+        problems.append(
+            "onboarding scope: an empty scan must report the nothing-to-read status 2 with no "
+            "problems"
+        )
+    status, _ = onboarding_scan([home, notfound])
+    if status != 0:
+        problems.append("onboarding scope: a recipe page with a 404 beside it must pass")
+    status, _ = onboarding_scan([notfound])
+    if status != 1:
+        problems.append("onboarding scope: a scan with no recipe page must fail")
+    stripped = page(
+        "/index.html", ONBOARDING_FIXTURE.replace('class="first-room"', 'class="other"')
+    )
+    status, _ = onboarding_scan([stripped, notfound])
+    if status != 1:
+        problems.append("onboarding scope: a home without the recipe must fail")
+    return problems
 
 
 def reddened_run_fixtures() -> list[str]:
@@ -5575,6 +5701,9 @@ def scan(targets: list[str]) -> int:
         print(f"check-claims: teardown fixture {what!r} failed", file=sys.stderr)
         return 2
     for problem in onboarding_fixture_problems():
+        print(f"check-claims: {problem}", file=sys.stderr)
+        return 2
+    for problem in onboarding_scope_problems():
         print(f"check-claims: {problem}", file=sys.stderr)
         return 2
 
