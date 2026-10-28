@@ -26,6 +26,7 @@ import { spawn } from "node:child_process";
 import {
   copyFileSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -211,21 +212,54 @@ setTimeout(() => {}, ${LINGER_MS});
 `;
 }
 
+// The one place the fake browser's readiness convention lives: a stream write is handed to Node
+// and only its callback says the bytes reached the pipe, so the announcement is written once both
+// callbacks have succeeded and never while one is still in flight. A write that fails is reported
+// instead of announced. The chatty fixture below emits this same function into its program, and
+// `readinessGatesOnBothStreams` drives it with streams it owns, so the convention is asserted
+// rather than raced for.
+function writeBothStreams(streams, body, onWritten, onFailed) {
+  let pending = streams.length;
+  let failed = false;
+  for (const stream of streams) {
+    stream.write(body, (error) => {
+      if (failed) return;
+      if (error) {
+        failed = true;
+        onFailed(error);
+        return;
+      }
+      pending -= 1;
+      if (pending === 0) onWritten();
+    });
+  }
+}
+
 // The same readiness signal with the whole-stream body the other fakes write, so a clean signal's
 // capture can be read whole for the browser as well as for the upstream. The readiness file is a
 // fact rather than a guess at how long Node takes to boot, so a signal is never sent into the gap
-// before the listener is up.
+// before the listener is up; and it is written only once both writes have completed, so a signal
+// sent on it cannot land between a write being handed to Node and its bytes reaching the pipe.
 function fakeChromiumReadyChatty(readyFile) {
   return `import { writeFileSync } from "node:fs";
+${writeBothStreams.toString()}
 if (process.argv.includes("--version")) {
   process.stdout.write("Fake Chromium 1.0.0\\n");
   process.exit(0);
 }
-const body = "C".repeat(${STREAM_BYTES});
-process.stdout.write(\`\${body}\\n\`);
-process.stderr.write(\`\${body}\\n\`);
-writeFileSync(${JSON.stringify(readyFile)}, "ready\\n");
-setTimeout(() => {}, ${LINGER_MS});
+const body = "C".repeat(${STREAM_BYTES}) + "\\n";
+writeBothStreams(
+  [process.stdout, process.stderr],
+  body,
+  () => {
+    writeFileSync(${JSON.stringify(readyFile)}, "ready\\n");
+    setTimeout(() => {}, ${LINGER_MS});
+  },
+  (error) => {
+    writeFileSync(${JSON.stringify(readyFile)} + ".failed", \`\${error && error.message}\\n\`);
+    process.exit(70);
+  },
+);
 `;
 }
 
@@ -375,6 +409,25 @@ function childDirs(evidence) {
     .sort();
 }
 
+// The completion receipt is the producer's last write and the only thing that binds its child
+// census to the status it latched. A directory without one is a run that died in the middle of its
+// own evidence, which no reader may take for a shorter clean run.
+function assertNoReceipt(evidence, what) {
+  assert(!existsSync(join(evidence, "receipt.json")), `${what}: a completion was written although the capture was incomplete`);
+}
+
+function assertReceipt(evidence, code, what) {
+  const receipt = readJson(join(evidence, "receipt.json"));
+  assert(receipt.requested === code, `${what}: the completion names requested ${receipt.requested}, not ${code}`);
+  const dirs = childDirs(evidence);
+  assert(Array.isArray(receipt.children), `${what}: the completion carries no child census`);
+  assert(
+    receipt.children.length === dirs.length && receipt.children.every((name, index) => name === dirs[index]),
+    `${what}: the completion census ${receipt.children.join(", ")} is not the ${dirs.join(", ")} written`,
+  );
+  return dirs;
+}
+
 // Case 1: both children are running when the check gives up on the debugging port. This is the
 // status that must survive, and the two statuses and two whole streams that must be there with it.
 async function debuggingPortFailure() {
@@ -383,6 +436,10 @@ async function debuggingPortFailure() {
   const upstream = await freePort();
   const debug = await freePort();
   const evidence = join(fixture, "evidence-debug");
+  const oldProfile = join(fixture, ".tmp", "chrome-csp-check");
+  mkdirSync(oldProfile, { recursive: true, mode: 0o700 });
+  const oldMarker = join(oldProfile, "preserve");
+  writeFileSync(oldMarker, "prior profile\n");
   const env = checkerEnv(fixture, { port, upstream, debug, evidence });
   const result = await runChecker(fixture, env);
 
@@ -395,10 +452,24 @@ async function debuggingPortFailure() {
   const requested = readJson(join(evidence, "requested-exit.json"));
   assert(requested.code === 2, `the requested status was ${requested.code}, not 2`);
 
-  const dirs = childDirs(evidence);
+  const dirs = assertReceipt(evidence, 2, "debugging-port failure");
   assert(dirs.length === 2, `the evidence names ${dirs.length} child(ren), not 2: ${dirs.join(", ")}`);
   const labels = dirs.map((name) => name.replace(/^\d+-/, ""));
   assert(labels.includes("upstream") && labels.includes("chromium"), `unexpected child labels: ${labels.join(", ")}`);
+
+  assert(existsSync(oldMarker), "the check deleted the prior fixed profile");
+  assert(readFileSync(oldMarker, "utf8") === "prior profile\n", "the check changed the prior profile");
+  const profileArgument = (capture) => readJson(join(capture, "1-chromium", "launch.json"))
+    .args.find((arg) => arg.startsWith("--user-data-dir="));
+  const profile = profileArgument(evidence)?.slice("--user-data-dir=".length);
+  assert(profile && dirname(profile) === env.TMPDIR, "the fresh profile is not under the chosen TMPDIR");
+  assert((lstatSync(profile).mode & 0o777) === 0o700, "the fresh profile is not private");
+  const secondEvidence = join(fixture, "evidence-debug-second");
+  const second = await runChecker(fixture, { ...env, CSP_EVIDENCE_DIR: secondEvidence });
+  assert(second.code === 2, `the second check exited ${second.code}, not 2`);
+  assertReceipt(secondEvidence, 2, "second debugging-port failure");
+  assert(profileArgument(secondEvidence) !== profileArgument(evidence), "the check reused a profile");
+  assert(existsSync(profile), "the second check removed the first profile");
 
   const expected = { upstream: "N".repeat(STREAM_BYTES), chromium: "C".repeat(STREAM_BYTES) };
   for (const dir of dirs) {
@@ -444,6 +515,8 @@ async function occupiedPortFailure() {
     const requested = readJson(join(evidence, "requested-exit.json"));
     assert(requested.code === 2, `the requested status was ${requested.code}, not 2`);
     assert(childDirs(evidence).length === 0, "a child status was written although no child was started");
+    // A give-up before any child spawns is a complete run with an empty census, not a missing one.
+    assertReceipt(evidence, 2, "occupied port");
   } finally {
     await new Promise((resolve) => squatter.close(resolve));
   }
@@ -467,6 +540,129 @@ async function evidenceFailureIsFailClosed() {
   assert(result.code === 74, `the check exited ${result.code}, not 74, when its child evidence could not be written`);
   const requested = readJson(join(evidence, "requested-exit.json"));
   assert(requested.code === 2, `the requested status was lost with the evidence: ${requested.code}, not 2`);
+  // The write that fails is one before the completion, so the directory is a prefix with no
+  // completion: the status survives and the capture is refused rather than read as a short run.
+  assertNoReceipt(evidence, "unwritable child evidence");
+  return fixture;
+}
+
+// Case 3b: the requested status is itself a mandatory write, and one that cannot be written must
+// withdraw the completion. Both child captures land here, so the directory holds a complete
+// census -- and still no completion, because a completion would claim the first write succeeded.
+async function requestedExitFailureWithdrawsCompletion() {
+  const fixture = makeFixture();
+  const port = await freePort();
+  const upstream = await freePort();
+  const debug = await freePort();
+  const evidence = join(fixture, "evidence-requested-blocked");
+  mkdirSync(evidence, { mode: 0o700 });
+  // The name the status must occupy is a directory, so writing the status fails and the name's
+  // bytes cannot be replaced. Nothing here writes through it.
+  mkdirSync(join(evidence, "requested-exit.json"), { mode: 0o700 });
+  const env = checkerEnv(fixture, { port, upstream, debug, evidence });
+  const result = await runChecker(fixture, env);
+  assert(result.code === 74, `the check exited ${result.code}, not 74, when the requested status could not be written`);
+  assert(
+    result.stderr.includes("cannot record the requested status"),
+    `the check did not report the failed requested status; stderr was:\n${result.stderr}`,
+  );
+  const blocked = lstatSync(join(evidence, "requested-exit.json"));
+  assert(blocked.isDirectory(), "the blocked requested-status name was replaced");
+  // The child captures are a prefix with no completion, never a shorter clean run.
+  const dirs = childDirs(evidence);
+  assert(dirs.length === 2, `the evidence names ${dirs.length} child(ren), not 2: ${dirs.join(", ")}`);
+  for (const dir of dirs) {
+    const status = readJson(join(evidence, dir, "status.json"));
+    assert(status.close !== null, `${dir}: the child capture was not settled`);
+  }
+  assertNoReceipt(evidence, "unwritable requested status");
+  return fixture;
+}
+
+// Case 3c: a directory that already holds a completion is one generation's whole record, and a
+// new attempt's census can never make that receipt its own. The reported hazard is the second
+// child's write failing after the first landed: an old receipt beside an old browser child would
+// then still pass a schema read. The old browser child below cannot accept the new write (its
+// launch is read-only), so a run that got that far would leave exactly that mixture. The refusal
+// must come before the first write, and every old byte must survive it.
+async function staleCompletionIsRefusedBeforeAnyWrite() {
+  const fixture = makeFixture();
+  const port = await freePort();
+  const upstream = await freePort();
+  const debug = await freePort();
+  const evidence = join(fixture, "evidence-prior");
+  const next = join(fixture, "node_modules", ".bin", "next");
+  const chromium = join(fixture, "bin", "chromium");
+  const profile = join(fixture, ".tmp", "chrome-csp-check");
+  const oldChildren = {
+    "0-upstream": {
+      launch: `${JSON.stringify({ command: next, args: ["start", "-p", String(upstream)] })}\n`,
+      stdout: "old upstream stdout\n",
+      stderr: "old upstream stderr\n",
+      status: `${JSON.stringify({ pid: 9001, exit: { code: null, signal: "SIGKILL" }, close: { code: null, signal: "SIGKILL" }, error: null })}\n`,
+    },
+    "1-chromium": {
+      launch: `${JSON.stringify({
+        command: chromium,
+        args: [
+          "--headless=new",
+          `--remote-debugging-port=${debug}`,
+          `--user-data-dir=${profile}`,
+          "--no-sandbox",
+          "--disable-gpu",
+          "--disable-dev-shm-usage",
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--window-size=1000,900",
+          "about:blank",
+        ],
+      })}\n`,
+      stdout: "old browser stdout\n",
+      stderr: "old browser stderr\n",
+      status: `${JSON.stringify({ pid: 9002, exit: { code: null, signal: "SIGKILL" }, close: { code: null, signal: "SIGKILL" }, error: null })}\n`,
+    },
+  };
+  mkdirSync(evidence, { mode: 0o700 });
+  writeFileSync(join(evidence, "requested-exit.json"), '{"code":2}\n', { mode: 0o600 });
+  for (const [name, files] of Object.entries(oldChildren)) {
+    mkdirSync(join(evidence, name), { mode: 0o700 });
+    for (const [file, text] of Object.entries(files)) {
+      // The browser child's launch is read-only, so this is the second write the hazard needs.
+      const mode = name === "1-chromium" && file === "launch" ? 0o400 : 0o600;
+      const leaf = file === "status" ? "status.json" : file === "launch" ? "launch.json" : file;
+      writeFileSync(join(evidence, name, leaf), text, { mode });
+    }
+  }
+  writeFileSync(join(evidence, "receipt.json"), '{"requested":2,"children":["0-upstream","1-chromium"]}\n', { mode: 0o600 });
+
+  const leaves = Object.keys(oldChildren).flatMap((child) =>
+    ["launch", "stdout", "stderr", "status"].map((file) =>
+      join(child, file === "status" ? "status.json" : file === "launch" ? "launch.json" : file),
+    ),
+  );
+  const preserved = new Map();
+  for (const name of ["requested-exit.json", "receipt.json", ...leaves]) {
+    const path = join(evidence, name);
+    preserved.set(path, readFileSync(path));
+  }
+
+  const env = checkerEnv(fixture, { port, upstream, debug, evidence });
+  const result = await runChecker(fixture, env);
+  assert(result.code === 74, `the check exited ${result.code}, not 74, on a directory holding another run's completion`);
+  assert(
+    result.stderr.includes("already holds a completion"),
+    `the check did not refuse the prior completion; stderr was:\n${result.stderr}`,
+  );
+  for (const [path, bytes] of preserved) {
+    assert(readFileSync(path).equals(bytes), `${path}: another generation's bytes were overwritten`);
+  }
+  const dirs = childDirs(evidence);
+  assert(dirs.length === 2, `the refusal left ${dirs.length} child director(ies), not the old 2: ${dirs.join(", ")}`);
+  const receipt = readJson(join(evidence, "receipt.json"));
+  assert(
+    receipt.requested === 2 && Array.isArray(receipt.children) && receipt.children.length === 2,
+    "the old completion was replaced or invalidated by the new attempt",
+  );
   return fixture;
 }
 
@@ -488,6 +684,7 @@ async function incompleteCaptureFailsClosed() {
     const held = readJson(join(evidence, "0-upstream", "status.json"));
     assert(held.exit !== null, "upstream: no exit status at all");
     assert(held.close === null, "upstream: a close status was invented although its streams never closed");
+    assertNoReceipt(evidence, "held pipe");
     const chromium = readJson(join(evidence, "1-chromium", "status.json"));
     assert(chromium.close !== null, "chromium: no close status, so the streams were not settled before exit");
   } finally {
@@ -520,6 +717,7 @@ async function shutdownLatchSurvivesLaterFailure() {
     assert(requested.code === 130, `a later failure rewrote the requested status to ${requested.code}; the first request was 130`);
     const held = readJson(join(evidence, "0-upstream", "status.json"));
     assert(held.close === null, "upstream: a close status was invented although its streams never closed");
+    assertNoReceipt(evidence, "interrupted shutdown");
   } finally {
     await reapHolder(fixture);
   }
@@ -547,7 +745,7 @@ async function terminationSignalShutsDownCleanly() {
   const requested = readJson(join(evidence, "requested-exit.json"));
   assert(requested.code === 143, `the requested status was ${requested.code}, not 143`);
 
-  const dirs = childDirs(evidence);
+  const dirs = assertReceipt(evidence, 143, "termination signal");
   assert(dirs.length === 2, `the evidence names ${dirs.length} child(ren), not 2: ${dirs.join(", ")}`);
   const expected = { upstream: "N".repeat(STREAM_BYTES), chromium: "C".repeat(STREAM_BYTES) };
   for (const dir of dirs) {
@@ -600,10 +798,56 @@ async function terminationSignalKeepsFirstRequestedStatus() {
     assert(requested.code !== 143, `the requested status became 143; the signal overwrote the ${first.code} that was requested first`);
     const held = readJson(join(evidence, "0-upstream", "status.json"));
     assert(held.close === null, "upstream: a close status was invented although its streams never closed");
+    assertNoReceipt(evidence, "termination during settling");
   } finally {
     await reapHolder(fixture);
   }
   return fixture;
+}
+
+// Case 8: the readiness convention itself, asserted directly rather than raced for. The fake
+// browser may announce itself only once both streams' writes have completed -- otherwise a signal
+// sent on the announcement can land between a write being handed to Node and its bytes reaching the
+// pipe, and the capture that follows is short. The two streams below are owned fakes whose write
+// callbacks this case fires one at a time, so neither the order across streams nor a failed write is
+// a matter of timing.
+async function readinessGatesOnBothStreams() {
+  const body = "C".repeat(STREAM_BYTES) + "\n";
+  const ownedStream = () => ({
+    written: [],
+    callbacks: [],
+    write(chunk, callback) {
+      this.written.push(chunk);
+      this.callbacks.push(callback);
+    },
+  });
+  const one = ownedStream();
+  const two = ownedStream();
+  let announced = 0;
+  let writeError = null;
+  writeBothStreams([one, two], body, () => (announced += 1), (error) => (writeError = error));
+  assert(
+    one.written.length === 1 && one.written[0] === body && two.written.length === 1 && two.written[0] === body,
+    "the whole body was not handed to both streams before readiness was gated on them",
+  );
+  assert(announced === 0, "readiness was announced before either write completed");
+  one.callbacks[0](null);
+  assert(announced === 0, "readiness was announced after one of the two writes completed");
+  two.callbacks[0](null);
+  assert(announced === 1, "readiness was not announced once both writes completed");
+  assert(writeError === null, `a clean write was reported as failed: ${writeError}`);
+
+  const three = ownedStream();
+  const four = ownedStream();
+  let announcedAfterFailure = 0;
+  let failed = null;
+  const failure = new Error("stream write failed");
+  writeBothStreams([three, four], body, () => (announcedAfterFailure += 1), (error) => (failed = error));
+  three.callbacks[0](failure);
+  four.callbacks[0](null);
+  assert(failed === failure, `a failed write was not reported: ${failed}`);
+  assert(announcedAfterFailure === 0, "readiness was announced although one of the two writes failed");
+  return null;
 }
 
 // ---- The cleanup path itself ----------------------------------------------------------------
@@ -767,10 +1011,13 @@ async function main() {
   completed.push(await debuggingPortFailure());
   completed.push(await occupiedPortFailure());
   completed.push(await evidenceFailureIsFailClosed());
+  completed.push(await requestedExitFailureWithdrawsCompletion());
+  completed.push(await staleCompletionIsRefusedBeforeAnyWrite());
   completed.push(await incompleteCaptureFailsClosed());
   completed.push(await shutdownLatchSurvivesLaterFailure());
   completed.push(await terminationSignalShutsDownCleanly());
   completed.push(await terminationSignalKeepsFirstRequestedStatus());
+  completed.push(await readinessGatesOnBothStreams());
   await runCleanupSelfTest("--self-test-failure", "deliberate failure with a held pipe");
   await runCleanupSelfTest("--self-test-timeout", "did not end within");
   await runSupervisorTimeoutSelfTest();
@@ -807,10 +1054,16 @@ if (completed) {
       "port, failed closed when its evidence could not be written or a child's streams never closed, " +
       "kept its first requested status 130 when a later failure tried to rewrite it, took the " +
       "ordinary shutdown on a termination signal with the whole capture retained, and kept the first " +
-      "requested status when a termination signal arrived while a failure was already settling; a " +
+      "requested status when a termination signal arrived while a failure was already settling; the " +
+      "completion receipt names the status and the exact child census and is written last, so a " +
+      "prefix with no completion is refused rather than read as a shorter run, a failed requested " +
+      "status withdraws the completion even when both children were captured, and a prior run's " +
+      "completion is refused before the first write so its bytes are never mixed with a new census; the " +
+      "fake browser announces itself only once both of its stream writes have completed and reports a " +
+      "failed write instead, so the signal case never races a write still in flight; a " +
       "deliberate assertion failure, a killed check and a stalled supervisor each left no process and " +
       "no port behind",
   );
-  for (const fixture of completed) console.log(`  fixture: ${fixture}`);
+  for (const fixture of completed) if (fixture) console.log(`  fixture: ${fixture}`);
 }
 process.exit(0);

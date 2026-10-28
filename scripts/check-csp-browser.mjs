@@ -59,11 +59,17 @@
 // a failure, not a pass. The children are killed and each stream is given a bounded moment to
 // close before the process ends, so the status is the one asked for and not the one an unfinished
 // child left behind. `CSP_EVIDENCE_DIR` makes the check write each child's whole two streams and
-// its exit and close statuses into that directory, and `CSP_DEBUG_PORT` moves the port the
-// browser is asked to open; both exist for a test that drives this check on a machine it owns.
+// its exit and close statuses into that directory, then a completion naming that census and the
+// status it latched, and `CSP_DEBUG_PORT` moves the port the browser is asked to open; both exist
+// for a test that drives this check on a machine it owns. The completion is written last and only
+// after every other mandatory write has landed, so a reader never has to guess whether a short
+// directory is a run that ended early or one that died in the middle of its own evidence. A run
+// that is handed a directory already holding a completion refuses before its first write: the old
+// receipt and the children beside it are one generation's whole record, and the census of a new
+// attempt cannot make them its own.
 
 import { spawn, spawnSync } from "node:child_process";
-import { readFileSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { readFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, renameSync, writeFileSync } from "node:fs";
 import { createServer, request as httpRequest } from "node:http";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -83,9 +89,9 @@ const CONCEAL_DEADLINE_SECONDS = 30;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Opt-in: when it names a directory, each child's two streams are kept whole rather than to their
-// tails and, at exit, the streams and the exit and close statuses are written there. It is how a
-// caller that owns the machine can see the check did reap what it started, without wrapping the
-// check's own process. Nothing is written unless it is asked for.
+// tails and, at exit, the streams, the exit and close statuses and a completion naming the census
+// are written there. It is how a caller that owns the machine can see the check did reap what it
+// started, without wrapping the check's own process. Nothing is written unless it is asked for.
 const evidenceDir = process.env.CSP_EVIDENCE_DIR ?? null;
 
 // Replaced with the proxy-aware version once the proxy is listening; before that a failure has
@@ -106,6 +112,18 @@ async function fail(message) {
 // already settling cannot rewrite the record or start a second exit.
 let shutdownPromise = null;
 
+// A completion left by another run makes the whole directory that run's record. Overwriting any
+// of it would leave an old receipt and an old child beside a new census, which is exactly the
+// mixed generation a reader cannot tell from a short run. A dangling link is a refusal too.
+function priorCompletion(evidence) {
+  try {
+    return lstatSync(join(evidence, "receipt.json"));
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
 // The exit is ordinary; what waits is the cleanup before it. A child's last words arrive after its
 // exit event and its close event after that, so a process.exit here would take the streams down
 // with it. The children are killed rather than left running, each is given a bounded moment to
@@ -113,25 +131,43 @@ let shutdownPromise = null;
 //
 // Evidence, when asked for, fails closed: a status that cannot be recorded, or a child whose
 // streams had not closed, does not read as a clean run. The requested status is written first, so
-// a later failure to retain the rest still leaves it readable.
+// a later failure to retain the rest still leaves it readable; the completion is written last, so
+// every failure in between is a receipt with no completion rather than a shorter clean run. A
+// failed mandatory write withdraws the completion even when every child capture lands.
 async function shutdown(code) {
   if (shutdownPromise) return shutdownPromise;
   shutdownPromise = (async () => {
     let finalCode = code;
+    let recording = Boolean(evidenceDir);
+    let completion = true;
     if (evidenceDir) {
+      try {
+        if (priorCompletion(evidenceDir)) {
+          console.error(`check-csp-browser: ${evidenceDir} already holds a completion; refusing to overwrite another run's evidence`);
+          finalCode = 74;
+          recording = false;
+        }
+      } catch (error) {
+        console.error(`check-csp-browser: cannot inspect ${evidenceDir}: ${error.message}`);
+        finalCode = 74;
+        recording = false;
+      }
+    }
+    if (recording) {
       try {
         mkdirSync(evidenceDir, { recursive: true, mode: 0o700 });
         writeFileSync(join(evidenceDir, "requested-exit.json"), `${JSON.stringify({ code })}\n`, { mode: 0o600 });
       } catch (error) {
         console.error(`check-csp-browser: cannot record the requested status in ${evidenceDir}: ${error.message}`);
         finalCode = 74;
+        completion = false;
       }
     }
     cleanup();
     await Promise.all(children.map((child) => settle(child)));
-    if (evidenceDir) {
+    if (recording) {
       try {
-        if (!writeChildEvidence()) {
+        if (!writeChildEvidence(code, completion)) {
           console.error(`check-csp-browser: child evidence is incomplete in ${evidenceDir}: a child had not closed its streams`);
           finalCode = 74;
         }
@@ -147,7 +183,8 @@ async function shutdown(code) {
 
 // An `error` with no `exit` is a launch that legitimately never had one; a null `close` after the
 // settle is a child that may still be writing, so what it left is not the whole story.
-function writeChildEvidence() {
+function writeChildEvidence(code, completion) {
+  const census = [];
   let complete = true;
   for (const [index, child] of children.entries()) {
     const dir = join(evidenceDir, `${index}-${child.label}`);
@@ -170,8 +207,19 @@ function writeChildEvidence() {
       { mode: 0o600 },
     );
     if (child.close === null) complete = false;
+    census.push(`${index}-${child.label}`);
   }
-  return complete;
+  if (!complete) return false;
+  // A completion is the one write that says every mandatory write before it landed, so a refused
+  // requested status withdraws it even though the child captures themselves were written.
+  if (!completion) return true;
+  // The last write, and the only one that says the rest landed. Staged and renamed so a failure
+  // leaves either no completion or a whole one: a half-written file here would read as a corrupt
+  // receipt, which is a refusal too, and the staging name is never mistaken for one.
+  const staged = join(evidenceDir, "receipt.json.partial");
+  writeFileSync(staged, `${JSON.stringify({ requested: code, children: census })}\n`, { mode: 0o600 });
+  renameSync(staged, join(evidenceDir, "receipt.json"));
+  return true;
 }
 
 const children = [];
@@ -408,9 +456,9 @@ process.on("exit", cleanup);
 
 // ---- Chromium over CDP ------------------------------------------------------------------
 
-const profile = join(root, ".tmp", "chrome-csp-check");
-rmSync(profile, { recursive: true, force: true });
-mkdirSync(profile, { recursive: true });
+const profileParent = process.env.TMPDIR || join(root, ".tmp");
+mkdirSync(profileParent, { recursive: true });
+const profile = mkdtempSync(join(profileParent, "chrome-csp-check-"));
 const debugPort = Number(process.env.CSP_DEBUG_PORT || 9333);
 // The wait is a bound, not a guess: what the browser was doing when it expired is what gets
 // reported. Chrome opens this port in about a second on an idle machine, and a runner is not one.

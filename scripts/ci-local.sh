@@ -59,8 +59,9 @@ repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$repo_root"
 
 # `/tmp` is a RAM-backed tmpfs on this host, and building there has taken a machine down
-# before; keep every artefact inside the checkout.
-export TMPDIR="$repo_root/.tmp"
+# before; default to checkout scratch rather than ambient TMPDIR. SITE_CHECK_TMPDIR explicitly
+# selects another on-disk scratch directory, including a shorter path for Chromium's sockets.
+export TMPDIR="${SITE_CHECK_TMPDIR:-$repo_root/.tmp}"
 mkdir -p "$TMPDIR"
 
 export NEXT_TELEMETRY_DISABLED=1
