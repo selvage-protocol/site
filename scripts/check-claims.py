@@ -67,6 +67,7 @@ import html
 import json
 import os
 import re
+import shlex
 import socket
 import ssl
 import sys
@@ -2679,6 +2680,27 @@ def run_section_problems(blocks: list[list[str]]) -> list[str]:
     return problems
 
 
+def docker_command_words(clause: str) -> list[str]:
+    """Read a Docker invocation at the start of one command_clauses clause, not arbitrary shell."""
+    try:
+        words = shlex.split(clause)
+    except ValueError:
+        return []
+    if not words or words[0] != "docker":
+        return []
+    index = 1
+    valued_options = {
+        "--config", "--context", "-c", "--host", "-H", "--log-level", "-l",
+        "--tlscacert", "--tlscert", "--tlskey",
+    }
+    while index < len(words) and words[index].startswith("-"):
+        option = words[index]
+        index += 1
+        if option in valued_options:
+            index += 1
+    return words[index:]
+
+
 def teardown_problems(blocks: list[list[str]]) -> list[str]:
     """Require teardown after startup, using the names startup actually creates."""
     clauses = [
@@ -2699,16 +2721,9 @@ def teardown_problems(blocks: list[list[str]]) -> list[str]:
     expected = [page_names[0], server_names[0], networks[0]]
     if any(name is None or not names_something(name) for name in expected):
         return ["cannot derive teardown names from unnamed startup resources"]
-    stops = [
-        (index, found)
-        for index, clause in enumerate(clauses)
-        if (found := re.fullmatch(r"docker\s+stop\s+(\S+)\s+(\S+)", clause)) is not None
-    ]
-    removals = [
-        (index, found)
-        for index, clause in enumerate(clauses)
-        if (found := re.fullmatch(r"docker\s+network\s+rm\s+(\S+)", clause)) is not None
-    ]
+    invocations = [(index, docker_command_words(clause)) for index, clause in enumerate(clauses)]
+    stops = [(index, words) for index, words in invocations if words[:1] == ["stop"]]
+    removals = [(index, words) for index, words in invocations if words[:2] == ["network", "rm"]]
     problems: list[str] = []
     if len(stops) != 1:
         problems.append("must print one docker stop naming both startup containers")
@@ -2718,7 +2733,11 @@ def teardown_problems(blocks: list[list[str]]) -> list[str]:
         return problems
     stop_at, stop = stops[0]
     remove_at, remove = removals[0]
-    actual = [ParsedName(stop.group(1)), ParsedName(stop.group(2)), ParsedName(remove.group(1))]
+    if len(stop) != 3:
+        return ["must print one docker stop naming both startup containers"]
+    if len(remove) != 3:
+        return ["must print one docker network rm naming the startup network"]
+    actual = [ParsedName(stop[1]), ParsedName(stop[2]), ParsedName(remove[2])]
     for given, wanted in zip(actual, expected):
         if wanted is not None and not reads_the_name(READING_TEARDOWN_NAME, given, wanted):
             problems.append(f"teardown names {given!r} instead of startup resource {wanted!r}")
@@ -4869,6 +4888,14 @@ def fixture_failure(what: str, problems: list[str], expected: str) -> str:
 RUN_TEARDOWN_BLOCKS = (*RUN_FIXTURE_NAMED, "docker stop page server", "docker network rm room")
 TEARDOWN_FIXTURES = (
     ("startup plus teardown across all command blocks", RUN_TEARDOWN_BLOCKS, ""),
+    ("quoted stop text is not an invocation",
+     RUN_TEARDOWN_BLOCKS + ("printf '%s\\n' 'docker stop unrelated'",), ""),
+    ("extra unrelated stop with a global option",
+     RUN_TEARDOWN_BLOCKS + ("docker --log-level=error stop unrelated",),
+     "must print one docker stop"),
+    ("extra unrelated network removal with a global option",
+     RUN_TEARDOWN_BLOCKS + ("docker --log-level=error network rm unrelated",),
+     "must print one docker network rm"),
     ("teardown follows renamed startup resources", run_fixture(
         (0, "create room", "create session"),
         (1, "--name server --network room", "--name host --network session"),
@@ -4897,6 +4924,16 @@ TEARDOWN_FIXTURES = (
      "must stop after startup"),
     ("extra container stopped", run_fixture((3, "page server", "page server unrelated"), blocks=RUN_TEARDOWN_BLOCKS),
      "must print one docker stop"),
+    # A destructor the teardown does not own, in a block of its own: the valid teardown still
+    # satisfies the count and name checks over the clauses it matches, so the whole-clause reading
+    # that misses this one passes a page that tells a reader to remove something unrelated.
+    ("extra unrelated stop command", RUN_TEARDOWN_BLOCKS + ("docker stop unrelated",),
+     "must print one docker stop"),
+    ("extra unrelated network removal command", RUN_TEARDOWN_BLOCKS + ("docker network rm unrelated",),
+     "must print one docker network rm"),
+    ("extra network removal naming a second network",
+     RUN_TEARDOWN_BLOCKS + ("docker network rm unrelated other",),
+     "must print one docker network rm"),
 )
 
 
