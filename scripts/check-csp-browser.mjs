@@ -56,10 +56,20 @@
 // check could not run at all — no Chromium, no build, a port already in use, or a browser that
 // never opened its debugging port — and the last of those prints the browser's own account of
 // itself rather than only what this check saw, because the two are not the same failure. Exit 2 is
-// a failure, not a pass.
+// a failure, not a pass. The children are killed and each stream is given a bounded moment to
+// close before the process ends, so the status is the one asked for and not the one an unfinished
+// child left behind. `CSP_EVIDENCE_DIR` makes the check write each child's whole two streams and
+// its exit and close statuses into that directory, then a completion naming that census and the
+// status it latched, and `CSP_DEBUG_PORT` moves the port the browser is asked to open; both exist
+// for a test that drives this check on a machine it owns. The completion is written last and only
+// after every other mandatory write has landed, so a reader never has to guess whether a short
+// directory is a run that ended early or one that died in the middle of its own evidence. A run
+// that is handed a nonempty evidence directory refuses before setup or its first write: even
+// without a completion, old captures belong to another attempt and cannot join a new census.
+// An exclusive claim is retained with the run, so cooperating concurrent runs cannot both write.
 
 import { spawn, spawnSync } from "node:child_process";
-import { readFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync, lstatSync, mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { createServer, request as httpRequest } from "node:http";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -78,28 +88,184 @@ const HYDRATION_DEADLINE_SECONDS = 30;
 const CONCEAL_DEADLINE_SECONDS = 30;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-function giveUp(message) {
-  console.error(`check-csp-browser: ${message}`);
-  process.exit(2);
+// Opt-in: when it names a directory, each child's two streams are kept whole rather than to their
+// tails and, at exit, the streams, the exit and close statuses and a completion naming the census
+// are written there. It is how a caller that owns the machine can see the check did reap what it
+// started, without wrapping the check's own process. Nothing is written unless it is asked for.
+const evidenceDir = process.env.CSP_EVIDENCE_DIR ?? null;
+
+// Refuse incomplete runs too: an old capture with no receipt must never acquire a new one.
+if (evidenceDir) {
+  try {
+    if (readdirSync(evidenceDir).length > 0) {
+      console.error(`check-csp-browser: ${evidenceDir} is not empty; refusing to overwrite another run's evidence`);
+      process.exit(74);
+    }
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      console.error(`check-csp-browser: cannot inspect ${evidenceDir}: ${error.message}`);
+      process.exit(74);
+    }
+  }
+  try {
+    mkdirSync(evidenceDir, { recursive: true, mode: 0o700 });
+    writeFileSync(join(evidenceDir, "run.claim"), "", { flag: "wx", mode: 0o600 });
+  } catch (error) {
+    console.error(`check-csp-browser: cannot claim ${evidenceDir}; refusing to overwrite another run's evidence: ${error.message}`);
+    process.exit(74);
+  }
 }
 
-function fail(message) {
+// Replaced with the proxy-aware version once the proxy is listening; before that a failure has
+// only the children to reap, and no exit handler is registered.
+let cleanup = stopChildren;
+
+async function giveUp(message) {
+  console.error(`check-csp-browser: ${message}`);
+  await shutdown(2);
+}
+
+async function fail(message) {
   console.error(`check-csp-browser: FAILED: ${message}`);
-  process.exit(1);
+  await shutdown(1);
+}
+
+// The first caller latches the requested status, so a signal that arrives while a failure is
+// already settling cannot rewrite the record or start a second exit.
+let shutdownPromise = null;
+
+// A completion left by another run makes the whole directory that run's record. Overwriting any
+// of it would leave an old receipt and an old child beside a new census, which is exactly the
+// mixed generation a reader cannot tell from a short run. A dangling link is a refusal too.
+function priorCompletion(evidence) {
+  try {
+    return lstatSync(join(evidence, "receipt.json"));
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+// The exit is ordinary; what waits is the cleanup before it. A child's last words arrive after its
+// exit event and its close event after that, so a process.exit here would take the streams down
+// with it. The children are killed rather than left running, each is given a bounded moment to
+// close, and only then does the process end with the status that was asked for.
+//
+// Evidence, when asked for, fails closed: a status that cannot be recorded, or a child whose
+// streams had not closed, does not read as a clean run. The requested status is written first, so
+// a later failure to retain the rest still leaves it readable; the completion is written last, so
+// every failure in between is a receipt with no completion rather than a shorter clean run. A
+// failed mandatory write withdraws the completion even when every child capture lands.
+async function shutdown(code) {
+  if (shutdownPromise) return shutdownPromise;
+  shutdownPromise = (async () => {
+    let finalCode = code;
+    let recording = Boolean(evidenceDir);
+    let completion = true;
+    if (evidenceDir) {
+      try {
+        if (priorCompletion(evidenceDir)) {
+          console.error(`check-csp-browser: ${evidenceDir} already holds a completion; refusing to overwrite another run's evidence`);
+          finalCode = 74;
+          recording = false;
+        }
+      } catch (error) {
+        console.error(`check-csp-browser: cannot inspect ${evidenceDir}: ${error.message}`);
+        finalCode = 74;
+        recording = false;
+      }
+    }
+    if (recording) {
+      try {
+        mkdirSync(evidenceDir, { recursive: true, mode: 0o700 });
+        writeFileSync(join(evidenceDir, "requested-exit.json"), `${JSON.stringify({ code })}\n`, { mode: 0o600 });
+      } catch (error) {
+        console.error(`check-csp-browser: cannot record the requested status in ${evidenceDir}: ${error.message}`);
+        finalCode = 74;
+        completion = false;
+      }
+    }
+    cleanup();
+    await Promise.all(children.map((child) => settle(child)));
+    try {
+      removeProfile();
+    } catch (error) {
+      console.error(`check-csp-browser: cannot clean up the browser profile: ${error.message}`);
+      finalCode = 74;
+      completion = false;
+    }
+    if (recording) {
+      try {
+        if (!writeChildEvidence(code, completion)) {
+          console.error(`check-csp-browser: child evidence is incomplete in ${evidenceDir}: a child had not closed its streams`);
+          finalCode = 74;
+        }
+      } catch (error) {
+        console.error(`check-csp-browser: child evidence not retained in ${evidenceDir}: ${error.message}`);
+        finalCode = 74;
+      }
+    }
+    process.exit(finalCode);
+  })();
+  return shutdownPromise;
+}
+
+// An `error` with no `exit` is a launch that legitimately never had one; a null `close` after the
+// settle is a child that may still be writing, so what it left is not the whole story.
+function writeChildEvidence(code, completion) {
+  const census = [];
+  let complete = true;
+  for (const [index, child] of children.entries()) {
+    const dir = join(evidenceDir, `${index}-${child.label}`);
+    mkdirSync(dir, { recursive: true, mode: 0o700 });
+    writeFileSync(
+      join(dir, "launch.json"),
+      `${JSON.stringify({ command: child.command, args: child.args })}\n`,
+      { mode: 0o600 },
+    );
+    writeFileSync(join(dir, "stdout"), Buffer.concat(child.stdoutTail.chunks), { mode: 0o600 });
+    writeFileSync(join(dir, "stderr"), Buffer.concat(child.stderrTail.chunks), { mode: 0o600 });
+    writeFileSync(
+      join(dir, "status.json"),
+      `${JSON.stringify({
+        pid: child.pid,
+        exit: child.exit,
+        close: child.close,
+        error: child.failure ? String(child.failure) : null,
+      })}\n`,
+      { mode: 0o600 },
+    );
+    if (child.close === null) complete = false;
+    census.push(`${index}-${child.label}`);
+  }
+  if (!complete) return false;
+  // A completion is the one write that says every mandatory write before it landed, so a refused
+  // requested status withdraws it even though the child captures themselves were written.
+  if (!completion) return true;
+  // The last write, and the only one that says the rest landed. Staged and renamed so a failure
+  // leaves either no completion or a whole one: a half-written file here would read as a corrupt
+  // receipt, which is a refusal too, and the staging name is never mistaken for one.
+  const staged = join(evidenceDir, "receipt.json.partial");
+  writeFileSync(staged, `${JSON.stringify({ requested: code, children: census })}\n`, { mode: 0o600 });
+  renameSync(staged, join(evidenceDir, "receipt.json"));
+  return true;
 }
 
 const children = [];
+let profile = null;
+let browser = null;
 
 // A child's own words are the only account of why it did not do what it was started for, so the
 // end of each stream is kept rather than drained. Bounded: a browser session is chatty, and what a
 // reader of a failure needs is how it ended, not how it began.
 const STREAM_TAIL_BYTES = 8 * 1024;
 
-function capture(stream) {
+function capture(stream, keepAll) {
   const captured = { chunks: [], bytes: 0 };
   stream.on("data", (chunk) => {
     captured.bytes += chunk.length;
     captured.chunks.push(chunk);
+    if (keepAll) return;
     let held = captured.chunks.reduce((total, part) => total + part.length, 0);
     while (held > STREAM_TAIL_BYTES && captured.chunks.length > 1) held -= captured.chunks.shift().length;
     // A single write larger than the tail is trimmed inside the chunk: the loop above stops at the
@@ -132,11 +298,15 @@ function capturedText(captured) {
   return `${marker}${text}`;
 }
 
-function spawnChild(command, args, options = {}) {
+function spawnChild(command, args, options = {}, label = "child") {
   const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"], ...options });
-  child.stdoutTail = capture(child.stdout);
-  child.stderrTail = capture(child.stderr);
+  child.stdoutTail = capture(child.stdout, evidenceDir !== null);
+  child.stderrTail = capture(child.stderr, evidenceDir !== null);
+  child.label = label;
+  child.command = command;
+  child.args = args;
   child.exit = null;
+  child.close = null;
   child.failure = null;
   child.closed = false;
   child.on("error", (error) => {
@@ -145,8 +315,9 @@ function spawnChild(command, args, options = {}) {
   child.on("exit", (code, signal) => {
     child.exit = { code, signal };
   });
-  child.on("close", () => {
+  child.on("close", (code, signal) => {
     child.closed = true;
+    child.close = { code, signal };
   });
   children.push(child);
   return child;
@@ -223,9 +394,29 @@ function stopChildren() {
     }
   }
 }
-process.on("SIGINT", () => {
-  stopChildren();
-  process.exit(130);
+function removeProfile() {
+  if (profile === null) return;
+  if (browser !== null && browser.exit === null && !(browser.failure && browser.pid === undefined)) {
+    throw new Error(`browser termination is unconfirmed; retaining ${profile}`);
+  }
+  rmSync(profile, { recursive: true, force: true });
+  profile = null;
+}
+process.on("uncaughtException", (error) => {
+  void giveUp(error.stack ?? String(error));
+});
+process.on("unhandledRejection", (error) => {
+  void giveUp(error?.stack ?? String(error));
+});
+process.on("SIGINT", async () => {
+  await shutdown(130);
+});
+// A termination signal, which `kill` and many runners send, takes the same path: the children are
+// killed and their streams settled before the process ends with 143. Without this handler the
+// default disposition would end the process where it stood, leaving the detached upstream and the
+// browser running.
+process.on("SIGTERM", async () => {
+  await shutdown(143);
 });
 
 const policyFile = process.env.VERCEL_JSON ?? join(root, "vercel.json");
@@ -236,19 +427,19 @@ const headers = (vercel.headers ?? [])
   .map(({ key, value }) => [key, value]);
 const declared = headers.find(([key]) => key.toLowerCase() === "content-security-policy")?.[1];
 if (!declared) {
-  giveUp(`${policyLabel} declares no Content-Security-Policy; there is nothing to prove here`);
+  await giveUp(`${policyLabel} declares no Content-Security-Policy; there is nothing to prove here`);
 }
 
 const chromium = process.env.CHROMIUM;
 if (!chromium || !existsSync(chromium)) {
-  giveUp(
+  await giveUp(
     `CHROMIUM must name a Chromium binary (got ${chromium ?? "nothing"}). ` +
       "scripts/ci-local.sh csp finds one on PATH when it is not set, and a host without one " +
       "cannot run this proof",
   );
 }
 if (!existsSync(join(root, ".next", "BUILD_ID"))) {
-  giveUp("no build to serve: run `npm run build` first");
+  await giveUp("no build to serve: run `npm run build` first");
 }
 
 async function answers(port) {
@@ -265,22 +456,24 @@ async function answers(port) {
 // would let it assert against unrelated content.
 for (const port of [PORT, UPSTREAM]) {
   if (await answers(port)) {
-    giveUp(`127.0.0.1:${port} already answers; refusing a port this check did not bind`);
+    await giveUp(`127.0.0.1:${port} already answers; refusing a port this check did not bind`);
   }
 }
 
 // The page, the way the host serves it.
-spawnChild(join(root, "node_modules", ".bin", "next"), ["start", "-p", String(UPSTREAM)], {
-  env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" },
-});
+spawnChild(
+  join(root, "node_modules", ".bin", "next"),
+  ["start", "-p", String(UPSTREAM)],
+  { env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" } },
+  "upstream",
+);
 let up = false;
 for (let i = 0; i < 120 && !up; i += 1) {
   up = await answers(UPSTREAM);
   if (!up) await sleep(500);
 }
 if (!up) {
-  stopChildren();
-  giveUp(`next start never answered on ${UPSTREAM}`);
+  await giveUp(`next start never answered on ${UPSTREAM}`);
 }
 
 // The host's own behaviour: the headers block, applied to every response.
@@ -300,7 +493,7 @@ const proxy = createServer((incoming, outgoing) => {
 });
 await new Promise((resolve) => proxy.listen(PORT, "127.0.0.1", resolve));
 
-const cleanup = () => {
+cleanup = () => {
   proxy.close();
   stopChildren();
 };
@@ -308,10 +501,11 @@ process.on("exit", cleanup);
 
 // ---- Chromium over CDP ------------------------------------------------------------------
 
-const profile = join(root, ".tmp", "chrome-csp-check");
-rmSync(profile, { recursive: true, force: true });
-mkdirSync(profile, { recursive: true });
-const debugPort = 9333;
+if (shutdownPromise) await shutdownPromise;
+const profileParent = process.env.TMPDIR || join(root, ".tmp");
+mkdirSync(profileParent, { recursive: true });
+profile = mkdtempSync(join(profileParent, "chrome-csp-check-"));
+const debugPort = Number(process.env.CSP_DEBUG_PORT || 9333);
 // The wait is a bound, not a guess: what the browser was doing when it expired is what gets
 // reported. Chrome opens this port in about a second on an idle machine, and a runner is not one.
 const debugDeadlineSeconds = Number(process.env.CSP_DEBUG_DEADLINE || 30);
@@ -320,18 +514,23 @@ const debugDeadlineSeconds = Number(process.env.CSP_DEBUG_DEADLINE || 30);
 // they stand: the Chromium snapshot the image installs (`Chromium 154.0.8037.0`, snapshot revision
 // 1689397) and Google's own 154 build (Chrome for Testing 154.0.8037.92) each open the debugging
 // port under this exact invocation.
-const browser = spawnChild(chromium, [
-  "--headless=new",
-  `--remote-debugging-port=${debugPort}`,
-  `--user-data-dir=${profile}`,
-  "--no-sandbox",
-  "--disable-gpu",
-  "--disable-dev-shm-usage",
-  "--no-first-run",
-  "--no-default-browser-check",
-  `--window-size=${WINDOW}`,
-  "about:blank",
-]);
+browser = spawnChild(
+  chromium,
+  [
+    "--headless=new",
+    `--remote-debugging-port=${debugPort}`,
+    `--user-data-dir=${profile}`,
+    "--no-sandbox",
+    "--disable-gpu",
+    "--disable-dev-shm-usage",
+    "--no-first-run",
+    "--no-default-browser-check",
+    `--window-size=${WINDOW}`,
+    "about:blank",
+  ],
+  {},
+  "chromium",
+);
 
 let version = null;
 let attempts = 0;
@@ -376,7 +575,7 @@ if (!version) {
     ? readFileSync(activePortFile, "utf8").split("\n")[0].trim() || null
     : null;
   if (bound) observed += `; the profile's DevToolsActivePort names port ${bound}`;
-  giveUp(
+  await giveUp(
     `CHROMIUM never opened a debugging port (${attempts} attempt(s) over ${waited}s)\n${reportBrowser(chromium, browser, observed, bound)}`,
   );
 }
@@ -455,13 +654,13 @@ await send(
 
 const evaluate = async (expression) => {
   const result = await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true }, sessionId);
-  if (result.exceptionDetails) fail(`evaluating in the page threw: ${JSON.stringify(result.exceptionDetails)}`);
+  if (result.exceptionDetails) await fail(`evaluating in the page threw: ${JSON.stringify(result.exceptionDetails)}`);
   return result.result.value;
 };
 
 await send("Page.navigate", { url: `http://127.0.0.1:${PORT}/` }, sessionId);
 for (let i = 0; i < 120 && !loaded; i += 1) await sleep(100);
-if (!loaded) fail("the page never fired a load event");
+if (!loaded) await fail("the page never fired a load event");
 
 // Bounded poll for the state under test, so a page that never hydrates fails instead of passing.
 async function waitFor(expression, seconds = 5) {
@@ -526,7 +725,7 @@ async function pageReport() {
 // Every assertion about the page, from the hydration step on, fails with this: the state that
 // tells those four shapes apart is cheaper to print than to guess at from a job log later.
 async function failWithPage(message) {
-  fail(`${message}\n${await pageReport()}`);
+  await fail(`${message}\n${await pageReport()}`);
 }
 
 const where = `http://127.0.0.1:${PORT}/`;
@@ -542,11 +741,11 @@ const page = JSON.parse(info);
 const served = Object.entries(document_?.headers ?? {}).find(
   ([key]) => key.toLowerCase() === "content-security-policy",
 )?.[1];
-if (served !== declared) fail(`the document response carries ${served ?? "no CSP"}, not ${policyLabel}'s ${declared}`);
+if (served !== declared) await fail(`the document response carries ${served ?? "no CSP"}, not ${policyLabel}'s ${declared}`);
 
 // 2. zero violations, as the browser recorded them
 const seen = JSON.parse(await evaluate("JSON.stringify(window.__violations ?? null)"));
-if (!Array.isArray(seen)) fail("the violation listener never ran, so this check saw nothing");
+if (!Array.isArray(seen)) await fail("the violation listener never ran, so this check saw nothing");
 // A refused font is named before the generic assertion below, because it is the one refusal a
 // page can carry without looking broken: `font-display: swap` draws the fallback stack in the
 // same layout, so the reader sees a font choice rather than a page that failed to load.
@@ -558,7 +757,7 @@ if (fontRefusals.length > 0) {
   for (const violation of fontRefusals) {
     console.error(`  refused: ${violation.directive} ${violation.blockedURI}`);
   }
-  fail(
+  await fail(
     `the policy refuses the page's own fonts: ${fontRefusals.length} securitypolicyviolation ` +
       `event(s) naming a font, on ${where}. The glyph files are served from this origin, which ` +
       "is what `font-src 'self'` permits",
@@ -570,21 +769,21 @@ if (seen.length > 0 || refusals.length > 0) {
   // never ran it. Printing both would double every line of the transcript.
   const lines = seen.length > 0 ? seen.map((v) => `${v.directive} ${v.blockedURI}`) : refusals;
   for (const violation of lines) console.error(`  refused: ${violation}`);
-  fail(
+  await fail(
     `the page's own policy refuses it: ${seen.length} securitypolicyviolation event(s), ` +
       `${refusals.length} console refusal(s), on ${where}`,
   );
 }
 
 // 3. the inline bootstrap ran, so the page's scripts executed
-if (page.nextF !== "object") fail(`window.__next_f is ${page.nextF}, not an object: the bootstrap never ran`);
+if (page.nextF !== "object") await fail(`window.__next_f is ${page.nextF}, not an object: the bootstrap never ran`);
 
 // 4. the page's own fonts arrived. A family that fell back to the system stack paints in the
 // same layout, so the glyph files are only observable by asking for them: `check` reports false
 // while a face the family name needs is unloaded, and true only once it is loaded. The poll is
 // bounded, so a face that never settles fails here rather than passing slowly.
 const fontsSettled = await waitFor("[...document.fonts].every((face) => face.status !== 'loading')", 10);
-if (!fontsSettled) fail("the page's font faces never finished loading");
+if (!fontsSettled) await fail("the page's font faces never finished loading");
 const fonts = JSON.parse(
   await evaluate(`JSON.stringify({
     geist: document.fonts.check('16px Geist', 'Selvage'),
@@ -597,24 +796,24 @@ const fonts = JSON.parse(
 );
 for (const family of ["Geist", "JetBrains Mono"]) {
   if (!fonts.loaded.includes(family)) {
-    fail(`${family} never loaded: the stylesheet's face for it was refused or has no glyph file`);
+    await fail(`${family} never loaded: the stylesheet's face for it was refused or has no glyph file`);
   }
 }
 if (!fonts.geist) {
-  fail("Geist does not resolve on the page: the glyph file was refused or never loaded");
+  await fail("Geist does not resolve on the page: the glyph file was refused or never loaded");
 }
 if (!fonts.mono) {
-  fail('JetBrains Mono does not resolve on the page: the glyph file was refused or never loaded');
+  await fail('JetBrains Mono does not resolve on the page: the glyph file was refused or never loaded');
 }
 if (!/^["']?Geist["']?(\s*,|$)/.test(fonts.body)) {
-  fail(`the body's computed font family is ${fonts.body}, not Geist: the theme's font variable did not resolve`);
+  await fail(`the body's computed font family is ${fonts.body}, not Geist: the theme's font variable did not resolve`);
 }
 
 // 5. the header's hide-on-scroll, which is the React effect. The served bytes are checked
 // first, so what is observed afterwards is the effect and not the prerender.
 const servedHtml = await (await fetch(where)).text();
 if (servedHtml.includes("-translate-y-full")) {
-  fail("the served HTML already carries -translate-y-full, so the concealment is not the effect");
+  await fail("the served HTML already carries -translate-y-full, so the concealment is not the effect");
 }
 
 // The effect is attached once the page hydrates, which the load event does not wait for, and the
@@ -748,5 +947,4 @@ console.log(`check-csp-browser: ${version.Browser}, headless, ${where} served fr
 This is a browser, not a model: what it cannot see is the deployed response headers, because
 only the host applies them, and what it sees that the model cannot is the fonts themselves.`);
 
-cleanup();
-process.exit(0);
+await shutdown(0);

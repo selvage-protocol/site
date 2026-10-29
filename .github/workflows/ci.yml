@@ -145,6 +145,9 @@ jobs:
           sudo apt-get install -y -f "$RUNNER_TEMP/google-chrome.deb"
           google-chrome --version
 
+      - name: the browser check reaps its children and settles their streams before it exits (fake children, no browser)
+        run: scripts/ci-local.sh csp-exit
+
       - name: the CSP over the served page and its not-found route (the model, then a real browser)
         run: scripts/ci-local.sh csp
 

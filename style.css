@@ -1341,6 +1341,14 @@ section[id],
   line-height: 1.6;
 }
 
+.teardown-title {
+  margin-top: 32px;
+}
+
+.teardown-title + .spec-line {
+  margin-top: 10px;
+}
+
 /* Why a spec: what the layer is, against the layers that already have one. */
 .spec-grid {
   display: grid;

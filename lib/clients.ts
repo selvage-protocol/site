@@ -1,5 +1,5 @@
 import { Bot, Box, Code, Globe, Terminal, type LucideIcon } from "lucide-react";
-import { DEMO } from "@/lib/selvage";
+import { DEMO, DEMO_ORIGIN, DEMO_SERVER } from "@/lib/selvage";
 
 /* One entry per client, and every surface the page draws a client on derives from this list:
    the repository grid's row, the chips in *Clients share one protocol*, and the install route in
@@ -76,6 +76,8 @@ const NEOVIM_COMMAND = "SelvageHost ws://127.0.0.1:8080";
 const NEOVIM_PLUGIN_LINE = "{ 'selvage-protocol/nvim_client', build = 'npm ci' }";
 const JETBRAINS_ADDRESS = "plugins.jetbrains.com/plugin/34763-selvage";
 const JETBRAINS_LISTING = `https://${JETBRAINS_ADDRESS}`;
+const VSCODE_EXTENSION = "selvage-protocol.selvage";
+const VSCODE_LISTING = `https://marketplace.visualstudio.com/items?itemName=${VSCODE_EXTENSION}`;
 
 export const CLIENTS: Client[] = [
   {
@@ -87,12 +89,16 @@ export const CLIENTS: Client[] = [
     chip: "VS Code",
     install: {
       lines: [
-        command("$", "code --install-extension selvage-protocol.selvage"),
-        { text: "# then run  Selvage: Host a session — this opens the room", comment: true },
+        command("$", `code --install-extension ${VSCODE_EXTENSION}`),
+        { text: "# open a small disposable text folder in VS Code", comment: true },
+        { text: "# run  Selvage: Host a session", comment: true },
+        { text: `# server: ${DEMO_SERVER}`, comment: true },
+        { text: "# enter your name; the invite is copied to your clipboard", comment: true },
       ],
-      copy: "code --install-extension selvage-protocol.selvage",
+      copy: `code --install-extension ${VSCODE_EXTENSION}`,
       announce: "VS Code command",
       note: "Published on the VS Code Marketplace and on Open VSX.",
+      listing: { label: "Marketplace", href: VSCODE_LISTING },
     },
   },
   {
@@ -143,13 +149,16 @@ export const CLIENTS: Client[] = [
     chip: "Browser",
     install: {
       lines: [
-        { text: `# point an editor at wss://${DEMO}`, comment: true },
         command("›", DEMO),
-        { text: "# the invite a host sends opens in the page", comment: true },
+        { text: "# desktop Chrome or Edge: Your name → Share a folder…", comment: true },
+        { text: "# use a small disposable text folder; allow read/write access", comment: true },
+        { text: "# open a file, then Copy invite link", comment: true },
       ],
-      copy: DEMO,
+      copy: DEMO_ORIGIN,
       announce: "Browser address",
-      note: "Guests need nothing installed.",
+      note:
+        "Guests need nothing installed: Firefox and Safari can join from a complete invite " +
+        "link, but they cannot host a folder from the page. To host, use one of the editors.",
     },
   },
   {

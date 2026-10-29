@@ -26,10 +26,14 @@ import {
   InviteChip,
   TreeFigure,
 } from "@/components/room-visuals";
-import { DEMO, OPEN_AT, RUN_STEPS } from "@/lib/selvage";
+import {
+  DEMO_ORIGIN,
+  OPEN_AT,
+  REMOTE_DEPLOYMENT,
+  RUN_STEPS,
+  STOP_STEPS,
+} from "@/lib/selvage";
 import { CLIENTS, repositoryUrl } from "@/lib/clients";
-
-const DEMO_ORIGIN = `https://${DEMO}`;
 
 /** One word each. Three of the four are argued on the page — the sealed relay in the
     panel under the terminal, the specification in its own section, the granted paths
@@ -81,23 +85,23 @@ const roomCards: RoomCard[] = [
 const steps = [
   {
     n: "01",
-    title: "Host a folder",
-    body: "Start the server, open a folder in your editor and host a room.",
+    title: "Share a folder",
+    body: "Enter Your name, choose Share a folder… and allow read/write access. Open a text file.",
   },
   {
     n: "02",
     title: "Send the invite",
-    body: "Send the link however you like. Anyone who has it can join and see the folder you shared.",
+    body: "Choose Copy invite link and send the complete link, including everything after #, to someone you trust.",
   },
   {
     n: "03",
     title: "Type in the same file",
-    body: "Type in the same file and your edits arrive in everyone's copy.",
+    body: "Your guest opens the link, enters their name, chooses Join and opens the same file. Try typing in both windows.",
   },
   {
     n: "04",
-    title: "Close the window",
-    body: "Closing the host's window ends the room after a short countdown. A dropped connection can rejoin before it runs out.",
+    title: "End the room",
+    body: "Keep the host tab open; don't reload it. To finish, choose Leave and end the room, then Leave anyway.",
   },
 ];
 
@@ -237,8 +241,8 @@ export default function Home() {
                     </Badge>
                   </div>
                   <p className="try-body">
-                    Open the demo in your browser, or point your editor at it.
-                    Guests join from the invite link.
+                    Host a folder in desktop Chrome or Edge. Firefox and Safari can
+                    join from an invite link; use an editor to host instead.
                   </p>
                   <div className="try-actions">
                     <a className="demo-link" href={DEMO_ORIGIN}>
@@ -247,6 +251,10 @@ export default function Home() {
                       <ArrowUpRight className="icon-14 ml-auto" aria-hidden="true" />
                     </a>
                     <DemoEndpoint />
+                    <a className="try-link" href="#first-room">
+                      Follow the room setup steps
+                      <ArrowDown className="icon-14" aria-hidden="true" />
+                    </a>
                   </div>
                 </div>
 
@@ -265,7 +273,7 @@ export default function Home() {
                     guest joins in a browser. Rooms live in memory, so a restart ends them.
                   </p>
                   <a className="try-link" href="#run">
-                    Set up the server and your editor
+                    Try the local Docker setup
                     <ArrowDown className="icon-14" aria-hidden="true" />
                   </a>
                 </div>
@@ -290,18 +298,63 @@ export default function Home() {
             </div>
           </section>
 
+          <section id="how-it-works" className="shell first-room">
+            <div id="first-room" className="head-block">
+              <Eyebrow>Start a room</Eyebrow>
+              <h2 className="display">Edit together on the demo.</h2>
+              <p className="lede">
+                Open <a href={DEMO_ORIGIN}>the demo</a> in desktop Chrome or Edge.
+                Use a small, disposable text folder: anyone with the invite can edit
+                files on your disk.
+              </p>
+            </div>
+            <ol className="steps">
+              {steps.map((step) => (
+                <li key={step.n}>
+                  <p className="step-num">{step.n}</p>
+                  <p className="step-title">{step.title}</p>
+                  <p className="step-body">{step.body}</p>
+                </li>
+              ))}
+            </ol>
+          </section>
+
           <section id="run" className="shell run-section">
             <div className="head-block">
               <Eyebrow>Run it yourself</Eyebrow>
-              <h2 className="display">Two containers, three commands.</h2>
+              <h2 className="display">Test locally with Docker.</h2>
               <p className="lede">
-                Run the three in order, then open <a href={OPEN_AT}>{OPEN_AT}</a>.
-                Guests can join through the browser using the invite link, with
-                nothing to install.
+                Run these three commands in order, then open <a href={OPEN_AT}>{OPEN_AT}</a>
+                {" "}and follow the <a href="#first-room">same folder-sharing steps</a>.
+                This setup is local-only: it binds to 127.0.0.1, so its invite won&apos;t
+                reach another machine. Test a guest in another browser window on this machine.
+              </p>
+              <p className="spec-line">
+                To invite someone on another machine, use the demo or follow the{" "}
+                <a href={REMOTE_DEPLOYMENT}>remote deployment guide</a> for a reachable
+                server with TLS and deployment hardening.
               </p>
             </div>
             <div className="run-steps">
               {RUN_STEPS.map((step) => (
+                <div className="command-group" key={step.label}>
+                  <p className="command-label">{step.label}</p>
+                  <div className="command">
+                    <p className="command-line">
+                      <span className="command-prompt">$ </span>
+                      {step.command}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <h3 className="step-title teardown-title">When you&apos;re done</h3>
+            <p className="spec-line">
+              Stopping the containers ends their rooms. The startup commands use <code>--rm</code>,
+              so Docker removes the containers when they stop. Then remove their network.
+            </p>
+            <div className="run-steps">
+              {STOP_STEPS.map((step) => (
                 <div className="command-group" key={step.label}>
                   <p className="command-label">{step.label}</p>
                   <div className="command">
@@ -379,22 +432,6 @@ export default function Home() {
                 </li>
               ))}
             </ul>
-          </section>
-
-          <section id="how-it-works" className="shell">
-            <div className="head-block">
-              <Eyebrow>How it works</Eyebrow>
-              <h2 className="display">Share a link and edit the same file together.</h2>
-            </div>
-            <ol className="steps">
-              {steps.map((step) => (
-                <li key={step.n}>
-                  <p className="step-num">{step.n}</p>
-                  <p className="step-title">{step.title}</p>
-                  <p className="step-body">{step.body}</p>
-                </li>
-              ))}
-            </ol>
           </section>
 
           <section id="why-a-spec" className="shell shell-end">

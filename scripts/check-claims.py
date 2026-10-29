@@ -50,6 +50,7 @@ Run from anywhere; the repository root is resolved from this file's location. Ar
 (files or directories) to scan instead of the whole checkout.
 
     scripts/check-claims.py              # every *.html in the checkout
+    scripts/check-claims.py --fixtures   # deterministic fixtures only, no page or network
     scripts/check-claims.py .tmp/empty   # reaches no file: that is a failure, not a pass
 
 Exit 0 when the page is clean of every known wording and the positive claims hold up, 1 when it
@@ -67,6 +68,7 @@ import html
 import json
 import os
 import re
+import shlex
 import socket
 import ssl
 import sys
@@ -755,12 +757,10 @@ PUBLISHED_REGISTRIES = (
     ),
     ("Open VSX", re.compile(r"\bOpen\s*VSX\b", re.IGNORECASE)),
 )
-# The two listings, and the identity is inside both. They are not *required* links: the page's
-# own link check reaches every URL it carries, and the Marketplace's listing URL answers 404
-# until the release that publishes the extension has run, so requiring one here would redden the
-# gate for a release that has not been dispatched. What is checked is the other direction — a
-# page that links a listing has to link one of these two, so a listing that is not one of them
-# fails on the destination rather than on the label.
+# The two listings, and the identity is inside both. Both registries answer, so the VS Code route
+# is required to link the Marketplace listing, read in `onboarding_problems` from that route's own
+# panel. What is read here is the other direction — a page that links a listing has to link one of
+# these two, so a listing that is not one of them fails on the destination rather than on the label.
 EXTENSION_LISTINGS = (
     "https://marketplace.visualstudio.com/items?itemName=" + PUBLISHED_EXTENSION,
     "https://open-vsx.org/extension/" + PUBLISHED_EXTENSION.replace(".", "/"),
@@ -2203,6 +2203,7 @@ READING_CONTAINER_NETWORK = "the network each run attaches its container to"
 READING_ADDRESSED_CONTAINER = "the container the server's address names"
 READING_PAGE_IMAGE_RUN = "the page image on the run the address is given to"
 READING_SERVER_IMAGE_RUN = "the server image on the run beside it"
+READING_TEARDOWN_NAME = "the teardown operands against the startup names"
 
 
 def the_same_name(one: str, other: str) -> bool:
@@ -2244,6 +2245,7 @@ RUN_READINGS: dict[str, tuple[Callable[[str, str], bool], Callable[[str, str], b
     READING_ADDRESSED_CONTAINER: (the_same_name, the_same_name_as_a_search),
     READING_PAGE_IMAGE_RUN: (the_same_name, the_same_name_as_a_search),
     READING_SERVER_IMAGE_RUN: (the_same_name, the_same_name_as_a_search),
+    READING_TEARDOWN_NAME: (the_same_name, the_same_name_as_a_search),
 }
 
 # Which places the fixtures reached, which of them read a name the search would read differently,
@@ -2677,6 +2679,106 @@ def run_section_problems(blocks: list[list[str]]) -> list[str]:
                     "page container's own `-p` nothing to bind and the page never starts"
                 )
     return problems
+
+
+def docker_command_words(clause: str) -> list[str]:
+    """Read a Docker invocation at the start of one command_clauses clause, not arbitrary shell."""
+    try:
+        words = shlex.split(clause)
+    except ValueError:
+        return []
+    if not words or words[0] != "docker":
+        return []
+    index = 1
+    valued_options = {
+        "--config", "--context", "-c", "--host", "-H", "--log-level", "-l",
+        "--tlscacert", "--tlscert", "--tlskey",
+    }
+    daemon_options = (valued_options - {"--log-level", "-l"}) | {"--tls", "--tlsverify"}
+    while index < len(words) and words[index].startswith("-"):
+        option = words[index]
+        selects_daemon = option.split("=", 1)[0] in daemon_options
+        if not option.startswith("--"):
+            for flag in option[1:]:
+                if flag in {"c", "H"}:
+                    selects_daemon = True
+                    break
+                if flag in {"l", "="}:
+                    break
+        if selects_daemon:
+            raise ValueError(f"must not select a Docker daemon using {option}")
+        index += 1
+        if option in valued_options:
+            index += 1
+    return words[index:]
+
+
+def teardown_problems(blocks: list[list[str]]) -> list[str]:
+    """Require teardown after startup, using the names startup actually creates."""
+    clauses = [
+        re.sub(r"^\$\s*", "", clause.strip())
+        for block in blocks
+        for clause in command_clauses(" ".join(block))
+    ]
+    try:
+        invocations = [(index, docker_command_words(clause)) for index, clause in enumerate(clauses)]
+    except ValueError as error:
+        return [str(error)]
+    runs = [(index, clause) for index, clause in enumerate(clauses) if DOCKER_RUN.search(clause)]
+    page_names = [container_name_in(clause) for _, clause in runs if SERVER_ADDRESS.search(clause)]
+    server_names = [container_name_in(clause) for _, clause in runs if not SERVER_ADDRESS.search(clause)]
+    networks = [
+        network_named_in(clause, found)
+        for clause in clauses
+        if (found := NETWORK_CREATE.search(clause)) is not None
+    ]
+    if len(page_names) != 1 or len(server_names) != 1 or len(networks) != 1:
+        return ["cannot derive teardown names from one network and two startup runs"]
+    expected = [page_names[0], server_names[0], networks[0]]
+    if any(name is None or not names_something(name) for name in expected):
+        return ["cannot derive teardown names from unnamed startup resources"]
+    stops = [(index, words) for index, words in invocations if words[:1] == ["stop"]]
+    removals = [(index, words) for index, words in invocations if words[:2] == ["network", "rm"]]
+    problems: list[str] = []
+    if len(stops) != 1:
+        problems.append("must print one docker stop naming both startup containers")
+    if len(removals) != 1:
+        problems.append("must print one docker network rm naming the startup network")
+    if problems:
+        return problems
+    stop_at, stop = stops[0]
+    remove_at, remove = removals[0]
+    if len(stop) != 3:
+        return ["must print one docker stop naming both startup containers"]
+    if len(remove) != 3:
+        return ["must print one docker network rm naming the startup network"]
+    actual = [ParsedName(stop[1]), ParsedName(stop[2]), ParsedName(remove[2])]
+    for given, wanted in zip(actual, expected):
+        if wanted is not None and not reads_the_name(READING_TEARDOWN_NAME, given, wanted):
+            problems.append(f"teardown names {given!r} instead of startup resource {wanted!r}")
+    if not max(index for index, _ in runs) < stop_at < remove_at:
+        problems.append("must stop after startup and remove the network after stopping both containers")
+    return problems
+
+
+def check_run_section_teardown(pages: list[Scanned]) -> int:
+    reached = 0
+    failed = False
+    for page in pages:
+        blocks = command_blocks(page)
+        if not any(blocks):
+            continue
+        reached += 1
+        for problem in teardown_problems(blocks):
+            print(f"check-claims: teardown at {page.path} {problem}", file=sys.stderr)
+            failed = True
+    if failed:
+        return 1
+    if not reached:
+        print("check-claims: reached no command blocks for teardown", file=sys.stderr)
+        return 2
+    print("check-claims: teardown stops both startup containers, then removes their network")
+    return 0
 
 
 def run_section_region(page: Scanned) -> str:
@@ -4798,6 +4900,385 @@ def fixture_failure(what: str, problems: list[str], expected: str) -> str:
     return ""
 
 
+RUN_TEARDOWN_BLOCKS = (*RUN_FIXTURE_NAMED, "docker stop page server", "docker network rm room")
+TEARDOWN_FIXTURES = (
+    ("startup plus teardown across all command blocks", RUN_TEARDOWN_BLOCKS, ""),
+    ("quoted stop text is not an invocation",
+     RUN_TEARDOWN_BLOCKS + ("printf '%s\\n' 'docker stop unrelated'",), ""),
+    ("quoted selector text is not an invocation",
+     RUN_TEARDOWN_BLOCKS + ("printf '%s\\n' 'docker --context=other stop unrelated'",), ""),
+    ("extra unrelated stop with a global option",
+     RUN_TEARDOWN_BLOCKS + ("docker --log-level=error stop unrelated",),
+     "must print one docker stop"),
+    ("extra unrelated network removal with a global option",
+     RUN_TEARDOWN_BLOCKS + ("docker --log-level=error network rm unrelated",),
+     "must print one docker network rm"),
+    ("teardown permits non-selecting global options", run_fixture(
+        (3, "docker stop", 'docker --debug --log-level "error" stop'),
+        (4, "docker network rm", "docker -D -l=error network rm"),
+        blocks=RUN_TEARDOWN_BLOCKS), ""),
+    ("teardown permits equals and bundled log options", run_fixture(
+        (3, "docker stop", 'docker --log-level="error" stop'),
+        (4, "docker network rm", "docker -Dlerror network rm"),
+        blocks=RUN_TEARDOWN_BLOCKS), ""),
+    *(
+        (f"daemon selector {selector} on command {index}",
+         run_fixture((index, "docker ", f"docker {selector} "), blocks=RUN_TEARDOWN_BLOCKS),
+         "must not select a Docker daemon")
+        for selector in (
+            '--context "other"', '--context="other"', '-c "other"', '-cother',
+            '--host "tcp://other:2375"', '--host="tcp://other:2375"',
+            '-H "tcp://other:2375"', '-Htcp://other:2375',
+            '-Dcother', '-DH="tcp://other:2375"',
+            '--config "other"', '--config="other"', '--tls', '--tlsverify',
+            '--tlscacert="other"', '--tlscert "other"', '--tlskey="other"',
+        )
+        for index in range(len(RUN_TEARDOWN_BLOCKS))
+    ),
+    ("teardown follows renamed startup resources", run_fixture(
+        (0, "create room", "create session"),
+        (1, "--name server --network room", "--name host --network session"),
+        (2, "--name page --network room", "--name browser --network session"),
+        (2, "SELVAGE_SERVER=http://server:8080", "SELVAGE_SERVER=http://host:8080"),
+        (3, "page server", "browser host"),
+        (4, "rm room", "rm session"), blocks=RUN_TEARDOWN_BLOCKS), ""),
+    ("startup without teardown", RUN_FIXTURE_NAMED, "must print one docker stop"),
+    ("missing network removal", run_fixture(dropped=(4,), blocks=RUN_TEARDOWN_BLOCKS),
+     "must print one docker network rm"),
+    ("missing page operand", run_fixture((3, "page server", "server"), blocks=RUN_TEARDOWN_BLOCKS),
+     "must print one docker stop"),
+    ("missing server operand", run_fixture((3, "page server", "page"), blocks=RUN_TEARDOWN_BLOCKS),
+     "must print one docker stop"),
+    ("incorrect page name", run_fixture((3, "page server", "page-extra server"), blocks=RUN_TEARDOWN_BLOCKS),
+     "teardown names"),
+    ("incorrect server name", run_fixture((3, "page server", "page server-extra"), blocks=RUN_TEARDOWN_BLOCKS),
+     "teardown names"),
+    ("incorrect network name", run_fixture((4, "rm room", "rm room-extra"), blocks=RUN_TEARDOWN_BLOCKS),
+     "teardown names"),
+    ("missing network operand", run_fixture((4, "rm room", "rm"), blocks=RUN_TEARDOWN_BLOCKS),
+     "must print one docker network rm"),
+    ("network removed before stop", (*RUN_FIXTURE_NAMED, RUN_TEARDOWN_BLOCKS[4], RUN_TEARDOWN_BLOCKS[3]),
+     "must stop after startup"),
+    ("containers stopped before startup", (RUN_TEARDOWN_BLOCKS[3], *RUN_FIXTURE_NAMED, RUN_TEARDOWN_BLOCKS[4]),
+     "must stop after startup"),
+    ("extra container stopped", run_fixture((3, "page server", "page server unrelated"), blocks=RUN_TEARDOWN_BLOCKS),
+     "must print one docker stop"),
+    # A destructor the teardown does not own, in a block of its own: the valid teardown still
+    # satisfies the count and name checks over the clauses it matches, so the whole-clause reading
+    # that misses this one passes a page that tells a reader to remove something unrelated.
+    ("extra unrelated stop command", RUN_TEARDOWN_BLOCKS + ("docker stop unrelated",),
+     "must print one docker stop"),
+    ("extra unrelated network removal command", RUN_TEARDOWN_BLOCKS + ("docker network rm unrelated",),
+     "must print one docker network rm"),
+    ("extra network removal naming a second network",
+     RUN_TEARDOWN_BLOCKS + ("docker network rm unrelated other",),
+     "must print one docker network rm"),
+)
+
+
+def teardown_fixture_problems(shape: tuple[str, ...]) -> list[str]:
+    # Use the page-wide reader, including the prompt the rendered blocks carry.
+    raw = "".join(
+        '<div class="command"><p class="command-line"><span class="command-prompt">$ </span>'
+        + html.escape(line) + '</p></div>'
+        for line in shape
+    )
+    text, lines = normalise(raw)
+    page = Scanned("fixture.html", text, lines, destinations(raw), raw, [])
+    blocks = command_blocks(page)
+    return run_section_problems(blocks) + teardown_problems(blocks)
+
+
+def reddened_teardown_fixtures() -> list[str]:
+    return [
+        what for what, shape, expected in TEARDOWN_FIXTURES
+        if shape is None or fixture_failure(what, teardown_fixture_problems(shape), expected)
+    ]
+
+
+REMOTE_DEPLOYMENT = (
+    "https://github.com/selvage-protocol/reference_server/blob/main/docs/deploying.md"
+    "#letting-someone-else-in"
+)
+# Required facts and UI labels, scoped to the recipe or disclosure that owes them. The editor
+# choice is not here: it is stated once, in the Browser route below, and read from that route's
+# own panel rather than from the recipe.
+ONBOARDING_REQUIREMENTS = {
+    "first-room": (
+        "desktop Chrome or Edge", "disposable text folder",
+        "edit files on your disk", "someone you trust", "allow read/write access",
+        "Your name", "Share a folder…", "Open a text file",
+        "Copy invite link", "including everything after #",
+        "enters their name, chooses Join", "opens the same file",
+        "Keep the host tab open", "Leave and end the room", "Leave anyway",
+    ),
+    "run-section": (
+        "local-only", "binds to 127.0.0.1", "invite won't reach another machine",
+        "another browser window on this machine", "TLS and deployment hardening",
+        "Stopping the containers ends their rooms", "--rm",
+        "Docker removes the containers when they stop",
+    ),
+}
+# The recipe's reload warning, read as a negation rather than as the word "reload": the shorter
+# copy says the host tab must not be reloaded, and a sentence that merely contains "reload" — an
+# instruction to reload it, say — must not satisfy the warning. Handled apart from the literals
+# above so a mutant that drops the negation is rejected and a positive instruction is not enough.
+FIRST_ROOM_RELOAD_NEGATION = re.compile(r"do(?:n['’]?t| not)\s+reload", re.IGNORECASE)
+# The editor choice, stated once and read from the Browser install route's own panel: the route a
+# reader whose browser cannot host is sent to, rather than a repeated VS Code recipe in the
+# recipe. It is a choice rather than a fallback to one editor.
+BROWSER_ROUTE = "web"
+EDITOR_CHOICE_FACTS = (
+    "Firefox and Safari can join",
+    "cannot host a folder from the page",
+    "use one of the editors",
+)
+# The VS Code route's own panel: the address an editor hosts on, and the Marketplace listing the
+# extension is installed from. The extension is published, so the link is a fact with an artefact
+# behind it rather than a release that has not been dispatched.
+VSCODE_ROUTE = "vscode"
+MARKETPLACE_LISTING = EXTENSION_LISTINGS[0]
+ONBOARDING_FIXTURE = f'''
+<section class="first-room">
+  <p>Open <a href="{DEMO_ORIGIN}">the demo</a> in desktop Chrome or Edge.
+  Use a small, disposable text folder: anyone with the invite can edit files on your disk.</p>
+  <p>Enter Your name, choose Share a folder… and allow read/write access. Open a text file.</p>
+  <p>Choose Copy invite link and send the complete link, including everything after #,
+  to someone you trust.</p>
+  <p>Your guest opens the link, enters their name, chooses Join and opens the same file.</p>
+  <p>Keep the host tab open; don't reload it. To finish, choose Leave and end the room,
+  then Leave anyway.</p>
+</section>
+<div id="install-panel-{BROWSER_ROUTE}">
+  Guests need nothing installed: Firefox and Safari can join from a complete invite link,
+  but they cannot host a folder from the page. To host, use one of the editors.
+</div>
+<div id="install-panel-{VSCODE_ROUTE}">
+  <a href="{MARKETPLACE_LISTING}">Marketplace</a>
+  code --install-extension {PUBLISHED_EXTENSION}
+  open a small disposable text folder in VS Code and run Selvage: Host a session.
+  Enter wss://{DEMO_HOST} as the server, then your name.
+</div>
+<section class="run-section">
+  This setup is local-only: it binds to 127.0.0.1, so its invite won't reach another machine.
+  Test a guest in another browser window on this machine.
+  <a href="{REMOTE_DEPLOYMENT}">Remote deployment guide</a> for TLS and deployment hardening.
+  Stopping the containers ends their rooms. With --rm, Docker removes the containers when they stop.
+</section>
+'''
+
+
+# Instructions that are the editor's host recipe rather than the browser's, and so may not appear
+# in the recipe: repeating them there is the wall the Browser route's one eligibility line
+# replaces, and it would say with a name the choice the clients section leaves open.
+EDITOR_RECIPE_IN_RECIPE = "Selvage: Host a session"
+
+
+def onboarding_problems(raw: str) -> list[str]:
+    problems: list[str] = []
+    regions: dict[str, str] = {}
+    for region, facts in ONBOARDING_REQUIREMENTS.items():
+        markups = classed_elements(raw, region)
+        if len(markups) != 1:
+            problems.append(f"must carry one {region} region")
+            continue
+        markup = markups[0]
+        regions[region] = markup
+        text = normalise(markup)[0].casefold()
+        for fact in facts:
+            if fact.casefold() not in text:
+                problems.append(f"{region} must state {fact!r}")
+    for region, target in (("first-room", DEMO_ORIGIN), ("run-section", REMOTE_DEPLOYMENT)):
+        if target not in [url.rstrip("/") for url, _ in destinations(regions.get(region, ""))]:
+            problems.append(f"{region} must link to {target}")
+    first_room = normalise(regions.get("first-room", ""))[0]
+    if not FIRST_ROOM_RELOAD_NEGATION.search(first_room):
+        problems.append("first-room must warn against reloading the host tab")
+    if EDITOR_RECIPE_IN_RECIPE in first_room:
+        problems.append("first-room must keep the editor's host recipe in the routes below")
+
+    browser = install_panel_text(raw, BROWSER_ROUTE)
+    if browser is None:
+        problems.append("must carry one Browser route")
+    else:
+        text = browser.casefold()
+        for fact in EDITOR_CHOICE_FACTS:
+            if fact.casefold() not in text:
+                problems.append(f"Browser route must state {fact!r}")
+
+    vscode = install_panel_text(raw, VSCODE_ROUTE)
+    vscode_markup = install_panel_markup(raw, VSCODE_ROUTE)
+    if vscode is None or vscode_markup is None:
+        problems.append("must carry one VS Code route")
+    else:
+        addresses = re.findall(r"wss://[^\s<>]+", vscode)
+        if addresses != [f"wss://{DEMO_HOST}"]:
+            problems.append("VS Code route must give the demo server origin without a path")
+        if MARKETPLACE_LISTING not in [
+            url.rstrip("/") for url, _ in destinations(vscode_markup)
+        ]:
+            problems.append("VS Code route must link the Marketplace listing")
+    return problems
+
+
+def onboarding_fixture_problems() -> list[str]:
+    problems = onboarding_problems(ONBOARDING_FIXTURE)
+    # Independent cases keep deleting a safety requirement from deleting its test too.
+    for region, fact in (
+        ("first-room", "desktop Chrome or Edge"),
+        ("first-room", "disposable text folder"),
+        ("first-room", "edit files on your disk"),
+        ("first-room", "someone you trust"),
+        ("first-room", "allow read/write access"),
+        ("first-room", "Open a text file"),
+        ("first-room", "Copy invite link"),
+        ("first-room", "including everything after #"),
+        ("first-room", "enters their name, chooses Join"),
+        ("first-room", "opens the same file"),
+        ("first-room", "Keep the host tab open"),
+        ("first-room", "Leave and end the room"),
+        ("first-room", "Leave anyway"),
+        ("run-section", "local-only"),
+        ("run-section", "binds to 127.0.0.1"),
+        ("run-section", "invite won't reach another machine"),
+        ("run-section", "TLS and deployment hardening"),
+        ("run-section", "Stopping the containers ends their rooms"),
+        ("run-section", "Docker removes the containers when they stop"),
+    ):
+        changed = ONBOARDING_FIXTURE.replace(fact, "omitted")
+        expected = f"{region} must state {fact!r}"
+        if expected not in onboarding_problems(changed):
+            problems.append(f"onboarding fixture does not reject missing {fact!r}")
+    # The reload warning is a negation, so a recipe that keeps the word "reload" as an instruction
+    # is not the warning: the mutant drops only the negation and must be rejected.
+    reloaded = ONBOARDING_FIXTURE.replace("don't reload it", "reload it")
+    if "first-room must warn against reloading the host tab" not in onboarding_problems(reloaded):
+        problems.append("onboarding fixture accepts a recipe that tells the host to reload")
+    for fact in EDITOR_CHOICE_FACTS:
+        changed = ONBOARDING_FIXTURE.replace(fact, "omitted")
+        expected = f"Browser route must state {fact!r}"
+        if expected not in onboarding_problems(changed):
+            problems.append(f"onboarding fixture does not reject missing {fact!r}")
+    for region, facts in ONBOARDING_REQUIREMENTS.items():
+        for fact in facts:
+            if fact not in ONBOARDING_FIXTURE:
+                problems.append(f"onboarding fixture does not carry {fact!r}")
+                continue
+            changed = ONBOARDING_FIXTURE.replace(fact, "omitted")
+            expected = f"{region} must state {fact!r}"
+            if expected not in onboarding_problems(changed):
+                problems.append(f"onboarding fixture does not reject missing {fact!r}")
+    for target in (DEMO_ORIGIN, REMOTE_DEPLOYMENT):
+        changed = ONBOARDING_FIXTURE.replace(f'href="{target}"', 'href="https://example.invalid/"')
+        if not any("must link to" in problem for problem in onboarding_problems(changed)):
+            problems.append(f"onboarding fixture does not reject incorrect link {target}")
+    for address in (f"wss://{DEMO_HOST}/session", "ws://127.0.0.1:8080", "wss://example.invalid"):
+        changed = ONBOARDING_FIXTURE.replace(f"wss://{DEMO_HOST}", address)
+        if "VS Code route must give the demo server origin without a path" not in onboarding_problems(changed):
+            problems.append(f"onboarding fixture accepts incorrect editor address {address!r}")
+    wrong_listing = MARKETPLACE_LISTING.replace(PUBLISHED_EXTENSION, PUBLISHED_EXTENSION + "-client")
+    changed = ONBOARDING_FIXTURE.replace(MARKETPLACE_LISTING, wrong_listing)
+    if "VS Code route must link the Marketplace listing" not in onboarding_problems(changed):
+        problems.append("onboarding fixture accepts a Marketplace link for another extension")
+    repeated = ONBOARDING_FIXTURE.replace(
+        "</section>\n<div id=\"install-panel-",
+        f"  <p>{EDITOR_RECIPE_IN_RECIPE}.</p>\n</section>\n<div id=\"install-panel-",
+        1,
+    )
+    if "first-room must keep the editor's host recipe in the routes below" not in onboarding_problems(repeated):
+        problems.append("onboarding fixture accepts the editor's host recipe inside the recipe")
+    moved = ONBOARDING_FIXTURE.replace('class="first-room"', 'class="unrelated"')
+    if "must carry one first-room region" not in onboarding_problems(moved):
+        problems.append("onboarding fixture accepts recipe text outside its region")
+    return problems
+
+
+# The recipe is the home page's, and the scan reads every served HTML file, the not-found route
+# among them. The onboarding facts are required of the pages that carry this region, so the 404 is
+# not read as a page that lost the recipe, and a scan where no page carries it fails closed rather
+# than passing: a home page whose recipe was removed is the defect this reads.
+RECIPE_REGION = "first-room"
+
+
+def recipe_pages(pages: list[Scanned]) -> list[Scanned]:
+    """The scanned pages that carry the onboarding recipe region."""
+    return [page for page in pages if classed_elements(page.raw, RECIPE_REGION)]
+
+
+def onboarding_scan(pages: list[Scanned]) -> tuple[int, list[str]]:
+    """The onboarding check's outcome for a scan: its status and the problems it prints.
+
+    0 when every page carrying the recipe holds every fact, 1 when one does not or when no page
+    carries the recipe at all, and 2 when there was nothing to read. The 404 beside the recipe is
+    not read, so a scan of the served pages passes on the home page's recipe alone; a scan where
+    the recipe was removed fails rather than reporting a clean page.
+    """
+    if not pages:
+        return 2, []
+    selected = recipe_pages(pages)
+    if not selected:
+        return 1, [
+            "no scanned page carries the first-room recipe, so the recipe is gone rather than "
+            "unread"
+        ]
+    problems = [
+        f"at {page.path} {problem}"
+        for page in selected
+        for problem in onboarding_problems(page.raw)
+    ]
+    return (1 if problems else 0), problems
+
+
+def check_onboarding(pages: list[Scanned]) -> int:
+    status, problems = onboarding_scan(pages)
+    for problem in problems:
+        print(f"check-claims: onboarding {problem}", file=sys.stderr)
+    if status == 0:
+        print(
+            "check-claims: first-room recipe, the Browser route's editor choice, the VS Code route's "
+            "Marketplace listing and demo address, the local-only limit and the deployment link are "
+            "present"
+        )
+    return status
+
+
+def onboarding_scope_problems() -> list[str]:
+    """The scope contract: the recipe is read from the page that carries it, and its absence fails.
+
+    A scan reads every served page, the not-found route included. A home page with the recipe and a
+    404 beside it passes; a scan of the 404 alone fails rather than passing, because no recipe page
+    was read; and a home page whose recipe region was removed fails the same way rather than being
+    read as a page with nothing to say.
+    """
+    problems: list[str] = []
+
+    def page(path: str, raw: str) -> Scanned:
+        text, line_of = normalise(raw)
+        return Scanned(path, text, line_of, destinations(raw), raw, [])
+
+    home = page("/index.html", ONBOARDING_FIXTURE)
+    notfound = page("/404.html", "<p>The page you are looking for is not here.</p>")
+    empty_status, empty_problems = onboarding_scan([])
+    if (empty_status, empty_problems) != (2, []):
+        problems.append(
+            "onboarding scope: an empty scan must report the nothing-to-read status 2 with no "
+            "problems"
+        )
+    status, _ = onboarding_scan([home, notfound])
+    if status != 0:
+        problems.append("onboarding scope: a recipe page with a 404 beside it must pass")
+    status, _ = onboarding_scan([notfound])
+    if status != 1:
+        problems.append("onboarding scope: a scan with no recipe page must fail")
+    stripped = page(
+        "/index.html", ONBOARDING_FIXTURE.replace('class="first-room"', 'class="other"')
+    )
+    status, _ = onboarding_scan([stripped, notfound])
+    if status != 1:
+        problems.append("onboarding scope: a home without the recipe must fail")
+    return problems
+
+
 def reddened_run_fixtures() -> list[str]:
     """The Run section fixtures the rules as they now stand report, by name."""
     reddened: list[str] = []
@@ -4846,7 +5327,7 @@ def run_section_reading_problems() -> list[str]:
     for site in RUN_READINGS:
         swapped_readings.add(site)
         try:
-            reddened = reddened_run_fixtures()
+            reddened = reddened_run_fixtures() + reddened_teardown_fixtures()
         finally:
             swapped_readings.discard(site)
         if reddened:
@@ -4894,7 +5375,7 @@ MINTED_FIELD = "ParsedName"
 # The entries the scan walks out from, and the values it walks out from beside them. What these
 # reach is what the scan reads, so a function the rules call is a function the scan covers — and so
 # is one the rules reach through a table or a variable rather than by calling it.
-RULE_ENTRY_POINTS = ("run_section_problems", "run_section_opened_at_problems")
+RULE_ENTRY_POINTS = ("run_section_problems", "run_section_opened_at_problems", "teardown_problems")
 
 
 def called_names(node: ast.AST) -> set[str]:
@@ -5292,6 +5773,16 @@ def scan(targets: list[str]) -> int:
             print(f"check-claims: {failure}", file=sys.stderr)
             return 2
 
+    for what in reddened_teardown_fixtures():
+        print(f"check-claims: teardown fixture {what!r} failed", file=sys.stderr)
+        return 2
+    for problem in onboarding_fixture_problems():
+        print(f"check-claims: {problem}", file=sys.stderr)
+        return 2
+    for problem in onboarding_scope_problems():
+        print(f"check-claims: {problem}", file=sys.stderr)
+        return 2
+
     for what, opened_at, shape, expected in RUN_OPENED_AT_FIXTURES:
         if shape is None:
             print(
@@ -5333,6 +5824,10 @@ def scan(targets: list[str]) -> int:
         for problem in reading_problems:
             print(f"check-claims: {problem}", file=sys.stderr)
         return 2
+
+    if targets == ["--fixtures"]:
+        print("check-claims: wording, recipe, teardown, onboarding, address, listing and reading fixtures passed")
+        return 0
 
     root = root_of_this_checkout()
     os.chdir(root)
@@ -5385,6 +5880,8 @@ def scan(targets: list[str]) -> int:
         check_repository_grid,
         check_published_image,
         check_run_section_command,
+        check_run_section_teardown,
+        check_onboarding,
         check_run_section_address,
         check_command_prompt_selection,
         check_demo_instance,
