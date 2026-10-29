@@ -50,6 +50,7 @@ Run from anywhere; the repository root is resolved from this file's location. Ar
 (files or directories) to scan instead of the whole checkout.
 
     scripts/check-claims.py              # every *.html in the checkout
+    scripts/check-claims.py --fixtures   # deterministic fixtures only, no page or network
     scripts/check-claims.py .tmp/empty   # reaches no file: that is a failure, not a pass
 
 Exit 0 when the page is clean of every known wording and the positive claims hold up, 1 when it
@@ -2693,8 +2694,19 @@ def docker_command_words(clause: str) -> list[str]:
         "--config", "--context", "-c", "--host", "-H", "--log-level", "-l",
         "--tlscacert", "--tlscert", "--tlskey",
     }
+    daemon_options = (valued_options - {"--log-level", "-l"}) | {"--tls", "--tlsverify"}
     while index < len(words) and words[index].startswith("-"):
         option = words[index]
+        selects_daemon = option.split("=", 1)[0] in daemon_options
+        if not option.startswith("--"):
+            for flag in option[1:]:
+                if flag in {"c", "H"}:
+                    selects_daemon = True
+                    break
+                if flag in {"l", "="}:
+                    break
+        if selects_daemon:
+            raise ValueError(f"must not select a Docker daemon using {option}")
         index += 1
         if option in valued_options:
             index += 1
@@ -2708,6 +2720,10 @@ def teardown_problems(blocks: list[list[str]]) -> list[str]:
         for block in blocks
         for clause in command_clauses(" ".join(block))
     ]
+    try:
+        invocations = [(index, docker_command_words(clause)) for index, clause in enumerate(clauses)]
+    except ValueError as error:
+        return [str(error)]
     runs = [(index, clause) for index, clause in enumerate(clauses) if DOCKER_RUN.search(clause)]
     page_names = [container_name_in(clause) for _, clause in runs if SERVER_ADDRESS.search(clause)]
     server_names = [container_name_in(clause) for _, clause in runs if not SERVER_ADDRESS.search(clause)]
@@ -2721,7 +2737,6 @@ def teardown_problems(blocks: list[list[str]]) -> list[str]:
     expected = [page_names[0], server_names[0], networks[0]]
     if any(name is None or not names_something(name) for name in expected):
         return ["cannot derive teardown names from unnamed startup resources"]
-    invocations = [(index, docker_command_words(clause)) for index, clause in enumerate(clauses)]
     stops = [(index, words) for index, words in invocations if words[:1] == ["stop"]]
     removals = [(index, words) for index, words in invocations if words[:2] == ["network", "rm"]]
     problems: list[str] = []
@@ -4890,12 +4905,36 @@ TEARDOWN_FIXTURES = (
     ("startup plus teardown across all command blocks", RUN_TEARDOWN_BLOCKS, ""),
     ("quoted stop text is not an invocation",
      RUN_TEARDOWN_BLOCKS + ("printf '%s\\n' 'docker stop unrelated'",), ""),
+    ("quoted selector text is not an invocation",
+     RUN_TEARDOWN_BLOCKS + ("printf '%s\\n' 'docker --context=other stop unrelated'",), ""),
     ("extra unrelated stop with a global option",
      RUN_TEARDOWN_BLOCKS + ("docker --log-level=error stop unrelated",),
      "must print one docker stop"),
     ("extra unrelated network removal with a global option",
      RUN_TEARDOWN_BLOCKS + ("docker --log-level=error network rm unrelated",),
      "must print one docker network rm"),
+    ("teardown permits non-selecting global options", run_fixture(
+        (3, "docker stop", 'docker --debug --log-level "error" stop'),
+        (4, "docker network rm", "docker -D -l=error network rm"),
+        blocks=RUN_TEARDOWN_BLOCKS), ""),
+    ("teardown permits equals and bundled log options", run_fixture(
+        (3, "docker stop", 'docker --log-level="error" stop'),
+        (4, "docker network rm", "docker -Dlerror network rm"),
+        blocks=RUN_TEARDOWN_BLOCKS), ""),
+    *(
+        (f"daemon selector {selector} on command {index}",
+         run_fixture((index, "docker ", f"docker {selector} "), blocks=RUN_TEARDOWN_BLOCKS),
+         "must not select a Docker daemon")
+        for selector in (
+            '--context "other"', '--context="other"', '-c "other"', '-cother',
+            '--host "tcp://other:2375"', '--host="tcp://other:2375"',
+            '-H "tcp://other:2375"', '-Htcp://other:2375',
+            '-Dcother', '-DH="tcp://other:2375"',
+            '--config "other"', '--config="other"', '--tls', '--tlsverify',
+            '--tlscacert="other"', '--tlscert "other"', '--tlskey="other"',
+        )
+        for index in range(len(RUN_TEARDOWN_BLOCKS))
+    ),
     ("teardown follows renamed startup resources", run_fixture(
         (0, "create room", "create session"),
         (1, "--name server --network room", "--name host --network session"),
@@ -5785,6 +5824,10 @@ def scan(targets: list[str]) -> int:
         for problem in reading_problems:
             print(f"check-claims: {problem}", file=sys.stderr)
         return 2
+
+    if targets == ["--fixtures"]:
+        print("check-claims: wording, recipe, teardown, onboarding, address, listing and reading fixtures passed")
+        return 0
 
     root = root_of_this_checkout()
     os.chdir(root)

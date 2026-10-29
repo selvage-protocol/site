@@ -69,7 +69,7 @@
 // attempt cannot make them its own.
 
 import { spawn, spawnSync } from "node:child_process";
-import { readFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, renameSync, writeFileSync } from "node:fs";
+import { readFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { createServer, request as httpRequest } from "node:http";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -165,6 +165,13 @@ async function shutdown(code) {
     }
     cleanup();
     await Promise.all(children.map((child) => settle(child)));
+    try {
+      removeProfile();
+    } catch (error) {
+      console.error(`check-csp-browser: cannot clean up the browser profile: ${error.message}`);
+      finalCode = 74;
+      completion = false;
+    }
     if (recording) {
       try {
         if (!writeChildEvidence(code, completion)) {
@@ -223,6 +230,8 @@ function writeChildEvidence(code, completion) {
 }
 
 const children = [];
+let profile = null;
+let browser = null;
 
 // A child's own words are the only account of why it did not do what it was started for, so the
 // end of each stream is kept rather than drained. Bounded: a browser session is chatty, and what a
@@ -363,6 +372,20 @@ function stopChildren() {
     }
   }
 }
+function removeProfile() {
+  if (profile === null) return;
+  if (browser !== null && browser.exit === null && !(browser.failure && browser.pid === undefined)) {
+    throw new Error(`browser termination is unconfirmed; retaining ${profile}`);
+  }
+  rmSync(profile, { recursive: true, force: true });
+  profile = null;
+}
+process.on("uncaughtException", (error) => {
+  void giveUp(error.stack ?? String(error));
+});
+process.on("unhandledRejection", (error) => {
+  void giveUp(error?.stack ?? String(error));
+});
 process.on("SIGINT", async () => {
   await shutdown(130);
 });
@@ -456,9 +479,10 @@ process.on("exit", cleanup);
 
 // ---- Chromium over CDP ------------------------------------------------------------------
 
+if (shutdownPromise) await shutdownPromise;
 const profileParent = process.env.TMPDIR || join(root, ".tmp");
 mkdirSync(profileParent, { recursive: true });
-const profile = mkdtempSync(join(profileParent, "chrome-csp-check-"));
+profile = mkdtempSync(join(profileParent, "chrome-csp-check-"));
 const debugPort = Number(process.env.CSP_DEBUG_PORT || 9333);
 // The wait is a bound, not a guess: what the browser was doing when it expired is what gets
 // reported. Chrome opens this port in about a second on an idle machine, and a runner is not one.
@@ -468,7 +492,7 @@ const debugDeadlineSeconds = Number(process.env.CSP_DEBUG_DEADLINE || 30);
 // they stand: the Chromium snapshot the image installs (`Chromium 154.0.8037.0`, snapshot revision
 // 1689397) and Google's own 154 build (Chrome for Testing 154.0.8037.92) each open the debugging
 // port under this exact invocation.
-const browser = spawnChild(
+browser = spawnChild(
   chromium,
   [
     "--headless=new",

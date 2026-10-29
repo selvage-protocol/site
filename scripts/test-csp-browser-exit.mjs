@@ -39,6 +39,8 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repo = dirname(here);
+const scratch = process.env.SITE_CHECK_TMPDIR || process.env.TMPDIR || join(repo, ".tmp");
+mkdirSync(scratch, { recursive: true });
 const selfPath = fileURLToPath(import.meta.url);
 const checkerSource = join(here, "check-csp-browser.mjs");
 const mode = process.argv[2];
@@ -273,7 +275,7 @@ const checkers = new Set();
 // A root the check reads as its own: the real checker under `scripts/`, a build marker, a policy
 // file and the two fake children where the check looks for them.
 function makeFixture({ next = () => fakeNext(), chromium = () => fakeChromium() } = {}) {
-  const fixture = mkdtempSync(join(repo, ".tmp", "csp-browser-exit-"));
+  const fixture = mkdtempSync(join(scratch, "csp-browser-exit-"));
   fixtures.add(fixture);
   mkdirSync(join(fixture, "scripts"));
   copyFileSync(checkerSource, join(fixture, "scripts", "check-csp-browser.mjs"));
@@ -293,7 +295,15 @@ function makeFixture({ next = () => fakeNext(), chromium = () => fakeChromium() 
   mkdirSync(join(fixture, "node_modules", ".bin"), { recursive: true });
   writeProgram(join(fixture, "node_modules", ".bin", "next"), next(fixture));
   mkdirSync(join(fixture, "bin"));
-  writeProgram(join(fixture, "bin", "chromium"), chromium(fixture));
+  writeProgram(join(fixture, "bin", "chromium"), `
+import { lstatSync as profileStat, writeFileSync as profileWrite } from "node:fs";
+if (!process.argv.includes("--version")) {
+  const path = process.argv.find((arg) => arg.startsWith("--user-data-dir="))?.slice("--user-data-dir=".length);
+  profileWrite(${JSON.stringify(join(fixture, "profile-facts.json"))}, JSON.stringify({
+    path, mode: profileStat(path).mode & 0o777, pid: process.pid,
+  }));
+}
+${chromium(fixture)}`);
   for (const role of ["home", "temp", "config", "cache", "data", "state", "runtime"]) {
     mkdirSync(join(fixture, "private", role), { recursive: true, mode: 0o700 });
   }
@@ -428,6 +438,15 @@ function assertReceipt(evidence, code, what) {
   return dirs;
 }
 
+async function assertProfileRemoved(fixture) {
+  const facts = readJson(join(fixture, "profile-facts.json"));
+  assert(dirname(facts.path) === join(fixture, "private", "temp"), "the fresh profile is not under the chosen TMPDIR");
+  assert(facts.mode === 0o700, "the fresh profile was not private at launch");
+  assert(await gone(facts.pid), "the browser is still running after the check exited");
+  assert(!existsSync(facts.path), "the check retained its own terminated browser's profile");
+  return facts.path;
+}
+
 // Case 1: both children are running when the check gives up on the debugging port. This is the
 // status that must survive, and the two statuses and two whole streams that must be there with it.
 async function debuggingPortFailure() {
@@ -441,6 +460,9 @@ async function debuggingPortFailure() {
   const oldMarker = join(oldProfile, "preserve");
   writeFileSync(oldMarker, "prior profile\n");
   const env = checkerEnv(fixture, { port, upstream, debug, evidence });
+  const sibling = join(env.TMPDIR, "chrome-csp-check-prior");
+  mkdirSync(sibling, { mode: 0o700 });
+  writeFileSync(join(sibling, "preserve"), "unrelated profile\n");
   const result = await runChecker(fixture, env);
 
   assert(result.code === 2, `the check exited ${result.code} (${result.signal ?? "no signal"}), not 2`);
@@ -463,13 +485,17 @@ async function debuggingPortFailure() {
     .args.find((arg) => arg.startsWith("--user-data-dir="));
   const profile = profileArgument(evidence)?.slice("--user-data-dir=".length);
   assert(profile && dirname(profile) === env.TMPDIR, "the fresh profile is not under the chosen TMPDIR");
-  assert((lstatSync(profile).mode & 0o777) === 0o700, "the fresh profile is not private");
+  assert(await assertProfileRemoved(fixture) === profile, "the recorded profile is not the launched profile");
+  assert((lstatSync(oldProfile).mode & 0o777) === 0o700, "the check changed the prior profile mode");
   const secondEvidence = join(fixture, "evidence-debug-second");
   const second = await runChecker(fixture, { ...env, CSP_EVIDENCE_DIR: secondEvidence });
   assert(second.code === 2, `the second check exited ${second.code}, not 2`);
   assertReceipt(secondEvidence, 2, "second debugging-port failure");
   assert(profileArgument(secondEvidence) !== profileArgument(evidence), "the check reused a profile");
-  assert(existsSync(profile), "the second check removed the first profile");
+  await assertProfileRemoved(fixture);
+  assert(readFileSync(oldMarker, "utf8") === "prior profile\n", "the second check changed the prior profile");
+  assert(readFileSync(join(sibling, "preserve"), "utf8") === "unrelated profile\n", "the check changed an unrelated profile in TMPDIR");
+  assert((lstatSync(sibling).mode & 0o777) === 0o700, "the check changed an unrelated profile mode");
 
   const expected = { upstream: "N".repeat(STREAM_BYTES), chromium: "C".repeat(STREAM_BYTES) };
   for (const dir of dirs) {
@@ -901,7 +927,7 @@ async function selfTestStall(outFile) {
 // starts inherit that group, so the parent owns the whole tree from the pid it launched and reaps
 // it whichever way the child ends. Nothing here overrides `process.exit`.
 async function runCleanupSelfTest(flag, expect) {
-  const outFile = join(mkdtempSync(join(repo, ".tmp", "csp-exit-selftest-")), "owned.json");
+  const outFile = join(mkdtempSync(join(scratch, "csp-exit-selftest-")), "owned.json");
   const child = spawn(process.execPath, [selfPath, flag, outFile], {
     stdio: ["ignore", "pipe", "pipe"],
     detached: true,
@@ -956,7 +982,7 @@ async function runCleanupSelfTest(flag, expect) {
 // may still be alive or hold a port. The partial record it did write only names what to check, so
 // the cleanup never depends on reading it.
 async function runSupervisorTimeoutSelfTest() {
-  const outFile = join(mkdtempSync(join(repo, ".tmp", "csp-exit-stall-")), "owned.json");
+  const outFile = join(mkdtempSync(join(scratch, "csp-exit-stall-")), "owned.json");
   const partial = `${outFile}.partial`;
   const milliseconds = 6_000;
   const child = spawn(process.execPath, [selfPath, "--self-test-stall", outFile], {
@@ -1006,6 +1032,58 @@ async function runSupervisorTimeoutSelfTest() {
   checkers.delete(child);
 }
 
+async function profileCleanupWithoutEvidence() {
+  const fixture = makeFixture();
+  const env = checkerEnv(fixture, {
+    port: await freePort(), upstream: await freePort(), debug: await freePort(),
+  });
+  const result = await runChecker(fixture, env);
+  assert(result.code === 2, `the check without evidence exited ${result.code}, not 2`);
+  await assertProfileRemoved(fixture);
+  return fixture;
+}
+
+async function profileCleanupAfterLaunchFailure() {
+  const fixture = makeFixture();
+  const evidence = join(fixture, "evidence-launch-failure");
+  const env = checkerEnv(fixture, {
+    port: await freePort(), upstream: await freePort(), debug: await freePort(), evidence,
+  });
+  env.CHROMIUM = join(fixture, "bin"); // A directory exists but cannot be executed.
+  const result = await runChecker(fixture, env);
+  assert(result.code === 2, `the check after a browser launch failure exited ${result.code}, not 2`);
+  assertReceipt(evidence, 2, "browser launch failure");
+  const launch = readJson(join(evidence, "1-chromium", "launch.json"));
+  const profile = launch.args.find((arg) => arg.startsWith("--user-data-dir="))?.slice("--user-data-dir=".length);
+  const status = readJson(join(evidence, "1-chromium", "status.json"));
+  assert(status.error !== null && status.exit === null, "the browser did not fail before launch");
+  assert(profile && !existsSync(profile), "the check retained its unlaunched browser's profile");
+  return fixture;
+}
+
+async function profileCleanupAfterUnexpectedFailure() {
+  const fixture = makeFixture({ chromium: () => `
+import { createServer } from "node:http";
+if (process.argv.includes("--version")) process.exit(0);
+const port = Number(process.argv.find((arg) => arg.startsWith("--remote-debugging-port=")).split("=")[1]);
+createServer((request, response) => {
+  response.writeHead(200, { "content-type": "application/json" });
+  response.end(JSON.stringify({ webSocketDebuggerUrl: "invalid-url" }));
+}).listen(port, "127.0.0.1");
+setTimeout(() => process.exit(0), ${LINGER_MS});
+` });
+  const evidence = join(fixture, "evidence-unexpected-failure");
+  const env = checkerEnv(fixture, {
+    port: await freePort(), upstream: await freePort(), debug: await freePort(), evidence,
+  });
+  const result = await runChecker(fixture, env);
+  assert(result.code === 2, `the check after an unexpected error exited ${result.code}, not 2; stderr: ${result.stderr}`);
+  assert(/invalid.*url/i.test(result.stderr), `the invalid debugging URL was not reported: ${result.stderr}`);
+  assertReceipt(evidence, 2, "unexpected runtime failure");
+  await assertProfileRemoved(fixture);
+  return fixture;
+}
+
 async function main() {
   const completed = [];
   completed.push(await debuggingPortFailure());
@@ -1018,6 +1096,12 @@ async function main() {
   completed.push(await terminationSignalShutsDownCleanly());
   completed.push(await terminationSignalKeepsFirstRequestedStatus());
   completed.push(await readinessGatesOnBothStreams());
+  completed.push(await profileCleanupWithoutEvidence());
+  completed.push(await profileCleanupAfterLaunchFailure());
+  completed.push(await profileCleanupAfterUnexpectedFailure());
+  for (const fixture of completed) {
+    if (fixture && existsSync(join(fixture, "profile-facts.json"))) await assertProfileRemoved(fixture);
+  }
   await runCleanupSelfTest("--self-test-failure", "deliberate failure with a held pipe");
   await runCleanupSelfTest("--self-test-timeout", "did not end within");
   await runSupervisorTimeoutSelfTest();
@@ -1062,7 +1146,8 @@ if (completed) {
       "fake browser announces itself only once both of its stream writes have completed and reports a " +
       "failed write instead, so the signal case never races a write still in flight; a " +
       "deliberate assertion failure, a killed check and a stalled supervisor each left no process and " +
-      "no port behind",
+      "no port behind; each terminated browser's unique private profile was removed, including " +
+      "launch failures, unexpected errors and runs without evidence, while prior profiles were preserved",
   );
   for (const fixture of completed) if (fixture) console.log(`  fixture: ${fixture}`);
 }
