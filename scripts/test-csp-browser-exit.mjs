@@ -595,6 +595,48 @@ async function staleIncompleteDirectoryIsRefusedBeforeAnyWrite() {
   return fixture;
 }
 
+async function concurrentEvidenceOwnerIsRefusedBeforeAnyWrite() {
+  const fixture = makeFixture({ chromium: (f) => fakeChromiumReadyChatty(join(f, "chrome.ready")) });
+  const evidence = join(fixture, "evidence-concurrent");
+  mkdirSync(evidence, { mode: 0o700 });
+  const env = checkerEnv(fixture, {
+    port: await freePort(), upstream: await freePort(), debug: await freePort(), evidence,
+  });
+  env.CSP_DEBUG_DEADLINE = "60";
+  const owner = spawnChecker(fixture, env);
+  await waitForFile(join(fixture, "chrome.ready"));
+  // Both children are live, but shutdown has not written captures or a receipt yet.
+  const entries = readdirSync(evidence).sort();
+  const preserved = entries.map((name) => {
+    const path = join(evidence, name);
+    return { path, bytes: readFileSync(path), stat: lstatSync(path) };
+  });
+  const contender = makeFixture();
+  const result = await runChecker(contender, checkerEnv(contender, {
+    port: await freePort(), upstream: await freePort(), debug: await freePort(), evidence,
+  }), 10_000);
+  assert(owner.child.exitCode === null && owner.child.signalCode === null, "concurrent owner: the first check ended before the contender");
+  assert(result.code === 74, `concurrent owner: the second check exited ${result.code}, not 74; stderr was:\n${result.stderr}`);
+  assert(result.stderr.includes("refusing"), `concurrent owner: no refusal reported: ${result.stderr}`);
+  assert(entries.join(",") === "run.claim", "concurrent owner: no exclusive claim before child setup");
+  assert(readdirSync(evidence).sort().join(",") === entries.join(","), "concurrent owner: the refusal changed evidence entries");
+  for (const { path, bytes, stat } of preserved) {
+    const after = lstatSync(path);
+    assert(readFileSync(path).equals(bytes), "concurrent owner: the refusal changed the claim bytes");
+    assert(after.ino === stat.ino && after.dev === stat.dev && after.mode === stat.mode, "concurrent owner: the refusal replaced the claim or changed its mode");
+    assert((after.mode & 0o777) === 0o600, "concurrent owner: the claim is not private");
+  }
+  assert(!existsSync(join(contender, "profile-facts.json")), "concurrent owner: the refused check started a browser");
+  assert(readdirSync(join(contender, "private", "temp")).length === 0, "concurrent owner: the refused check created a profile");
+  assertNoReceipt(evidence, "concurrent owner before shutdown");
+  assert(owner.child.kill("SIGTERM"), "concurrent owner: could not stop the first check");
+  const stopped = await owner.done;
+  assert(stopped.code === 143, `concurrent owner: the first check exited ${stopped.code}, not 143; stderr was:\n${stopped.stderr}`);
+  assertReceipt(evidence, 143, "concurrent owner");
+  assert(existsSync(join(evidence, "run.claim")), "concurrent owner: shutdown removed the claim");
+  return fixture;
+}
+
 // Evidence that cannot be written must fail closed: a run that cannot record where it was does not
 // read as a clean one. The requested status is written before the children, so it survives a
 // failure to retain them.
@@ -1136,6 +1178,7 @@ setTimeout(() => process.exit(0), ${LINGER_MS});
 async function main() {
   const completed = [];
   completed.push(await staleIncompleteDirectoryIsRefusedBeforeAnyWrite());
+  completed.push(await concurrentEvidenceOwnerIsRefusedBeforeAnyWrite());
   completed.push(await debuggingPortFailure());
   completed.push(await occupiedPortFailure());
   completed.push(await evidenceFailureIsFailClosed());

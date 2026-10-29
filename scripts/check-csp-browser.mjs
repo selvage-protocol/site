@@ -66,6 +66,7 @@
 // directory is a run that ended early or one that died in the middle of its own evidence. A run
 // that is handed a nonempty evidence directory refuses before setup or its first write: even
 // without a completion, old captures belong to another attempt and cannot join a new census.
+// An exclusive claim is retained with the run, so cooperating concurrent runs cannot both write.
 
 import { spawn, spawnSync } from "node:child_process";
 import { readFileSync, readdirSync, existsSync, lstatSync, mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from "node:fs";
@@ -105,6 +106,13 @@ if (evidenceDir) {
       console.error(`check-csp-browser: cannot inspect ${evidenceDir}: ${error.message}`);
       process.exit(74);
     }
+  }
+  try {
+    mkdirSync(evidenceDir, { recursive: true, mode: 0o700 });
+    writeFileSync(join(evidenceDir, "run.claim"), "", { flag: "wx", mode: 0o600 });
+  } catch (error) {
+    console.error(`check-csp-browser: cannot claim ${evidenceDir}; refusing to overwrite another run's evidence: ${error.message}`);
+    process.exit(74);
   }
 }
 
