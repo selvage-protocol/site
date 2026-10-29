@@ -528,6 +528,7 @@ async function occupiedPortFailure() {
   const upstream = await freePort();
   const debug = await freePort();
   const evidence = join(fixture, "evidence-occupied");
+  mkdirSync(evidence, { mode: 0o700 });
   const squatter = createServer((request, response) => {
     response.writeHead(200, { "content-type": "text/html" });
     response.end("not this check");
@@ -549,18 +550,65 @@ async function occupiedPortFailure() {
   return fixture;
 }
 
+async function staleIncompleteDirectoryIsRefusedBeforeAnyWrite() {
+  const fixture = makeFixture();
+  const evidence = join(fixture, "evidence-stale-incomplete");
+  mkdirSync(evidence, { mode: 0o700 });
+  const preserved = new Map();
+  for (const child of ["0-upstream", "1-chromium"]) {
+    mkdirSync(join(evidence, child), { mode: 0o700 });
+    for (const leaf of ["launch.json", "stdout", "stderr", "status.json"]) {
+      const path = join(evidence, child, leaf);
+      const bytes = Buffer.from(`stale ${child} ${leaf}\n`);
+      writeFileSync(path, bytes, { mode: 0o400 });
+      preserved.set(path, bytes);
+    }
+  }
+  const squatter = createServer((request, response) => response.end("not this check"));
+  await new Promise((resolve) => squatter.listen(0, "127.0.0.1", resolve));
+  try {
+    const env = checkerEnv(fixture, {
+      port: squatter.address().port, upstream: await freePort(), debug: await freePort(), evidence,
+    });
+    const result = await runChecker(fixture, env);
+    assert(result.code === 74, `stale incomplete DIR: the check exited ${result.code}, not 74; stderr was:\n${result.stderr}`);
+    assert(result.stderr.includes("refusing"), `stale incomplete DIR: no refusal reported: ${result.stderr}`);
+    assertNoReceipt(evidence, "stale incomplete DIR");
+    assert(
+      readdirSync(evidence).sort().join(",") === "0-upstream,1-chromium",
+      "stale incomplete DIR: the refusal added or removed an evidence entry",
+    );
+    for (const child of ["0-upstream", "1-chromium"]) {
+      assert(
+        readdirSync(join(evidence, child)).sort().join(",") === "launch.json,status.json,stderr,stdout",
+        `stale incomplete DIR: ${child}'s entries changed`,
+      );
+      assert((lstatSync(join(evidence, child)).mode & 0o777) === 0o700, `${child}: the stale directory mode changed`);
+    }
+    for (const [path, bytes] of preserved) {
+      assert(readFileSync(path).equals(bytes), `${path}: the stale bytes were overwritten`);
+      assert((lstatSync(path).mode & 0o777) === 0o400, `${path}: the stale mode changed`);
+    }
+  } finally {
+    await new Promise((resolve) => squatter.close(resolve));
+  }
+  return fixture;
+}
+
 // Evidence that cannot be written must fail closed: a run that cannot record where it was does not
 // read as a clean one. The requested status is written before the children, so it survives a
 // failure to retain them.
 async function evidenceFailureIsFailClosed() {
-  const fixture = makeFixture();
+  const fixture = makeFixture({ next: (f) => `
+import { writeFileSync } from "node:fs";
+writeFileSync(${JSON.stringify(join(f, "evidence-blocked", "0-upstream"))}, "not a directory\\n");
+${fakeNext()}` });
   const port = await freePort();
   const upstream = await freePort();
   const debug = await freePort();
   const evidence = join(fixture, "evidence-blocked");
   mkdirSync(evidence, { mode: 0o700 });
-  // The first child's directory is a plain file: the status can be recorded, the child cannot.
-  writeFileSync(join(evidence, "0-upstream"), "not a directory\n");
+  // The fake upstream blocks the first child's directory before it starts answering requests.
   const env = checkerEnv(fixture, { port, upstream, debug, evidence });
   const result = await runChecker(fixture, env);
   assert(result.code === 74, `the check exited ${result.code}, not 74, when its child evidence could not be written`);
@@ -576,15 +624,16 @@ async function evidenceFailureIsFailClosed() {
 // withdraw the completion. Both child captures land here, so the directory holds a complete
 // census -- and still no completion, because a completion would claim the first write succeeded.
 async function requestedExitFailureWithdrawsCompletion() {
-  const fixture = makeFixture();
+  const fixture = makeFixture({ next: (f) => `
+import { mkdirSync } from "node:fs";
+mkdirSync(${JSON.stringify(join(f, "evidence-requested-blocked", "requested-exit.json"))}, { mode: 0o700 });
+${fakeNext()}` });
   const port = await freePort();
   const upstream = await freePort();
   const debug = await freePort();
   const evidence = join(fixture, "evidence-requested-blocked");
   mkdirSync(evidence, { mode: 0o700 });
-  // The name the status must occupy is a directory, so writing the status fails and the name's
-  // bytes cannot be replaced. Nothing here writes through it.
-  mkdirSync(join(evidence, "requested-exit.json"), { mode: 0o700 });
+  // The fake upstream blocks the requested status before it starts answering requests.
   const env = checkerEnv(fixture, { port, upstream, debug, evidence });
   const result = await runChecker(fixture, env);
   assert(result.code === 74, `the check exited ${result.code}, not 74, when the requested status could not be written`);
@@ -676,7 +725,7 @@ async function staleCompletionIsRefusedBeforeAnyWrite() {
   const result = await runChecker(fixture, env);
   assert(result.code === 74, `the check exited ${result.code}, not 74, on a directory holding another run's completion`);
   assert(
-    result.stderr.includes("already holds a completion"),
+    result.stderr.includes("is not empty"),
     `the check did not refuse the prior completion; stderr was:\n${result.stderr}`,
   );
   for (const [path, bytes] of preserved) {
@@ -1086,6 +1135,7 @@ setTimeout(() => process.exit(0), ${LINGER_MS});
 
 async function main() {
   const completed = [];
+  completed.push(await staleIncompleteDirectoryIsRefusedBeforeAnyWrite());
   completed.push(await debuggingPortFailure());
   completed.push(await occupiedPortFailure());
   completed.push(await evidenceFailureIsFailClosed());
@@ -1141,8 +1191,9 @@ if (completed) {
       "requested status when a termination signal arrived while a failure was already settling; the " +
       "completion receipt names the status and the exact child census and is written last, so a " +
       "prefix with no completion is refused rather than read as a shorter run, a failed requested " +
-      "status withdraws the completion even when both children were captured, and a prior run's " +
-      "completion is refused before the first write so its bytes are never mixed with a new census; the " +
+      "status withdraws the completion even when both children were captured, and a nonempty " +
+      "evidence directory is refused before setup or the first write, even without a receipt, " +
+      "so its bytes are never mixed with a new census; the " +
       "fake browser announces itself only once both of its stream writes have completed and reports a " +
       "failed write instead, so the signal case never races a write still in flight; a " +
       "deliberate assertion failure, a killed check and a stalled supervisor each left no process and " +

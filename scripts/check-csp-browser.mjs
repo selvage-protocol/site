@@ -64,12 +64,11 @@
 // for a test that drives this check on a machine it owns. The completion is written last and only
 // after every other mandatory write has landed, so a reader never has to guess whether a short
 // directory is a run that ended early or one that died in the middle of its own evidence. A run
-// that is handed a directory already holding a completion refuses before its first write: the old
-// receipt and the children beside it are one generation's whole record, and the census of a new
-// attempt cannot make them its own.
+// that is handed a nonempty evidence directory refuses before setup or its first write: even
+// without a completion, old captures belong to another attempt and cannot join a new census.
 
 import { spawn, spawnSync } from "node:child_process";
-import { readFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync, lstatSync, mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { createServer, request as httpRequest } from "node:http";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -93,6 +92,21 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // are written there. It is how a caller that owns the machine can see the check did reap what it
 // started, without wrapping the check's own process. Nothing is written unless it is asked for.
 const evidenceDir = process.env.CSP_EVIDENCE_DIR ?? null;
+
+// Refuse incomplete runs too: an old capture with no receipt must never acquire a new one.
+if (evidenceDir) {
+  try {
+    if (readdirSync(evidenceDir).length > 0) {
+      console.error(`check-csp-browser: ${evidenceDir} is not empty; refusing to overwrite another run's evidence`);
+      process.exit(74);
+    }
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      console.error(`check-csp-browser: cannot inspect ${evidenceDir}: ${error.message}`);
+      process.exit(74);
+    }
+  }
+}
 
 // Replaced with the proxy-aware version once the proxy is listening; before that a failure has
 // only the children to reap, and no exit handler is registered.
