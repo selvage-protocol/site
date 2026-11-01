@@ -22,6 +22,28 @@ notice or licenses. Avoid disabled-looking links, empty feature cards and a gene
 ledger. Repository rows describe what exists; a future artifact must be marked unavailable and
 must not link to an artifact that does not exist.
 
+## The second route: `Get it working`
+
+`app/get-it-working/page.tsx` is the page the landing page's *Run* card and the header
+link to. Its contract, and where it differs from the landing page's:
+
+| Section | Required content |
+|---|---|
+| Head | One sentence of scope: a room needs one server, and everything else joins by the invite link the host is given |
+| From a checkout | The one command (`reference_server/scripts/demo/demo.sh`) and what it starts, including that the shared folder is a copy and `--keep` keeps it |
+| Published images | `docker compose up` in `reference_server`, the three `RUN_STEPS` commands, the teardown sentence, and that rooms are held in memory |
+| Recording | The 78-second MP4 at `public/selvage-demo.mp4`, with a caption saying every frame is a real client and the captions are the only drawn-on part |
+| Clients | One row per client that has an install route, from `CLIENTS` in `lib/clients.ts`, plus the MCP entry. The section states that an install is a client and not a server, and that a session needs a `selvaged` the reader runs |
+| Before you invite anyone | What the sealed relay still sees, in the same words the landing page's panel uses, and that a room is not a file store |
+| Footer | The licences, including `selvaged`'s FSL terms and the citation to `specification/schema/validate.py` |
+
+The wording rules in [what the page must never say](must-not-say.md) apply to this route as
+they do to the landing page. `scripts/check-claims.py` scans the page it is pointed at, and
+its artefact checks — the Run card's prompt markup, the Rent card, the served-document CSP
+model — are the landing page's own regions; CI runs it over `/` alone. The recording is the
+one media element either route carries, which is why `vercel.json`'s policy names
+`media-src 'self'`.
+
 ## First-room recipe
 
 The browser recipe is for **desktop Chrome or Edge**:

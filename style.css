@@ -1651,3 +1651,131 @@ section[id],
   }
 }
 }
+
+/* Get it working: the walkthrough page's own blocks. Two cards in a row where there is
+   room, one where there is not; a command block that scrolls rather than wraps, because a
+   command copied off a wrapped line is a command that does not run. */
+.walkthrough {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  margin-top: 36px;
+}
+
+@media (min-width: 900px) {
+  .walkthrough {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.walkthrough-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.command-block {
+  margin: 0;
+  padding: 10px 12px;
+  overflow-x: auto;
+  border: 1px solid var(--color-surface0);
+  border-radius: 8px;
+  background: var(--color-crust);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.command-block code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+.run-steps {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.run-steps > li {
+  max-width: none;
+}
+
+.run-step-label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.run-note {
+  font-size: 13px;
+}
+
+.recording {
+  margin: 28px 0 0;
+}
+
+.recording-video {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--color-crust);
+}
+
+.recording figcaption {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.routes {
+  display: grid;
+  gap: 18px;
+  margin: 32px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prose-body ul.routes > li {
+  max-width: none;
+  padding: 18px 20px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.route-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.route-name {
+  color: var(--fg);
+}
+
+.route-repo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
