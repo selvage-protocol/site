@@ -960,9 +960,9 @@ FORBIDDEN: list[Phrase] = [
         ("the wire version is s<!-- -->alvage/2",),
     ),
     Phrase(
-        # The overclaim family the project's E2EE plan refutes
-        # (`selvage-protocol/ai_notes`, `docs/studies/e2ee-plan.md` §2), and the one a reader
-        # writes first: "no one else can see it" is the same claim as "nobody else can read it", and
+        # Sealing hides payloads, not membership, display names, sizes or timing
+        # (CANONICAL.md §6.1 and PROTOCOL.md §7.1). Paraphrases need the same guard:
+        # "no one else can see it" is the same claim as "nobody else can read it", and
         # "the server knows nothing" is the same one with the sentence turned round. The subject,
         # the verb and the word order are all alternated for that reason; pinning any of them to
         # one spelling is what let four paraphrases through in the review's probe.
@@ -1144,7 +1144,7 @@ FORBIDDEN: list[Phrase] = [
     Phrase(
         r"read[- ]only|view[- ]only",
         "guests have view-only access",
-        "the design inverts this: read-only scopes the host's filesystem, never the shared "
+        "read-only scopes the host's filesystem, never the shared "
         "buffer, and every holder of the invite edits the session CRDT",
     ),
     Phrase(
@@ -1315,8 +1315,8 @@ FORBIDDEN: list[Phrase] = [
     Phrase(
         r"\bfirst\b",
         "the first protocol to specify the session layer",
-        "a claim of priority no source supports: the design record surveys prior art (Eclipse "
-        "Open Collaboration Tools et al.), and the project's own claim is that the session layer "
+        "a claim of priority no public evidence supports: prior art includes Eclipse "
+        "Open Collaboration Tools, and the project's own claim is that the session layer "
         "is unspecified, not that this is first",
     ),
     Phrase(
@@ -1489,12 +1489,9 @@ FORBIDDEN: list[Phrase] = [
     Phrase(
         r"proven in one room|across editors too|(?:VS ?Code|Neovim|Vim|Emacs|editors?)\b[^.]{0,48}\bon one end and\b",
         "Proven in one room with VS Code on one end and Neovim on the other.",
-        "the first cross-editor session has run, and the design notes' hand-run proof of it "
-        "(`selvage-protocol/ai_notes`, `docs/proof-cross-editor.md`, 2026-09-17) records grant, "
-        "cursors and follow in both directions passing while the concurrent-edit step falls short "
-        "by one trailing newline byte. So a pairing across the two editors is demonstrated and "
-        "byte-identical replicas are not: state what the clients are built to do rather than that "
-        "it is proven",
+        "automated protocol and adapter checks establish only their reported scope, not native "
+        "editor UX or universal cross-editor convergence. Describe the supported clients and "
+        "their public tests rather than claiming a pairing is proven",
         ("with VS Code on one end and Neovim on the other.",
          "with VS Code on one\nend and Neovim on the other."),
     ),

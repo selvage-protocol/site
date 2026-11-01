@@ -26,6 +26,26 @@ documents — zero `securitypolicyviolation` events, the glyph files fetched, th
 effect firing only if the page hydrated. The gate runs both, so the model is backed by a browser;
 the runner image carries the Chromium the second one needs.
 
+## Configured policy and external observations
+
+The header values above are deployment configuration, not proof that an edge response carries
+all of them. The canonical production URL has been observed returning HTTP 200 with a CSP.
+`X-Content-Type-Options` and `Referrer-Policy` have not yet been verified externally. The local
+CSP model and browser checks apply `vercel.json` to a local build; they do not attest to Vercel's
+current response headers.
+
+To verify the deployed response separately, retain the status and headers from a fresh request:
+
+```sh
+curl --fail --silent --show-error --dump-header headers.txt \
+  --output page.html https://selvage.dontblameme.dev/
+```
+
+Check the status, all three declared headers and the HTML canonical URL before describing them
+as externally verified. A successful build or a 200 alone is not evidence of all three headers.
+
+## Deployment, not a release
+
 The page is not a released artefact: there is nothing to build or attach, no image and no registry,
 no tag and no GitHub Release, and no release workflow. Vercel deploys it from `main` on every push
 and reads no tag.

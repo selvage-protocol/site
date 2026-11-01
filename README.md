@@ -52,8 +52,7 @@ checks as `.github/workflows/ci.yml`.
 
 ## Licence
 
-`MIT OR Apache-2.0`, the pair the clients carry; see `LICENSE-MIT` and `LICENSE-APACHE`. The
-page's framing follows the project's own design record, which is private and carries no licence;
-the workflow sentence is adapted from the Neovim client's README, which is `MIT OR Apache-2.0`.
-Where the wording came from is recorded here and not in the footer: the page states the licence a
-visitor is bound by, and provenance is a note for whoever maintains the page.
+`MIT OR Apache-2.0`, the pair the clients carry; see `LICENSE-MIT` and `LICENSE-APACHE`.
+The workflow sentence is adapted from the Neovim client's public README, under the same license.
+The copy contract and its public evidence are documented in `docs/`; maintaining the page needs
+no separate planning repository.
