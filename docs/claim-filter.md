@@ -201,13 +201,9 @@ bytes it carries, the shape it can see — and the shape a browser guest is in i
 describes any more. What the phrase list above still holds is the overclaim in that direction: that
 nobody else can read the room, that the server learns nothing, or that the relay is blind.
 
-The extension's publication is asserted the same way, and it is the one entry here that was a
-prohibition turned round. The page used to be forbidden the words "marketplace", "open vsx" and
-"gallery", on the ground that publishing the extension was a non-goal (`DESIGN.md` §11: "marketplace
-publication until it works with a friend"); the owner retired that non-goal, and the extension is
-published as `selvage-protocol.selvage` on the VS Code Marketplace and on Open VSX, which are the
-two publish steps in `vscode_client/.github/workflows/release.yml`. So what is required is now the
-truth and what is forbidden is the false direction: the identity and both registry names have to be
+The extension's publication is asserted the same way. It is published as
+`selvage-protocol.selvage` on the VS Code Marketplace and on Open VSX, the two publish steps in
+`vscode_client/.github/workflows/release.yml`. The identity and both registry names have to be
 in the row, every registry-shaped word the page carries has to be part of one of those two names or
 of the JetBrains Marketplace's, where the JetBrains plugin is handed over — any other registry, or
 "the extension gallery" without saying which, fails — and any link the page carries to a listing has
