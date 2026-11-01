@@ -334,12 +334,6 @@ export default function Home() {
                 <a href={REMOTE_DEPLOYMENT}>remote deployment guide</a> for a reachable
                 server with TLS and deployment hardening.
               </p>
-              <p className="spec-line">
-                <a href="/get-it-working">
-                  The one-command demo, the compose file, and every client&apos;s route
-                </a>{" "}
-                are on their own page, with a recording of one run.
-              </p>
             </div>
             <div className="run-steps">
               {RUN_STEPS.map((step) => (

@@ -5,14 +5,11 @@ import { ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-/* Two pages share this bar, so every in-page route names the page it is on: `/` carries the
-   sections, and `/get-it-working` is a route of its own. Same-document fragment navigation
-   makes the first link the scroll it was rather than a reload. */
 const navLinks = [
-  { href: "/#try", label: "Try" },
-  { href: "/#run", label: "Run" },
-  { href: "/get-it-working", label: "Get it working" },
-  { href: "/#why-a-spec", label: "Specification" },
+  { href: "#try", label: "Try" },
+  { href: "#run", label: "Run" },
+  { href: "#how-it-works", label: "How it works" },
+  { href: "#why-a-spec", label: "Specification" },
 ];
 
 /** The GitHub mark, drawn here because the icon set the page uses carries no brand
@@ -70,7 +67,7 @@ export function SiteHeader() {
         aria-label="Page"
         className="mx-auto flex h-[60px] max-w-[1160px] items-center gap-7 px-4 min-[720px]:px-6"
       >
-        <a href="/" className="flex items-center gap-2.5 text-text">
+        <a href="#top" className="flex items-center gap-2.5 text-text">
           <img
             className="block h-[30px] w-auto"
             src="/mark-header.png"
