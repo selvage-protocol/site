@@ -18,21 +18,26 @@
 //   2. zero `securitypolicyviolation` events, collected as they happen rather than inferred,
 //      with a font named in one of them reported as what it is: `font-display: swap` paints the
 //      fallback stack, so refused glyphs read as a typographic choice rather than as a break;
-//   3. `window.__next_f` is an object, so the inline bootstrap ran, and the page's scripts
+//   3. a same-origin request lands: the Analytics and Speed Insights components report to
+//      `/_vercel/insights` and `/_vercel/speed-insights/vitals` on this origin, and a policy
+//      that names no `connect-src` falls back to `default-src 'none'` and refuses the report.
+//      The host serves neither script under `next start`, so the report itself is unobservable
+//      here; a synthetic same-origin `fetch` is what the policy sees;
+//   4. `window.__next_f` is an object, so the inline bootstrap ran, and the page's scripts
 //      therefore executed;
-//   4. the page's own fonts arrived: both families resolve, and the body's computed family is
+//   5. the page's own fonts arrived: both families resolve, and the body's computed family is
 //      Geist rather than the fallback the stack falls back to. `scripts/check-csp.py` decides
 //      `font-src` against the preloads, which is a model of the policy; only a browser can say
 //      the glyph files were fetched and used;
-//   5. the header conceals itself when the page is scrolled down and comes back when it is
+//   6. the header conceals itself when the page is scrolled down and comes back when it is
 //      scrolled up — the React effect, which only runs once the page hydrates. The concealed
 //      class is asserted absent from the served bytes first, so what is observed is the
 //      effect, not the prerender. React has to be on the node before the scroll, and the
 //      scroll is a reader's movement down rather than one jump: the effect records the position
 //      it sees when it attaches, so a single jump made before it attaches is a scroll it never
 //      hears, which is what this looked like on a machine slower than the one it was written on;
-//   6. the document response carries no `X-Powered-By` (next.config.ts's `poweredByHeader`);
-//   7. a request for a path no route claims, which is the other page this policy covers, carries
+//   7. the document response carries no `X-Powered-By` (next.config.ts's `poweredByHeader`);
+//   8. a request for a path no route claims, which is the other page this policy covers, carries
 //      zero violations too. The framework's own 404 document carries a `<style>` element and four
 //      `style` attributes and `style-src 'self'` refuses all five, which is why this route has to
 //      be checked too: `app/not-found.tsx` is styled from `style.css` instead.
@@ -785,10 +790,28 @@ if (seen.length > 0 || refusals.length > 0) {
   );
 }
 
-// 3. the inline bootstrap ran, so the page's scripts executed
+// 3. the page may reach its own origin. A directive the policy does not name falls back to
+// `default-src 'none'`, and `connect-src` is the one the Analytics and Speed Insights
+// components need: both report to `/_vercel/insights` and `/_vercel/speed-insights/vitals` on
+// this origin, and without it the page renders and the report is refused. The host serves
+// neither script under `next start`, so the report itself cannot be observed here; a synthetic
+// same-origin request is what the policy sees. `fetch` resolves for any status, including the
+// not-found document, so a resolved promise is the request landing and a rejected one is the
+// policy refusing it.
+const reachable = await evaluate(
+  `fetch(${JSON.stringify(where)}, { method: 'HEAD' }).then(() => true, () => false)`,
+);
+if (!reachable) {
+  await failWithPage(
+    "a same-origin request was refused: connect-src does not permit the origin the Analytics and " +
+      "Speed Insights components report to",
+  );
+}
+
+// 4. the inline bootstrap ran, so the page's scripts executed
 if (page.nextF !== "object") await fail(`window.__next_f is ${page.nextF}, not an object: the bootstrap never ran`);
 
-// 4. the page's own fonts arrived. A family that fell back to the system stack paints in the
+// 5. the page's own fonts arrived. A family that fell back to the system stack paints in the
 // same layout, so the glyph files are only observable by asking for them: `check` reports false
 // while a face the family name needs is unloaded, and true only once it is loaded. The poll is
 // bounded, so a face that never settles fails here rather than passing slowly.
@@ -819,7 +842,7 @@ if (!/^["']?Geist["']?(\s*,|$)/.test(fonts.body)) {
   await fail(`the body's computed font family is ${fonts.body}, not Geist: the theme's font variable did not resolve`);
 }
 
-// 5. the header's hide-on-scroll, which is the React effect. The served bytes are checked
+// 6. the header's hide-on-scroll, which is the React effect. The served bytes are checked
 // first, so what is observed afterwards is the effect and not the prerender.
 const servedHtml = await (await fetch(where)).text();
 if (servedHtml.includes("-translate-y-full")) {
@@ -903,11 +926,11 @@ const returnedAtY = await evaluate("window.scrollY");
 if (!moved) await failWithPage(`the header's translate settled at ${concealedTranslate}, not 0px -100%`);
 if (!returned) await failWithPage("the header stayed concealed when scrolled back up");
 
-// 6. no framework banner on the document response
+// 7. no framework banner on the document response
 const banner = Object.keys(document_?.headers ?? {}).some((key) => key.toLowerCase() === "x-powered-by");
 if (banner) await failWithPage("the document response carries X-Powered-By: next.config.ts should have stopped it");
 
-// 7. the site's own not-found route, served with the same policy. Asserted separately from the
+// 8. the site's own not-found route, served with the same policy. Asserted separately from the
 // page above because it is a different document with different markup: the framework's default
 // 404 is styled with a `<style>` element and four `style` attributes, every one of which
 // `style-src 'self'` refuses, and nothing looked at this route before.
