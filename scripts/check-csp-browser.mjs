@@ -591,6 +591,16 @@ function send(method, params = {}, sessionId) {
 }
 
 const refusals = [];
+// Only a policy refusal belongs here. A response whose MIME type is not executable also starts a
+// console refusal with "Refused to execute script", and the two platform scripts this page
+// carries (`/_vercel/insights/script.js` and `/_vercel/speed-insights/script.js`, added by the
+// `Analytics` and `SpeedInsights` components) are served by the host. `next start` answers both
+// from the not-found route as `text/plain`, so the browser refuses them before any policy is
+// consulted. Counting those would report the host's absence as this policy's refusal, which a
+// local server cannot show. A CSP refusal names the directive it broke, so that is what is
+// matched. The structured `securitypolicyviolation` events above remain the primary record and
+// this is only the fallback for a listener that never ran.
+const CSP_REFUSAL = /violates the following Content Security Policy directive/i;
 // The page's own account of a hydration that went wrong arrives as a console error or warning,
 // and it is the one thing no assertion here can reconstruct. Bounded to the last few of those.
 const consoleTail = [];
@@ -627,7 +637,7 @@ cdp.socket.addEventListener("message", (event) => {
     document_ = message.params.response;
   }
   const text = message.params?.entry?.text ?? message.params?.args?.map((a) => a.value ?? "").join(" ");
-  if (text && /Refused|Content Security|violat/i.test(text)) refusals.push(text);
+  if (text && CSP_REFUSAL.test(text)) refusals.push(text);
   if (message.method === "Runtime.consoleAPICalled") {
     recordConsole(message.params.type, message.params.args?.map((a) => a.value ?? a.description ?? "").join(" "));
   }
