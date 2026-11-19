@@ -37,7 +37,7 @@ name: ci
 # repositories' rows are pinned by name so one cannot be dropped from every surface at once, every
 # repository the page links is one the grid links, and the grid's client rows, the chips figure and
 # the install routes have to name the same clients, so a client written onto one surface and not the
-# others fails here. The registry and the instance halves need egress and fail rather than pass when
+# others fails here. The registry and Marketplace halves need egress and fail rather than pass when
 # they cannot reach it.
 # No `push: branches: [main]`: a pull request already runs the whole gate, and the
 # merge commit carries the same content, so the merge would run it a second time.

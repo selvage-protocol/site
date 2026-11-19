@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { href: "#try", label: "Get started" },
+  { href: "#try", label: "Start" },
   { href: "#run", label: "Run" },
   { href: "#how-it-works", label: "How it works" },
   { href: "#why-a-spec", label: "Specification" },

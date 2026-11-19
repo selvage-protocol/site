@@ -111,14 +111,11 @@ The next positive assertion binds the page's sealing claim to the one wire versi
 because the paragraph that makes that claim sits directly under a `docker run`: a reader can take
 the claim and the command together and get a server that carries the room through it in the clear.
 The page no longer names a version, and the check no longer requires it to. What it holds instead is
-the artefacts against each other, which are still on the page: the wire the tags speak, read from
-`IMAGE_WIRE_BY_REFERENCE`, because no registry says what wire version a binary or a bundle speaks,
-has to be one the address beside it reaches, measured from `/meta`, where no wording can forge it. A
-reader who takes the command and the address from the page therefore meets one protocol, whatever
-the page says about the wire. A reference with no entry in that map fails the check, so a tag a
-release points at a different wire has that wire declared in the same wave. Where the page does say
-which wire an artefact speaks, that sentence is held to the same declaration or the same `/meta`, so
-a version sentence cannot come back unchecked. The one-wire rule is what catches the other
+the artefacts against each other, which are still on the page: the wire the two published image
+references speak is read from `IMAGE_WIRE_BY_REFERENCE`, because no registry says what wire version
+a binary or a bundle speaks, and a reference with no entry in that map fails the check. Where the
+page does say which wire an artefact speaks, that sentence is held to the same declaration, so a
+version sentence cannot come back unchecked. The one-wire rule is what catches the other
 direction: a second version named on the page is a claim about a version this protocol does not
 have, and a page that says the wire is unreleased — or that hands a reader the plaintext wire's
 command — tells a guest their room is in the clear when it is not, which is the same defect with the
