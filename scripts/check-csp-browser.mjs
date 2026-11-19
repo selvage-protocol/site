@@ -75,7 +75,7 @@
 // An exclusive claim is retained with the run, so cooperating concurrent runs cannot both write.
 
 import { spawn, spawnSync } from "node:child_process";
-import { readFileSync, readdirSync, existsSync, accessSync, constants, lstatSync, mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync, accessSync, constants, lstatSync, mkdirSync, mkdtempSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createServer, request as httpRequest } from "node:http";
 import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -438,6 +438,9 @@ if (!declared) {
 
 function executable(path) {
   try {
+    if (!statSync(path).isFile()) {
+      return false;
+    }
     accessSync(path, constants.X_OK);
     return true;
   } catch {
