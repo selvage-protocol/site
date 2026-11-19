@@ -112,7 +112,7 @@ const comparison: Comparison[] = [
   { label: "Session layer", value: "selvage", here: true },
 ];
 
-/** A row of the repository grid. Two rows are the project's own repositories and carry no
+/** A row of the repository grid. Three rows are the project's own repositories and carry no
     client; the rest are one per client, drawn from the one list the chips and the terminal
     read too. */
 type GridRow = {
@@ -143,6 +143,7 @@ const gridRows: GridRow[] = [
     tag: "source of truth",
   },
   { name: "reference_server", desc: "selvaged", Icon: HardDrive, tag: "available" },
+  { name: "site", desc: "Public landing page", Icon: BookOpenText, tag: "available" },
   ...CLIENTS.map((client) => ({
     name: client.repository,
     desc: client.description,
@@ -177,6 +178,14 @@ export default function Home() {
                   No third party&apos;s cloud holds the room.
                 </p>
                 <div className="hero-actions">
+                  <Button
+                    href="https://github.com/selvage-protocol/site"
+                    size="hero"
+                    className="cta cta-glow flex-auto rounded-[10px] font-medium text-crust motion-safe:hover:-translate-y-px [&_svg]:size-[17px]"
+                  >
+                    <ArrowUpRight aria-hidden="true" />
+                    View Source
+                  </Button>
                   <Button
                     href="#run"
                     variant="outline"

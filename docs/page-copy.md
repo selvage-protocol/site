@@ -8,7 +8,7 @@ page itself is not an editor or a hosted room service.
 
 | Section | Required content and behavior |
 |---|---|
-| Hero | The promise and one editor CTA, four facts (*Sealed*, *Specified*, *Path-scoped*, *No account*) and a room illustration. Put the CTA before the facts so the next action is visible on short screens. The specification is a text link in *Why a spec*, not a second button |
+| Hero | The promise, a source CTA and one editor CTA, four facts (*Sealed*, *Specified*, *Path-scoped*, *No account*) and a room illustration. Put the CTAs before the facts so the next action is visible on short screens. The specification is a text link in *Why a spec*, not another button |
 | Run → share | Three equal-height cards in increasing order of commitment: *Run locally*, *Run* the two published containers, *Rent* as a plan. The local card qualifies browser hosting as desktop Chrome or Edge. The run card links to the full commands below and says rooms are in memory. The hosted tier says *Not available yet* or *Planned* in its own card and offers no actionable signup or purchase control |
 | Start a room | A concrete first-room recipe using the local page, followed by editor alternatives. Retain the `How it works` anchor. Include the safety, browser and invite qualifications below |
 | Run it yourself | Three separately selectable commands: create the shared network, start the server, start the web container. State the local-only scope, the address to open and the teardown. Details below |
