@@ -6,17 +6,14 @@ import {
   BookOpenText,
   Check,
   Eye,
-  Globe,
   HardDrive,
   Lock,
-  Play,
   Plus,
   SquareTerminal,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { DemoEndpoint } from "@/components/demo-endpoint";
 import { RoomWindow } from "@/components/room-window";
 import { SetupTerminal } from "@/components/setup-tabs";
 import { SiteHeader } from "@/components/site-header";
@@ -27,7 +24,6 @@ import {
   TreeFigure,
 } from "@/components/room-visuals";
 import {
-  DEMO_ORIGIN,
   OPEN_AT,
   REMOTE_DEPLOYMENT,
   RUN_STEPS,
@@ -182,14 +178,6 @@ export default function Home() {
                 </p>
                 <div className="hero-actions">
                   <Button
-                    href={DEMO_ORIGIN}
-                    size="hero"
-                    className="cta cta-glow flex-auto rounded-[10px] font-medium text-crust motion-safe:hover:-translate-y-px [&_svg]:size-[17px]"
-                  >
-                    <Play aria-hidden="true" />
-                    Try the demo in your browser
-                  </Button>
-                  <Button
                     href="#run"
                     variant="outline"
                     size="hero"
@@ -219,14 +207,13 @@ export default function Home() {
           <section id="try" className="band">
             <div className="shell">
               <div className="head-block">
-                <Eyebrow>Try &rarr; Run</Eyebrow>
+                <Eyebrow>Run &rarr; share</Eyebrow>
                 <h2 className="display">
-                  Try it in the browser, then run your own.
+                  Run a server, then open a room.
                 </h2>
                 <p className="lede">
-                  Every room runs on a server. The demo is one; the commands below start
-                  the same server, and the web client in front of it, on a machine you
-                  control.
+                  Every room runs on a server. The commands below start that server and the
+                  web client in front of it on a machine you control.
                 </p>
               </div>
               <div className="try-grid">
@@ -234,10 +221,10 @@ export default function Home() {
                   <div className="try-head">
                     <p className="try-name">
                       <span className="try-num">01</span>
-                      <span className="try-title">Try</span>
+                      <span className="try-title">Run locally</span>
                     </p>
                     <Badge variant="pill" className="bg-green/12 text-green">
-                      Live
+                      Local
                     </Badge>
                   </div>
                   <p className="try-body">
@@ -245,12 +232,11 @@ export default function Home() {
                     join from an invite link; use an editor to host instead.
                   </p>
                   <div className="try-actions">
-                    <a className="demo-link" href={DEMO_ORIGIN}>
-                      <Globe className="icon-17" aria-hidden="true" />
-                      Open the demo
-                      <ArrowUpRight className="icon-14 ml-auto" aria-hidden="true" />
+                    <a className="local-link" href="#run">
+                      <SquareTerminal className="icon-17" aria-hidden="true" />
+                      Start the local server
+                      <ArrowDown className="icon-14 ml-auto" aria-hidden="true" />
                     </a>
-                    <DemoEndpoint />
                     <a className="try-link" href="#first-room">
                       Follow the room setup steps
                       <ArrowDown className="icon-14" aria-hidden="true" />
@@ -301,11 +287,11 @@ export default function Home() {
           <section id="how-it-works" className="shell first-room">
             <div id="first-room" className="head-block">
               <Eyebrow>Start a room</Eyebrow>
-              <h2 className="display">Edit together on the demo.</h2>
+              <h2 className="display">Edit together on your server.</h2>
               <p className="lede">
-                Open <a href={DEMO_ORIGIN}>the demo</a> in desktop Chrome or Edge.
-                Use a small, disposable text folder: anyone with the invite can edit
-                files on your disk.
+                After the local setup below, open <a href={OPEN_AT}>the page</a> in desktop
+                Chrome or Edge. Use a small, disposable text folder: anyone with the invite
+                can edit files on your disk.
               </p>
             </div>
             <ol className="steps">
@@ -330,7 +316,7 @@ export default function Home() {
                 reach another machine. Test a guest in another browser window on this machine.
               </p>
               <p className="spec-line">
-                To invite someone on another machine, use the demo or follow the{" "}
+                To invite someone on another machine, follow the{" "}
                 <a href={REMOTE_DEPLOYMENT}>remote deployment guide</a> for a reachable
                 server with TLS and deployment hardening.
               </p>

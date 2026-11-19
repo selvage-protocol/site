@@ -25,7 +25,7 @@
 # that have an artefact behind them — the images its `docker run`s name against the registry and
 # which of the two runs carries which, the `$ ` prompt and the labels the Run
 # card prints against the stylesheet the served page loads (read out of the build the server is
-# serving, not out of `style.css`), the demo instance against the box, the relay disclosure, the
+# serving, not out of `style.css`), the local setup the page prints, the relay disclosure, the
 # corpus counts against the file that pins them — and each of those fails rather than passes when
 # it cannot be checked. A filter, not a proof: see scripts/check-claims.py.
 #

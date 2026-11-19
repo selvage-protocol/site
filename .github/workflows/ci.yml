@@ -19,17 +19,10 @@ name: ci
 # Run card's own commands are read for which of the two images sits on which run, and its `$ `
 # prompt and the labels above its blocks are read against the stylesheet the served page loads, so
 # a rule that keeps a pasted prompt or label out of a copy cannot be deleted quietly. The
-# demo instance the page points at: it requires every reference to that host to be one of the
-# three the page may carry, the address the demo section hands an editor to reach the server
-# (its path answers the server's own JSON, not the proxy's page) and to accept the WebSocket
-# upgrade the clients open there — which the run records rather than asserts when the edge in front
-# of the demo refuses the check's own egress — that address's origin to report a
-# `selvaged` server, and the origin's `/` to serve the guest page the browser row points at. The
-# wire version is then bound to the artefacts: the tag the page hands a reader and the address
-# beside it have to speak the same version, the one declared for the tag in `IMAGE_WIRE_BY_TAG`
-# measured against what `/meta` offers, and the page may name no other version, because this
-# protocol has one — the paragraph and the command under it are read together, so the landing page
-# cannot deliver a downgrade quietly. A page that does name a version is held to those same two, so
+# wire version is then bound to the artefacts: the two published images speak the one version
+# declared for them in `IMAGE_WIRE_BY_REFERENCE`, and the page may name no other version, because
+# this protocol has one, and the paragraph and the command under it are read together, so the
+# landing page cannot deliver a downgrade quietly. A page that does name a version is held to it, so
 # the sentence cannot come back unchecked. Two disclosures are required besides: the
 # relay-visibility facts and the licence terms `selvaged` is under, one pattern per fact, so deleting
 # either statement fails where the clean fixtures alone would not. The phrase list also holds the
@@ -125,7 +118,7 @@ jobs:
       - name: the nav mark reproduces from the master
         run: scripts/ci-local.sh mark
 
-      - name: claim filter over the rendered page (known wordings, plus the image, the demo and the wire versions against the registry and the instance)
+      - name: claim filter over the rendered page (known wordings, plus the images and the wire versions against the registry)
         run: scripts/ci-local.sh claims
 
       # The CSP step drives a real Chromium (`scripts/check-csp-browser.mjs`). The runner image

@@ -11,8 +11,8 @@ carries in its `meta` attributes — `description`, `og:*`, `twitter:*` — as t
 text, because a link unfurl prints that prose verbatim and the tags themselves are stripped from the
 body: five planted overclaims in `og:description` used to pass the scan unseen, on the surface a
 person deciding whether to paste a link meets first. It also asserts facts in the positive — the
-images the section's commands name, which of the two runs carries which, the demo instance, the one
-wire version those artefacts speak, two disclosures (what the relay still sees, and the terms
+images the section's commands name, which of the two runs carries which, the one wire version those
+artefacts speak, two disclosures (what the relay still sees, and the terms
 `selvaged` is under), the file the corpus counts are pinned in, the identity the extension is
 published under with the two registries it is on, that the hosted tier the page offers is not
 available yet, the word beside each repository in the grid, and the JetBrains plugin's listing with
@@ -87,7 +87,7 @@ reload, or that drops only the negation, must not pass it. The editor choice is 
 Browser install route's own panel, and the check reads it there: Firefox and Safari can join but
 cannot host a folder from the page, and a reader is sent to one of the editors.
 The recipe must not repeat the editor's host recipe, which is what kept the section a wall. The VS
-Code route's own panel carries the demo's `wss://` address without a path and links the VS Code
+Code route's own panel carries the local `ws://127.0.0.1:8080` address without a path and links the VS Code
 Marketplace listing, whose URL is the published `selvage-protocol.selvage`. The local setup must
 say an invite cannot reach another machine and link to the server's remote deployment guide. These
 facts are read from their own regions, so neither route can satisfy a missing browser instruction.
@@ -101,59 +101,11 @@ change together; they do not establish that the UI or deployment works.
 
 The `$ ` prompt in front of each block and the label beside it are held to the stylesheet the served
 page loads: a rule has to name their class and take it out of a selection, or deleting
-`user-select: none` would bring a pasted `$ ` back with nothing to say so. The demo instance is
-asserted the same way: the page points at one host, every reference to that host has to be one of the
-two the page may carry, and a link has to point at the instance itself, and
-`https://selvage-demo.dontblameme.dev/meta` has to report a `selvaged` server. The references are
-read from the visible text *and* from the links' destinations, because a label and the place it goes
-are two claims: an anchor labelled with the demo host whose `href` points elsewhere passes a
-text-only scan. The allowed references are the origin and the `wss://` origin with **no path**,
-because both clients append `/session` to whatever address they are given (`sessionUrl` in the
-engine they vendor), so the page naming `wss://…/session` would hand a reader an address that gets a
-second `/session` appended and is refused. The check asserts that path separately, by asking
-`https://selvage-demo.dontblameme.dev/session` for a plain `GET` and requiring a **4xx carrying the
-server's own JSON**: the path has to reach the server the page names, a redirect or a `5xx` must not
-stand in for it, and the proxy's own `404` page is `text/html`. Which `4xx` the server picks is its
-business, and pinning `404` would redden this gate for a change in `selvaged` that makes no sentence
-on the page false. The **WebSocket upgrade is asserted too**, on the same address: the check
-performs the handshake the clients perform and requires a `101`, a `Sec-WebSocket-Accept` that is
-the client key's own digest, and the first frame the server sends a socket that never says hello —
-a `session.error` envelope carrying `selvage/2`. A hand-rolled upgrade from a general host's egress
-is answered `101` and then that frame, so the upgrade is a fact the gate reads rather than one it
-records by hand, and an address whose plain path answers while its upgrade does not is a name an
-editor cannot use. The one answer that is neither of those is the edge in front of the demo
-refusing the **check's own egress**: a `4xx` that is not the server's own JSON is not the server
-answering, and what Cloudflare's bot list answers a hand-rolled upgrade from an egress it distrusts
-is `403` with `error code: 1010`. That is recorded with its status, the host it came from and the
-edge's own words, and it does not fail the step, because what it says is what that network did and
-not what the page claims. A GitHub runner's egress is one the edge refuses that way, so a run there
-records the refusal and says in its closing line that the handshake is not asserted on it; a
-general host's egress is answered `101`, and that run is what asserts the upgrade. Everything the
-page's claim depends on stays a failure whatever the egress: a `404`, a `4xx` the server itself
-answers with its own JSON, a `5xx` or any status that is not a refusal, a `101` whose
-`Sec-WebSocket-Accept` is not the key's own digest, and a `101` whose first frame is not a
-`session.error` envelope carrying `selvage/2`.
-It also asks `/` for a `200` and a `text/html`,
-because the browser row tells a guest the demo serves the page and the proxy's own `404` is
-`text/html` too, so the media type alone would let a dead page satisfy it. It then reads the bytes
-`/` answered with and requires the host card's own element in them, because the browser row also
-says a session can be started from the demo's page: the card is markup the client's shell carries,
-so it is in the served bytes whether or not the bundle's script has run, and a demo rolled back to a
-guests-only release is that sentence going false with nothing else to say so. What the demo half no
-longer does is compare the instance's release to the page: the page named one, a reader had no use
-for it, and it is gone from the section. The image half still ties the page's `docker run` to the
-registry: the tags it names have to be `PUBLISHED_IMAGE_TAG` on both packages, and the registry has
-to serve each of them. What the instance offers on the wire is read here and held to the tags'
-declared wire by the check below, which is where the artefacts the page hands over are compared.
-**That assertion couples the site's gate to a running box**: a demo that is down or moved, a
-`/session` the proxy no longer routes to the server, and a box whose `/` is not the page all fail
-the build, because a page claiming a demo that is not there is the defect it exists to catch.
-The one answer in that half that does not fail the build is the edge refusing the upgrade probe's
-own egress, which the run records for the reason above. It sends its own user agent, since the
-host's proxy answers `403` to an interpreter's default signature. The image half needs egress to
-`ghcr.io` and exits 2 rather than passing when it cannot
-reach it; the demo half does the same for an instance that does not answer at all, and exits 1 when
-the instance answers something that disproves a sentence.
+`user-select: none` would bring a pasted `$ ` back with nothing to say so. The image half still ties
+the page's `docker run` to the registry: the tags it names have to be `PUBLISHED_IMAGE_TAG` on both
+packages, and the registry has to serve each of them. The wire version is bound to those two
+references in `IMAGE_WIRE_BY_REFERENCE`, and the page may name no other version. The image half
+needs egress to `ghcr.io` and exits 2 rather than passing when it cannot reach it.
 
 The next positive assertion binds the page's sealing claim to the one wire version, and it exists
 because the paragraph that makes that claim sits directly under a `docker run`: a reader can take
