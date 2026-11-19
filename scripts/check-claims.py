@@ -1272,6 +1272,21 @@ FORBIDDEN: list[Phrase] = [
         "is unspecified, not that this is first",
     ),
     Phrase(
+        # The public demo was retired with the Azure instance. A page that promises one is
+        # describing a service the project does not run, so the overclaim stays forbidden.
+        r"\bdemo\b[^.]{0,48}\b(?:always (?:up|on|available)|never goes? down|unlimited"
+        r"|persist\w*|stored|backed up|production|guarantee\w*|reliab\w*|at scale"
+        r"|(?:your|a|our|the) team)\b",
+        "The demo is always available and never goes down.",
+        "the public demo was retired with the Azure instance; the site offers a server you run "
+        "yourself, so a sentence promising an always-on or team-sized demo is false",
+        ("the free demo never goes down", "the demo persists your rooms"),
+        (
+            "Run the server on your own machine; no hosted service is offered.",
+            "The local page runs in Chrome or Edge.",
+        ),
+    ),
+    Phrase(
         # The project states nothing about how the instance may be used: the repository licences
         # are the whole of it, and they are not a non-commercial one
         # either — the workspace and clients are MIT OR Apache-2.0, `crates/selvaged` is

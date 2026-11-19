@@ -106,7 +106,7 @@ the page's `docker run` to the registry: the tags it names have to be `PUBLISHED
 packages, and the registry has to serve each of them. The wire version is bound to those two
 references in `IMAGE_WIRE_BY_REFERENCE`, and the page may name no other version. The image half
 needs egress to `ghcr.io` and exits 2 rather than passing when it cannot reach it.
-The rendered prose and link destinations are also checked for the retired demo host. That rule is static: the instance is gone, so there is nothing to probe, and a stale host in either surface fails the scan.
+The rendered prose and link destinations are also checked for the retired demo host. That rule is static: the instance is gone, so there is nothing to probe, and a stale host in either surface fails the scan. The demo-as-a-service overclaim stays in the phrase list as a filter too, so promising an always-on or team-sized demo cannot come back unchecked.
 
 The next positive assertion binds the page's sealing claim to the one wire version, and it exists
 because the paragraph that makes that claim sits directly under a `docker run`: a reader can take
