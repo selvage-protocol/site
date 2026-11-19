@@ -8,21 +8,14 @@ worth having: those known wordings do not appear, even when the page wraps them 
 encodes the characters as HTML entities.
 
 Facts are asserted in the positive instead, because a phrase list cannot reach them: the images
-the section's `docker run`s hand a reader and which of the two sits on which run, the
-instance the demo section points at — the address
-it gives an editor and the page a guest is sent to — the wire the tags and that address each speak,
-held together and to no version this protocol does not have, the disclosures the page owes a reader
-of what the sealed relay still sees and of the terms `selvaged` is under, and the identity the
-extension is published under with the two
-registries the release publishes it to and what an
-install is and is not, and the JetBrains plugin's listing, which the Marketplace has to say is
-public. The address half asks the path a plain `GET` can reach and the upgrade the clients open on
-it: the path has to reach the server with the server's own JSON, and a `4xx` that is not that is the
-edge in front of the demo refusing the check's own egress rather than the server answering, which a
-run records instead of asserting (see `demo_session_route` and `demo_upgrade_route`). Each is a
-fact with an artefact behind it, and a wrong tag is a command that fails rather than a wording that
-lies. See
-`PUBLISHED_IMAGES`, `DEMO_ORIGIN`, `RELAY_DISCLOSURE`, `FSL_DISCLOSURE`, `PUBLISHED_EXTENSION`,
+the section's `docker run`s hand a reader and which of the two sits on which run, the wire the
+tags speak and the version the page names, the disclosures the page owes a reader of what the
+sealed relay still sees and of the terms `selvaged` is under, and the identity the extension is
+published under with the two registries the release publishes it to and what an install is and
+is not, and the JetBrains plugin's listing, which the Marketplace has to say is public. Each is
+a fact with an artefact behind it, and a wrong tag is a command that fails rather than a wording
+that lies. See
+`PUBLISHED_IMAGES`, `RELAY_DISCLOSURE`, `FSL_DISCLOSURE`, `PUBLISHED_EXTENSION`,
 `JETBRAINS_LISTING`, `check_run_section_command`, `check_run_section_address`,
 `check_command_prompt_selection`, `check_wire_binding` and `check_jetbrains_listing` below.
 
@@ -55,22 +48,18 @@ Run from anywhere; the repository root is resolved from this file's location. Ar
 
 Exit 0 when the page is clean of every known wording and the positive claims hold up, 1 when it
 carries a forbidden wording or a positive claim is wrong, 2 when the check itself cannot run (a
-dead pattern, nothing to scan, a registry that cannot be asked, or a demo host or the JetBrains
+dead pattern, nothing to scan, a registry that cannot be asked, or a JetBrains
 Marketplace that does not answer).
 """
 
 from __future__ import annotations
 
 import ast
-import base64
-import hashlib
 import html
 import json
 import os
 import re
 import shlex
-import socket
-import ssl
 import sys
 import traceback
 import urllib.error
@@ -95,9 +84,12 @@ SKIP_DIRS = {".git", ".tmp", "node_modules"}
 VEHICLE = r"\d[\d,]*"
 
 # The address the project's own landing page is served at. The browser entry holds a claim that
-# this origin is a place to join a room: the demo instance is where a page can be opened now, and
-# the site is not a client.
+# this origin is a place to join a room, while the site itself is not a client.
 SITE_ORIGIN = r"selvage\.dontblameme\.dev"
+
+# The host of the retired public demo. A page may no longer name it or link to it. This is a
+# static check on the rendered page: the instance is gone, so there is nothing to probe.
+RETIRED_DEMO_HOST = "selvage-demo.dontblameme.dev"
 
 DASHES = re.compile("[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]")
 
@@ -130,7 +122,7 @@ PUBLISHED_IMAGES = (
 )
 PUBLISHED_IMAGE_TAG = "latest"
 # The two references the page may print, in the order its commands name them. `SERVER_IMAGE` is
-# the artefact the demo instance reports from `/meta`; `PAGE_IMAGE` is the one that relays to it.
+# the server artefact the published image runs; `PAGE_IMAGE` is the one that relays to it.
 SERVER_IMAGE, PAGE_IMAGE = PUBLISHED_IMAGES
 IMAGE_REFERENCES = tuple(f"{image}:{PUBLISHED_IMAGE_TAG}" for image in PUBLISHED_IMAGES)
 # The same pair as the section prints them, tag and all: the section prints the repository alone, because
@@ -599,39 +591,6 @@ IMAGE_WIRE_BY_REFERENCE = {
 }
 WIRE_VERSION = re.compile(r"\bselvage/\d+\b")
 
-# The demo section points at a running instance, a claim with an artefact behind it in the same
-# way the `docker run` is. Four sentences around it are checkable here: an instance of the server
-# runs at that host, the address the section hands an editor hosts a room on it, that editor
-# speaks a wire version the instance offers, and the browser row's guest page is served there. A
-# host that has moved, a box that is down, or a box that answers only part of that is a false
-# sentence, and no phrase list can enumerate those.
-#
-# `PUBLISHED_IMAGE_TAG` is asserted against the registry, as the tag the `docker run` hands a
-# reader.
-DEMO_HOST = "selvage-demo.dontblameme.dev"
-DEMO_ORIGIN = "https://" + DEMO_HOST
-# Every reference the page may carry to that host: the instance's own origin. It is the only
-# address on that host the page may hand a reader. The session address is the origin as well, with
-# no path. The
-# clients append the endpoint path themselves (`sessionUrl` in the engines both clients vendor), so
-# the two forms are not interchangeable: an address already carrying the path gets a second one
-# appended and the socket is refused, which is why the full form is not an allowed reference.
-DEMO_REFERENCES = (DEMO_ORIGIN, "wss://" + DEMO_HOST)
-DEMO_URL = re.compile(r"(?:https?|wss?)://[^\s\"'<>)]+")
-# The endpoint path the clients append to whatever server address they are given, so the address
-# the page hands a reader names this path's parent.
-SESSION_PATH = "/session"
-# The name the server artefact reports from `/meta`, and the artefact the page's own `docker run`
-# pulls. The page's sentence is that an instance of the server runs at that host, so a `/meta`
-# that does not name this is a different thing answering on the same host.
-SERVER_NAME = re.compile(r"selvaged/\S+")
-# The host card's own element in the shell the client serves: `web_client`'s `public/index.html`
-# writes it into the markup rather than building it in script, so it is in the bytes `/` answers
-# with whatever the browser is and whether or not the bundle's script has run. It is the artefact
-# behind the page's sentence that a session can be started from the demo's page: a bundle older
-# than the one that added the card carries no such element, and the sentence would be about a page
-# that cannot start one.
-HOST_CARD = re.compile(r'id="host-wrap"')
 # The page's statement of what the sealed relay still sees is a claim the gate has to *require*,
 # not just permit: the `clean` fixtures above only prove the pattern does not reject those
 # sentences, and an editor who deleted the statement would leave every one of them green. What is
@@ -842,16 +801,11 @@ EXTENSION_PUBLICATION = (
 )
 
 # How a page that says which wire an artefact speaks is read: which wire the image under the
-# `docker run` speaks, and which wire the demo speaks. A page is no longer required to say
-# either, so `check_wire_binding` reads them where they are written and holds each to the
-# artefact it names.
+# `docker run` speaks. A page is no longer required to say it, so `check_wire_binding` reads it
+# where it is written and holds it to the artefact it names.
 WIRE_OF_IMAGE = re.compile(
     r"\bthe (?:published |pinned )?(?:image|container)\b"
     r"[^.]{0,80}?\bspeaks?\b[^.]{0,40}?\b(selvage/\d+)\b",
-    re.IGNORECASE,
-)
-WIRE_OF_DEMO = re.compile(
-    r"\b(?:the demo|the instance)\b[^.]{0,80}?\bspeaks?\b[^.]{0,40}?\b(selvage/\d+)\b",
     re.IGNORECASE,
 )
 # How a page says the sealing is not what a reader can obtain yet. There is no version to say it of:
@@ -864,7 +818,7 @@ WIRE_UNRELEASED = re.compile(
     re.IGNORECASE,
 )
 # A link's destination lives in an attribute, and the visible text carries only its label, so both
-# are scanned: an anchor labelled with the demo host can point somewhere else entirely.
+# are scanned: an anchor labelled like an address can point somewhere else entirely.
 DESTINATION = re.compile(r"\b(?:href|src|action)\s*=\s*(?:\"([^\"]*)\"|'([^']*)')", re.IGNORECASE)
 # Prose an attribute carries rather than the body. A `meta` element's `content` is what a link
 # unfurl prints, which is the surface a person deciding whether to paste the link meets before the
@@ -1011,8 +965,8 @@ FORBIDDEN: list[Phrase] = [
     ),
     Phrase(
         # The browser client is published now and it hosts: on Chrome or Edge a page its own
-        # server serves starts a room from a folder the person picks, which is the demo's shape
-        # and needs no editor at all. The page may therefore name a route a reader can follow and
+        # server serves starts a room from a folder the person picks, with no editor at all, as
+        # the local page does. The page may therefore name a route a reader can follow and
         # say a room can be started from a page. What survives is what is still false: hosting in
         # a browser the reader may not be holding (Firefox and Safari have no directory picker,
         # so they join and cannot host, which is the claim the unqualified "host a session in the
@@ -1030,7 +984,7 @@ FORBIDDEN: list[Phrase] = [
         r"|\b(?:browser|client|room|join|edit)\w*\b[^.]{0,48}" + SITE_ORIGIN,
         "open the page in your browser and start typing",
         "the browser page joins a room from a link in any browser, and Chrome or Edge can start "
-        "one from a folder on a page the room's own server serves, which the demo is. What is "
+        "one from a folder on a page the room's own server serves. What is "
         "false is the unqualified form: Firefox and Safari have no directory picker, a page no "
         "server serves cannot host, joining needs the invite link a host copies, and the "
         "project's own site is a landing page rather than a client",
@@ -1044,7 +998,7 @@ FORBIDDEN: list[Phrase] = [
         ),
         (
             "The browser page joins the same room from a tab, with the invite link a host copies.",
-            "A guest works in the page at https://selvage-demo.dontblameme.dev with nothing installed.",
+            "A guest works in the page at http://127.0.0.1:8080 with nothing installed.",
             "On Chrome or Edge, a page its own server serves starts a session from a folder you pick.",
             "The page starts a room in Chrome or Edge, and only where its own server serves it.",
             "Chrome or Edge can start a session from the page instead.",
@@ -1069,19 +1023,17 @@ FORBIDDEN: list[Phrase] = [
         # The denial the published artefacts refute: `reference_server/Dockerfile` builds the
         # anonymously pullable `ghcr.io/selvage-protocol/selvaged:latest`, `web_client/Dockerfile`
         # builds `ghcr.io/selvage-protocol/selvage-web:latest`, `reference_server/compose.yaml`
-        # runs the server, and `reference_server/deploy/selvage-update.service` is the systemd
-        # unit the demo box installs. A page saying none of that exists states the opposite of
-        # the truth.
+        # runs the server beside the page image. A page saying none of that exists states
+        # the opposite of the truth.
         r"\bno (?:image|container) to pull\b|\bnothing to install on the server\b"
-        r"|\bno compose (?:file|configuration)\b|\bno systemd (?:service|unit)\b",
-        "there is no image to pull and no service unit to install in any repository yet",
+        r"|\bno compose (?:file|configuration)\b",
+        "there is no image to pull and no compose file in any repository yet",
         "the images are published (`ghcr.io/selvage-protocol/selvaged:latest` and "
-        "`ghcr.io/selvage-protocol/selvage-web:latest`) and pull with no account, "
-        "`reference_server/compose.yaml` runs the server, and "
-        "`reference_server/deploy/selvage-update.service` is the systemd unit the demo box "
-        "installs: a page saying none of that exists states the opposite of the truth",
+        "`ghcr.io/selvage-protocol/selvage-web:latest`) and pull with no account, and "
+        "`reference_server/compose.yaml` runs the server beside the page image: a page saying "
+        "none of that exists states the opposite of the truth",
         ("there is no im<!-- -->age to pull", "no conta<span></span>iner to pull",
-         "there is no comp<!-- -->ose file", "there is no systemd <span>u</span>nit"),
+         "there is no comp<!-- -->ose file"),
         ("the published image pulls with no account and no login",
          "the image is published, so there is nothing to clone"),
     ),
@@ -1320,28 +1272,18 @@ FORBIDDEN: list[Phrase] = [
         "is unspecified, not that this is first",
     ),
     Phrase(
-        # The instance is live, so this entry no longer denies it; pointing at the demo is truth
-        # and the page's own heading says so. What it holds is the overclaim that replaced the
-        # denial: a demo described as a service. Its rooms are in memory on one small box, it
-        # keeps no work, it is not promised to be up, and it is not sized for a team.
-        r"\b(?:live|free) demo\b"
-        r"|\bdemo\b[^.]{0,48}\b(?:always (?:up|on|available)|unlimited|persist\w*|stored"
-        r"|backed up|production|guarantee\w*|reliab\w*|at scale|(?:your|a|our|the) team)\b"
-        r"|\b(?:at scale|(?:your|a|our|the) team)\b[^.]{0,32}\bdemo\b",
-        "try the free demo, it is always up and your rooms are saved",
-        "the demo is one small box with in-memory rooms: a restart ends every one of them, it "
-        "keeps no work, nothing promises it is up, and it is not sized for a team, so the shape "
-        "of a free tier of a service is a claim about a product that does not exist",
+        # The public demo was retired with the Azure instance. A page that promises one is
+        # describing a service the project does not run, so the overclaim stays forbidden.
+        r"\bdemo\b[^.]{0,48}\b(?:always (?:up|on|available)|never goes? down|unlimited"
+        r"|persist\w*|stored|backed up|production|guarantee\w*|reliab\w*|at scale"
+        r"|(?:your|a|our|the) team)\b",
+        "The demo is always available and never goes down.",
+        "the public demo was retired with the Azure instance; the site offers a server you run "
+        "yourself, so a sentence promising an always-on or team-sized demo is false",
+        ("the free demo never goes down", "the demo persists your rooms"),
         (
-            "the free demo never goes down",
-            "the demo persists your rooms",
-            "the demo is always available",
-            "run your team's sessions on the demo",
-        ),
-        (
-            "A demo instance runs at https://selvage-demo.dontblameme.dev.",
-            "The demo's rooms live in memory: a restart ends every one of them.",
-            "Rooms on the demo are not kept; run your own server for that.",
+            "Run the server on your own machine; no hosted service is offered.",
+            "The local page runs in Chrome or Edge.",
         ),
     ),
     Phrase(
@@ -1353,7 +1295,7 @@ FORBIDDEN: list[Phrase] = [
         # nobody wrote.
         r"\bnon-?commercial licen[cs]e\b"
         r"|\b(?:licen[cs]e|software|project|selvage|selvaged|workspace|clients?|source"
-        r"|instance|demo|server|box)\b"
+        r"|instance|server|box)\b"
         r"[^.]{0,12}\b(?:is|are|stays?|remains?|becomes?)\b[^.]{0,8}\bnon-?commercial\b",
         "the non-commercial licence covers the project",
         "the project's licences are not non-commercial: the workspace and the clients are "
@@ -1366,10 +1308,10 @@ FORBIDDEN: list[Phrase] = [
             "Selvage is non-commercial software",
             "the project is non-commercial",
             "selvaged has a non-commercial licence",
-            "The demo instance is non-commercial and for personal and evaluation use.",
+            "The server I run is non-commercial and for personal use.",
         ),
         (
-            "The demo instance carries no non-commercial term of its own.",
+            "The server carries no non-commercial term of its own.",
             "The project states no non-commercial restriction on the instance.",
         ),
     ),
@@ -1507,8 +1449,8 @@ FORBIDDEN: list[Phrase] = [
         r"|(?:server|selvaged|setup|install\w*|deploy\w*|build|app|site|page|service)\b[^.]{0,32}\b(?:starts?|runs?|boots?)\b[^.]{0,24}\bin seconds\b(?!-)"
         r"|one[- ]click|just works",
         "Self-hosting takes seconds on any machine you choose.",
-        "the image, the compose file and the systemd unit all exist, and no ease claim around "
-        "them is backed: no install time, start-up time or latency has been measured or "
+        "the image and the compose file exist, and no ease claim around them is backed: no install "
+        "time, start-up time or latency has been measured or "
         "recorded anywhere in the corpus",
         ("up and running in seconds.",
          "up and running in\nseconds.",
@@ -1530,13 +1472,13 @@ FORBIDDEN: list[Phrase] = [
     Phrase(
         r"\bis live\b|\bnow live\b|\bnow available\b",
         "Selvage Session Protocol is now live.",
-        "the image is published and pulls with no account, and one small demo instance runs. "
-        "There is no hosted service and nothing was launched: a status reading 'live' or 'now "
-        "available' sells the demo as a product. The honest status line names the release and "
+        "the image is published and pulls with no account. There is no hosted service and nothing "
+        "was launched: a status reading 'live' or 'now available' sells the project as a product. "
+        "The honest status line names the release and "
         "the specification draft",
     ),
     Phrase(
-        # The specification is a draft, and the phrase list already forbids selling the demo with a
+        # The specification is a draft, and the phrase list already forbids selling the project with a
         # `live` status; this is the same completion claim made of the protocol itself. The `1.0`
         # entry above catches a version claim, but `finished`, `released` and `stable` are titles
         # the draft has not reached, and a page could carry one with nothing else to say so.
@@ -1730,6 +1672,56 @@ def destinations(raw: str) -> list[tuple[str, int]]:
         if value:
             found.append((html.unescape(value), raw.count("\n", 0, match.start()) + 1))
     return found
+
+
+def retired_demo_references(page: Scanned) -> list[tuple[str, int]]:
+    """Every mention of the retired demo host in the page's prose, metadata and destinations.
+
+    The visible text, a link's destination and a `meta` description are separate surfaces: a
+    reader can be handed the host in any of them while the others stay local.
+    """
+    found: list[tuple[str, int]] = []
+    for stream, lines in [(page.text, page.line_of), *page.prose]:
+        for match in re.finditer(re.escape(RETIRED_DEMO_HOST), stream, re.IGNORECASE):
+            found.append((match.group(0), lines[match.start()]))
+    for destination, line in page.destinations:
+        if RETIRED_DEMO_HOST.lower() in destination.lower():
+            found.append((destination, line))
+    return found
+
+
+def check_retired_demo_reference(pages: list[Scanned]) -> int:
+    root = root_of_this_checkout()
+    found = False
+    for page in pages:
+        for reference, line in retired_demo_references(page):
+            print(
+                f"check-claims: {os.path.relpath(page.path, root)}:{line} names the retired demo "
+                f"host {reference!r}; the instance is gone and no page may point at it",
+                file=sys.stderr,
+            )
+            found = True
+    return 1 if found else 0
+
+
+def retired_demo_reference_fixture_problems() -> list[str]:
+    def scanned(raw: str) -> Scanned:
+        text, line_of = normalise(raw)
+        return Scanned("fixture.html", text, line_of, destinations(raw), raw, meta_streams(raw))
+
+    if not retired_demo_references(
+        scanned('<a href="https://selvage-demo.dontblameme.dev">Open a room</a>')
+    ):
+        return ["retired demo destination is not rejected"]
+    if not retired_demo_references(scanned("<p>Try selvage-demo.dontblameme.dev</p>")):
+        return ["retired demo host in prose is not rejected"]
+    if not retired_demo_references(
+        scanned('<meta name="description" content="Open a room at selvage-demo.dontblameme.dev">')
+    ):
+        return ["retired demo host in metadata prose is not rejected"]
+    if retired_demo_references(scanned('<a href="http://127.0.0.1:8080">Open a room</a>')):
+        return ["local page destination is rejected as a retired demo reference"]
+    return []
 
 
 def normalise(text: str) -> tuple[str, list[int]]:
@@ -3152,552 +3144,6 @@ def check_command_prompt_selection(pages: list[Scanned]) -> int:
     return 0
 
 
-def demo_host_of(reference: str) -> str:
-    """The host of a URL, with any userinfo, port and path dropped; "" for one that names none.
-
-    A destination can be relative (`#get-it-working`), which is this page and not the instance,
-    so it answers with no host rather than failing.
-    """
-    if "://" not in reference:
-        return ""
-    authority = reference.split("://", 1)[1].split("/", 1)[0]
-    return authority.rsplit("@", 1)[-1].split(":", 1)[0].lower()
-
-
-# `/meta`, asked once per run however many checks read it. Two requests to a live box can answer
-# differently, and a run whose halves disagree with each other checks nothing.
-_META: list[tuple[str, tuple[str, ...]]] = []
-
-
-def demo_meta() -> tuple[str, tuple[str, ...]]:
-    """What the instance reports about itself from `/meta`: its name, and its wire versions.
-
-    The request names itself rather than going out as the interpreter's default signature: the
-    host is behind Cloudflare, whose bot list answers `403` (error 1010) to `Python-urllib`, and
-    a check that cannot read the instance cannot assert anything about it.
-    """
-    if _META:
-        return _META[0]
-    request = urllib.request.Request(f"{DEMO_ORIGIN}/meta")
-    request.add_header("Accept", "application/json")
-    request.add_header("User-Agent", USER_AGENT)
-    with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
-        body = json.loads(response.read())
-    name = body["server"]
-    if not isinstance(name, str) or not name:
-        raise ValueError(f"/meta carried no usable `server` name ({name!r})")
-    offered = body["wire_versions"]
-    if not isinstance(offered, list) or not offered:
-        raise ValueError(f"/meta carried no usable `wire_versions` ({offered!r})")
-    if not all(isinstance(one, str) and one for one in offered):
-        raise ValueError(f"/meta carried a wire version that is not a name ({offered!r})")
-    _META.append((name, tuple(offered)))
-    return _META[0]
-
-
-def demo_session_route() -> tuple[int, str]:
-    """What answers the instance's session path, as the status and media type of a plain GET.
-
-    The page hands a reader a server address and the clients append `SESSION_PATH` to it, so the
-    address is worth a sentence only if that path reaches the server. This is the plain request:
-    the server refuses one that asks for no upgrade with its own JSON, and
-    `session_path_reaches_the_server` is what decides it. The upgrade the clients actually open is
-    a different request and is read by `demo_upgrade_route`, which asserts the handshake when the
-    edge in front of the host answers it and records the refusal when the edge answers the probe's
-    egress instead.
-    """
-    request = urllib.request.Request(f"{DEMO_ORIGIN}{SESSION_PATH}")
-    request.add_header("User-Agent", USER_AGENT)
-    try:
-        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
-            return response.status, response.headers.get_content_type()
-    except urllib.error.HTTPError as error:
-        return error.code, error.headers.get_content_type() if error.headers else ""
-
-
-def session_path_reaches_the_server(status: int, media_type: str) -> bool:
-    """Whether an answer to a plain GET on the session path came from the server.
-
-    The server refuses a request that asks for no upgrade with its own JSON, so a **4xx JSON**
-    answer is the server answering that path. Everything else is another conversation: a redirect
-    or a 2xx (something else serving the path, `urlopen` having followed a redirect to it), a 5xx
-    (the server failing rather than refusing), and a body that is not the server's JSON (the
-    proxy's own page, which is `text/html`).
-
-    Which 4xx the server chooses is its own business and not a sentence this page makes: pinning
-    `404` would redden the site's gate for a change in `selvaged` that makes no claim on the page
-    false, which is the coupling this file refuses elsewhere in the demo half.
-    """
-    return 400 <= status <= 499 and media_type == "application/json"
-
-
-# The WebSocket handshake the clients perform on the address the page hands a reader, RFC 6455:
-# the fixed GUID every server hashes a client's key with, and the deadline the read is bounded by.
-# A socket that completes the handshake and sends no `hello` is answered with a `session.error`
-# frame once the server's `hello_timeout` expires (`specification/schema/limits.json`, 10
-# seconds), so the read has to outlast that limit rather than assume a frame arrives at once.
-WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-WS_OPCODE_TEXT = 0x1
-WS_OPCODE_BINARY = 0x2
-# The event that frame carries. Its `params.code` is `hello_required` there, but the code is the
-# server's business and stays unpinned, like the `4xx` the plain request on the same path is answered
-# with.
-HELLO_REFUSAL_EVENT = "session.error"
-# How much of a refusal's body the probe reads: enough to say whether the server answered and to
-# quote what did, in its own words. A refusal is read for its shape, never for its whole text.
-REFUSAL_BODY_LIMIT = 512
-
-
-@dataclass(frozen=True)
-class UpgradeAnswer:
-    """What the instance answered the WebSocket upgrade with, as the probe read it.
-
-    `status` is `0` when no HTTP head arrived at all within `REQUEST_TIMEOUT_SECONDS`, which is
-    neither a refusal nor a handshake. `media_type` and `body` are the refusal's own shape, read
-    because which answer a `4xx` is — the server's own or something in front of it — decides
-    whether the page's sentence is in question at all.
-    """
-
-    status: int
-    accept_matches: bool
-    frame: bytes
-    media_type: str
-    body: bytes
-
-    def refused_by_the_edge(self) -> bool:
-        """Whether something in front of the server refused the upgrade, rather than the server.
-
-        Apart from a handshake, the server answers this path with JSON of its own: the plain
-        request on the same address is read the same way, by `session_path_reaches_the_server`, and
-        a server that answered an upgrade with a refusal of its own would be a defect the address
-        the page hands over cannot survive. So a `4xx` that is neither that JSON nor a `404` came
-        from something in front of the server — Cloudflare's bot list, for one, answers a
-        hand-rolled upgrade from an egress it distrusts with `403`, `text/plain` and
-        `error code: 1010` — and says what that network did, not what the page claims. A `404` is
-        not that whatever its body is: it says the path itself is not there, which is a sentence
-        about the address the page hands a reader. Nothing else is read here: `5xx`, `3xx` and
-        `2xx` are not refusals at all and stay the caller's failure, and `0` is no answer having
-        arrived.
-        """
-        if not 400 <= self.status <= 499 or self.status == 404:
-            return False
-        return self.media_type != "application/json"
-
-
-def media_type_of(header: str) -> str:
-    """A `Content-Type` header as the media type alone, lowercased: its parameters are not it.
-
-    The plain request's media type comes from `urllib`'s own header object; this is the same
-    reading for a response read off a socket, which has no such object.
-    """
-    return header.split(";", 1)[0].strip().lower()
-
-
-def refusal_description(answer: UpgradeAnswer) -> str:
-    """A refusal as the record states it: its status, its media type and its own first words.
-
-    A log line naming all three says which conversation answered the probe, so nobody has to ask
-    the host again to find out what happened.
-    """
-    first_line = answer.body.decode("utf-8", "replace").strip().partition("\n")[0].strip()
-    words = f", {first_line!r}" if first_line else ""
-    return f"{answer.status} ({answer.media_type or 'no media type'}{words})"
-
-
-def _recv_exactly(connection: ssl.SSLSocket, count: int) -> bytes:
-    """Up to `count` bytes, stopping when the connection's own timeout runs out."""
-    data = b""
-    while len(data) < count:
-        try:
-            chunk = connection.recv(count - len(data))
-        except (TimeoutError, socket.timeout):
-            break
-        if not chunk:
-            break
-        data += chunk
-    return data
-
-
-def _read_websocket_frame(connection: ssl.SSLSocket) -> bytes:
-    """The payload of the next data frame on the connection, or `b""` for anything else.
-
-    A control frame (a ping, a close) is deliberately not the answer this reads: what the check
-    is after is the server's own envelope, and a control frame is the connection rather than the
-    protocol's first word. A frame that times out part-way is reported as none as well, so the
-    caller says what it observed instead of reading a truncated payload as one.
-    """
-    header = _recv_exactly(connection, 2)
-    if len(header) < 2:
-        return b""
-    opcode = header[0] & 0x0F
-    masked = bool(header[1] & 0x80)
-    length = header[1] & 0x7F
-    if length == 126:
-        extended = _recv_exactly(connection, 2)
-        if len(extended) < 2:
-            return b""
-        length = int.from_bytes(extended, "big")
-    elif length == 127:
-        extended = _recv_exactly(connection, 8)
-        if len(extended) < 8:
-            return b""
-        length = int.from_bytes(extended, "big")
-    mask = _recv_exactly(connection, 4) if masked else b""
-    if masked and len(mask) < 4:
-        return b""
-    payload = _recv_exactly(connection, length)
-    if len(payload) < length:
-        return b""
-    if masked:
-        payload = bytes(byte ^ mask[index % 4] for index, byte in enumerate(payload))
-    if opcode not in (WS_OPCODE_TEXT, WS_OPCODE_BINARY):
-        return b""
-    return payload
-
-
-def _read_refusal_body(connection: ssl.SSLSocket, head: bytes, buffered: bytes) -> bytes:
-    """Up to `REFUSAL_BODY_LIMIT` bytes of the body of the response whose head is `head`.
-
-    `buffered` is what arrived with the head. Only a `Content-Length` is believed, and a body that
-    keeps arriving is cut at the limit: what a refusal is read for is the shape of what answered.
-    A body that never arrives is reported as none rather than waited for.
-    """
-    body = buffered[:REFUSAL_BODY_LIMIT]
-    length = 0
-    for line in head.split(b"\r\n")[1:]:
-        if line.lower().startswith(b"content-length:"):
-            try:
-                length = int(line.split(b":", 1)[1].strip())
-            except ValueError:
-                length = 0
-    wanted = min(length, REFUSAL_BODY_LIMIT)
-    while len(body) < wanted:
-        chunk = _recv_exactly(connection, wanted - len(body))
-        if not chunk:
-            break
-        body += chunk
-    return body
-
-
-def demo_upgrade_route() -> UpgradeAnswer:
-    """What the instance answers a WebSocket upgrade on the session path with.
-
-    The address the page hands a reader is one an editor opens a socket on, so the handshake is
-    the sentence's own assertion: `session_path_reaches_the_server` decides the plain request, and
-    a proxy that answers that one and refuses the upgrade would pass a check that never made this
-    one. This performs the handshake the clients perform, and reads the answer as the status,
-    whether its `Sec-WebSocket-Accept` is the client key's own digest, the payload of its first
-    data frame — the server's envelope, which the caller reads for its event and for the one wire
-    version — and,
-    when the answer is no handshake, the refusal's own shape. An egress the edge refuses is a
-    different fact from the server answering, and `UpgradeAnswer.refused_by_the_edge` is what
-    tells the two apart.
-    """
-    context = ssl.create_default_context()
-    with socket.create_connection(
-        (DEMO_HOST, 443), timeout=REQUEST_TIMEOUT_SECONDS
-    ) as raw:
-        with context.wrap_socket(raw, server_hostname=DEMO_HOST) as connection:
-            connection.settimeout(REQUEST_TIMEOUT_SECONDS)
-            key = base64.b64encode(os.urandom(16)).decode("ascii")
-            connection.sendall(
-                (
-                    f"GET {SESSION_PATH} HTTP/1.1\r\n"
-                    f"Host: {DEMO_HOST}\r\n"
-                    "Upgrade: websocket\r\n"
-                    "Connection: Upgrade\r\n"
-                    f"Sec-WebSocket-Key: {key}\r\n"
-                    "Sec-WebSocket-Version: 13\r\n"
-                    f"User-Agent: {USER_AGENT}\r\n"
-                    "\r\n"
-                ).encode("ascii")
-            )
-            raw = b""
-            while b"\r\n\r\n" not in raw and len(raw) <= 64 * 1024:
-                try:
-                    chunk = connection.recv(4096)
-                except (TimeoutError, socket.timeout):
-                    break
-                if not chunk:
-                    break
-                raw += chunk
-            head, _, buffered = raw.partition(b"\r\n\r\n")
-            lines = head.split(b"\r\n")
-            if not lines or not lines[0].startswith(b"HTTP/"):
-                return UpgradeAnswer(0, False, b"", "", b"")
-            try:
-                status = int(lines[0].split(b" ", 2)[1])
-            except (IndexError, ValueError) as error:
-                # A status line with no code is a refusal this check cannot read as one, and the
-                # caller's own "could not run" path is the answer rather than an uncaught IndexError.
-                raise ValueError("malformed HTTP status line") from error
-            accept = ""
-            media_type = ""
-            for line in lines[1:]:
-                lowered = line.lower()
-                if lowered.startswith(b"sec-websocket-accept:"):
-                    accept = line.split(b":", 1)[1].strip().decode("ascii", "replace")
-                elif lowered.startswith(b"content-type:"):
-                    media_type = media_type_of(line.split(b":", 1)[1].decode("ascii", "replace"))
-            expected = base64.b64encode(
-                hashlib.sha1((key + WS_GUID).encode("ascii")).digest()
-            ).decode("ascii")
-            if status != 101:
-                return UpgradeAnswer(
-                    status,
-                    accept == expected,
-                    b"",
-                    media_type,
-                    _read_refusal_body(connection, head, buffered),
-                )
-            return UpgradeAnswer(
-                status, accept == expected, _read_websocket_frame(connection), media_type, b""
-            )
-
-
-def demo_page_route() -> tuple[int, str, str]:
-    """What the instance answers `/` with: its status, its media type, and the bytes it serves.
-
-    The status is asked for as well as the media type, because the proxy's own `404` page is
-    `text/html` too: a `/` that serves the guest page is a `200`, and anything else is that origin
-    not serving it. The body comes back with them because one sentence on the page is about what
-    the served bundle can do, and only the bytes say which bundle it is.
-    """
-    request = urllib.request.Request(f"{DEMO_ORIGIN}/")
-    request.add_header("User-Agent", USER_AGENT)
-    try:
-        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
-            return (
-                response.status,
-                response.headers.get_content_type(),
-                response.read().decode("utf-8", "replace"),
-            )
-    except urllib.error.HTTPError as error:
-        body = error.read().decode("utf-8", "replace") if error.headers else ""
-        return error.code, error.headers.get_content_type() if error.headers else "", body
-
-
-def demo_reference_allowed(reference: str) -> bool:
-    """Whether the page may carry this reference to the instance.
-
-    A trailing slash is the same URL to a browser, so it is the same reference here.
-    """
-    return any(reference.rstrip("/") == one.rstrip("/") for one in DEMO_REFERENCES)
-
-
-def demo_references(page: Scanned) -> list[tuple[str, int]]:
-    """Every reference to the demo host the page carries, in text and in attributes.
-
-    The visible text is where a phrase claim lives, and an attribute is where a link's
-    destination lives; both are scanned, because a label and the place it goes are two claims.
-    """
-    found: list[tuple[str, int]] = []
-    for match in DEMO_URL.finditer(page.text):
-        # The sentence's own punctuation ends the match: `wss://host;` is the reference with a
-        # semicolon after it, not a reference with a semicolon in it.
-        reference = match.group(0).rstrip(".,;:!?")
-        if demo_host_of(reference) == DEMO_HOST:
-            found.append((reference, page.line_of[match.start()]))
-    for destination, line in page.destinations:
-        if demo_host_of(destination) == DEMO_HOST:
-            found.append((destination, line))
-    return found
-
-
-def check_demo_instance(pages: list[Scanned]) -> int:
-    """The page's demo references against the host they name, and the host against the sentences.
-
-    Returns 0 when they hold, 1 when a sentence the page carries is disproved, 2 when the
-    instance cannot be asked. A refusal an edge answers the upgrade probe with is the probe's own
-    egress rather than the page, so it is recorded and a run it happened on still returns 0 here.
-    """
-    root = root_of_this_checkout()
-    followed = 0
-    wrong: list[tuple[str, str, int]] = []
-    for page in pages:
-        where = os.path.relpath(page.path, root)
-        for reference, line in demo_references(page):
-            if demo_reference_allowed(reference):
-                followed += 1
-            else:
-                wrong.append((where, reference, line))
-    if not followed:
-        print(
-            f"check-claims: none of {len(pages)} scanned file(s) points at {DEMO_HOST!r}, and "
-            "the instance is what this check asserts: a scan that never reaches the demo is not "
-            "checking it",
-            file=sys.stderr,
-        )
-        return 1
-    if wrong:
-        for where, reference, line in wrong:
-            print(
-                f"check-claims: the page points a reader at {where}:{line}: {reference!r}, and "
-                f"the demo references are {', '.join(repr(one) for one in DEMO_REFERENCES)}",
-                file=sys.stderr,
-            )
-        return 1
-    if not any(
-        destination.rstrip("/") == DEMO_ORIGIN
-        for page in pages
-        for destination, _ in page.destinations
-    ):
-        print(
-            f"check-claims: no link on the page has a destination at {DEMO_ORIGIN}; the section "
-            "points a reader at the instance, so the host its text names with nowhere to follow "
-            "is the claim without the thing that makes it usable",
-            file=sys.stderr,
-        )
-        return 1
-
-    try:
-        reported, offered = demo_meta()
-        session_status, session_type = demo_session_route()
-        upgrade = demo_upgrade_route()
-        page_status, media_type, page_body = demo_page_route()
-    except urllib.error.HTTPError as error:
-        answer = error.read(200).decode("utf-8", "replace").strip()
-        print(
-            f"check-claims: {DEMO_ORIGIN} answered {error.code} {error.reason} "
-            f"({answer[:160]!r}); the instance the page points at is not answering the check, "
-            "and a name nothing can read is a name nothing can confirm",
-            file=sys.stderr,
-        )
-        return 2
-    except (urllib.error.URLError, OSError, ValueError, KeyError) as error:
-        print(
-            f"check-claims: cannot ask {DEMO_ORIGIN} what it is serving ({error}); "
-            "the sentences the page carries about the instance cannot be checked against the "
-            "instance itself, so this is a failure rather than a pass",
-            file=sys.stderr,
-        )
-        return 2
-
-    if not SERVER_NAME.match(reported):
-        print(
-            f"check-claims: {DEMO_ORIGIN}/meta reports {reported!r} and the page says an "
-            f"instance of the server runs there; the server the page's own `docker run` pulls "
-            f"is {SERVER_IMAGE.rsplit('/', 1)[-1]}, so this is a different thing answering "
-            "on that host",
-            file=sys.stderr,
-        )
-        return 1
-
-    if not session_path_reaches_the_server(session_status, session_type):
-        print(
-            f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} answered {session_status} "
-            f"{session_type!r}, and the page hands a reader {DEMO_REFERENCES[-1]!r} as the "
-            f"address to give an editor: the clients append {SESSION_PATH} to that address, so "
-            "the server has to answer that path with a refusal of its own, and a redirect, a "
-            "5xx or the proxy's page is something else answering it",
-            file=sys.stderr,
-        )
-        return 1
-
-    # The upgrade is the sentence's own assertion, and the one thing between the probe and it that
-    # is not the page is the network the probe runs from: a refusal the edge answers is recorded,
-    # and every outcome the page's claim depends on stays a failure. `upgrade_recorded` is what
-    # makes the closing line say which of the two runs this was.
-    upgrade_recorded = False
-    if upgrade.status != 101:
-        if upgrade.refused_by_the_edge():
-            upgrade_recorded = True
-            print(
-                f"check-claims: {DEMO_HOST}{SESSION_PATH} answered the WebSocket upgrade with "
-                f"{refusal_description(upgrade)} rather than the server's own JSON: that is the "
-                "edge in front of the server refusing this probe's egress, and not the server and "
-                "not the page the sentences are about, so the refusal is recorded here and the "
-                "handshake is not asserted on this run"
-            )
-        elif upgrade.status == 0:
-            print(
-                f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} sent no HTTP answer to a WebSocket "
-                f"upgrade within {REQUEST_TIMEOUT_SECONDS}s, and the page hands a reader "
-                f"{DEMO_REFERENCES[-1]!r} as the address to give an editor: the clients open a "
-                "socket on that address, and a socket that is answered nothing at all is not one "
-                "an editor can use",
-                file=sys.stderr,
-            )
-            return 1
-        else:
-            print(
-                f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} answered a WebSocket upgrade with "
-                f"{upgrade.status}, and the page hands a reader {DEMO_REFERENCES[-1]!r} as the "
-                "address to give an editor: the clients open a socket on that address, so the "
-                "upgrade has to be accepted, and a plain path that answers while the upgrade does "
-                "not is a name an editor cannot use",
-                file=sys.stderr,
-            )
-            return 1
-
-    if upgrade.status == 101:
-        if not upgrade.accept_matches:
-            print(
-                f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} answered a WebSocket upgrade with a "
-                "`Sec-WebSocket-Accept` that is not the client key's own digest: the 101 did not "
-                "complete a WebSocket handshake, so it is not the upgrade an editor opens",
-                file=sys.stderr,
-            )
-            return 1
-
-        try:
-            handshake = json.loads(upgrade.frame)
-        except (json.JSONDecodeError, UnicodeDecodeError):
-            handshake = None
-        if (
-            not isinstance(handshake, dict)
-            or handshake.get("event") != HELLO_REFUSAL_EVENT
-            or handshake.get("v") != WIRE
-        ):
-            observed = "nothing" if not upgrade.frame else repr(upgrade.frame[:120])
-            print(
-                f"check-claims: {DEMO_ORIGIN}{SESSION_PATH} accepted the WebSocket upgrade and "
-                f"sent {observed} as its first frame, and a socket that sends no `hello` is "
-                f"answered with a {HELLO_REFUSAL_EVENT} envelope carrying the one wire version, "
-                f"{WIRE}: a socket that opened and produced no frame of the server's is a relay "
-                "the page's claim does not reach",
-                file=sys.stderr,
-            )
-            return 1
-
-    if page_status != 200 or media_type != "text/html":
-        print(
-            f"check-claims: {DEMO_ORIGIN}/ answers {page_status} {media_type!r}, and the browser "
-            "row tells a guest the demo serves the page: a guest following an invite link there "
-            "needs the page, and the proxy's own 404 is text/html as well, so a status that is "
-            "not 200 is that origin not serving it",
-            file=sys.stderr,
-        )
-        return 1
-
-    if not HOST_CARD.search(page_body):
-        print(
-            f"check-claims: {DEMO_ORIGIN}/ serves a page whose shell carries no host card, and "
-            "the browser row says Chrome or Edge can start a session from the demo's page: the "
-            "card is what a bundle that can start one carries in its markup, so the bundle the "
-            "instance serves is one that cannot",
-            file=sys.stderr,
-        )
-        return 1
-
-    if upgrade_recorded:
-        print(
-            f"check-claims: the demo instance {DEMO_ORIGIN} answers, reports {reported!r} offering "
-            f"{', '.join(offered)}, answers {SESSION_PATH} with the server's own JSON "
-            f"({session_status}), and serves a page whose shell carries the host card; the "
-            f"WebSocket upgrade on {SESSION_PATH} was refused by the edge in front of the server, "
-            "which is recorded above and is not asserted on this run"
-        )
-        return 0
-
-    print(
-        f"check-claims: the demo instance {DEMO_ORIGIN} answers, reports {reported!r} offering "
-        f"{', '.join(offered)}, answers {SESSION_PATH} with the server's own JSON "
-        f"({session_status}), accepts a WebSocket upgrade there with a {HELLO_REFUSAL_EVENT} "
-        f"{WIRE} frame, and serves "
-        "a page whose shell carries the host card"
-    )
-    return 0
 
 
 def disclosure_region(page: Scanned) -> str:
@@ -4742,7 +4188,7 @@ def check_repository_grid(pages: list[Scanned]) -> int:
 
 
 def wire_binding_problems(
-    page: Scanned, offered: tuple[str, ...], image_wires: dict[str, str]
+    page: Scanned, image_wires: dict[str, str]
 ) -> list[str]:
     """What this page says about the wire that the artefacts behind it do not support.
 
@@ -4761,12 +4207,6 @@ def wire_binding_problems(
                     f"it says the images under the `docker run` speak {image.group(1)!r}, and "
                     f"{reference} speaks {wire}"
                 )
-    demo = WIRE_OF_DEMO.search(page.text)
-    if demo is not None and demo.group(1) not in offered:
-        problems.append(
-            f"it says the demo speaks {demo.group(1)!r}, and {DEMO_ORIGIN}/meta offers "
-            f"{', '.join(offered)}"
-        )
     # One wire version, so every version the page names is the one this protocol has. A second
     # name is a claim about a version that does not exist, and it is how the plaintext wire's own
     # sentence would outlive it: a page that still tells a reader which wire to avoid is a reader
@@ -4789,20 +4229,15 @@ def wire_binding_problems(
 def check_wire_binding(pages: list[Scanned]) -> int:
     """Which wire version the page says each artefact it hands a reader speaks.
 
-    The page hands a reader one `docker run` and one instance address, there is one wire version,
-    and it is the sealed one. What is read here is what the page says about the wire, and behind
-    that the artefacts against each other. The wire each reference speaks is read from
-    `IMAGE_WIRE_BY_REFERENCE`,
-    because no registry answers what wire a binary or a bundle speaks and a reference the map does
-    not name has to declare its wire in the same wave; the instance's half is measured, from
-    `/meta`, where no wording can forge it. A reference the instance does not offer, or a version
-    the page names that this protocol does not have, is a reader pasting the command under the
-    sealing paragraph and getting a server that carries the room through it in the clear — the
-    failure a confidentiality feature cannot have, and the one the pairing of the command and the
-    paragraph is for.
+    The page hands a reader two published images in one `docker run`, and there is one wire
+    version. The wire each reference speaks is read from `IMAGE_WIRE_BY_REFERENCE`, because no
+    registry answers what wire a binary or a bundle speaks and a reference the map does not name
+    has to declare its wire in the same place. A version the page names that this protocol does
+    not have is a reader pasting the command under the sealing paragraph and getting a server
+    that carries the room through it in the clear.
 
-    Returns 0, 1 when a page says something the artefacts disprove, 2 when the instance cannot
-    be asked or this file cannot say what a reference speaks.
+    Returns 0, 1 when a page says something the artefacts disprove, 2 when this file cannot say
+    what a reference speaks.
     """
     root = root_of_this_checkout()
     undeclared = [
@@ -4823,35 +4258,9 @@ def check_wire_binding(pages: list[Scanned]) -> int:
         reference: IMAGE_WIRE_BY_REFERENCE[reference]
         for reference in IMAGE_REFERENCES
     }
-    try:
-        offered = demo_meta()[1]
-    except (urllib.error.URLError, OSError, ValueError, KeyError) as error:
-        print(
-            f"check-claims: cannot ask {DEMO_ORIGIN} which wire versions it offers ({error}); "
-            "the page hands a reader that address and this file cannot say what a client meets "
-            "there without it",
-            file=sys.stderr,
-        )
-        return 2
-
-    # The two artefacts the page hands over are one protocol, and that is the half of the
-    # sentence that does not depend on the page saying it: the command a reader pastes and the
-    # address a reader points an editor at have to deliver the same wire, or the page's own happy
-    # path ends in a server the reader's client refuses.
-    unreachable = sorted({wire for wire in image_wires.values() if wire not in offered})
-    if unreachable:
-        print(
-            f"check-claims: the page hands a reader {', '.join(IMAGE_REFERENCES)}, which speak "
-            f"{', '.join(unreachable)}, and {DEMO_ORIGIN}/meta offers {', '.join(offered)}: the "
-            "command and the address on the page are not the same protocol, so a reader who "
-            "follows both meets a version one of the two does not have",
-            file=sys.stderr,
-        )
-        return 1
-
     failed: list[tuple[str, list[str]]] = []
     for page in pages:
-        problems = wire_binding_problems(page, offered, image_wires)
+        problems = wire_binding_problems(page, image_wires)
         if problems:
             failed.append((os.path.relpath(page.path, root), problems))
     if failed:
@@ -4869,9 +4278,8 @@ def check_wire_binding(pages: list[Scanned]) -> int:
         "check-claims: "
         + (f"the page names {', '.join(named)}" if named else "the page names no wire version")
         + f"; the references the page hands a reader ({', '.join(IMAGE_REFERENCES)}) speak "
-        f"{', '.join(sorted(set(image_wires.values())))} and {DEMO_ORIGIN}/meta offers "
-        f"{', '.join(offered)}, so the artefacts the page hands a reader speak the same "
-        "version, and nothing here names another one or calls the wire unreleased"
+        f"{', '.join(sorted(set(image_wires.values())))}, and nothing here names another one "
+        "or calls the wire unreleased"
     )
     return 0
 
@@ -5007,6 +4415,7 @@ ONBOARDING_REQUIREMENTS = {
         "Your name", "Share a folder…", "Open a text file",
         "Copy invite link", "including everything after #",
         "enters their name, chooses Join", "opens the same file",
+        "another window on the same machine",
         "Keep the host tab open", "Leave and end the room", "Leave anyway",
     ),
     "run-section": (
@@ -5035,14 +4444,16 @@ EDITOR_CHOICE_FACTS = (
 # behind it rather than a release that has not been dispatched.
 VSCODE_ROUTE = "vscode"
 MARKETPLACE_LISTING = EXTENSION_LISTINGS[0]
+LOCAL_PAGE_ORIGIN = "http://127.0.0.1:8080"
+LOCAL_EDITOR_ADDRESS = "ws://127.0.0.1:8080"
 ONBOARDING_FIXTURE = f'''
 <section class="first-room">
-  <p>Open <a href="{DEMO_ORIGIN}">the demo</a> in desktop Chrome or Edge.
+  <p>After the local setup, open <a href="{LOCAL_PAGE_ORIGIN}">the page</a> in desktop Chrome or Edge.
   Use a small, disposable text folder: anyone with the invite can edit files on your disk.</p>
   <p>Enter Your name, choose Share a folder… and allow read/write access. Open a text file.</p>
   <p>Choose Copy invite link and send the complete link, including everything after #,
   to someone you trust.</p>
-  <p>Your guest opens the link, enters their name, chooses Join and opens the same file.</p>
+  <p>On this local setup, use another window on the same machine for the guest. Your guest opens the link, enters their name, chooses Join and opens the same file.</p>
   <p>Keep the host tab open; don't reload it. To finish, choose Leave and end the room,
   then Leave anyway.</p>
 </section>
@@ -5054,7 +4465,7 @@ ONBOARDING_FIXTURE = f'''
   <a href="{MARKETPLACE_LISTING}">Marketplace</a>
   code --install-extension {PUBLISHED_EXTENSION}
   open a small disposable text folder in VS Code and run Selvage: Host a session.
-  Enter wss://{DEMO_HOST} as the server, then your name.
+  Enter {LOCAL_EDITOR_ADDRESS} as the server, then your name.
 </div>
 <section class="run-section">
   This setup is local-only: it binds to 127.0.0.1, so its invite won't reach another machine.
@@ -5085,7 +4496,7 @@ def onboarding_problems(raw: str) -> list[str]:
         for fact in facts:
             if fact.casefold() not in text:
                 problems.append(f"{region} must state {fact!r}")
-    for region, target in (("first-room", DEMO_ORIGIN), ("run-section", REMOTE_DEPLOYMENT)):
+    for region, target in (("first-room", LOCAL_PAGE_ORIGIN), ("run-section", REMOTE_DEPLOYMENT)):
         if target not in [url.rstrip("/") for url, _ in destinations(regions.get(region, ""))]:
             problems.append(f"{region} must link to {target}")
     first_room = normalise(regions.get("first-room", ""))[0]
@@ -5108,9 +4519,9 @@ def onboarding_problems(raw: str) -> list[str]:
     if vscode is None or vscode_markup is None:
         problems.append("must carry one VS Code route")
     else:
-        addresses = re.findall(r"wss://[^\s<>]+", vscode)
-        if addresses != [f"wss://{DEMO_HOST}"]:
-            problems.append("VS Code route must give the demo server origin without a path")
+        addresses = re.findall(r"wss?://[^\s<>]+", vscode)
+        if addresses != [LOCAL_EDITOR_ADDRESS]:
+            problems.append("VS Code route must give the local server address without a path")
         if MARKETPLACE_LISTING not in [
             url.rstrip("/") for url, _ in destinations(vscode_markup)
         ]:
@@ -5132,6 +4543,7 @@ def onboarding_fixture_problems() -> list[str]:
         ("first-room", "including everything after #"),
         ("first-room", "enters their name, chooses Join"),
         ("first-room", "opens the same file"),
+        ("first-room", "another window on the same machine"),
         ("first-room", "Keep the host tab open"),
         ("first-room", "Leave and end the room"),
         ("first-room", "Leave anyway"),
@@ -5165,13 +4577,13 @@ def onboarding_fixture_problems() -> list[str]:
             expected = f"{region} must state {fact!r}"
             if expected not in onboarding_problems(changed):
                 problems.append(f"onboarding fixture does not reject missing {fact!r}")
-    for target in (DEMO_ORIGIN, REMOTE_DEPLOYMENT):
+    for target in (LOCAL_PAGE_ORIGIN, REMOTE_DEPLOYMENT):
         changed = ONBOARDING_FIXTURE.replace(f'href="{target}"', 'href="https://example.invalid/"')
         if not any("must link to" in problem for problem in onboarding_problems(changed)):
             problems.append(f"onboarding fixture does not reject incorrect link {target}")
-    for address in (f"wss://{DEMO_HOST}/session", "ws://127.0.0.1:8080", "wss://example.invalid"):
-        changed = ONBOARDING_FIXTURE.replace(f"wss://{DEMO_HOST}", address)
-        if "VS Code route must give the demo server origin without a path" not in onboarding_problems(changed):
+    for address in (f"{LOCAL_EDITOR_ADDRESS}/session", "wss://example.invalid"):
+        changed = ONBOARDING_FIXTURE.replace(LOCAL_EDITOR_ADDRESS, address)
+        if "VS Code route must give the local server address without a path" not in onboarding_problems(changed):
             problems.append(f"onboarding fixture accepts incorrect editor address {address!r}")
     wrong_listing = MARKETPLACE_LISTING.replace(PUBLISHED_EXTENSION, PUBLISHED_EXTENSION + "-client")
     changed = ONBOARDING_FIXTURE.replace(MARKETPLACE_LISTING, wrong_listing)
@@ -5233,7 +4645,7 @@ def check_onboarding(pages: list[Scanned]) -> int:
     if status == 0:
         print(
             "check-claims: first-room recipe, the Browser route's editor choice, the VS Code route's "
-            "Marketplace listing and demo address, the local-only limit and the deployment link are "
+            "Marketplace listing and local server address, the local-only limit and the deployment link are "
             "present"
         )
     return status
@@ -5779,6 +5191,9 @@ def scan(targets: list[str]) -> int:
     for problem in onboarding_scope_problems():
         print(f"check-claims: {problem}", file=sys.stderr)
         return 2
+    for problem in retired_demo_reference_fixture_problems():
+        print(f"check-claims: {problem}", file=sys.stderr)
+        return 2
 
     for what, opened_at, shape, expected in RUN_OPENED_AT_FIXTURES:
         if shape is None:
@@ -5881,7 +5296,7 @@ def scan(targets: list[str]) -> int:
         check_onboarding,
         check_run_section_address,
         check_command_prompt_selection,
-        check_demo_instance,
+        check_retired_demo_reference,
         check_wire_binding,
         check_jetbrains_listing,
     ):

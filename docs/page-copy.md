@@ -8,9 +8,9 @@ page itself is not an editor or a hosted room service.
 
 | Section | Required content and behavior |
 |---|---|
-| Hero | The promise, demo and editor CTAs, four facts (*Sealed*, *Specified*, *Path-scoped*, *No account*) and a room illustration. Put the CTAs before the facts so the next action is visible on short screens. The header CTA also leads to the demo. The specification is a text link in *Why a spec*, not a third button |
-| Try → Run | Three equal-height cards in increasing order of commitment: *Try* the demo, *Run* the two published containers, *Rent* as a plan. The demo card qualifies browser hosting as desktop Chrome or Edge. The run card links to the full commands below and says rooms are in memory. The hosted tier says *Not available yet* or *Planned* in its own card and offers no actionable signup or purchase control |
-| Start a room | A concrete first-room recipe using the demo, followed by editor alternatives. Retain the `How it works` anchor. Include the safety, browser and invite qualifications below |
+| Hero | The promise and one editor CTA, four facts (*Sealed*, *Specified*, *Path-scoped*, *No account*) and a room illustration. Put the CTA before the facts so the next action is visible on short screens. The specification is a text link in *Why a spec*, not a second button |
+| Run → share | Three equal-height cards in increasing order of commitment: *Run locally*, *Run* the two published containers, *Rent* as a plan. The local card qualifies browser hosting as desktop Chrome or Edge. The run card links to the full commands below and says rooms are in memory. The hosted tier says *Not available yet* or *Planned* in its own card and offers no actionable signup or purchase control |
+| Start a room | A concrete first-room recipe using the local page, followed by editor alternatives. Retain the `How it works` anchor. Include the safety, browser and invite qualifications below |
 | Run it yourself | Three separately selectable commands: create the shared network, start the server, start the web container. State the local-only scope, the address to open and the teardown. Details below |
 | Get it working | One server and five client routes in an accessible tabbed terminal: VS Code, Neovim, JetBrains, Browser and AI agent. Each route carries its install command or address, necessary note and public repository. Beside it, disclose the relay's limits and the peer's signed host claim |
 | See it working | Four explanatory drawings: invite holders join, peer carets in one file, granted paths and multiple clients on one protocol. These are illustrations, not acceptance-test screenshots or testimonials |
@@ -26,18 +26,19 @@ must not link to an artifact that does not exist.
 
 The browser recipe is for **desktop Chrome or Edge**:
 
-1. Open the demo and choose a small disposable text folder. Warn that anyone with the invite can
+1. Start the local containers, open <http://127.0.0.1:8080/> and choose a small disposable text folder. Warn that anyone with the invite can
    edit files on the host's disk.
 2. Enter **Your name**, choose **Share a folder…**, allow read/write access and open a text file.
 3. Choose **Copy invite link** and send the complete link, including everything after `#`, to
-   someone trusted. The guest opens it, enters their name, chooses **Join** and opens the same
-   file. Type in both windows.
+   someone trusted. On this local setup, use another window on the same machine for the guest.
+   The guest opens it, enters their name, chooses **Join** and opens the same file.
+   Type in both windows.
 4. Keep the host tab open and do not reload it. To finish, choose **Leave and end the room**, then
    **Leave anyway**.
 
 Firefox and Safari can join from an invite but cannot host from the page because they lack the
 directory picker. The Browser route carries this distinction and directs them to an editor host.
-The VS Code route names `wss://selvage-demo.dontblameme.dev`, the display name, the clipboard invite
+The VS Code route names `ws://127.0.0.1:8080`, the display name, the clipboard invite
 and the extension's published Marketplace listing. Do not turn these directions into a claim that
 a human acceptance recording exists or is required.
 
@@ -49,7 +50,7 @@ the checks:
 - Create the shared network, then start the server and the page containers, detached and named.
 - Print bare image repository names; Docker supplies `:latest`. The server exposes no host port.
 - Publish the page on `127.0.0.1:8080` and link that address. Only another window on the **same
-  machine** can use its loopback invite. For another machine, point to the demo or the remote
+  machine** can use its loopback invite. For another machine, follow the remote
   deployment guide, which covers TLS and hardening.
 - Keep each label beside its command and the `$ ` prompt outside the selectable command text.
   Copying one block or dragging across blocks must not pick up prompts or labels.
@@ -73,7 +74,7 @@ hand-maintained list.
 - **Neovim:** the public plugin-manager line and `:SelvageHost`.
 - **JetBrains:** the plugin's Marketplace listing, platform version requirement and repository;
   there is no universal IDE launcher command.
-- **Browser:** the demo route and the hosting-versus-joining distinction above.
+- **Browser:** the local page route and the hosting-versus-joining distinction above.
 - **AI agent:** the instruction to start the MCP server through `npx` from the repository, not an
   invented registry package.
 
@@ -88,8 +89,8 @@ identity. A hero chip cannot substitute for these panels beside the install inst
 [What the page must never say](must-not-say.md) binds every section. The
 [claim filter](claim-filter.md) documents the executable gate and its limits.
 
-- The demo is a small in-memory instance, not a persistent or team-sized hosted service. The
-  landing page's origin is not a place to join rooms. Do not describe the software or demo as
+- Rooms live in memory on the server you run; nothing in the project is a hosted service. The
+  landing page's origin is not a place to join rooms. Do not describe the software as
   non-commercial: state the actual licenses.
 - Hosting is qualified by browser support and server origin; joining needs the host's complete
   invite. Do not restore stale denials that no browser client or published container exists.

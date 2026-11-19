@@ -1,5 +1,5 @@
 import { Bot, Box, Code, Globe, Terminal, type LucideIcon } from "lucide-react";
-import { DEMO, DEMO_ORIGIN, DEMO_SERVER } from "@/lib/selvage";
+import { OPEN_AT } from "@/lib/selvage";
 
 /* One entry per client, and every surface the page draws a client on derives from this list:
    the repository grid's row, the chips in *Clients share one protocol*, and the install route in
@@ -78,6 +78,7 @@ const JETBRAINS_ADDRESS = "plugins.jetbrains.com/plugin/34763-selvage";
 const JETBRAINS_LISTING = `https://${JETBRAINS_ADDRESS}`;
 const VSCODE_EXTENSION = "selvage-protocol.selvage";
 const VSCODE_LISTING = `https://marketplace.visualstudio.com/items?itemName=${VSCODE_EXTENSION}`;
+const LOCAL_EDITOR_ADDRESS = "ws://127.0.0.1:8080";
 
 export const CLIENTS: Client[] = [
   {
@@ -92,7 +93,7 @@ export const CLIENTS: Client[] = [
         command("$", `code --install-extension ${VSCODE_EXTENSION}`),
         { text: "# open a small disposable text folder in VS Code", comment: true },
         { text: "# run  Selvage: Host a session", comment: true },
-        { text: `# server: ${DEMO_SERVER}`, comment: true },
+        { text: `# server: ${LOCAL_EDITOR_ADDRESS}`, comment: true },
         { text: "# enter your name; the invite is copied to your clipboard", comment: true },
       ],
       copy: `code --install-extension ${VSCODE_EXTENSION}`,
@@ -149,12 +150,12 @@ export const CLIENTS: Client[] = [
     chip: "Browser",
     install: {
       lines: [
-        command("›", DEMO),
+        command("›", OPEN_AT),
         { text: "# desktop Chrome or Edge: Your name → Share a folder…", comment: true },
         { text: "# use a small disposable text folder; allow read/write access", comment: true },
         { text: "# open a file, then Copy invite link", comment: true },
       ],
-      copy: DEMO_ORIGIN,
+      copy: OPEN_AT,
       announce: "Browser address",
       note:
         "Guests need nothing installed: Firefox and Safari can join from a complete invite " +

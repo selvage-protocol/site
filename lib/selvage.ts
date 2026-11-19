@@ -6,7 +6,7 @@
 
     The server is the room, and it serves no page; the page image is the browser client, and it
     relays the session protocol's two endpoints to the server named beside it, so a reader who
-    wants the browser editor needs both. They and the demo speak one wire version, `selvage/2`. */
+    wants the browser editor needs both. They speak one wire version, `selvage/2`. */
 const SERVER_IMAGE = "ghcr.io/selvage-protocol/selvaged";
 const PAGE_IMAGE = "ghcr.io/selvage-protocol/selvage-web";
 
@@ -64,9 +64,5 @@ export const STOP_STEPS: readonly { label: string; command: string }[] = [
   },
 ];
 
-/** The demo instance: the origin a guest opens, and the address an editor hosts on. */
-export const DEMO = "selvage-demo.dontblameme.dev";
-export const DEMO_ORIGIN = `https://${DEMO}`;
-export const DEMO_SERVER = `wss://${DEMO}`;
 export const REMOTE_DEPLOYMENT =
   "https://github.com/selvage-protocol/reference_server/blob/main/docs/deploying.md#letting-someone-else-in";

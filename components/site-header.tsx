@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUpRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { href: "#try", label: "Try" },
+  { href: "#try", label: "Start" },
   { href: "#run", label: "Run" },
   { href: "#how-it-works", label: "How it works" },
   { href: "#why-a-spec", label: "Specification" },
@@ -104,18 +102,10 @@ export function SiteHeader() {
             <GithubMark className="icon-18" />
             <span className="hidden min-[720px]:inline">GitHub</span>
           </a>
-          <Button
-            href="https://selvage-demo.dontblameme.dev"
-            size="sm"
-            className="text-crust [&_svg]:size-3.5"
-          >
-            Try the demo
-            <ArrowUpRight aria-hidden="true" />
-          </Button>
         </div>
       </nav>
       {/* A phone keeps every in-page route: the bar itself has no room for them
-          beside the mark and the two actions. */}
+          beside the mark and the GitHub link. */}
       <nav
         aria-label="Sections"
         className="header-row gap-4 overflow-x-auto whitespace-nowrap px-4 text-[13px]"
