@@ -92,7 +92,7 @@ const steps = [
   {
     n: "03",
     title: "Type in the same file",
-    body: "Your guest opens the link, enters their name, chooses Join and opens the same file. Try typing in both windows.",
+    body: "On this local setup, use another window on the same machine for the guest. Your guest opens the link, enters their name, chooses Join and opens the same file. Try typing in both windows.",
   },
   {
     n: "04",

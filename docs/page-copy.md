@@ -30,8 +30,9 @@ The browser recipe is for **desktop Chrome or Edge**:
    edit files on the host's disk.
 2. Enter **Your name**, choose **Share a folder…**, allow read/write access and open a text file.
 3. Choose **Copy invite link** and send the complete link, including everything after `#`, to
-   someone trusted. The guest opens it, enters their name, chooses **Join** and opens the same
-   file. Type in both windows.
+   someone trusted. On this local setup, use another window on the same machine for the guest.
+   The guest opens it, enters their name, chooses **Join** and opens the same file.
+   Type in both windows.
 4. Keep the host tab open and do not reload it. To finish, choose **Leave and end the room**, then
    **Leave anyway**.
 

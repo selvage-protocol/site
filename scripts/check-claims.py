@@ -87,6 +87,10 @@ VEHICLE = r"\d[\d,]*"
 # this origin is a place to join a room, while the site itself is not a client.
 SITE_ORIGIN = r"selvage\.dontblameme\.dev"
 
+# The host of the retired public demo. A page may no longer name it or link to it. This is a
+# static check on the rendered page: the instance is gone, so there is nothing to probe.
+RETIRED_DEMO_HOST = "selvage-demo.dontblameme.dev"
+
 DASHES = re.compile("[\u2010-\u2015\u2212\ufe58\ufe63\uff0d]")
 
 # The page's happy path is a `docker run` a reader pastes, so the tag in it is a claim with an
@@ -1022,14 +1026,14 @@ FORBIDDEN: list[Phrase] = [
         # runs the server beside the page image. A page saying none of that exists states
         # the opposite of the truth.
         r"\bno (?:image|container) to pull\b|\bnothing to install on the server\b"
-        r"|\bno compose (?:file|configuration)\b|\bno systemd (?:service|unit)\b",
-        "there is no image to pull and no service unit to install in any repository yet",
+        r"|\bno compose (?:file|configuration)\b",
+        "there is no image to pull and no compose file in any repository yet",
         "the images are published (`ghcr.io/selvage-protocol/selvaged:latest` and "
         "`ghcr.io/selvage-protocol/selvage-web:latest`) and pull with no account, and "
         "`reference_server/compose.yaml` runs the server beside the page image: a page saying "
         "none of that exists states the opposite of the truth",
         ("there is no im<!-- -->age to pull", "no conta<span></span>iner to pull",
-         "there is no comp<!-- -->ose file", "there is no systemd <span>u</span>nit"),
+         "there is no comp<!-- -->ose file"),
         ("the published image pulls with no account and no login",
          "the image is published, so there is nothing to clone"),
     ),
@@ -1430,8 +1434,8 @@ FORBIDDEN: list[Phrase] = [
         r"|(?:server|selvaged|setup|install\w*|deploy\w*|build|app|site|page|service)\b[^.]{0,32}\b(?:starts?|runs?|boots?)\b[^.]{0,24}\bin seconds\b(?!-)"
         r"|one[- ]click|just works",
         "Self-hosting takes seconds on any machine you choose.",
-        "the image, the compose file and the systemd unit all exist, and no ease claim around "
-        "them is backed: no install time, start-up time or latency has been measured or "
+        "the image and the compose file exist, and no ease claim around them is backed: no install "
+        "time, start-up time or latency has been measured or "
         "recorded anywhere in the corpus",
         ("up and running in seconds.",
          "up and running in\nseconds.",
@@ -1653,6 +1657,51 @@ def destinations(raw: str) -> list[tuple[str, int]]:
         if value:
             found.append((html.unescape(value), raw.count("\n", 0, match.start()) + 1))
     return found
+
+
+def retired_demo_references(page: Scanned) -> list[tuple[str, int]]:
+    """Every mention of the retired demo host in the page's prose and destinations.
+
+    The visible text and a link's destination are separate surfaces: a reader can be handed the
+    host as prose while the anchor points somewhere else, or the other way round.
+    """
+    found: list[tuple[str, int]] = []
+    for match in re.finditer(re.escape(RETIRED_DEMO_HOST), page.text, re.IGNORECASE):
+        found.append((match.group(0), page.line_of[match.start()]))
+    for destination, line in page.destinations:
+        if RETIRED_DEMO_HOST.lower() in destination.lower():
+            found.append((destination, line))
+    return found
+
+
+def check_retired_demo_reference(pages: list[Scanned]) -> int:
+    root = root_of_this_checkout()
+    found = False
+    for page in pages:
+        for reference, line in retired_demo_references(page):
+            print(
+                f"check-claims: {os.path.relpath(page.path, root)}:{line} names the retired demo "
+                f"host {reference!r}; the instance is gone and no page may point at it",
+                file=sys.stderr,
+            )
+            found = True
+    return 1 if found else 0
+
+
+def retired_demo_reference_fixture_problems() -> list[str]:
+    def scanned(raw: str) -> Scanned:
+        text, line_of = normalise(raw)
+        return Scanned("fixture.html", text, line_of, destinations(raw), raw, [])
+
+    if not retired_demo_references(
+        scanned('<a href="https://selvage-demo.dontblameme.dev">Open a room</a>')
+    ):
+        return ["retired demo destination is not rejected"]
+    if not retired_demo_references(scanned("<p>Try selvage-demo.dontblameme.dev</p>")):
+        return ["retired demo host in prose is not rejected"]
+    if retired_demo_references(scanned('<a href="http://127.0.0.1:8080">Open a room</a>')):
+        return ["local page destination is rejected as a retired demo reference"]
+    return []
 
 
 def normalise(text: str) -> tuple[str, list[int]]:
@@ -4346,6 +4395,7 @@ ONBOARDING_REQUIREMENTS = {
         "Your name", "Share a folder…", "Open a text file",
         "Copy invite link", "including everything after #",
         "enters their name, chooses Join", "opens the same file",
+        "another window on the same machine",
         "Keep the host tab open", "Leave and end the room", "Leave anyway",
     ),
     "run-section": (
@@ -4383,7 +4433,7 @@ ONBOARDING_FIXTURE = f'''
   <p>Enter Your name, choose Share a folder… and allow read/write access. Open a text file.</p>
   <p>Choose Copy invite link and send the complete link, including everything after #,
   to someone you trust.</p>
-  <p>Your guest opens the link, enters their name, chooses Join and opens the same file.</p>
+  <p>On this local setup, use another window on the same machine for the guest. Your guest opens the link, enters their name, chooses Join and opens the same file.</p>
   <p>Keep the host tab open; don't reload it. To finish, choose Leave and end the room,
   then Leave anyway.</p>
 </section>
@@ -4473,6 +4523,7 @@ def onboarding_fixture_problems() -> list[str]:
         ("first-room", "including everything after #"),
         ("first-room", "enters their name, chooses Join"),
         ("first-room", "opens the same file"),
+        ("first-room", "another window on the same machine"),
         ("first-room", "Keep the host tab open"),
         ("first-room", "Leave and end the room"),
         ("first-room", "Leave anyway"),
@@ -5120,6 +5171,9 @@ def scan(targets: list[str]) -> int:
     for problem in onboarding_scope_problems():
         print(f"check-claims: {problem}", file=sys.stderr)
         return 2
+    for problem in retired_demo_reference_fixture_problems():
+        print(f"check-claims: {problem}", file=sys.stderr)
+        return 2
 
     for what, opened_at, shape, expected in RUN_OPENED_AT_FIXTURES:
         if shape is None:
@@ -5222,6 +5276,7 @@ def scan(targets: list[str]) -> int:
         check_onboarding,
         check_run_section_address,
         check_command_prompt_selection,
+        check_retired_demo_reference,
         check_wire_binding,
         check_jetbrains_listing,
     ):
