@@ -1140,7 +1140,9 @@ async function profileCleanupAfterLaunchFailure() {
   const env = checkerEnv(fixture, {
     port: await freePort(), upstream: await freePort(), debug: await freePort(), evidence,
   });
-  env.CHROMIUM = join(fixture, "bin"); // A directory exists but cannot be executed.
+  const broken = join(fixture, "bin", "chromium-broken");
+  writeFileSync(broken, "#!/nonexistent/interpreter\n", { mode: 0o700 });
+  env.CHROMIUM = broken; // Executable, but its interpreter is missing, so the launch fails.
   const result = await runChecker(fixture, env);
   assert(result.code === 2, `the check after a browser launch failure exited ${result.code}, not 2`);
   assertReceipt(evidence, 2, "browser launch failure");
