@@ -1675,14 +1675,15 @@ def destinations(raw: str) -> list[tuple[str, int]]:
 
 
 def retired_demo_references(page: Scanned) -> list[tuple[str, int]]:
-    """Every mention of the retired demo host in the page's prose and destinations.
+    """Every mention of the retired demo host in the page's prose, metadata and destinations.
 
-    The visible text and a link's destination are separate surfaces: a reader can be handed the
-    host as prose while the anchor points somewhere else, or the other way round.
+    The visible text, a link's destination and a `meta` description are separate surfaces: a
+    reader can be handed the host in any of them while the others stay local.
     """
     found: list[tuple[str, int]] = []
-    for match in re.finditer(re.escape(RETIRED_DEMO_HOST), page.text, re.IGNORECASE):
-        found.append((match.group(0), page.line_of[match.start()]))
+    for stream, lines in [(page.text, page.line_of), *page.prose]:
+        for match in re.finditer(re.escape(RETIRED_DEMO_HOST), stream, re.IGNORECASE):
+            found.append((match.group(0), lines[match.start()]))
     for destination, line in page.destinations:
         if RETIRED_DEMO_HOST.lower() in destination.lower():
             found.append((destination, line))
@@ -1706,7 +1707,7 @@ def check_retired_demo_reference(pages: list[Scanned]) -> int:
 def retired_demo_reference_fixture_problems() -> list[str]:
     def scanned(raw: str) -> Scanned:
         text, line_of = normalise(raw)
-        return Scanned("fixture.html", text, line_of, destinations(raw), raw, [])
+        return Scanned("fixture.html", text, line_of, destinations(raw), raw, meta_streams(raw))
 
     if not retired_demo_references(
         scanned('<a href="https://selvage-demo.dontblameme.dev">Open a room</a>')
@@ -1714,6 +1715,10 @@ def retired_demo_reference_fixture_problems() -> list[str]:
         return ["retired demo destination is not rejected"]
     if not retired_demo_references(scanned("<p>Try selvage-demo.dontblameme.dev</p>")):
         return ["retired demo host in prose is not rejected"]
+    if not retired_demo_references(
+        scanned('<meta name="description" content="Open a room at selvage-demo.dontblameme.dev">')
+    ):
+        return ["retired demo host in metadata prose is not rejected"]
     if retired_demo_references(scanned('<a href="http://127.0.0.1:8080">Open a room</a>')):
         return ["local page destination is rejected as a retired demo reference"]
     return []
