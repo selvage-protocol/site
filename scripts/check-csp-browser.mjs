@@ -52,6 +52,7 @@
 //
 //   npm run build
 //   CHROMIUM=/path/to/chromium node scripts/check-csp-browser.mjs
+//   node scripts/check-csp-browser.mjs   # finds chromium on PATH
 //
 // `VERCEL_JSON` points it at another policy file, the same override scripts/check-csp.py takes,
 // so it can be run against the policy that caused the defect: that run has to fail.
@@ -74,9 +75,9 @@
 // An exclusive claim is retained with the run, so cooperating concurrent runs cannot both write.
 
 import { spawn, spawnSync } from "node:child_process";
-import { readFileSync, readdirSync, existsSync, lstatSync, mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync, accessSync, constants, lstatSync, mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { createServer, request as httpRequest } from "node:http";
-import { dirname, join } from "node:path";
+import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -435,11 +436,31 @@ if (!declared) {
   await giveUp(`${policyLabel} declares no Content-Security-Policy; there is nothing to prove here`);
 }
 
-const chromium = process.env.CHROMIUM;
-if (!chromium || !existsSync(chromium)) {
+function executable(path) {
+  try {
+    accessSync(path, constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const chromium =
+  process.env.CHROMIUM ??
+  [
+    ...(process.env.PATH ?? "")
+      .split(delimiter)
+      .flatMap((dir) =>
+        ["chromium", "chromium-browser", "google-chrome", "google-chrome-stable"].map((name) =>
+          join(dir, name),
+        ),
+      ),
+    "/usr/local/share/chromium/chrome-linux/chrome",
+  ].find(executable);
+if (!chromium || !executable(chromium)) {
   await giveUp(
-    `CHROMIUM must name a Chromium binary (got ${chromium ?? "nothing"}). ` +
-      "scripts/ci-local.sh csp finds one on PATH when it is not set, and a host without one " +
+    `no Chromium found (CHROMIUM=${process.env.CHROMIUM ?? "unset"}). Set CHROMIUM or put ` +
+      "chromium on PATH. scripts/ci-local.sh csp already does this, and a host without one " +
       "cannot run this proof",
   );
 }
