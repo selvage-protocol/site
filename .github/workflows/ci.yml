@@ -67,6 +67,8 @@ jobs:
       ACTIONLINT_VERSION: "1.7.7"
       ACTIONLINT_SHA256: "023070a287cd8cccd71515fedc843f1985bf96c436b7effaecce67290e7e0757"
       NEXT_TELEMETRY_DISABLED: "1"
+      # The build step below is the one fresh build; the served-page scans reuse it.
+      SITE_CI_REUSE_FRESH_BUILD: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
