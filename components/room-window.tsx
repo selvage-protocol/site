@@ -1,45 +1,10 @@
-"use client";
-
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
 import { FolderOpen, Link as LinkIcon } from "lucide-react";
+import { TypedLine } from "@/components/typed-line";
 
 /* The hero figure: a guest's window onto the host's folder, with the line the two
    of them are in being typed. The typing is the point rather than decoration — it
    is what the page is: one file, edited by two people at once. */
-
-const TICK_MS = 85;
-/** How long the finished line rests before it is typed again. */
-const HOLD_TICKS = 36;
-
-type Piece = { text: string; className?: string };
-
-/** The line being typed, in the pieces the theme colours differently. */
-const TYPED: Piece[] = [
-  { text: "    engine." },
-  { text: "open", className: "tok-fn" },
-  { text: "(file)." },
-  { text: "await", className: "tok-keyword" },
-];
-
-const TYPED_LENGTH = TYPED.reduce((total, piece) => total + piece.text.length, 0);
-
-/** The first `count` characters of the line, in their own spans, so a piece that is
-    half typed is drawn in its own colour all the same. */
-function typedPieces(count: number): ReactNode[] {
-  const drawn: ReactNode[] = [];
-  let left = count;
-  for (const [at, piece] of TYPED.entries()) {
-    if (left <= 0) break;
-    drawn.push(
-      <span key={at} className={piece.className}>
-        {piece.text.slice(0, left)}
-      </span>,
-    );
-    left -= piece.text.length;
-  }
-  return drawn;
-}
 
 function Line({
   n,
@@ -62,39 +27,9 @@ function Line({
   );
 }
 
-/** The room window. `animatePlayground` types the line and holds it; with it off
-    the line is already written. Either way the caret is drawn, and a reader who
-    asked for less motion gets a still one. */
+/** The room window. The line being typed is the only animated part, so the timer
+    re-renders a few spans rather than the whole figure. */
 export function RoomWindow({ animatePlayground = true }: { animatePlayground?: boolean }) {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    if (
-      !animatePlayground ||
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      setCount(TYPED_LENGTH);
-      return;
-    }
-    let position = 0;
-    let held = 0;
-    const timer = window.setInterval(() => {
-      if (position < TYPED_LENGTH) {
-        position += 1;
-        setCount(position);
-        return;
-      }
-      if (held < HOLD_TICKS) {
-        held += 1;
-        return;
-      }
-      position = 0;
-      held = 0;
-      setCount(0);
-    }, TICK_MS);
-    return () => window.clearInterval(timer);
-  }, [animatePlayground]);
-
   return (
     <figure className="hero-visual" aria-hidden="true">
       <div className="hero-glow" aria-hidden="true" />
@@ -147,7 +82,7 @@ export function RoomWindow({ animatePlayground = true }: { animatePlayground?: b
               n={6}
               badge={<span className="peer-badge peer-mauve">mira</span>}
             >
-              {typedPieces(count)}
+              <TypedLine animatePlayground={animatePlayground} />
               <span className="caret caret-room peer-mauve blink" />
             </Line>
             <Line n={7}>{"}"}</Line>

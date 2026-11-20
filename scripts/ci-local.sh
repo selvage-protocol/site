@@ -111,6 +111,15 @@ find_chromium() {
   return 1
 }
 
+# Each served-page scan rebuilds on its own, so a step run by itself can never pass on a
+# stale page. The CI job builds once before the scans and marks that build fresh for them.
+build_for_scans() {
+  if [ "${SITE_CI_REUSE_FRESH_BUILD:-0}" = "1" ]; then
+    return 0
+  fi
+  npm run build >/dev/null
+}
+
 # Starts the production server in the background, polls / until it answers 200 (bounded: 60
 # seconds, reporting the last state on failure), runs the given command, then stops the server.
 # Polling the predicate beats sleeping and hoping: a fixed sleep passes before the port is open.
@@ -188,15 +197,15 @@ job_mark() {
 
 job_claims() {
   say "claims: known forbidden wordings over the rendered page (a filter, not a proof)"
-  # Always rebuilt, so the scan can never pass on a stale page.
-  npm run build >/dev/null
+  # Rebuilt for a standalone step, so the scan can never pass on a stale page.
+  build_for_scans
   with_server fetch_and_scan
 }
 
 job_csp() {
   say "csp: the policy in vercel.json over the served page and its not-found route"
-  # Always rebuilt, so the policy can never pass over a stale page.
-  npm run build >/dev/null
+  # Rebuilt for a standalone step, so the policy can never pass over a stale page.
+  build_for_scans
   with_server fetch_and_csp &&
     job_csp_browser
 }
@@ -262,15 +271,15 @@ all_served() {
 
 job_links() {
   say "links: lychee over the rendered page, the README and the docs tree"
-  # Always rebuilt, so the check can never pass on a stale page.
-  npm run build >/dev/null
+  # Rebuilt for a standalone step, so the check can never pass on a stale page.
+  build_for_scans
   with_server run_lychee --config lychee.toml --no-progress "$BASE/" README.md docs
 }
 
 job_weight() {
   say "weight: every image the page body fetches, against its budget"
-  # Always rebuilt, so the scan can never pass on a stale page.
-  npm run build >/dev/null
+  # Rebuilt for a standalone step, so the check can never pass on a stale page.
+  build_for_scans
   with_server fetch_and_weight
 }
 
