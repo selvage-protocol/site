@@ -212,12 +212,16 @@ summary:focus-visible {
    height of the bar that would otherwise cover it, the second row a phone gets
    included. */
 section[id],
+main[id],
+.head-block[id],
 .band[id] {
-  scroll-margin-top: calc(var(--bar) + var(--bar-row) + var(--rule-h));
+  scroll-margin-top: calc(var(--bar) + var(--bar-row) + var(--rule-h) + var(--rule-h));
 }
 
 @media (min-width: 720px) {
   section[id],
+  main[id],
+  .head-block[id],
   .band[id] {
     scroll-margin-top: calc(var(--bar) + var(--rule-h));
   }
@@ -481,6 +485,12 @@ section[id],
   font-size: 12.5px;
 }
 
+@media (max-width: 360px) {
+  .room-code {
+    font-size: 11px;
+  }
+}
+
 .room-line {
   display: flex;
   align-items: center;
@@ -655,6 +665,7 @@ section[id],
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
@@ -868,8 +879,14 @@ section[id],
   gap: 4px;
   padding: 6px;
   overflow-x: auto;
+  scroll-padding-inline: 34px;
+  scrollbar-width: none;
   border-bottom: 1px solid var(--rule);
   background: var(--code-bg);
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 
 /* The routes are one per client and the strip is a scroller rather than a wrap, so a growing
@@ -1492,6 +1509,16 @@ section[id],
   white-space: nowrap;
 }
 
+@media (max-width: 359px) {
+  .prose-body .repo {
+    flex-wrap: wrap;
+  }
+
+  .repo-text {
+    flex-basis: calc(100% - 30px);
+  }
+}
+
 /* The mark a linked row wears at rest, in the tone the row's leading icon wears. The row that
    is a plan carries none: it is not a link, and nothing on it should say otherwise. */
 .repo-go {
@@ -1562,7 +1589,7 @@ section[id],
 
 .licence-row dt {
   color: var(--color-subtext1);
-  /* A term and its licence are one line each: a wrapped row reads as two entries. */
+  /* A term and its licence stay on one line until the column cannot hold them, then the row wraps rather than running past its edge. */
   white-space: nowrap;
 }
 
@@ -1573,6 +1600,12 @@ section[id],
   font-size: 12px;
   text-align: right;
   white-space: nowrap;
+}
+
+@media (max-width: 359px) {
+  .licence-row {
+    flex-wrap: wrap;
+  }
 }
 
 .foot-note {
