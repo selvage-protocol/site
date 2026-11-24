@@ -108,7 +108,7 @@ export function SiteHeader() {
           beside the mark and the GitHub link. */}
       <nav
         aria-label="Sections"
-        className="header-row gap-4 overflow-x-auto whitespace-nowrap px-4 text-[13px]"
+        className="header-row gap-2 overflow-x-auto whitespace-nowrap px-3 max-[269px]:gap-[3px] max-[269px]:px-1 text-[13px]"
       >
         {navLinks.map((link) => (
           <a

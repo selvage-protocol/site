@@ -181,7 +181,7 @@ export default function Home() {
                   <Button
                     href="https://github.com/selvage-protocol/site"
                     size="hero"
-                    className="cta cta-glow flex-auto rounded-[10px] font-medium text-crust motion-safe:hover:-translate-y-px [&_svg]:size-[17px]"
+                    className="cta cta-glow flex-auto rounded-[10px] font-medium text-crust motion-safe:hover:-translate-y-px max-[307px]:whitespace-normal [&_svg]:size-[17px]"
                   >
                     <ArrowUpRight aria-hidden="true" />
                     View Source
@@ -190,7 +190,7 @@ export default function Home() {
                     href="#run"
                     variant="outline"
                     size="hero"
-                    className="cta flex-auto rounded-[10px] font-medium [&_svg]:size-[17px]"
+                    className="cta flex-auto rounded-[10px] font-medium max-[307px]:whitespace-normal [&_svg]:size-[17px]"
                   >
                     <SquareTerminal aria-hidden="true" />
                     Run it in your editor
